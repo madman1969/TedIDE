@@ -39,6 +39,8 @@ public sealed class AppShell : Window
     private readonly FrameView _editorFrame;
     private readonly OutputView _outputView = new();
     private readonly ErrorListView _errorListView = new();
+    private Tabs _outputTabs = null!;
+    private View _outputTab = null!;
     private readonly EditorMenuBar _menuBar;
     private readonly EditorStatusBar _statusBar;
 
@@ -141,17 +143,17 @@ public sealed class AppShell : Window
                 _editorFrame.Height = maxHeight;
         };
 
-        var outputTabs = new Tabs
+        _outputTabs = new Tabs
         {
             X = 0,
             Y = Pos.Bottom(_editorFrame),
             Width = Dim.Fill(),
             Height = Dim.Fill(1),
         };
-        var outputTab = new View { Title = "_Output", Width = Dim.Fill(), Height = Dim.Fill() };
+        _outputTab = new View { Title = "_Output", Width = Dim.Fill(), Height = Dim.Fill() };
         _outputView.Width = Dim.Fill();
         _outputView.Height = Dim.Fill();
-        outputTab.Add(_outputView);
+        _outputTab.Add(_outputView);
 
         var errorListTab = new View { Title = "_Error List", Width = Dim.Fill(), Height = Dim.Fill() };
         _errorListView.Width = Dim.Fill();
@@ -159,10 +161,10 @@ public sealed class AppShell : Window
         _errorListView.DiagnosticActivated += OpenDiagnostic;
         errorListTab.Add(_errorListView);
 
-        outputTabs.Add(outputTab);
-        outputTabs.Add(errorListTab);
+        _outputTabs.Add(_outputTab);
+        _outputTabs.Add(errorListTab);
 
-        Add([_menuBar, explorerFrame, _editorFrame, outputTabs, _statusBar]);
+        Add([_menuBar, explorerFrame, _editorFrame, _outputTabs, _statusBar]);
     }
 
     private const string NoFileOpenTitle = "(no file open)";
@@ -673,6 +675,8 @@ public sealed class AppShell : Window
     /// <summary>Builds the active project, then launches it in the VICE emulator matching its target if the build succeeded.</summary>
     private async Task RunActiveProjectAsync()
     {
+        ShowOutputTab();
+
         var result = await BuildActiveProjectAsync();
         if (result is null)
             return;
@@ -744,4 +748,15 @@ public sealed class AppShell : Window
     }
 
     private void AppendOutputLine(string line) => _outputView.AppendLine(line);
+
+    /// <summary>
+    /// Switches the Output/Error List pane to its "Output" tab and gives the output view itself
+    /// input focus - used when running a project, so its build/launch output is immediately
+    /// visible rather than left behind whatever tab (e.g. Error List) the user had last selected.
+    /// </summary>
+    private void ShowOutputTab()
+    {
+        _outputTabs.Value = _outputTab;
+        _outputView.SetFocus();
+    }
 }
