@@ -54,6 +54,8 @@ public sealed class AppShell : Window
         _solutionExplorer.Width = Dim.Fill();
         _solutionExplorer.Height = Dim.Fill();
         _solutionExplorer.FileActivated += OpenFile;
+        _solutionExplorer.NewFileRequested += NewFile;
+        _solutionExplorer.DeleteFileRequested += DeleteFile;
         explorerFrame.Add(_solutionExplorer);
 
         _editorFrame = new FrameView
@@ -99,6 +101,7 @@ public sealed class AppShell : Window
         var buildMenu = new MenuBarItem("_Build", new List<MenuItem>
         {
             new("_Build Project", "", () => _ = BuildActiveProjectAsync(), Key.F5),
+            new("_Clean Project", "", CleanActiveProject, Key.Empty),
         });
 
         var themeMenu = new MenuBarItem("_Theme", new List<MenuItem>
@@ -169,6 +172,73 @@ public sealed class AppShell : Window
             MessageBox.ErrorQuery(Application.Instance, "Unsupported file",
                 $"Expected a {TedideProject.FileExtension} or {TedideSolution.FileExtension} file.", ["OK"]);
             return;
+        }
+
+        _solutionExplorer.Rebuild(_workspace);
+    }
+
+    /// <summary>
+    /// Creates a new source/header file directly in <paramref name="directory"/> - the folder (or
+    /// project root) the user right-clicked in the Solution Explorer to get here. Compilable files
+    /// (.c/.s/.asm) are added to the owning project's SourceFiles and the project is saved; headers
+    /// are not, since cl65 never compiles them directly. The new file is opened in the editor once
+    /// created.
+    /// </summary>
+    private void NewFile(string directory)
+    {
+        var project = _workspace.Projects.FirstOrDefault(p =>
+            directory.StartsWith(p.Directory, StringComparison.OrdinalIgnoreCase));
+        if (project is null)
+            return;
+
+        var dialog = new NewFileDialog(directory);
+        Application.Run(dialog);
+        if (dialog.FileName is not { } fileName)
+            return;
+
+        var filePath = Path.Combine(directory, fileName);
+        if (File.Exists(filePath))
+        {
+            MessageBox.ErrorQuery(Application.Instance, "File Exists", $"'{fileName}' already exists.", ["OK"]);
+            return;
+        }
+
+        File.WriteAllText(filePath, string.Empty);
+
+        if (SolutionExplorerTree.CompilableExtensions.Contains(Path.GetExtension(filePath), StringComparer.OrdinalIgnoreCase))
+        {
+            project.SourceFiles.Add(Path.GetRelativePath(project.Directory, filePath));
+            project.Save();
+        }
+
+        _solutionExplorer.Rebuild(_workspace);
+        OpenFile(filePath);
+    }
+
+    /// <summary>
+    /// Deletes the given file from disk after confirming with the user, closing it first if it's
+    /// the currently open file, and removing it from any project's SourceFiles that references it.
+    /// </summary>
+    private void DeleteFile(string path)
+    {
+        var choice = MessageBox.Query(Application.Instance, "Delete File",
+            $"Delete '{Path.GetFileName(path)}'? This cannot be undone.", ["Delete", "Cancel"]);
+        if (choice != 0)
+            return;
+
+        if (string.Equals(_editorPane.OpenPath, path, StringComparison.OrdinalIgnoreCase))
+        {
+            _editorPane.Close();
+            _editorFrame.Title = NoFileOpenTitle;
+        }
+
+        File.Delete(path);
+
+        foreach (var project in _workspace.Projects)
+        {
+            var relativePath = Path.GetRelativePath(project.Directory, path);
+            if (project.SourceFiles.RemoveAll(f => string.Equals(f, relativePath, StringComparison.OrdinalIgnoreCase)) > 0)
+                project.Save();
         }
 
         _solutionExplorer.Rebuild(_workspace);
@@ -249,6 +319,29 @@ public sealed class AppShell : Window
         AppendOutputLine(result.Succeeded
             ? $"------ Build succeeded in {result.Duration.TotalSeconds:0.0}s ------"
             : $"------ Build FAILED ({result.Errors.Count()} error(s)) in {result.Duration.TotalSeconds:0.0}s ------");
+    }
+
+    /// <summary>Deletes the active project's build artifacts (object files and the linked output binary) without rebuilding.</summary>
+    private void CleanActiveProject()
+    {
+        var project = _workspace.ActiveProject;
+        if (project is null)
+        {
+            AppendOutputLine("No project loaded. Use File > Open Project or File > New Project first.");
+            return;
+        }
+
+        var removed = _toolchain.Clean(project);
+        AppendOutputLine($"------ Clean: {project.Name} ------");
+        if (removed.Count == 0)
+        {
+            AppendOutputLine("Nothing to clean.");
+            return;
+        }
+
+        foreach (var path in removed)
+            AppendOutputLine($"Deleted {Path.GetFileName(path)}");
+        AppendOutputLine($"------ Clean complete: {removed.Count} file(s) removed ------");
     }
 
     private void AppendOutputLine(string line)

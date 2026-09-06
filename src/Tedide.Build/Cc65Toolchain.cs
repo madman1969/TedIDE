@@ -100,6 +100,34 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
         return new BuildResult(succeeded, process.ExitCode, lines, diagnostics, stopwatch.Elapsed);
     }
 
+    /// <summary>
+    /// Deletes build artifacts without invoking cl65: the per-source .o object file cl65 leaves
+    /// alongside each source file, and the final linked output binary. Skips whatever doesn't
+    /// exist (e.g. a project that's never been built). Returns the full paths actually deleted.
+    /// </summary>
+    public IReadOnlyList<string> Clean(TedideProject project)
+    {
+        var removed = new List<string>();
+
+        foreach (var sourceFile in project.ResolvedSourceFiles)
+        {
+            var objectFile = Path.ChangeExtension(sourceFile, ".o");
+            if (File.Exists(objectFile))
+            {
+                File.Delete(objectFile);
+                removed.Add(objectFile);
+            }
+        }
+
+        if (File.Exists(project.ResolvedOutputFile))
+        {
+            File.Delete(project.ResolvedOutputFile);
+            removed.Add(project.ResolvedOutputFile);
+        }
+
+        return removed;
+    }
+
     internal static List<string> BuildArguments(TedideProject project)
     {
         var args = new List<string>
