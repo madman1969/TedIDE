@@ -27,6 +27,24 @@ public enum Cc65Target
 public static class Cc65TargetExtensions
 {
     /// <summary>
+    /// The Commodore 8-bit machines cc65 can target - excludes non-Commodore platforms like
+    /// Apple2*, Atari*, Nes, Atmos and Lynx. Used to restrict the Project Settings dialog's
+    /// target dropdown to Commodore hardware.
+    /// </summary>
+    public static readonly Cc65Target[] CommodoreTargets =
+    [
+        Cc65Target.C64,
+        Cc65Target.C128,
+        Cc65Target.C16,
+        Cc65Target.Plus4,
+        Cc65Target.Vic20,
+        Cc65Target.Pet,
+        Cc65Target.Cbm510,
+        Cc65Target.Cbm610,
+        Cc65Target.Geos_Cbm,
+    ];
+
+    /// <summary>
     /// The identifier cl65 expects after -t, e.g. "c64", "apple2enh".
     /// </summary>
     public static string ToCl65Id(this Cc65Target target) => target switch
@@ -75,4 +93,23 @@ public static class Cc65TargetExtensions
         Cc65Target.None => ".bin",
         _ => ".bin",
     };
+
+    /// <summary>
+    /// Parses a cl65 target identifier (e.g. "c64", "apple2enh") case-insensitively, as accepted
+    /// after -t/--target - the inverse of <see cref="ToCl65Id"/>.
+    /// </summary>
+    public static bool TryParse(string text, out Cc65Target target)
+    {
+        foreach (var candidate in Enum.GetValues<Cc65Target>())
+        {
+            if (string.Equals(candidate.ToCl65Id(), text.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                target = candidate;
+                return true;
+            }
+        }
+
+        target = default;
+        return false;
+    }
 }

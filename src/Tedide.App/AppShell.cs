@@ -104,6 +104,11 @@ public sealed class AppShell : Window
             new("_Clean Project", "", CleanActiveProject, Key.Empty),
         });
 
+        var projectMenu = new MenuBarItem("_Project", new List<MenuItem>
+        {
+            new("_Settings...", "", ShowProjectSettings, Key.Empty),
+        });
+
         var themeMenu = new MenuBarItem("_Theme", new List<MenuItem>
         {
             new("VS2026 _Dark", "", () => ThemeSwitcher.Apply(AppTheme.Vs2026Dark), Key.Empty),
@@ -121,7 +126,7 @@ public sealed class AppShell : Window
         // our own project-aware one, but keep its auto-generated EditMenu/ViewMenu - already wired
         // directly to the editor (Find/Replace/Undo/Redo/Cut/Copy/Paste/Select All; Line Numbers/
         // Fold Indicators/Word Wrap/Show Tabs/Scrollbars) - for free.
-        menuBar.Menus = [fileMenu, menuBar.EditMenu, menuBar.ViewMenu, buildMenu, themeMenu];
+        menuBar.Menus = [fileMenu, menuBar.EditMenu, menuBar.ViewMenu, buildMenu, projectMenu, themeMenu];
         menuBar.X = 0;
         menuBar.Y = 0;
         menuBar.Width = Dim.Fill();
@@ -342,6 +347,26 @@ public sealed class AppShell : Window
         foreach (var path in removed)
             AppendOutputLine($"Deleted {Path.GetFileName(path)}");
         AppendOutputLine($"------ Clean complete: {removed.Count} file(s) removed ------");
+    }
+
+    /// <summary>
+    /// Opens the settings dialog for the active project (name, target, output file, extra cl65
+    /// arguments). Rebuilds the Solution Explorer afterward since its project node label includes
+    /// the name and target, which the dialog may have just changed.
+    /// </summary>
+    private void ShowProjectSettings()
+    {
+        var project = _workspace.ActiveProject;
+        if (project is null)
+        {
+            AppendOutputLine("No project loaded. Use File > Open Project or File > New Project first.");
+            return;
+        }
+
+        var dialog = new ProjectSettingsDialog(project);
+        Application.Run(dialog);
+        if (dialog.Saved)
+            _solutionExplorer.Rebuild(_workspace);
     }
 
     private void AppendOutputLine(string line)

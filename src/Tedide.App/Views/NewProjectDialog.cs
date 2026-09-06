@@ -42,7 +42,7 @@ public sealed class NewProjectDialog : Dialog
         var createButton = new Button { Text = "_Create", IsDefault = true, X = Pos.Center() - 10, Y = 10 };
         createButton.Accepting += (_, e) =>
         {
-            if (!TryParseTarget(_targetField.Text, out var target))
+            if (!Cc65TargetExtensions.TryParse(_targetField.Text, out var target))
             {
                 MessageBox.ErrorQuery(Application.Instance, "Invalid target", $"'{_targetField.Text}' is not a known cc65 target.", ["OK"]);
                 e.Handled = true;
@@ -56,19 +56,5 @@ public sealed class NewProjectDialog : Dialog
         cancelButton.Accepting += (_, _) => Application.RequestStop(this);
 
         Add([nameLabel, _nameField, dirLabel, _directoryField, targetLabel, _targetField, createButton, cancelButton]);
-    }
-
-    private static bool TryParseTarget(string text, out Cc65Target target)
-    {
-        foreach (var candidate in Enum.GetValues<Cc65Target>())
-        {
-            if (string.Equals(candidate.ToCl65Id(), text.Trim(), StringComparison.OrdinalIgnoreCase))
-            {
-                target = candidate;
-                return true;
-            }
-        }
-        target = default;
-        return false;
     }
 }
