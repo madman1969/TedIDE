@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using Tedide.Core;
 using Terminal.Gui.App;
+using Terminal.Gui.Drawing;
 using Terminal.Gui.ViewBase;
 using Terminal.Gui.Views;
 
@@ -28,37 +29,43 @@ public sealed class ProjectSettingsDialog : Dialog
     {
         Title = $"Project Settings - {project.Name}";
         Width = 64;
-        Height = 17;
+        Height = 19;
+        // A real Padding adornment (rather than hand-offsetting every child's X/Y by 1) so the
+        // whole dialog gets consistent breathing room from its border - children below are
+        // positioned relative to this inset content area, i.e. X = 0 is already 2 cells in.
+        Padding.Thickness = new Thickness(2, 1, 2, 1);
 
-        var nameLabel = new Label { Text = "Name:", X = 1, Y = 1 };
-        _nameField = new TextField { X = 1, Y = 2, Width = Dim.Fill(1), Text = project.Name };
+        var nameLabel = new Label { Text = "Name:", X = 0, Y = 0 };
+        _nameField = new TextField { X = 0, Y = 1, Width = Dim.Fill(), Text = project.Name };
 
         // Restricted to Commodore hardware - see Cc65TargetExtensions.CommodoreTargets. If the
         // project's current target falls outside that list (e.g. set by hand-editing the .tproj,
         // or before this restriction existed), it's still shown here so Save doesn't silently
         // change it - it just won't appear in the dropdown's own options.
-        var targetLabel = new Label { Text = "Target (Commodore only):", X = 1, Y = 4 };
+        var targetLabel = new Label { Text = "Target (Commodore only):", X = 0, Y = 3 };
         _targetField = new DropDownList
         {
-            X = 1, Y = 5, Width = Dim.Fill(1),
+            X = 0, Y = 4, Width = Dim.Fill(),
             Source = new ListWrapper<string>(new ObservableCollection<string>(
                 Cc65TargetExtensions.CommodoreTargets.Select(t => t.ToCl65Id()))),
             Text = project.Target.ToCl65Id(),
         };
 
-        var outputLabel = new Label { Text = $"Output file (blank = {project.Name}{project.Target.DefaultOutputExtension()}):", X = 1, Y = 7 };
-        _outputFileField = new TextField { X = 1, Y = 8, Width = Dim.Fill(1), Text = project.OutputFile ?? string.Empty };
+        var outputLabel = new Label { Text = $"Output file (blank = {project.Name}{project.Target.DefaultOutputExtension()}):", X = 0, Y = 6 };
+        _outputFileField = new TextField { X = 0, Y = 7, Width = Dim.Fill(), Text = project.OutputFile ?? string.Empty };
 
-        var extraArgsLabel = new Label { Text = "Extra cl65 arguments:", X = 1, Y = 10 };
-        _extraArgumentsField = new TextField { X = 1, Y = 11, Width = Dim.Fill(1), Text = string.Join(' ', project.ExtraArguments) };
+        var extraArgsLabel = new Label { Text = "Extra cl65 arguments:", X = 0, Y = 9 };
+        _extraArgumentsField = new TextField { X = 0, Y = 10, Width = Dim.Fill(), Text = string.Join(' ', project.ExtraArguments) };
 
         var infoLabel = new Label
         {
             Text = $"{project.SourceFiles.Count} source file(s) in {project.Directory}",
-            X = 1, Y = 13, Width = Dim.Fill(1),
+            X = 0, Y = 12, Width = Dim.Fill(),
         };
 
-        var saveButton = new Button { Text = "_Save", IsDefault = true, X = Pos.Center() - 10, Y = 15 };
+        // The primary action: Accent-scheme so it visually pops against the dialog's normal
+        // chrome, the same accent color the app uses for the menu bar's own highlighted items.
+        var saveButton = new Button { Text = "_Save", IsDefault = true, SchemeName = "Accent", X = Pos.Center() - 13, Y = Pos.AnchorEnd(1), Width = 12 };
         saveButton.Accepting += (_, e) =>
         {
             if (!Cc65TargetExtensions.TryParse(_targetField.Text, out var target))
@@ -85,10 +92,15 @@ public sealed class ProjectSettingsDialog : Dialog
 
             Saved = true;
             Application.RequestStop(this);
+            e.Handled = true;
         };
 
-        var cancelButton = new Button { Text = "Cancel", X = Pos.Center() + 2, Y = 15 };
-        cancelButton.Accepting += (_, _) => Application.RequestStop(this);
+        var cancelButton = new Button { Text = "Cancel", X = Pos.Center() + 1, Y = Pos.AnchorEnd(1), Width = 12 };
+        cancelButton.Accepting += (_, e) =>
+        {
+            Application.RequestStop(this);
+            e.Handled = true;
+        };
 
         Add([nameLabel, _nameField, targetLabel, _targetField, outputLabel, _outputFileField,
             extraArgsLabel, _extraArgumentsField, infoLabel, saveButton, cancelButton]);

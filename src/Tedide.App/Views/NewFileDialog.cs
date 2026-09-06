@@ -1,4 +1,5 @@
 using Terminal.Gui.App;
+using Terminal.Gui.Drawing;
 using Terminal.Gui.ViewBase;
 using Terminal.Gui.Views;
 
@@ -20,24 +21,37 @@ public sealed class NewFileDialog : Dialog
     {
         Title = "New File";
         Width = 64;
-        Height = 9;
+        Height = 10;
+        // A real Padding adornment (rather than hand-offsetting every child's X/Y by 1) so the
+        // whole dialog gets consistent breathing room from its border - children below are
+        // positioned relative to this inset content area, i.e. X = 0 is already 2 cells in.
+        Padding.Thickness = new Thickness(2, 1, 2, 1);
 
-        var dirLabel = new Label { Text = $"In: {targetDirectory}", X = 1, Y = 1, Width = Dim.Fill(1) };
-        var nameLabel = new Label { Text = "File name:", X = 1, Y = 3 };
-        _nameField = new TextField { X = 1, Y = 4, Width = Dim.Fill(1), Text = "newfile.c" };
+        var dirLabel = new Label { Text = $"In: {targetDirectory}", X = 0, Y = 0, Width = Dim.Fill() };
+        var nameLabel = new Label { Text = "File name:", X = 0, Y = 2 };
+        _nameField = new TextField { X = 0, Y = 3, Width = Dim.Fill(), Text = "newfile.c" };
 
-        var createButton = new Button { Text = "_Create", IsDefault = true, X = Pos.Center() - 10, Y = 6 };
-        createButton.Accepting += (_, _) =>
+        // The primary action: Accent-scheme so it visually pops against the dialog's normal
+        // chrome, the same accent color the app uses for the menu bar's own highlighted items.
+        var createButton = new Button { Text = "_Create", IsDefault = true, SchemeName = "Accent", X = Pos.Center() - 13, Y = Pos.AnchorEnd(1), Width = 12 };
+        createButton.Accepting += (_, e) =>
         {
-            if (string.IsNullOrWhiteSpace(_nameField.Text))
-                return;
-
-            FileName = _nameField.Text.Trim();
-            Application.RequestStop(this);
+            if (!string.IsNullOrWhiteSpace(_nameField.Text))
+            {
+                FileName = _nameField.Text.Trim();
+                Application.RequestStop(this);
+            }
+            // Without this, the unhandled Accept command bubbles up and the Dialog's default
+            // handling closes it even on blank input - only a valid name should dismiss it.
+            e.Handled = true;
         };
 
-        var cancelButton = new Button { Text = "Cancel", X = Pos.Center() + 2, Y = 6 };
-        cancelButton.Accepting += (_, _) => Application.RequestStop(this);
+        var cancelButton = new Button { Text = "Cancel", X = Pos.Center() + 1, Y = Pos.AnchorEnd(1), Width = 12 };
+        cancelButton.Accepting += (_, e) =>
+        {
+            Application.RequestStop(this);
+            e.Handled = true;
+        };
 
         Add([dirLabel, nameLabel, _nameField, createButton, cancelButton]);
     }
