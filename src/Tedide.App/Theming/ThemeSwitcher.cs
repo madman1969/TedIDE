@@ -18,6 +18,10 @@ namespace Tedide.App.Theming;
 /// literal colors from its .xshd data for token foreground (keywords, strings, comments, etc.),
 /// not these schemes' Code* roles - so switching themes changes the editor's background and all
 /// surrounding chrome, but not individual syntax-token hues.
+///
+/// Every call to <see cref="Apply"/> persists the chosen theme via <see cref="ThemeSettings"/>, so
+/// the app can restore it on the next run (see Program.cs, which applies <see cref="ThemeSettings.Load"/>
+/// on startup instead of a hardcoded default).
 /// </summary>
 public static class ThemeSwitcher
 {
@@ -33,6 +37,12 @@ public static class ThemeSwitcher
             AppTheme.Vs2026Dark => Vs2026Dark(),
             AppTheme.Vs2026Light => Vs2026Light(),
             AppTheme.BorlandTurboC => BorlandTurboC(),
+            AppTheme.Monokai => Monokai(),
+            AppTheme.Dracula => Dracula(),
+            AppTheme.SolarizedDark => SolarizedDark(),
+            AppTheme.SolarizedLight => SolarizedLight(),
+            AppTheme.Commodore64 => Commodore64(),
+            AppTheme.AmberPhosphor => AmberPhosphor(),
             _ => throw new ArgumentOutOfRangeException(nameof(theme), theme, null),
         };
 
@@ -44,6 +54,7 @@ public static class ThemeSwitcher
 
         Current = theme;
         Application.LayoutAndDraw(true);
+        new ThemeSettings { Theme = theme }.Save();
         Changed?.Invoke();
     }
 
@@ -204,6 +215,253 @@ public static class ThemeSwitcher
             Menu: BuildScheme(chromeNormal, chromeFocus, chromeHot, chromeDisabled),
             Dialog: BuildScheme(chromeNormal, chromeFocus, chromeHot, chromeDisabled),
             Accent: BuildScheme(accentNormal, accentFocus, chromeHot, editorDisabled),
+            Error: BuildScheme(errorNormal, errorFocus, errorNormal, errorNormal));
+    }
+
+    /// <summary>The classic Sublime Text/TextMate dark theme, built from its well-known palette.</summary>
+    private static Palette Monokai()
+    {
+        Color editorBg = new(39, 40, 34);
+        Color editorFg = new(248, 248, 242);
+        Color selectionBg = new(73, 72, 62);
+        Color accent = new(249, 38, 114);
+        Color dimmed = new(117, 113, 94);
+
+        Color chromeBg = new(62, 61, 50);
+        Color chromeFg = editorFg;
+        Color chromeAccentBg = new(174, 129, 255);
+
+        Color dialogBg = editorBg;
+
+        Color errorBg = new(75, 20, 30);
+        Color errorFg = accent;
+
+        return new Palette(
+            Base: BuildScheme(
+                normal: new GuiAttribute(editorFg, editorBg),
+                focus: new GuiAttribute(Color.White, selectionBg),
+                hot: new GuiAttribute(accent, editorBg),
+                disabled: new GuiAttribute(dimmed, editorBg)),
+            Menu: BuildScheme(
+                normal: new GuiAttribute(chromeFg, chromeBg),
+                focus: new GuiAttribute(Color.White, chromeAccentBg),
+                hot: new GuiAttribute(accent, chromeBg),
+                disabled: new GuiAttribute(dimmed, chromeBg)),
+            Dialog: BuildScheme(
+                normal: new GuiAttribute(chromeFg, dialogBg),
+                focus: new GuiAttribute(Color.White, chromeAccentBg),
+                hot: new GuiAttribute(accent, dialogBg),
+                disabled: new GuiAttribute(dimmed, dialogBg)),
+            Accent: BuildScheme(
+                normal: new GuiAttribute(Color.White, chromeAccentBg),
+                focus: new GuiAttribute(Color.White, selectionBg),
+                hot: new GuiAttribute(Color.White, chromeAccentBg),
+                disabled: new GuiAttribute(dimmed, chromeAccentBg)),
+            Error: BuildScheme(
+                normal: new GuiAttribute(errorFg, errorBg),
+                focus: new GuiAttribute(Color.White, errorFg),
+                hot: new GuiAttribute(Color.White, errorBg),
+                disabled: new GuiAttribute(dimmed, errorBg)));
+    }
+
+    /// <summary>The Dracula theme (draculatheme.com) - a dark palette built around its signature purple.</summary>
+    private static Palette Dracula()
+    {
+        Color editorBg = new(40, 42, 54);
+        Color editorFg = new(248, 248, 242);
+        Color selectionBg = new(68, 71, 90);
+        Color accent = new(189, 147, 249);
+        Color dimmed = new(98, 114, 164);
+
+        Color chromeBg = new(33, 34, 44);
+        Color chromeFg = editorFg;
+        Color chromeAccentBg = accent;
+
+        Color dialogBg = editorBg;
+
+        Color errorBg = new(68, 20, 20);
+        Color errorFg = new(255, 85, 85);
+
+        return new Palette(
+            Base: BuildScheme(
+                normal: new GuiAttribute(editorFg, editorBg),
+                focus: new GuiAttribute(Color.White, selectionBg),
+                hot: new GuiAttribute(accent, editorBg),
+                disabled: new GuiAttribute(dimmed, editorBg)),
+            Menu: BuildScheme(
+                normal: new GuiAttribute(chromeFg, chromeBg),
+                focus: new GuiAttribute(editorBg, chromeAccentBg),
+                hot: new GuiAttribute(accent, chromeBg),
+                disabled: new GuiAttribute(dimmed, chromeBg)),
+            Dialog: BuildScheme(
+                normal: new GuiAttribute(chromeFg, dialogBg),
+                focus: new GuiAttribute(editorBg, chromeAccentBg),
+                hot: new GuiAttribute(accent, dialogBg),
+                disabled: new GuiAttribute(dimmed, dialogBg)),
+            Accent: BuildScheme(
+                normal: new GuiAttribute(editorBg, chromeAccentBg),
+                focus: new GuiAttribute(Color.White, selectionBg),
+                hot: new GuiAttribute(editorBg, chromeAccentBg),
+                disabled: new GuiAttribute(dimmed, chromeAccentBg)),
+            Error: BuildScheme(
+                normal: new GuiAttribute(errorFg, errorBg),
+                focus: new GuiAttribute(Color.White, errorFg),
+                hot: new GuiAttribute(Color.White, errorBg),
+                disabled: new GuiAttribute(dimmed, errorBg)));
+    }
+
+    /// <summary>Ethan Schoonover's Solarized (dark variant) - a low-contrast, accessibility-minded palette.</summary>
+    private static Palette SolarizedDark()
+    {
+        Color editorBg = new(0, 43, 54);
+        Color editorFg = new(131, 148, 150);
+        Color selectionBg = new(7, 54, 66);
+        Color accent = new(38, 139, 210);
+        Color dimmed = new(88, 110, 117);
+
+        Color chromeBg = selectionBg;
+        Color chromeFg = editorFg;
+        Color chromeAccentBg = accent;
+
+        Color dialogBg = editorBg;
+
+        Color errorBg = new(56, 15, 15);
+        Color errorFg = new(220, 50, 47);
+
+        return new Palette(
+            Base: BuildScheme(
+                normal: new GuiAttribute(editorFg, editorBg),
+                focus: new GuiAttribute(Color.White, chromeAccentBg),
+                hot: new GuiAttribute(accent, editorBg),
+                disabled: new GuiAttribute(dimmed, editorBg)),
+            Menu: BuildScheme(
+                normal: new GuiAttribute(chromeFg, chromeBg),
+                focus: new GuiAttribute(Color.White, chromeAccentBg),
+                hot: new GuiAttribute(accent, chromeBg),
+                disabled: new GuiAttribute(dimmed, chromeBg)),
+            Dialog: BuildScheme(
+                normal: new GuiAttribute(chromeFg, dialogBg),
+                focus: new GuiAttribute(Color.White, chromeAccentBg),
+                hot: new GuiAttribute(accent, dialogBg),
+                disabled: new GuiAttribute(dimmed, dialogBg)),
+            Accent: BuildScheme(
+                normal: new GuiAttribute(Color.White, chromeAccentBg),
+                focus: new GuiAttribute(Color.White, selectionBg),
+                hot: new GuiAttribute(Color.White, chromeAccentBg),
+                disabled: new GuiAttribute(dimmed, chromeAccentBg)),
+            Error: BuildScheme(
+                normal: new GuiAttribute(errorFg, errorBg),
+                focus: new GuiAttribute(Color.White, errorFg),
+                hot: new GuiAttribute(Color.White, errorBg),
+                disabled: new GuiAttribute(dimmed, errorBg)));
+    }
+
+    /// <summary>The light variant of Solarized, swapping its background/foreground tones.</summary>
+    private static Palette SolarizedLight()
+    {
+        Color editorBg = new(253, 246, 227);
+        Color editorFg = new(101, 123, 131);
+        Color selectionBg = new(238, 232, 213);
+        Color accent = new(38, 139, 210);
+        Color dimmed = new(147, 161, 161);
+
+        Color chromeBg = selectionBg;
+        Color chromeAccentBg = accent;
+
+        Color dialogBg = editorBg;
+
+        Color errorBg = new(250, 220, 218);
+        Color errorFg = new(220, 50, 47);
+
+        return new Palette(
+            Base: BuildScheme(
+                normal: new GuiAttribute(editorFg, editorBg),
+                focus: new GuiAttribute(Color.White, chromeAccentBg),
+                hot: new GuiAttribute(accent, editorBg),
+                disabled: new GuiAttribute(dimmed, editorBg)),
+            Menu: BuildScheme(
+                normal: new GuiAttribute(editorFg, chromeBg),
+                focus: new GuiAttribute(Color.White, chromeAccentBg),
+                hot: new GuiAttribute(accent, chromeBg),
+                disabled: new GuiAttribute(dimmed, chromeBg)),
+            Dialog: BuildScheme(
+                normal: new GuiAttribute(editorFg, dialogBg),
+                focus: new GuiAttribute(Color.White, chromeAccentBg),
+                hot: new GuiAttribute(accent, dialogBg),
+                disabled: new GuiAttribute(dimmed, dialogBg)),
+            Accent: BuildScheme(
+                normal: new GuiAttribute(Color.White, chromeAccentBg),
+                focus: new GuiAttribute(Color.Black, selectionBg),
+                hot: new GuiAttribute(Color.White, chromeAccentBg),
+                disabled: new GuiAttribute(dimmed, chromeAccentBg)),
+            Error: BuildScheme(
+                normal: new GuiAttribute(errorFg, errorBg),
+                focus: new GuiAttribute(Color.White, errorFg),
+                hot: new GuiAttribute(errorFg, errorBg),
+                disabled: new GuiAttribute(dimmed, errorBg)));
+    }
+
+    /// <summary>
+    /// The Commodore 64's default boot-screen look (Pepto palette) - blue background, light-blue
+    /// text - a fitting default for an IDE that targets 6502 machines including the C64 itself.
+    /// </summary>
+    private static Palette Commodore64()
+    {
+        var editorNormal = new GuiAttribute(new Color(108, 94, 181), new Color(53, 40, 121));
+        var editorFocus = new GuiAttribute(ColorName16.White, new Color(111, 61, 134));
+        var editorHot = new GuiAttribute(ColorName16.White, new Color(53, 40, 121));
+        var editorDisabled = new GuiAttribute(new Color(108, 108, 108), new Color(53, 40, 121));
+
+        var chromeNormal = new GuiAttribute(ColorName16.White, new Color(111, 61, 134));
+        var chromeFocus = new GuiAttribute(new Color(53, 40, 121), new Color(112, 164, 178));
+        var chromeHot = new GuiAttribute(new Color(184, 199, 111), new Color(111, 61, 134));
+        var chromeDisabled = new GuiAttribute(new Color(108, 108, 108), new Color(111, 61, 134));
+
+        var accentNormal = new GuiAttribute(new Color(53, 40, 121), new Color(112, 164, 178));
+        var accentFocus = new GuiAttribute(ColorName16.White, new Color(111, 61, 134));
+
+        var errorNormal = new GuiAttribute(ColorName16.White, new Color(104, 55, 43));
+        var errorFocus = new GuiAttribute(new Color(104, 55, 43), ColorName16.White);
+
+        return new Palette(
+            Base: BuildScheme(editorNormal, editorFocus, editorHot, editorDisabled),
+            Menu: BuildScheme(chromeNormal, chromeFocus, chromeHot, chromeDisabled),
+            Dialog: BuildScheme(chromeNormal, chromeFocus, chromeHot, chromeDisabled),
+            Accent: BuildScheme(accentNormal, accentFocus, chromeHot, editorDisabled),
+            Error: BuildScheme(errorNormal, errorFocus, errorNormal, errorNormal));
+    }
+
+    /// <summary>
+    /// A monochrome amber-phosphor terminal look, evoking early CRT terminals of the 6502 era.
+    /// </summary>
+    private static Palette AmberPhosphor()
+    {
+        Color background = Color.Black;
+        Color amber = new(255, 176, 0);
+        Color brightAmber = new(255, 210, 90);
+        Color dimAmber = new(140, 95, 0);
+        Color selectionBg = new(80, 55, 0);
+
+        var editorNormal = new GuiAttribute(amber, background);
+        var editorFocus = new GuiAttribute(brightAmber, selectionBg);
+        var editorHot = new GuiAttribute(brightAmber, background);
+        var editorDisabled = new GuiAttribute(dimAmber, background);
+
+        var chromeNormal = new GuiAttribute(amber, background);
+        var chromeFocus = new GuiAttribute(background, amber);
+        var chromeHot = new GuiAttribute(brightAmber, background);
+        var chromeDisabled = new GuiAttribute(dimAmber, background);
+
+        var accentNormal = new GuiAttribute(background, amber);
+
+        var errorNormal = new GuiAttribute(Color.Black, new Color(200, 60, 30));
+        var errorFocus = new GuiAttribute(new Color(200, 60, 30), Color.White);
+
+        return new Palette(
+            Base: BuildScheme(editorNormal, editorFocus, editorHot, editorDisabled),
+            Menu: BuildScheme(chromeNormal, chromeFocus, chromeHot, chromeDisabled),
+            Dialog: BuildScheme(chromeNormal, chromeFocus, chromeHot, chromeDisabled),
+            Accent: BuildScheme(accentNormal, chromeFocus, chromeHot, editorDisabled),
             Error: BuildScheme(errorNormal, errorFocus, errorNormal, errorNormal));
     }
 }

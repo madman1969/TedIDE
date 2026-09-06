@@ -31,6 +31,10 @@ public sealed class EditorPane : View
     {
         Width = Dim.Fill();
         Height = Dim.Fill();
+        // A View's SuperView chain must all have CanFocus = true for SetFocus() to reach a
+        // descendant (see Terminal.Gui's View.CanFocus docs) - without this, Editor.SetFocus()
+        // in Open() below silently fails since this plain View defaults to CanFocus = false.
+        CanFocus = true;
 
         Editor = new Editor
         {
@@ -39,6 +43,9 @@ public sealed class EditorPane : View
             GutterOptions = GutterOptions.LineNumbers,
             ReadOnly = true, // no file open yet
             Document = new TextDocument(string.Empty),
+            // HasScrollBars uses ScrollBarVisibilityMode.Auto - scrollbars only appear once the
+            // document overflows the viewport, rather than being permanently shown.
+            ViewportSettings = ViewportSettingsFlags.HasScrollBars,
         };
 
         Add(Editor);

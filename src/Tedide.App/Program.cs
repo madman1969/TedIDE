@@ -5,7 +5,7 @@ using Tedide.App.Theming;
 Application.Init();
 try
 {
-    ThemeSwitcher.Apply(ThemeSwitcher.Current);
+    ThemeSwitcher.Apply(ThemeSettings.Load().Theme);
     var shell = new AppShell();
     Application.Run(shell);
 }

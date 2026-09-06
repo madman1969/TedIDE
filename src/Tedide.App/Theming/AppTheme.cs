@@ -6,6 +6,12 @@ public enum AppTheme
     Vs2026Dark,
     Vs2026Light,
     BorlandTurboC,
+    Monokai,
+    Dracula,
+    SolarizedDark,
+    SolarizedLight,
+    Commodore64,
+    AmberPhosphor,
 }
 
 public static class AppThemeExtensions
@@ -15,6 +21,12 @@ public static class AppThemeExtensions
         AppTheme.Vs2026Dark => "VS2026 Dark",
         AppTheme.Vs2026Light => "VS2026 Light",
         AppTheme.BorlandTurboC => "Borland Turbo C",
+        AppTheme.Monokai => "Monokai",
+        AppTheme.Dracula => "Dracula",
+        AppTheme.SolarizedDark => "Solarized Dark",
+        AppTheme.SolarizedLight => "Solarized Light",
+        AppTheme.Commodore64 => "Commodore 64",
+        AppTheme.AmberPhosphor => "Amber Phosphor",
         _ => theme.ToString(),
     };
 }
