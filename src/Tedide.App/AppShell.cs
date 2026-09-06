@@ -59,7 +59,10 @@ public sealed class AppShell : Window
             Title = "Solution Explorer",
             X = 0,
             Y = Pos.Bottom(_menuBar),
-            Width = Dim.Percent(25),
+            // Fills whatever _editorFrame's current width (initially 75%, then whatever the user
+            // drags it to below) doesn't use, so the two panes always exactly share the row
+            // between them, with _editorFrame's own left border acting as the draggable divider.
+            Width = Dim.Fill(Dim.Func(_ => _editorFrame!.Frame.Width)),
             Height = Dim.Percent(70),
         };
         _solutionExplorer.Width = Dim.Fill();
@@ -74,8 +77,14 @@ public sealed class AppShell : Window
             Title = NoFileOpenTitle,
             X = Pos.Right(explorerFrame),
             Y = Pos.Bottom(_menuBar),
-            Width = Dim.Fill(),
+            Width = Dim.Percent(75),
             Height = Dim.Percent(70),
+            // Makes this frame's left border a draggable splitter between it and the Solution
+            // Explorer - explorerFrame's Width (above) tracks this frame's Frame.Width live, so
+            // dragging the border resizes both panes together. CanFocus is required for the
+            // border-drag mouse interaction to register.
+            Arrangement = ViewArrangement.LeftResizable,
+            CanFocus = true,
         };
         _editorFrame.Add(_editorPane);
 
