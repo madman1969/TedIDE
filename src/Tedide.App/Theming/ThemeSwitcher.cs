@@ -6,9 +6,9 @@ using GuiAttribute = Terminal.Gui.Drawing.Attribute;
 namespace Tedide.App.Theming;
 
 /// <summary>
-/// Builds and registers the five named <see cref="Scheme"/> slots Terminal.Gui resolves views
-/// against ("Base" for general content, "Menu" for the menu/status bars, "Dialog", "Accent" and
-/// "Error"), and switches between them at runtime.
+/// Builds and registers the six named <see cref="Scheme"/> slots Terminal.Gui resolves views
+/// against ("Base" for general content, "Menu" for the menu/status bars, "Dialog", "Accent",
+/// "Error" and "Warning"), and switches between them at runtime.
 ///
 /// Views resolve their effective scheme by name from <see cref="SchemeManager"/> at draw time
 /// (not once at construction), so overwriting these five entries and forcing a redraw restyles
@@ -51,6 +51,7 @@ public static class ThemeSwitcher
         SchemeManager.AddScheme("Dialog", palette.Dialog);
         SchemeManager.AddScheme("Accent", palette.Accent);
         SchemeManager.AddScheme("Error", palette.Error);
+        SchemeManager.AddScheme("Warning", palette.Warning);
 
         Current = theme;
         Application.LayoutAndDraw(true);
@@ -58,7 +59,7 @@ public static class ThemeSwitcher
         Changed?.Invoke();
     }
 
-    private readonly record struct Palette(Scheme Base, Scheme Menu, Scheme Dialog, Scheme Accent, Scheme Error);
+    private readonly record struct Palette(Scheme Base, Scheme Menu, Scheme Dialog, Scheme Accent, Scheme Error, Scheme Warning);
 
     /// <summary>
     /// Builds a full Scheme from just the handful of colors that actually vary between slots:
@@ -115,6 +116,9 @@ public static class ThemeSwitcher
         Color errorBg = new(80, 20, 20);
         Color errorFg = new(244, 71, 71);
 
+        Color warningBg = new(80, 66, 20);
+        Color warningFg = new(255, 204, 84);
+
         return new Palette(
             Base: BuildScheme(
                 normal: new GuiAttribute(editorFg, editorBg),
@@ -140,7 +144,12 @@ public static class ThemeSwitcher
                 normal: new GuiAttribute(errorFg, errorBg),
                 focus: new GuiAttribute(Color.White, errorFg),
                 hot: new GuiAttribute(Color.White, errorBg),
-                disabled: new GuiAttribute(dimmed, errorBg)));
+                disabled: new GuiAttribute(dimmed, errorBg)),
+            Warning: BuildScheme(
+                normal: new GuiAttribute(warningFg, warningBg),
+                focus: new GuiAttribute(Color.Black, warningFg),
+                hot: new GuiAttribute(Color.White, warningBg),
+                disabled: new GuiAttribute(dimmed, warningBg)));
     }
 
     private static Palette Vs2026Light()
@@ -158,6 +167,9 @@ public static class ThemeSwitcher
 
         Color errorBg = new(253, 231, 233);
         Color errorFg = new(196, 25, 37);
+
+        Color warningBg = new(255, 244, 206);
+        Color warningFg = new(156, 110, 3);
 
         return new Palette(
             Base: BuildScheme(
@@ -184,7 +196,12 @@ public static class ThemeSwitcher
                 normal: new GuiAttribute(errorFg, errorBg),
                 focus: new GuiAttribute(Color.White, errorFg),
                 hot: new GuiAttribute(errorFg, errorBg),
-                disabled: new GuiAttribute(dimmed, errorBg)));
+                disabled: new GuiAttribute(dimmed, errorBg)),
+            Warning: BuildScheme(
+                normal: new GuiAttribute(warningFg, warningBg),
+                focus: new GuiAttribute(Color.White, warningFg),
+                hot: new GuiAttribute(warningFg, warningBg),
+                disabled: new GuiAttribute(dimmed, warningBg)));
     }
 
     /// <summary>
@@ -210,12 +227,16 @@ public static class ThemeSwitcher
         var errorNormal = new GuiAttribute(ColorName16.White, ColorName16.Red);
         var errorFocus = new GuiAttribute(ColorName16.Red, ColorName16.White);
 
+        var warningNormal = new GuiAttribute(ColorName16.Black, ColorName16.BrightYellow);
+        var warningFocus = new GuiAttribute(ColorName16.BrightYellow, ColorName16.Black);
+
         return new Palette(
             Base: BuildScheme(editorNormal, editorFocus, editorHot, editorDisabled),
             Menu: BuildScheme(chromeNormal, chromeFocus, chromeHot, chromeDisabled),
             Dialog: BuildScheme(chromeNormal, chromeFocus, chromeHot, chromeDisabled),
             Accent: BuildScheme(accentNormal, accentFocus, chromeHot, editorDisabled),
-            Error: BuildScheme(errorNormal, errorFocus, errorNormal, errorNormal));
+            Error: BuildScheme(errorNormal, errorFocus, errorNormal, errorNormal),
+            Warning: BuildScheme(warningNormal, warningFocus, warningNormal, warningNormal));
     }
 
     /// <summary>The classic Sublime Text/TextMate dark theme, built from its well-known palette.</summary>
@@ -235,6 +256,9 @@ public static class ThemeSwitcher
 
         Color errorBg = new(75, 20, 30);
         Color errorFg = accent;
+
+        Color warningBg = new(70, 62, 20);
+        Color warningFg = new(230, 219, 116);
 
         return new Palette(
             Base: BuildScheme(
@@ -261,7 +285,12 @@ public static class ThemeSwitcher
                 normal: new GuiAttribute(errorFg, errorBg),
                 focus: new GuiAttribute(Color.White, errorFg),
                 hot: new GuiAttribute(Color.White, errorBg),
-                disabled: new GuiAttribute(dimmed, errorBg)));
+                disabled: new GuiAttribute(dimmed, errorBg)),
+            Warning: BuildScheme(
+                normal: new GuiAttribute(warningFg, warningBg),
+                focus: new GuiAttribute(Color.White, warningFg),
+                hot: new GuiAttribute(Color.White, warningBg),
+                disabled: new GuiAttribute(dimmed, warningBg)));
     }
 
     /// <summary>The Dracula theme (draculatheme.com) - a dark palette built around its signature purple.</summary>
@@ -281,6 +310,9 @@ public static class ThemeSwitcher
 
         Color errorBg = new(68, 20, 20);
         Color errorFg = new(255, 85, 85);
+
+        Color warningBg = new(64, 58, 20);
+        Color warningFg = new(241, 250, 140);
 
         return new Palette(
             Base: BuildScheme(
@@ -307,7 +339,12 @@ public static class ThemeSwitcher
                 normal: new GuiAttribute(errorFg, errorBg),
                 focus: new GuiAttribute(Color.White, errorFg),
                 hot: new GuiAttribute(Color.White, errorBg),
-                disabled: new GuiAttribute(dimmed, errorBg)));
+                disabled: new GuiAttribute(dimmed, errorBg)),
+            Warning: BuildScheme(
+                normal: new GuiAttribute(warningFg, warningBg),
+                focus: new GuiAttribute(editorBg, warningFg),
+                hot: new GuiAttribute(Color.White, warningBg),
+                disabled: new GuiAttribute(dimmed, warningBg)));
     }
 
     /// <summary>Ethan Schoonover's Solarized (dark variant) - a low-contrast, accessibility-minded palette.</summary>
@@ -327,6 +364,9 @@ public static class ThemeSwitcher
 
         Color errorBg = new(56, 15, 15);
         Color errorFg = new(220, 50, 47);
+
+        Color warningBg = new(48, 40, 10);
+        Color warningFg = new(203, 161, 45);
 
         return new Palette(
             Base: BuildScheme(
@@ -353,7 +393,12 @@ public static class ThemeSwitcher
                 normal: new GuiAttribute(errorFg, errorBg),
                 focus: new GuiAttribute(Color.White, errorFg),
                 hot: new GuiAttribute(Color.White, errorBg),
-                disabled: new GuiAttribute(dimmed, errorBg)));
+                disabled: new GuiAttribute(dimmed, errorBg)),
+            Warning: BuildScheme(
+                normal: new GuiAttribute(warningFg, warningBg),
+                focus: new GuiAttribute(Color.White, warningFg),
+                hot: new GuiAttribute(Color.White, warningBg),
+                disabled: new GuiAttribute(dimmed, warningBg)));
     }
 
     /// <summary>The light variant of Solarized, swapping its background/foreground tones.</summary>
@@ -372,6 +417,9 @@ public static class ThemeSwitcher
 
         Color errorBg = new(250, 220, 218);
         Color errorFg = new(220, 50, 47);
+
+        Color warningBg = new(250, 240, 200);
+        Color warningFg = new(150, 116, 8);
 
         return new Palette(
             Base: BuildScheme(
@@ -398,7 +446,12 @@ public static class ThemeSwitcher
                 normal: new GuiAttribute(errorFg, errorBg),
                 focus: new GuiAttribute(Color.White, errorFg),
                 hot: new GuiAttribute(errorFg, errorBg),
-                disabled: new GuiAttribute(dimmed, errorBg)));
+                disabled: new GuiAttribute(dimmed, errorBg)),
+            Warning: BuildScheme(
+                normal: new GuiAttribute(warningFg, warningBg),
+                focus: new GuiAttribute(Color.White, warningFg),
+                hot: new GuiAttribute(warningFg, warningBg),
+                disabled: new GuiAttribute(dimmed, warningBg)));
     }
 
     /// <summary>
@@ -423,12 +476,16 @@ public static class ThemeSwitcher
         var errorNormal = new GuiAttribute(ColorName16.White, new Color(104, 55, 43));
         var errorFocus = new GuiAttribute(new Color(104, 55, 43), ColorName16.White);
 
+        var warningNormal = new GuiAttribute(new Color(53, 40, 121), new Color(184, 199, 111));
+        var warningFocus = new GuiAttribute(new Color(184, 199, 111), new Color(53, 40, 121));
+
         return new Palette(
             Base: BuildScheme(editorNormal, editorFocus, editorHot, editorDisabled),
             Menu: BuildScheme(chromeNormal, chromeFocus, chromeHot, chromeDisabled),
             Dialog: BuildScheme(chromeNormal, chromeFocus, chromeHot, chromeDisabled),
             Accent: BuildScheme(accentNormal, accentFocus, chromeHot, editorDisabled),
-            Error: BuildScheme(errorNormal, errorFocus, errorNormal, errorNormal));
+            Error: BuildScheme(errorNormal, errorFocus, errorNormal, errorNormal),
+            Warning: BuildScheme(warningNormal, warningFocus, warningNormal, warningNormal));
     }
 
     /// <summary>
@@ -457,11 +514,18 @@ public static class ThemeSwitcher
         var errorNormal = new GuiAttribute(Color.Black, new Color(200, 60, 30));
         var errorFocus = new GuiAttribute(new Color(200, 60, 30), Color.White);
 
+        // Amber-on-black is already the theme's whole palette, so a warning needs to invert
+        // (black-on-bright-amber) to read as distinct from both normal text and the red error
+        // scheme, rather than trying to find a second hue within a deliberately monochrome theme.
+        var warningNormal = new GuiAttribute(Color.Black, brightAmber);
+        var warningFocus = new GuiAttribute(brightAmber, Color.Black);
+
         return new Palette(
             Base: BuildScheme(editorNormal, editorFocus, editorHot, editorDisabled),
             Menu: BuildScheme(chromeNormal, chromeFocus, chromeHot, chromeDisabled),
             Dialog: BuildScheme(chromeNormal, chromeFocus, chromeHot, chromeDisabled),
             Accent: BuildScheme(accentNormal, chromeFocus, chromeHot, editorDisabled),
-            Error: BuildScheme(errorNormal, errorFocus, errorNormal, errorNormal));
+            Error: BuildScheme(errorNormal, errorFocus, errorNormal, errorNormal),
+            Warning: BuildScheme(warningNormal, warningFocus, warningNormal, warningNormal));
     }
 }

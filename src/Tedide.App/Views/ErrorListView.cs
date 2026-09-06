@@ -1,6 +1,7 @@
 using System.Data;
 using Tedide.Build;
 using Tedide.Core;
+using Terminal.Gui.Configuration;
 using Terminal.Gui.ViewBase;
 using Terminal.Gui.Views;
 
@@ -27,6 +28,18 @@ public sealed class ErrorListView : TableView
         // Auto-shown (only appears once the diagnostics list overflows the viewport) - same as
         // the Results list in FindInFilesDialog, the Output pane, and EditorPane's editor.
         ViewportSettings = ViewportSettingsFlags.HasScrollBars;
+        // Colors the whole row by severity (matching AppendOutputLine's per-line coloring in the
+        // Output tab) - set once here rather than per SetDiagnostics call, since Style is a
+        // separate object from Table and survives Table being reassigned; the getter reads
+        // _diagnostics fresh at draw time regardless of which SetDiagnostics call populated it.
+        Style.RowColorGetter = args => args.RowIndex >= 0 && args.RowIndex < _diagnostics.Count
+            ? _diagnostics[args.RowIndex].Severity switch
+            {
+                DiagnosticSeverity.Error => SchemeManager.GetScheme("Error"),
+                DiagnosticSeverity.Warning => SchemeManager.GetScheme("Warning"),
+                _ => null,
+            }
+            : null;
         SetDiagnostics([]);
         Accepted += (_, _) => AcceptSelection();
     }

@@ -37,12 +37,7 @@ public sealed class AppShell : Window
     private readonly SolutionExplorerTree _solutionExplorer = new();
     private readonly EditorPane _editorPane = new();
     private readonly FrameView _editorFrame;
-    private readonly TextView _outputView = new()
-    {
-        ReadOnly = true,
-        // Auto-shown (only appears once output overflows the viewport) - same as EditorPane's editor.
-        ViewportSettings = ViewportSettingsFlags.HasScrollBars,
-    };
+    private readonly OutputView _outputView = new();
     private readonly ErrorListView _errorListView = new();
     private readonly EditorMenuBar _menuBar;
     private readonly EditorStatusBar _statusBar;
@@ -655,7 +650,7 @@ public sealed class AppShell : Window
         }
 
         SaveAll();
-        _outputView.Text = string.Empty;
+        _outputView.Clear();
         _errorListView.SetDiagnostics([]);
         AppendOutputLine($"------ Build started: {project.Name} ({project.Target.ToCl65Id()}) ------");
 
@@ -748,9 +743,5 @@ public sealed class AppShell : Window
             _solutionExplorer.Rebuild(_workspace);
     }
 
-    private void AppendOutputLine(string line)
-    {
-        _outputView.Text += line + "\n";
-        _outputView.MoveEnd();
-    }
+    private void AppendOutputLine(string line) => _outputView.AppendLine(line);
 }
