@@ -1,0 +1,16 @@
+{
+  "Name": "HelloC64",
+  "Target": "C64",
+  "SourceFiles": [
+    "src/main.c",
+    "src/screen.c",
+    "src/animation.c",
+    "src/input.c",
+    "src/delay.c"
+  ],
+  "OutputFile": "bin/HelloC64.prg",
+  "ExtraArguments": [
+    "-I",
+    "include"
+  ]
+}

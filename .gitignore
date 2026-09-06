@@ -1,0 +1,13 @@
+bin/
+obj/
+/publish/
+*.user
+.vs/
+.idea/
+*.prg
+*.bin
+*.nes
+*.xex
+*.lnx
+*.cvt
+*.o
