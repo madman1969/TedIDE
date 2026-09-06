@@ -1,6 +1,7 @@
 {
   "Name": "HelloC64",
-  "Target": "Vic20",
+  "Target": "C128",
+  "OptimizationLevel": "Maximum",
   "SourceFiles": [
     "src/main.c",
     "src/screen.c",
