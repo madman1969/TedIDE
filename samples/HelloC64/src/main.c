@@ -7,6 +7,8 @@
  *   animation.c/.h  - the bouncing character's state machine
  *   input.c/.h      - non-blocking keyboard polling
  *   delay.c/.h      - a crude busy-wait between animation steps
+ *   border.s/.h     - a hand-written ca65 routine, called from animation.c,
+ *                     showing a .s module alongside the C ones
  */
 #include "screen.h"
 #include "animation.h"

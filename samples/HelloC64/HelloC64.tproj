@@ -6,7 +6,8 @@
     "src/screen.c",
     "src/animation.c",
     "src/input.c",
-    "src/delay.c"
+    "src/delay.c",
+    "src/border.s"
   ],
   "OutputFile": "bin/HelloC64.prg",
   "ExtraArguments": [

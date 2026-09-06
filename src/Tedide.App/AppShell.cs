@@ -235,6 +235,7 @@ public sealed class AppShell : Window
         {
             _editorPane.Close();
             _editorFrame.Title = NoFileOpenTitle;
+            UpdateLanguageIndicator();
         }
 
         File.Delete(path);
@@ -264,6 +265,7 @@ public sealed class AppShell : Window
 
         _editorPane.Open(path);
         _editorFrame.Title = Path.GetFileName(path);
+        UpdateLanguageIndicator();
     }
 
     private void CloseActiveFile()
@@ -273,6 +275,29 @@ public sealed class AppShell : Window
 
         _editorPane.Close();
         _editorFrame.Title = NoFileOpenTitle;
+        UpdateLanguageIndicator();
+    }
+
+    /// <summary>
+    /// Sets the status bar's language indicator (normally frozen at "Plain Text" - see
+    /// <see cref="EditorStatusBar.UpdateLanguageShortcut"/>, which is only ever called once, at
+    /// construction) to identify C source vs. header files specifically, since cc65's bundled
+    /// syntax highlighter uses one generic "C++" definition for both and so can't tell them apart
+    /// via <see cref="Editor.HighlightingDefinition"/> alone. Any other open file type (including
+    /// .s/.asm, via <see cref="Highlighting.Cc65AssemblyHighlighting"/>) falls back to its own
+    /// highlighter's name, same as the library's default behavior.
+    /// </summary>
+    private void UpdateLanguageIndicator()
+    {
+        _statusBar.LanguageShortcut.Title = _editorPane.OpenPath is { } path
+            ? Path.GetExtension(path).ToLowerInvariant() switch
+            {
+                ".c" => "C Source File",
+                ".h" => "C Header File",
+                _ => _editorPane.Editor.HighlightingDefinition?.Name ?? "Plain Text",
+            }
+            : "Plain Text";
+        _statusBar.LanguageShortcut.SetNeedsDraw();
     }
 
     /// <summary>

@@ -2,6 +2,7 @@
 #include "animation.h"
 #include "screen.h"
 #include "delay.h"
+#include "border.h"
 
 #define ROW      12
 #define MIN_COL  0
@@ -29,4 +30,5 @@ void animation_step(void)
 
     screen_put_char(pos, ROW, '*', color);
     delay_short();
+    border_flash();
 }
