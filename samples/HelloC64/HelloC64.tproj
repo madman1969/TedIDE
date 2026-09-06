@@ -1,6 +1,6 @@
 {
   "Name": "HelloC64",
-  "Target": "C64",
+  "Target": "Vic20",
   "SourceFiles": [
     "src/main.c",
     "src/screen.c",

@@ -26,11 +26,17 @@ public sealed class AppShell : Window
 {
     private readonly Workspace _workspace = new();
     private readonly Cc65Toolchain _toolchain = new();
+    private readonly ViceEmulator _vice = new();
 
     private readonly SolutionExplorerTree _solutionExplorer = new();
     private readonly EditorPane _editorPane = new();
     private readonly FrameView _editorFrame;
-    private readonly TextView _outputView = new() { ReadOnly = true };
+    private readonly TextView _outputView = new()
+    {
+        ReadOnly = true,
+        // Auto-shown (only appears once output overflows the viewport) - same as EditorPane's editor.
+        ViewportSettings = ViewportSettingsFlags.HasScrollBars,
+    };
     private readonly EditorMenuBar _menuBar;
     private readonly EditorStatusBar _statusBar;
 
@@ -102,6 +108,7 @@ public sealed class AppShell : Window
         {
             new("_Build Project", "", () => _ = BuildActiveProjectAsync(), Key.F5),
             new("_Clean Project", "", CleanActiveProject, Key.Empty),
+            new("_Run Project", "", () => _ = RunActiveProjectAsync(), Key.F6),
         });
 
         var projectMenu = new MenuBarItem("_Project", new List<MenuItem>
@@ -377,13 +384,14 @@ public sealed class AppShell : Window
         _workspace.SaveAll();
     }
 
-    private async Task BuildActiveProjectAsync()
+    /// <summary>Builds the active project. Returns null (having already reported it) if none is loaded.</summary>
+    private async Task<BuildResult?> BuildActiveProjectAsync()
     {
         var project = _workspace.ActiveProject;
         if (project is null)
         {
             AppendOutputLine("No project loaded. Use File > Open Project or File > New Project first.");
-            return;
+            return null;
         }
 
         SaveAll();
@@ -396,6 +404,33 @@ public sealed class AppShell : Window
         AppendOutputLine(result.Succeeded
             ? $"------ Build succeeded in {result.Duration.TotalSeconds:0.0}s ------"
             : $"------ Build FAILED ({result.Errors.Count()} error(s)) in {result.Duration.TotalSeconds:0.0}s ------");
+
+        return result;
+    }
+
+    /// <summary>Builds the active project, then launches it in the VICE emulator matching its target if the build succeeded.</summary>
+    private async Task RunActiveProjectAsync()
+    {
+        var result = await BuildActiveProjectAsync();
+        if (result is null)
+            return;
+
+        if (!result.Succeeded)
+        {
+            AppendOutputLine("Not launching emulator - build failed.");
+            return;
+        }
+
+        var project = _workspace.ActiveProject!;
+        try
+        {
+            _vice.Launch(project, onOutputLine: line => Application.Invoke(() => AppendOutputLine(line)));
+            AppendOutputLine($"------ Launched {ViceEmulator.ExecutableNameFor(project.Target)} ------");
+        }
+        catch (Exception ex) when (ex is NotSupportedException or FileNotFoundException or InvalidOperationException)
+        {
+            AppendOutputLine($"Could not launch emulator: {ex.Message}");
+        }
     }
 
     /// <summary>Deletes the active project's build artifacts (object files and the linked output binary) without rebuilding.</summary>
