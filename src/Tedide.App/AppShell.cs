@@ -42,6 +42,7 @@ public sealed class AppShell : Window
         // Auto-shown (only appears once output overflows the viewport) - same as EditorPane's editor.
         ViewportSettings = ViewportSettingsFlags.HasScrollBars,
     };
+    private readonly ErrorListView _errorListView = new();
     private readonly EditorMenuBar _menuBar;
     private readonly EditorStatusBar _statusBar;
 
@@ -88,19 +89,28 @@ public sealed class AppShell : Window
         };
         _editorFrame.Add(_editorPane);
 
-        var outputFrame = new FrameView
+        var outputTabs = new Tabs
         {
-            Title = "Output",
             X = 0,
             Y = Pos.Bottom(_editorFrame),
             Width = Dim.Fill(),
             Height = Dim.Fill(1),
         };
+        var outputTab = new View { Title = "_Output", Width = Dim.Fill(), Height = Dim.Fill() };
         _outputView.Width = Dim.Fill();
         _outputView.Height = Dim.Fill();
-        outputFrame.Add(_outputView);
+        outputTab.Add(_outputView);
 
-        Add([_menuBar, explorerFrame, _editorFrame, outputFrame, _statusBar]);
+        var errorListTab = new View { Title = "_Error List", Width = Dim.Fill(), Height = Dim.Fill() };
+        _errorListView.Width = Dim.Fill();
+        _errorListView.Height = Dim.Fill();
+        _errorListView.DiagnosticActivated += OpenDiagnostic;
+        errorListTab.Add(_errorListView);
+
+        outputTabs.Add(outputTab);
+        outputTabs.Add(errorListTab);
+
+        Add([_menuBar, explorerFrame, _editorFrame, outputTabs, _statusBar]);
     }
 
     private const string NoFileOpenTitle = "(no file open)";
@@ -389,6 +399,43 @@ public sealed class AppShell : Window
         _editorPane.Editor.SetFocus();
     }
 
+    /// <summary>
+    /// Opens a build diagnostic's file (unless it's already the open file) and highlights its
+    /// line by selecting the whole line's text, scrolling it into view - the diagnostic has no
+    /// column, unlike a Find in Files <see cref="FindInFilesDialog.Match"/>, so there's nothing
+    /// more specific to place the caret at.
+    /// </summary>
+    private void OpenDiagnostic(BuildDiagnostic diagnostic)
+    {
+        var project = _workspace.ActiveProject;
+        if (project is null)
+            return;
+
+        var filePath = Path.IsPathRooted(diagnostic.FilePath)
+            ? diagnostic.FilePath
+            : Path.Combine(project.Directory, diagnostic.FilePath);
+        if (!File.Exists(filePath))
+            return;
+
+        if (!string.Equals(_editorPane.OpenPath, filePath, StringComparison.OrdinalIgnoreCase))
+        {
+            OpenFile(filePath);
+            if (!string.Equals(_editorPane.OpenPath, filePath, StringComparison.OrdinalIgnoreCase))
+                return; // User cancelled replacing the currently open (modified) file.
+        }
+
+        var document = _editorPane.Editor.Document;
+        if (document is null || diagnostic.Line < 1 || diagnostic.Line > document.LineCount)
+            return;
+
+        var line = document.GetLineByNumber(diagnostic.Line);
+        // SelectRange's second argument is a length, not an end offset - passing EndOffset here
+        // (Offset + Length) previously selected roughly twice as far as intended, spilling into
+        // one or more following lines instead of highlighting just this one.
+        _editorPane.Editor.SelectRange(line.Offset, line.Length);
+        _editorPane.Editor.SetFocus();
+    }
+
     private void CloseActiveFile()
     {
         if (_editorPane.OpenPath is null || !ConfirmReplaceCurrentFile())
@@ -485,11 +532,13 @@ public sealed class AppShell : Window
 
         SaveAll();
         _outputView.Text = string.Empty;
+        _errorListView.SetDiagnostics([]);
         AppendOutputLine($"------ Build started: {project.Name} ({project.Target.ToCl65Id()}) ------");
 
         var result = await _toolchain.BuildAsync(project, onOutputLine: line =>
             Application.Invoke(() => AppendOutputLine(line)));
 
+        _errorListView.SetDiagnostics(result.Diagnostics);
         AppendOutputLine(result.Succeeded
             ? $"------ Build succeeded in {result.Duration.TotalSeconds:0.0}s ------"
             : $"------ Build FAILED ({result.Errors.Count()} error(s)) in {result.Duration.TotalSeconds:0.0}s ------");
