@@ -115,6 +115,7 @@ public sealed class AppShell : Window
             new("_New Project...", "", NewProject, Key.N.WithCtrl),
             new("_Open Project...", "", OpenProject, Key.O.WithCtrl),
             _recentProjectsMenuItem,
+            new("Close Sol_ution", "", CloseSolution, Key.Empty),
             new("_Save", "", SaveAll, Key.S.WithCtrl),
             new("_Close File", "", CloseActiveFile, Key.W.WithCtrl),
             new("_Quit", "", () => Application.RequestStop(this), Key.Q.WithCtrl),
@@ -397,6 +398,28 @@ public sealed class AppShell : Window
         _editorPane.Close();
         _editorFrame.Title = NoFileOpenTitle;
         UpdateLanguageIndicator();
+    }
+
+    /// <summary>
+    /// Closes the currently loaded solution/project(s) - clearing the Solution Explorer and
+    /// closing the open file first (prompting to save it if modified, same as
+    /// <see cref="CloseActiveFile"/>). Does nothing if nothing is loaded. Files already saved to
+    /// disk are untouched; this only clears the in-memory session, same as <see cref="Workspace.Close"/>.
+    /// </summary>
+    private void CloseSolution()
+    {
+        if (_workspace.Projects.Count == 0)
+            return;
+
+        if (!ConfirmReplaceCurrentFile())
+            return;
+
+        _editorPane.Close();
+        _editorFrame.Title = NoFileOpenTitle;
+        UpdateLanguageIndicator();
+
+        _workspace.Close();
+        _solutionExplorer.Rebuild(_workspace);
     }
 
     /// <summary>

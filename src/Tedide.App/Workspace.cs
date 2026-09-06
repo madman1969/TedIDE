@@ -67,6 +67,14 @@ public sealed class Workspace
             project.Save();
     }
 
+    /// <summary>Discards the currently loaded solution/project(s) from this session. Files already saved to disk are untouched.</summary>
+    public void Close()
+    {
+        Solution = null;
+        Projects.Clear();
+        Changed?.Invoke();
+    }
+
     private const string SampleMainC = """
         #include <stdio.h>
         #include <conio.h>
