@@ -28,6 +28,7 @@ public sealed class AppShell : Window
     private readonly Cc65Toolchain _toolchain = new();
     private readonly ViceEmulator _vice = new();
     private readonly RecentProjectsSettings _recentProjects = RecentProjectsSettings.Load();
+    private readonly LayoutSettings _layoutSettings = LayoutSettings.Load();
 
     /// <summary>The File menu's "Recent Projects and Solutions" item - kept as a field so its
     /// SubMenu can be rebuilt in place whenever <see cref="_recentProjects"/> changes.</summary>
@@ -87,7 +88,7 @@ public sealed class AppShell : Window
             Title = NoFileOpenTitle,
             X = Pos.Right(explorerFrame),
             Y = Pos.Bottom(_menuBar),
-            Width = Dim.Percent(75),
+            Width = Dim.Percent(Math.Clamp(_layoutSettings.ExplorerEditorSplitPercent, 10, 90)),
             // A Dim.Func, not a plain Dim.Percent(70), so this keeps recomputing fresh (still 70%,
             // floored at MinOutputPaneHeight for the Output/Error List pane below) on every layout
             // pass rather than being decided once - see ClampedTopRowHeight's own comment for why
@@ -169,9 +170,26 @@ public sealed class AppShell : Window
         if (superViewHeight <= 0)
             return 1;
 
-        var desired = superViewHeight * 70 / 100;
+        var percent = Math.Clamp(_layoutSettings.TopRowHeightPercent, 10, 90);
+        var desired = superViewHeight * percent / 100;
         var maxAllowed = superViewHeight - 1 - MinOutputPaneHeight - _editorFrame.Frame.Y;
         return Math.Clamp(desired, 1, Math.Max(1, maxAllowed));
+    }
+
+    /// <summary>
+    /// Records the two splitters' current positions (as a percentage of the window's current
+    /// width/height, so they still make sense after resizing the terminal or moving to a
+    /// different one) so the next run starts back where this one left off. Called once, from
+    /// Program.cs, right after <c>Application.Run(shell)</c> returns - i.e. when the user quits.
+    /// </summary>
+    public void SaveLayoutSettings()
+    {
+        if (Frame.Width <= 0 || Frame.Height <= 0)
+            return;
+
+        _layoutSettings.ExplorerEditorSplitPercent = _editorFrame.Frame.Width * 100 / Frame.Width;
+        _layoutSettings.TopRowHeightPercent = _editorFrame.Frame.Height * 100 / Frame.Height;
+        _layoutSettings.Save();
     }
 
     private EditorMenuBar BuildMenuBar()

@@ -10,6 +10,7 @@ try
     ThemeSwitcher.Apply(ThemeSettings.Load().Theme);
     var shell = new AppShell();
     Application.Run(shell);
+    shell.SaveLayoutSettings();
 }
 finally
 {
