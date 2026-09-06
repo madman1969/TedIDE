@@ -1,6 +1,6 @@
 {
   "Name": "HelloC64",
-  "Target": "C128",
+  "Target": "Pet",
   "OptimizationLevel": "Maximum",
   "SourceFiles": [
     "src/main.c",

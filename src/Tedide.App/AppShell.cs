@@ -27,6 +27,11 @@ public sealed class AppShell : Window
     private readonly Workspace _workspace = new();
     private readonly Cc65Toolchain _toolchain = new();
     private readonly ViceEmulator _vice = new();
+    private readonly RecentProjectsSettings _recentProjects = RecentProjectsSettings.Load();
+
+    /// <summary>The File menu's "Recent Projects and Solutions" item - kept as a field so its
+    /// SubMenu can be rebuilt in place whenever <see cref="_recentProjects"/> changes.</summary>
+    private MenuItem _recentProjectsMenuItem = null!;
 
     private readonly SolutionExplorerTree _solutionExplorer = new();
     private readonly EditorPane _editorPane = new();
@@ -95,10 +100,12 @@ public sealed class AppShell : Window
     {
         var menuBar = new EditorMenuBar(_editorPane.Editor);
 
+        _recentProjectsMenuItem = new MenuItem("_Recent Projects and Solutions", "", BuildRecentProjectsMenu());
         var fileMenu = new MenuBarItem("_File", new List<MenuItem>
         {
             new("_New Project...", "", NewProject, Key.N.WithCtrl),
             new("_Open Project...", "", OpenProject, Key.O.WithCtrl),
+            _recentProjectsMenuItem,
             new("_Save", "", SaveAll, Key.S.WithCtrl),
             new("_Close File", "", CloseActiveFile, Key.W.WithCtrl),
             new("_Quit", "", () => Application.RequestStop(this), Key.Q.WithCtrl),
@@ -168,8 +175,9 @@ public sealed class AppShell : Window
         Application.Run(dialog);
         if (dialog.Target is { } target && !string.IsNullOrWhiteSpace(dialog.ProjectName))
         {
-            _workspace.NewProject(dialog.Directory, dialog.ProjectName, target);
+            var project = _workspace.NewProject(dialog.Directory, dialog.ProjectName, target);
             _solutionExplorer.Rebuild(_workspace);
+            RememberRecentProject(project.FilePath!);
         }
     }
 
@@ -180,6 +188,25 @@ public sealed class AppShell : Window
         var path = dialog.FilePaths.FirstOrDefault();
         if (path is null)
             return;
+
+        OpenProjectOrSolution(path);
+    }
+
+    /// <summary>
+    /// Opens a .tproj or .tsln file directly by path, without going through the Open Project file
+    /// dialog - used by both <see cref="OpenProject"/> and the File menu's Recent Projects and
+    /// Solutions submenu. Drops the path from the recent list (rather than opening it) if it no
+    /// longer exists on disk, since the file may have been moved/deleted since it was recorded.
+    /// </summary>
+    private void OpenProjectOrSolution(string path)
+    {
+        if (!File.Exists(path))
+        {
+            MessageBox.ErrorQuery(Application.Instance, "File Not Found", $"'{path}' no longer exists.", ["OK"]);
+            _recentProjects.Remove(path);
+            RefreshRecentProjectsMenu();
+            return;
+        }
 
         if (path.EndsWith(TedideSolution.FileExtension, StringComparison.OrdinalIgnoreCase))
             _workspace.OpenSolution(path);
@@ -193,6 +220,36 @@ public sealed class AppShell : Window
         }
 
         _solutionExplorer.Rebuild(_workspace);
+        RememberRecentProject(path);
+    }
+
+    /// <summary>Records <paramref name="path"/> as the most-recently-used project/solution and refreshes the File menu's submenu to reflect it.</summary>
+    private void RememberRecentProject(string path)
+    {
+        _recentProjects.Touch(path);
+        RefreshRecentProjectsMenu();
+    }
+
+    /// <summary>Rebuilds the "Recent Projects and Solutions" submenu in place from <see cref="_recentProjects"/>.</summary>
+    private void RefreshRecentProjectsMenu()
+    {
+        _recentProjectsMenuItem.SubMenu = BuildRecentProjectsMenu();
+    }
+
+    private Menu BuildRecentProjectsMenu()
+    {
+        if (_recentProjects.Paths.Count == 0)
+            return new Menu([new MenuItem("(No Recent Projects or Solutions)", "", () => { }, Key.Empty)]);
+
+        // "_1 Foo.tproj" through "_9 ..." give Alt+1..9 accelerators for the first nine entries,
+        // matching Visual Studio's own numbered Recent Projects and Solutions list; the (rare)
+        // 10th entry just doesn't get a single-digit accelerator.
+        var items = _recentProjects.Paths.Select((path, i) => new MenuItem(
+            $"_{i + 1} {Path.GetFileName(path)}",
+            Path.GetDirectoryName(path) ?? "",
+            () => OpenProjectOrSolution(path),
+            Key.Empty));
+        return new Menu(items.ToList());
     }
 
     /// <summary>
