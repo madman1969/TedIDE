@@ -108,6 +108,28 @@ public sealed class AppShell : Window
             CanFocus = true,
         };
         _editorFrame.Add(_editorPane);
+        // explorerFrame's Width (above) reads _editorFrame.Frame.Width live, but within a single
+        // layout pass explorerFrame is resolved before _editorFrame is - so it reads _editorFrame's
+        // width from *before* this pass updates it, one pass stale (confirmed by instrumenting both
+        // views' FrameChanged: on the pass where the window's true size first becomes known,
+        // explorerFrame reads _editorFrame.Frame.Width as still 0 and claims the full window width;
+        // _editorFrame then resolves its own real width later in that same pass, one step too late
+        // for explorerFrame to have used it). Nothing naturally triggers a second pass to let
+        // explorerFrame catch up - not even a plain SetNeedsLayout() called synchronously from here,
+        // since that fires *during* the very pass it needs to correct, and gets superseded when that
+        // pass finishes. Deferring it via Application.AddTimeout(TimeSpan.Zero, ...) - the same
+        // technique that fixed the Recent Projects menu not closing - queues it for strictly after
+        // the current pass completes, and (unlike a plain call) still fires even if the app is
+        // otherwise idle with no user input driving further iterations. Without this,
+        // explorerFrame stays at its full-window-width misreading (and _editorFrame, positioned via
+        // Pos.Right(explorerFrame), ends up pushed off-screen) until something unrelated - e.g.
+        // populating the Solution Explorer after opening a project - happens to force a full
+        // re-layout.
+        _editorFrame.FrameChanged += (_, _) => Application.AddTimeout(TimeSpan.Zero, () =>
+        {
+            SetNeedsLayout();
+            return false;
+        });
         // Keeps the Output/Error List pane from being dragged smaller than MinOutputPaneHeight.
         // Only needed for an actual BottomResizable drag: that's the one thing that overwrites
         // Height with a literal value, which ClampedTopRowHeight (above) can no longer correct once
