@@ -109,6 +109,11 @@ public sealed class AppShell : Window
             new("_Settings...", "", ShowProjectSettings, Key.Empty),
         });
 
+        var searchMenu = new MenuBarItem("_Search", new List<MenuItem>
+        {
+            new("_Find in Files...", "", ShowFindInFiles, Key.F.WithCtrl.WithShift),
+        });
+
         var themeMenu = new MenuBarItem("_Theme", new List<MenuItem>
         {
             new("VS2026 _Dark", "", () => ThemeSwitcher.Apply(AppTheme.Vs2026Dark), Key.Empty),
@@ -126,7 +131,7 @@ public sealed class AppShell : Window
         // our own project-aware one, but keep its auto-generated EditMenu/ViewMenu - already wired
         // directly to the editor (Find/Replace/Undo/Redo/Cut/Copy/Paste/Select All; Line Numbers/
         // Fold Indicators/Word Wrap/Show Tabs/Scrollbars) - for free.
-        menuBar.Menus = [fileMenu, menuBar.EditMenu, menuBar.ViewMenu, buildMenu, projectMenu, themeMenu];
+        menuBar.Menus = [fileMenu, menuBar.EditMenu, menuBar.ViewMenu, buildMenu, projectMenu, searchMenu, themeMenu];
         menuBar.X = 0;
         menuBar.Y = 0;
         menuBar.Width = Dim.Fill();
@@ -266,6 +271,48 @@ public sealed class AppShell : Window
         _editorPane.Open(path);
         _editorFrame.Title = Path.GetFileName(path);
         UpdateLanguageIndicator();
+    }
+
+    /// <summary>
+    /// Opens the Find in Files dialog, searching every loaded project's directory tree. If the
+    /// user activates a result, opens its file (prompting to save the currently open one first,
+    /// same as <see cref="OpenFile"/>) and moves the caret to the matched line.
+    /// </summary>
+    private void ShowFindInFiles()
+    {
+        if (_workspace.Projects.Count == 0)
+        {
+            AppendOutputLine("No project loaded. Use File > Open Project or File > New Project first.");
+            return;
+        }
+
+        var dialog = new FindInFilesDialog(_workspace);
+        Application.Run(dialog);
+        if (dialog.SelectedMatch is { } match)
+            OpenMatch(match);
+    }
+
+    /// <summary>
+    /// Opens a Find in Files match's file (unless it's already the open file) and moves the
+    /// caret to the start of the matched line/column, scrolling it into view.
+    /// </summary>
+    private void OpenMatch(FindInFilesDialog.Match match)
+    {
+        if (!string.Equals(_editorPane.OpenPath, match.FilePath, StringComparison.OrdinalIgnoreCase))
+        {
+            OpenFile(match.FilePath);
+            if (!string.Equals(_editorPane.OpenPath, match.FilePath, StringComparison.OrdinalIgnoreCase))
+                return; // User cancelled replacing the currently open (modified) file.
+        }
+
+        var document = _editorPane.Editor.Document;
+        if (document is null || match.LineNumber < 1 || match.LineNumber > document.LineCount)
+            return;
+
+        var line = document.GetLineByNumber(match.LineNumber);
+        var column = Math.Clamp(match.ColumnNumber - 1, 0, line.Length);
+        _editorPane.Editor.CaretOffset = line.Offset + column;
+        _editorPane.Editor.SetFocus();
     }
 
     private void CloseActiveFile()

@@ -120,6 +120,28 @@ public sealed class SolutionExplorerTree : TreeView
         ExpandAll();
     }
 
+    /// <summary>
+    /// Recursively enumerates every displayed source/header/assembly file under <paramref name="directory"/>,
+    /// applying the same extension filter and ignored-directory list (bin/obj/.git/.vs) as the tree
+    /// itself. Used by callers that need a flat file list rather than the tree structure - e.g.
+    /// Find in Files.
+    /// </summary>
+    public static IEnumerable<string> EnumerateFiles(string directory)
+    {
+        var subdirectories = Directory.EnumerateDirectories(directory)
+            .Where(d => !IgnoredDirectoryNames.Contains(Path.GetFileName(d), StringComparer.OrdinalIgnoreCase));
+
+        foreach (var subdirectory in subdirectories)
+            foreach (var file in EnumerateFiles(subdirectory))
+                yield return file;
+
+        var files = Directory.EnumerateFiles(directory)
+            .Where(f => DisplayedExtensions.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase));
+
+        foreach (var file in files)
+            yield return file;
+    }
+
     private static void AddDirectoryContents(TreeNode parent, string directory)
     {
         var subdirectories = Directory.EnumerateDirectories(directory)
