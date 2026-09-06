@@ -64,7 +64,16 @@ public sealed class AppShell : Window
             // drags it to below) doesn't use, so the two panes always exactly share the row
             // between them, with _editorFrame's own left border acting as the draggable divider.
             Width = Dim.Fill(Dim.Func(_ => _editorFrame!.Frame.Width)),
-            Height = Dim.Percent(70),
+            // Tracks _editorFrame's own height directly - unlike Width, above, this is a straight
+            // Dim.Func, not Dim.Fill(Dim.Func(...)): explorerFrame and _editorFrame sit side by side
+            // at the same Y, sharing a row, so explorerFrame's height should just equal
+            // _editorFrame's, not "fill down to a margin sized like it" (Dim.Fill(margin) computes
+            // SuperViewHeight - margin, which only happens to equal _editorFrame.Frame.Height when
+            // that's exactly half the window - wrong the rest of the time, and invisible until the
+            // Solution Explorer had enough content to overflow a box that was quietly the wrong size
+            // all along). See _editorFrame's own comment for why the draggable border has to live
+            // there rather than on outputTabs, below.
+            Height = Dim.Func(_ => _editorFrame!.Frame.Height),
         };
         _solutionExplorer.Width = Dim.Fill();
         _solutionExplorer.Height = Dim.Fill();
@@ -79,15 +88,40 @@ public sealed class AppShell : Window
             X = Pos.Right(explorerFrame),
             Y = Pos.Bottom(_menuBar),
             Width = Dim.Percent(75),
-            Height = Dim.Percent(70),
-            // Makes this frame's left border a draggable splitter between it and the Solution
-            // Explorer - explorerFrame's Width (above) tracks this frame's Frame.Width live, so
-            // dragging the border resizes both panes together. CanFocus is required for the
-            // border-drag mouse interaction to register.
-            Arrangement = ViewArrangement.LeftResizable,
+            // A Dim.Func, not a plain Dim.Percent(70), so this keeps recomputing fresh (still 70%,
+            // floored at MinOutputPaneHeight for the Output/Error List pane below) on every layout
+            // pass rather than being decided once - see ClampedTopRowHeight's own comment for why
+            // deciding it once is exactly what caused the Solution Explorer to visibly jump/shrink
+            // after opening a project.
+            Height = Dim.Func(_ => ClampedTopRowHeight()),
+            // Makes this frame's left AND bottom borders draggable splitters - left, between it and
+            // the Solution Explorer (explorerFrame's Width, above, tracks this frame's Frame.Width
+            // live); bottom, between the whole top row and the Output/Error List pane below
+            // (explorerFrame's Height, above, tracks this frame's Frame.Height live, and outputTabs'
+            // Y, below, is pinned to this frame's bottom edge). A plain Tabs control like
+            // outputTabs has no border of its own for ViewArrangement to hook a drag onto - unlike
+            // this FrameView, which already has one - so the draggable edge has to live here
+            // instead, even though visually it's the boundary between the two rows either way.
+            // CanFocus is required for the border-drag mouse interaction to register.
+            Arrangement = ViewArrangement.LeftResizable | ViewArrangement.BottomResizable,
             CanFocus = true,
         };
         _editorFrame.Add(_editorPane);
+        // Keeps the Output/Error List pane from being dragged smaller than MinOutputPaneHeight.
+        // Only needed for an actual BottomResizable drag: that's the one thing that overwrites
+        // Height with a literal value, which ClampedTopRowHeight (above) can no longer correct once
+        // it's no longer the formula in place. FrameChanged fires after Frame is resolved for any
+        // cause, and the corrective Height assignment it triggers here resolves to a Frame that no
+        // longer undershoots, so it does not re-trigger itself.
+        _editorFrame.FrameChanged += (_, _) =>
+        {
+            if (_editorFrame.SuperView is not { } superView || superView.Frame.Height <= 0)
+                return;
+
+            var maxHeight = superView.Frame.Height - 1 - MinOutputPaneHeight - _editorFrame.Frame.Y;
+            if (maxHeight > 0 && _editorFrame.Frame.Height > maxHeight)
+                _editorFrame.Height = maxHeight;
+        };
 
         var outputTabs = new Tabs
         {
@@ -115,11 +149,36 @@ public sealed class AppShell : Window
 
     private const string NoFileOpenTitle = "(no file open)";
 
+    /// <summary>The Output/Error List pane's minimum height, in rows - enforced both here and by
+    /// <see cref="AppShell"/>'s constructor via <c>_editorFrame.FrameChanged</c> (see that handler's
+    /// own comment for why both are needed).</summary>
+    private const int MinOutputPaneHeight = 5;
+
+    /// <summary>
+    /// _editorFrame's natural (undragged) Height: 70% of the window, floored so the Output/Error
+    /// List pane below always keeps at least <see cref="MinOutputPaneHeight"/> rows. Recomputed
+    /// fresh on every layout pass (via Dim.Func, not a one-time Dim.Percent(70)) so it never gets
+    /// stuck on a stale reading of the window's size from before the terminal's true size settled -
+    /// which is exactly what previously made the Solution Explorer/Editor row visibly shrink the
+    /// moment something (e.g. populating the Solution Explorer after opening a project) triggered
+    /// the first layout pass after that settling.
+    /// </summary>
+    private int ClampedTopRowHeight()
+    {
+        var superViewHeight = _editorFrame.SuperView?.Frame.Height ?? 0;
+        if (superViewHeight <= 0)
+            return 1;
+
+        var desired = superViewHeight * 70 / 100;
+        var maxAllowed = superViewHeight - 1 - MinOutputPaneHeight - _editorFrame.Frame.Y;
+        return Math.Clamp(desired, 1, Math.Max(1, maxAllowed));
+    }
+
     private EditorMenuBar BuildMenuBar()
     {
         var menuBar = new EditorMenuBar(_editorPane.Editor);
 
-        _recentProjectsMenuItem = new MenuItem("_Recent Projects and Solutions", "", BuildRecentProjectsMenu());
+        _recentProjectsMenuItem = new MenuItem("_Recent Projects and Solutions", "", new Menu(BuildRecentProjectsMenuItems()));
         var fileMenu = new MenuBarItem("_File", new List<MenuItem>
         {
             new("_New Project...", "", NewProject, Key.N.WithCtrl),
@@ -249,26 +308,51 @@ public sealed class AppShell : Window
         RefreshRecentProjectsMenu();
     }
 
-    /// <summary>Rebuilds the "Recent Projects and Solutions" submenu in place from <see cref="_recentProjects"/>.</summary>
+    /// <summary>
+    /// Repopulates the "Recent Projects and Solutions" submenu in place from <see cref="_recentProjects"/>.
+    /// </summary>
+    /// <remarks>
+    /// This is called from inside a recent entry's own click handler - i.e. while that very
+    /// submenu is still the one on screen, and while the framework's own "activate this item, then
+    /// close the whole menu" sequence for that click is still in progress. Two things about that
+    /// matter here:
+    /// <list type="bullet">
+    /// <item>Mutating the existing <see cref="Menu"/> instance's items (rather than assigning a
+    /// brand new one to <see cref="MenuItem.SubMenu"/>) avoids orphaning the menu the user is
+    /// currently looking at - nothing would otherwise still reference it in order to close it.</item>
+    /// <item>Even an in-place mutation still has to happen after the framework finishes closing the
+    /// menu, not synchronously inside the click handler - the just-clicked <see cref="MenuItem"/>
+    /// is that in-progress close sequence's own reference point, and <see cref="View.RemoveAll"/>
+    /// would remove it (along with every sibling) out from under it. <see cref="Application.AddTimeout"/>
+    /// with a zero delay defers the rebuild to the next main loop iteration, after this click has
+    /// finished closing the menu normally.</item>
+    /// </list>
+    /// </remarks>
     private void RefreshRecentProjectsMenu()
     {
-        _recentProjectsMenuItem.SubMenu = BuildRecentProjectsMenu();
+        Application.AddTimeout(TimeSpan.Zero, () =>
+        {
+            var menu = _recentProjectsMenuItem.SubMenu!;
+            menu.RemoveAll();
+            foreach (var item in BuildRecentProjectsMenuItems())
+                menu.Add(item);
+            return false;
+        });
     }
 
-    private Menu BuildRecentProjectsMenu()
+    private List<MenuItem> BuildRecentProjectsMenuItems()
     {
         if (_recentProjects.Paths.Count == 0)
-            return new Menu([new MenuItem("(No Recent Projects or Solutions)", "", () => { }, Key.Empty)]);
+            return [new MenuItem("(No Recent Projects or Solutions)", "", () => { }, Key.Empty)];
 
         // "_1 Foo.tproj" through "_9 ..." give Alt+1..9 accelerators for the first nine entries,
         // matching Visual Studio's own numbered Recent Projects and Solutions list; the (rare)
         // 10th entry just doesn't get a single-digit accelerator.
-        var items = _recentProjects.Paths.Select((path, i) => new MenuItem(
+        return _recentProjects.Paths.Select((path, i) => new MenuItem(
             $"_{i + 1} {Path.GetFileName(path)}",
             Path.GetDirectoryName(path) ?? "",
             () => OpenProjectOrSolution(path),
-            Key.Empty));
-        return new Menu(items.ToList());
+            Key.Empty)).ToList();
     }
 
     /// <summary>

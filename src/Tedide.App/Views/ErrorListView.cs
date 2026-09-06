@@ -1,6 +1,7 @@
 using System.Data;
 using Tedide.Build;
 using Tedide.Core;
+using Terminal.Gui.ViewBase;
 using Terminal.Gui.Views;
 
 namespace Tedide.App.Views;
@@ -23,6 +24,9 @@ public sealed class ErrorListView : TableView
     public ErrorListView()
     {
         FullRowSelect = true;
+        // Auto-shown (only appears once the diagnostics list overflows the viewport) - same as
+        // the Results list in FindInFilesDialog, the Output pane, and EditorPane's editor.
+        ViewportSettings = ViewportSettingsFlags.HasScrollBars;
         SetDiagnostics([]);
         Accepted += (_, _) => AcceptSelection();
     }

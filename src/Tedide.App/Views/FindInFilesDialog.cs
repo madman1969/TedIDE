@@ -61,7 +61,16 @@ public sealed class FindInFilesDialog : Dialog
         _statusLabel = new Label { Text = string.Empty, X = 0, Y = 3, Width = Dim.Fill() };
 
         var resultsFrame = new FrameView { Title = "Results (Enter to open)", X = 0, Y = 5, Width = Dim.Fill(), Height = Dim.Fill(2) };
-        _resultsList = new ListView { X = 0, Y = 0, Width = Dim.Fill(), Height = Dim.Fill() };
+        _resultsList = new ListView
+        {
+            X = 0,
+            Y = 0,
+            Width = Dim.Fill(),
+            Height = Dim.Fill(),
+            // Auto-shown (only appears once the match list overflows the viewport) - same as
+            // EditorPane's editor and the Output pane.
+            ViewportSettings = ViewportSettingsFlags.HasScrollBars,
+        };
         _resultsList.Accepted += (_, _) => AcceptSelection();
         resultsFrame.Add(_resultsList);
 
