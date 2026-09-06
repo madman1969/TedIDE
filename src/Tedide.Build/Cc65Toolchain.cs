@@ -135,9 +135,13 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
             "-t", project.Target.ToCl65Id(),
             "-o", project.ResolvedOutputFile,
         };
+        if (project.OptimizationLevel.ToCl65Flag() is { } optimizationFlag)
+            args.Add(optimizationFlag);
         // cl65 applies flags left-to-right as it encounters them, so e.g. an "-I" include path
         // only affects source files listed after it on the command line - ExtraArguments must
-        // come before SourceFiles, not after, or flags like that silently have no effect.
+        // come before SourceFiles, not after, or flags like that silently have no effect. Added
+        // after the optimization flag so a manually-specified -O* in ExtraArguments (the old way
+        // of setting this, before Cc65OptimizationLevel existed) still wins.
         args.AddRange(project.ExtraArguments);
         args.AddRange(project.SourceFiles);
         return args;

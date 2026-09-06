@@ -28,6 +28,43 @@ public class Cc65ToolchainTests
     }
 
     [Fact]
+    public void BuildArguments_OmitsOptimizationFlag_WhenLevelIsNone()
+    {
+        var project = new TedideProject
+        {
+            Name = "Test",
+            Target = Cc65Target.C64,
+            SourceFiles = ["src/main.c"],
+            OptimizationLevel = Cc65OptimizationLevel.None,
+        };
+
+        var args = Cc65Toolchain.BuildArguments(project);
+
+        Assert.DoesNotContain(args, a => a.StartsWith("-O", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void BuildArguments_PlacesOptimizationFlagBeforeExtraArgumentsAndSourceFiles()
+    {
+        var project = new TedideProject
+        {
+            Name = "Test",
+            Target = Cc65Target.C64,
+            SourceFiles = ["src/main.c"],
+            ExtraArguments = ["-I", "include"],
+            OptimizationLevel = Cc65OptimizationLevel.Extended,
+        };
+
+        var args = Cc65Toolchain.BuildArguments(project);
+
+        var optimizationIndex = args.IndexOf("-Ox");
+        var extraArgIndex = args.IndexOf("-I");
+        var sourceFileIndex = args.IndexOf("src/main.c");
+        Assert.True(optimizationIndex >= 0 && optimizationIndex < extraArgIndex && extraArgIndex < sourceFileIndex,
+            $"Expected -Ox (at {optimizationIndex}) before ExtraArguments (at {extraArgIndex}) before SourceFiles (at {sourceFileIndex}): {string.Join(" ", args)}");
+    }
+
+    [Fact]
     public async Task BuildAsync_CreatesOutputDirectoryEvenIfToolchainIsMissing()
     {
         var dir = Directory.CreateTempSubdirectory();

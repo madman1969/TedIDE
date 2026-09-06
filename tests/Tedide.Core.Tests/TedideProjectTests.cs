@@ -17,6 +17,7 @@ public class TedideProjectTests
                 Target = Cc65Target.Nes,
                 SourceFiles = ["main.c", "sprites.s"],
                 ExtraArguments = ["-Oi"],
+                OptimizationLevel = Cc65OptimizationLevel.Extended,
             };
             project.Save(path);
 
@@ -26,6 +27,7 @@ public class TedideProjectTests
             Assert.Equal(Cc65Target.Nes, loaded.Target);
             Assert.Equal(["main.c", "sprites.s"], loaded.SourceFiles);
             Assert.Equal(["-Oi"], loaded.ExtraArguments);
+            Assert.Equal(Cc65OptimizationLevel.Extended, loaded.OptimizationLevel);
             Assert.Equal(Path.GetFullPath(path), loaded.FilePath);
         }
         finally

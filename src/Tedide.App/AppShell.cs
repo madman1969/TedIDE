@@ -114,6 +114,7 @@ public sealed class AppShell : Window
         var projectMenu = new MenuBarItem("_Project", new List<MenuItem>
         {
             new("_Settings...", "", ShowProjectSettings, Key.Empty),
+            new("_Optimizer Settings...", "", ShowOptimizerSettings, Key.Empty),
         });
 
         var searchMenu = new MenuBarItem("_Search", new List<MenuItem>
@@ -474,6 +475,19 @@ public sealed class AppShell : Window
         Application.Run(dialog);
         if (dialog.Saved)
             _solutionExplorer.Rebuild(_workspace);
+    }
+
+    /// <summary>Opens the cc65 optimizer preset dialog for the active project.</summary>
+    private void ShowOptimizerSettings()
+    {
+        var project = _workspace.ActiveProject;
+        if (project is null)
+        {
+            AppendOutputLine("No project loaded. Use File > Open Project or File > New Project first.");
+            return;
+        }
+
+        Application.Run(new OptimizerSettingsDialog(project));
     }
 
     private void AppendOutputLine(string line)

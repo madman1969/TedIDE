@@ -15,6 +15,9 @@ public sealed class TedideProject
 
     public Cc65Target Target { get; set; } = Cc65Target.C64;
 
+    /// <summary>The cc65 compiler optimization preset to build with. Defaults to no optimization.</summary>
+    public Cc65OptimizationLevel OptimizationLevel { get; set; } = Cc65OptimizationLevel.None;
+
     /// <summary>Source file paths, relative to the project file's directory.</summary>
     public List<string> SourceFiles { get; set; } = [];
 
