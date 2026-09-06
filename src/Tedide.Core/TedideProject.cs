@@ -18,6 +18,18 @@ public sealed class TedideProject
     /// <summary>The cc65 compiler optimization preset to build with. Defaults to no optimization.</summary>
     public Cc65OptimizationLevel OptimizationLevel { get; set; } = Cc65OptimizationLevel.None;
 
+    /// <summary>Whether cl65 should emit an assembler listing file (-l) alongside the output binary. Defaults to on.</summary>
+    public bool GenerateAssemblyListing { get; set; } = true;
+
+    /// <summary>
+    /// Whether cc65 should include each C source line as a comment in the assembly it generates
+    /// for that file (cl65 -T / --add-source). Most useful together with
+    /// <see cref="GenerateAssemblyListing"/>, which is what actually surfaces those comments to
+    /// the user - it interleaves them with the generated 6502 instructions in the .lst file.
+    /// Defaults to on.
+    /// </summary>
+    public bool AddSourceAsComment { get; set; } = true;
+
     /// <summary>Source file paths, relative to the project file's directory.</summary>
     public List<string> SourceFiles { get; set; } = [];
 
@@ -39,6 +51,10 @@ public sealed class TedideProject
     [JsonIgnore]
     public string ResolvedOutputFile =>
         Path.Combine(Directory, OutputFile ?? (Name + Target.DefaultOutputExtension()));
+
+    /// <summary>Where cl65's -l assembler listing is written when <see cref="GenerateAssemblyListing"/> is on - the output binary's path with a .lst extension.</summary>
+    [JsonIgnore]
+    public string ResolvedListingFile => Path.ChangeExtension(ResolvedOutputFile, ".lst");
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {

@@ -102,8 +102,9 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
 
     /// <summary>
     /// Deletes build artifacts without invoking cl65: the per-source .o object file cl65 leaves
-    /// alongside each source file, and the final linked output binary. Skips whatever doesn't
-    /// exist (e.g. a project that's never been built). Returns the full paths actually deleted.
+    /// alongside each source file, the final linked output binary, and the assembler listing file
+    /// (if <see cref="TedideProject.GenerateAssemblyListing"/> is on). Skips whatever doesn't exist
+    /// (e.g. a project that's never been built). Returns the full paths actually deleted.
     /// </summary>
     public IReadOnlyList<string> Clean(TedideProject project)
     {
@@ -125,6 +126,12 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
             removed.Add(project.ResolvedOutputFile);
         }
 
+        if (File.Exists(project.ResolvedListingFile))
+        {
+            File.Delete(project.ResolvedListingFile);
+            removed.Add(project.ResolvedListingFile);
+        }
+
         return removed;
     }
 
@@ -137,6 +144,10 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
         };
         if (project.OptimizationLevel.ToCl65Flag() is { } optimizationFlag)
             args.Add(optimizationFlag);
+        if (project.GenerateAssemblyListing)
+            args.AddRange(["-l", project.ResolvedListingFile]);
+        if (project.AddSourceAsComment)
+            args.Add("-T");
         // cl65 applies flags left-to-right as it encounters them, so e.g. an "-I" include path
         // only affects source files listed after it on the command line - ExtraArguments must
         // come before SourceFiles, not after, or flags like that silently have no effect. Added

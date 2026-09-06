@@ -18,6 +18,8 @@ public class TedideProjectTests
                 SourceFiles = ["main.c", "sprites.s"],
                 ExtraArguments = ["-Oi"],
                 OptimizationLevel = Cc65OptimizationLevel.Extended,
+                GenerateAssemblyListing = true,
+                AddSourceAsComment = true,
             };
             project.Save(path);
 
@@ -28,6 +30,8 @@ public class TedideProjectTests
             Assert.Equal(["main.c", "sprites.s"], loaded.SourceFiles);
             Assert.Equal(["-Oi"], loaded.ExtraArguments);
             Assert.Equal(Cc65OptimizationLevel.Extended, loaded.OptimizationLevel);
+            Assert.True(loaded.GenerateAssemblyListing);
+            Assert.True(loaded.AddSourceAsComment);
             Assert.Equal(Path.GetFullPath(path), loaded.FilePath);
         }
         finally
@@ -68,6 +72,22 @@ public class TedideProjectTests
         try
         {
             Assert.Equal(Path.Combine(Path.GetTempPath(), "MyGame.prg"), project.ResolvedOutputFile);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void ResolvedListingFile_IsOutputFileWithLstExtension()
+    {
+        var project = new TedideProject { Name = "MyGame", Target = Cc65Target.C64, OutputFile = "MyGame.prg" };
+        var path = Path.Combine(Path.GetTempPath(), "MyGame.tproj");
+        project.Save(path);
+        try
+        {
+            Assert.Equal(Path.Combine(Path.GetTempPath(), "MyGame.lst"), project.ResolvedListingFile);
         }
         finally
         {

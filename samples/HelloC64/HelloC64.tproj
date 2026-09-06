@@ -2,6 +2,8 @@
   "Name": "HelloC64",
   "Target": "Pet",
   "OptimizationLevel": "Maximum",
+  "GenerateAssemblyListing": true,
+  "AddSourceAsComment": true,
   "SourceFiles": [
     "src/main.c",
     "src/screen.c",

@@ -114,6 +114,8 @@ public sealed class SolutionExplorerTree : TreeView
             if (Directory.Exists(project.Directory))
                 AddDirectoryContents(projectNode, project.Directory);
 
+            AddGeneratedFilesNode(projectNode, project);
+
             AddObject(projectNode);
         }
 
@@ -140,6 +142,28 @@ public sealed class SolutionExplorerTree : TreeView
 
         foreach (var file in files)
             yield return file;
+    }
+
+    /// <summary>
+    /// Adds a "Generated Files" node listing build-generated files that live outside the normal
+    /// source tree - currently just the cc65 assembler listing (.lst), shown only once
+    /// <see cref="TedideProject.GenerateAssemblyListing"/> is on and the project has actually been
+    /// built (the file exists on disk). Omitted entirely when there's nothing to show, so a
+    /// never-built (or listing-disabled) project doesn't get an empty node. Has no Tag - it's not
+    /// itself a file or directory, so the right-click context menu offers nothing for it.
+    /// </summary>
+    private static void AddGeneratedFilesNode(TreeNode projectNode, TedideProject project)
+    {
+        if (!project.GenerateAssemblyListing || !File.Exists(project.ResolvedListingFile))
+            return;
+
+        var generatedNode = new TreeNode { Text = "Generated Files" };
+        generatedNode.Children.Add(new TreeNode
+        {
+            Text = Path.GetFileName(project.ResolvedListingFile),
+            Tag = project.ResolvedListingFile,
+        });
+        projectNode.Children.Add(generatedNode);
     }
 
     private static void AddDirectoryContents(TreeNode parent, string directory)

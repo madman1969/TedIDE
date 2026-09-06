@@ -65,6 +65,133 @@ public class Cc65ToolchainTests
     }
 
     [Fact]
+    public void BuildArguments_OmitsListingFlag_WhenGenerateAssemblyListingIsFalse()
+    {
+        var project = new TedideProject
+        {
+            Name = "Test",
+            Target = Cc65Target.C64,
+            SourceFiles = ["src/main.c"],
+            GenerateAssemblyListing = false,
+        };
+
+        var args = Cc65Toolchain.BuildArguments(project);
+
+        Assert.DoesNotContain("-l", args);
+    }
+
+    [Fact]
+    public void BuildArguments_IncludesListingFlag_WithResolvedListingPath_WhenGenerateAssemblyListingIsTrue()
+    {
+        var project = new TedideProject
+        {
+            Name = "Test",
+            Target = Cc65Target.C64,
+            SourceFiles = ["src/main.c"],
+            OutputFile = "bin/Test.prg",
+            GenerateAssemblyListing = true,
+        };
+
+        var args = Cc65Toolchain.BuildArguments(project);
+
+        var listingFlagIndex = args.IndexOf("-l");
+        Assert.True(listingFlagIndex >= 0, $"Expected -l in arguments: {string.Join(" ", args)}");
+        Assert.Equal(project.ResolvedListingFile, args[listingFlagIndex + 1]);
+    }
+
+    [Fact]
+    public void BuildArguments_OmitsSourceCommentFlag_WhenAddSourceAsCommentIsFalse()
+    {
+        var project = new TedideProject
+        {
+            Name = "Test",
+            Target = Cc65Target.C64,
+            SourceFiles = ["src/main.c"],
+            AddSourceAsComment = false,
+        };
+
+        var args = Cc65Toolchain.BuildArguments(project);
+
+        Assert.DoesNotContain("-T", args);
+    }
+
+    [Fact]
+    public void BuildArguments_IncludesSourceCommentFlag_WhenAddSourceAsCommentIsTrue()
+    {
+        var project = new TedideProject
+        {
+            Name = "Test",
+            Target = Cc65Target.C64,
+            SourceFiles = ["src/main.c"],
+            AddSourceAsComment = true,
+        };
+
+        var args = Cc65Toolchain.BuildArguments(project);
+
+        Assert.Contains("-T", args);
+    }
+
+    [Fact]
+    public void Clean_RemovesObjectFilesOutputBinaryAndListingFile()
+    {
+        var dir = Directory.CreateTempSubdirectory();
+        try
+        {
+            var project = new TedideProject
+            {
+                Name = "Test",
+                Target = Cc65Target.C64,
+                SourceFiles = ["main.c"],
+                OutputFile = "bin/Test.prg",
+                GenerateAssemblyListing = true,
+            };
+            project.Save(Path.Combine(dir.FullName, "Test.tproj"));
+
+            var objectFile = Path.Combine(dir.FullName, "main.o");
+            Directory.CreateDirectory(Path.GetDirectoryName(project.ResolvedOutputFile)!);
+            File.WriteAllText(objectFile, "");
+            File.WriteAllText(project.ResolvedOutputFile, "");
+            File.WriteAllText(project.ResolvedListingFile, "");
+
+            var removed = new Cc65Toolchain().Clean(project);
+
+            Assert.Equal([objectFile, project.ResolvedOutputFile, project.ResolvedListingFile], removed);
+            Assert.False(File.Exists(objectFile));
+            Assert.False(File.Exists(project.ResolvedOutputFile));
+            Assert.False(File.Exists(project.ResolvedListingFile));
+        }
+        finally
+        {
+            dir.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Clean_LeavesListingFileAlone_WhenItDoesNotExist()
+    {
+        var dir = Directory.CreateTempSubdirectory();
+        try
+        {
+            var project = new TedideProject
+            {
+                Name = "Test",
+                Target = Cc65Target.C64,
+                SourceFiles = ["main.c"],
+                GenerateAssemblyListing = true,
+            };
+            project.Save(Path.Combine(dir.FullName, "Test.tproj"));
+
+            var removed = new Cc65Toolchain().Clean(project);
+
+            Assert.Empty(removed);
+        }
+        finally
+        {
+            dir.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task BuildAsync_CreatesOutputDirectoryEvenIfToolchainIsMissing()
     {
         var dir = Directory.CreateTempSubdirectory();
