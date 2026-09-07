@@ -1,20 +1,15 @@
 {
-  "Name": "HelloCBM",
+  "Name": "bounce",
   "Target": "C64",
-  "OptimizationLevel": "Maximum",
+  "OptimizationLevel": "None",
   "GenerateAssemblyListing": true,
   "AddSourceAsComment": true,
   "GenerateLinkerMap": false,
   "ExportLabels": false,
   "SourceFiles": [
-    "src/main.c",
-    "src/screen.c",
-    "src/animation.c",
-    "src/input.c",
-    "src/delay.c",
-    "src/border.s"
+    "src/bounce.c"
   ],
-  "OutputFile": "bin/HelloCBM.prg",
+  "OutputFile": "bin/bounce.prg",
   "ExtraArguments": [
     "-I",
     "include"

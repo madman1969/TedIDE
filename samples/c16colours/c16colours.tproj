@@ -1,20 +1,15 @@
 {
-  "Name": "HelloCBM",
-  "Target": "C64",
+  "Name": "c16colours",
+  "Target": "C16",
   "OptimizationLevel": "Maximum",
   "GenerateAssemblyListing": true,
   "AddSourceAsComment": true,
   "GenerateLinkerMap": false,
   "ExportLabels": false,
   "SourceFiles": [
-    "src/main.c",
-    "src/screen.c",
-    "src/animation.c",
-    "src/input.c",
-    "src/delay.c",
-    "src/border.s"
+    "src/main.c"
   ],
-  "OutputFile": "bin/HelloCBM.prg",
+  "OutputFile": "bin/c16colours.prg",
   "ExtraArguments": [
     "-I",
     "include"

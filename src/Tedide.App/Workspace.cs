@@ -24,7 +24,11 @@ public sealed class Workspace
     /// e.g. HelloCBM's screen.c/screen.h are) rather than sitting empty, so the include/ folder -
     /// and the -I include that finds it - are exercised by a real, working #include from the
     /// moment the project is created, not just present but unused; bin/ is deliberately left for
-    /// the first build to create, same as the samples (see Cc65Toolchain.BuildAsync).
+    /// the first build to create, same as the samples (see Cc65Toolchain.BuildAsync). Also creates
+    /// a same-named .tsln wrapping the new .tproj, right beside it, the same way every bundled
+    /// sample is wrapped - so the freshly-created project shows up in the Solution Explorer, Recent
+    /// Projects, etc. exactly like one you'd open via "samples/Name/Name.tsln", not as a bare
+    /// project some other path through the app happens to leave unwrapped.
     /// </summary>
     public TedideProject NewProject(string directory, string name, Cc65Target target)
     {
@@ -58,7 +62,17 @@ public sealed class Workspace
         };
         project.Save(Path.Combine(directory, name + TedideProject.FileExtension));
 
-        Solution = null;
+        // A flat filename reference, not Path.GetRelativePath/AddProject - the project always
+        // sits directly beside its new solution here, exactly like every bundled sample's own
+        // hand-authored .tsln (e.g. HelloCBM.tsln -> "HelloCBM.tproj").
+        var solution = new TedideSolution
+        {
+            Name = name,
+            ProjectPaths = [name + TedideProject.FileExtension],
+        };
+        solution.Save(Path.Combine(directory, name + TedideSolution.FileExtension));
+
+        Solution = solution;
         Projects.Clear();
         Projects.Add(project);
         Changed?.Invoke();

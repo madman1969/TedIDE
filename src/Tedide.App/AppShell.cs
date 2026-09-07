@@ -307,9 +307,12 @@ public sealed class AppShell : Window
         Application.Run(dialog);
         if (dialog.Target is { } target && !string.IsNullOrWhiteSpace(dialog.ProjectName))
         {
-            var project = _workspace.NewProject(dialog.Directory, dialog.ProjectName, target);
+            _workspace.NewProject(dialog.Directory, dialog.ProjectName, target);
             _solutionExplorer.Rebuild(_workspace);
-            RememberRecentProject(project.FilePath!);
+            // NewProject always creates a wrapping .tsln alongside the .tproj (see its own doc
+            // comment) - remember that, not the bare project, matching how opening one of the
+            // bundled samples remembers its .tsln rather than the .tproj inside it.
+            RememberRecentProject(_workspace.Solution!.FilePath!);
         }
     }
 
