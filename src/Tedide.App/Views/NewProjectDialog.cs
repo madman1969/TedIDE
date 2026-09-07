@@ -41,8 +41,24 @@ public sealed class NewProjectDialog : Dialog
         var dirLabel = new Label { Text = "Directory:", X = 0, Y = 4 };
         _directoryField = new TextField
         {
-            X = 0, Y = 6, Width = Dim.Fill(1),
+            X = 0, Y = 6, Width = Dim.Fill(12),
             Text = Path.Combine(System.Environment.CurrentDirectory, "NewGame"),
+        };
+
+        var browseButton = new Button { Text = "_Browse", X = Pos.AnchorEnd(11), Y = 6, Width = 10 };
+        browseButton.Accepting += (_, e) =>
+        {
+            var dialog = new OpenDialog
+            {
+                Title = "Select Directory",
+                OpenMode = OpenMode.Directory,
+                AllowsMultipleSelection = false,
+                Path = NearestExistingDirectory(_directoryField.Text),
+            };
+            Application.Run(dialog);
+            if (dialog.FilePaths.FirstOrDefault() is { } path)
+                _directoryField.Text = path;
+            e.Handled = true;
         };
 
         // Every cl65 target, not just Commodore hardware (unlike ProjectSettingsDialog's own
@@ -80,6 +96,20 @@ public sealed class NewProjectDialog : Dialog
             e.Handled = true;
         };
 
-        Add([nameLabel, _nameField, dirLabel, _directoryField, targetLabel, _targetField, createButton, cancelButton]);
+        Add([nameLabel, _nameField, dirLabel, _directoryField, browseButton, targetLabel, _targetField, createButton, cancelButton]);
+    }
+
+    /// <summary>
+    /// Walks up from <paramref name="path"/> to the nearest ancestor that actually exists, since
+    /// the directory field's default/typed value (e.g. "...\NewGame") is usually the not-yet-created
+    /// project folder itself - passing that straight to OpenDialog.Path would start the browser
+    /// somewhere that doesn't exist yet.
+    /// </summary>
+    private static string NearestExistingDirectory(string path)
+    {
+        var dir = path;
+        while (!string.IsNullOrEmpty(dir) && !System.IO.Directory.Exists(dir))
+            dir = Path.GetDirectoryName(dir) ?? "";
+        return string.IsNullOrEmpty(dir) ? System.Environment.CurrentDirectory : dir;
     }
 }
