@@ -138,7 +138,7 @@ public sealed class ProjectSettingsDialog : Dialog
         out TextField outputFileField,
         out TextField extraArgumentsField)
     {
-        var tab = new View { Title = "_Settings", Width = Dim.Fill(), Height = Dim.Fill() };
+        var tab = new View { Title = " _Settings ", Width = Dim.Fill(), Height = Dim.Fill() };
 
         // Every field below sits 2 rows under its own label (a blank row between them) and is at
         // least 2 rows above whatever follows it (likewise) - see the "every field needs
@@ -178,7 +178,7 @@ public sealed class ProjectSettingsDialog : Dialog
     /// <summary>Builds the "Optimizer" tab (the <see cref="Cc65OptimizationLevel"/> preset dropdown, plus a help block explaining each flag).</summary>
     private static View BuildOptimizerTab(TedideProject project, out DropDownList optimizationLevelField)
     {
-        var tab = new View { Title = "_Optimizer", Width = Dim.Fill(), Height = Dim.Fill() };
+        var tab = new View { Title = " _Optimizer ", Width = Dim.Fill(), Height = Dim.Fill() };
 
         var levelLabel = new Label { Text = "Optimization level:", X = 0, Y = 0 };
         optimizationLevelField = new DropDownList
@@ -207,7 +207,7 @@ public sealed class ProjectSettingsDialog : Dialog
     /// <summary>Builds the "Compiler" tab: other cc65 compile-time flags - the -l assembler listing toggle and the -T source-as-comment toggle.</summary>
     private static View BuildCompilerTab(TedideProject project, out CheckBox generateListingField, out CheckBox addSourceAsCommentField)
     {
-        var tab = new View { Title = "_Compiler", Width = Dim.Fill(), Height = Dim.Fill() };
+        var tab = new View { Title = " _Compiler ", Width = Dim.Fill(), Height = Dim.Fill() };
 
         generateListingField = new CheckBox
         {
@@ -250,7 +250,7 @@ public sealed class ProjectSettingsDialog : Dialog
         // No mnemonic (unlike the other three tabs) - "CC65" has no letter free to underline
         // without colliding with "_Compiler"'s C, and a digit mnemonic renders invisible
         // (foreground/background collide) when this tab is selected.
-        var tab = new View { Title = "CC65", Width = Dim.Fill(), Height = Dim.Fill() };
+        var tab = new View { Title = " CC65 ", Width = Dim.Fill(), Height = Dim.Fill() };
 
         // HotKeySpecifier disabled so the literal "_" in "CC65_HOME" isn't parsed as a mnemonic
         // marker (which would swallow it and color the "H" instead - Label parses hotkeys same as
@@ -258,9 +258,10 @@ public sealed class ProjectSettingsDialog : Dialog
         var homeLabel = new Label { Text = "CC65_HOME:", X = 0, Y = 0, HotKeySpecifier = new System.Text.Rune(0xFFFF) };
         cc65HomeField = new TextField
         {
-            X = 0, Y = 2, Width = Dim.Fill(1),
+            X = 0, Y = 2, Width = Dim.Fill(12),
             Text = ToolchainSettings.Load().Cc65Home ?? string.Empty,
         };
+        var browseButton = DirectoryBrowseButton.Create(cc65HomeField, y: 2);
 
         // HotKeySpecifier disabled here too - this text also contains a literal "_" (in
         // "CC65_HOME"), same gotcha as homeLabel above.
@@ -274,7 +275,7 @@ public sealed class ProjectSettingsDialog : Dialog
             HotKeySpecifier = new System.Text.Rune(0xFFFF),
         };
 
-        tab.Add(homeLabel, cc65HomeField, helpLabel);
+        tab.Add(homeLabel, cc65HomeField, browseButton, helpLabel);
         return tab;
     }
 
@@ -285,14 +286,15 @@ public sealed class ProjectSettingsDialog : Dialog
     /// </summary>
     private static View BuildViceTab(out TextField viceBinDirectoryField)
     {
-        var tab = new View { Title = "_VICE", Width = Dim.Fill(), Height = Dim.Fill() };
+        var tab = new View { Title = " _VICE ", Width = Dim.Fill(), Height = Dim.Fill() };
 
         var binLabel = new Label { Text = "VICE bin directory:", X = 0, Y = 0 };
         viceBinDirectoryField = new TextField
         {
-            X = 0, Y = 2, Width = Dim.Fill(1),
+            X = 0, Y = 2, Width = Dim.Fill(12),
             Text = ToolchainSettings.Load().ViceBinDirectory ?? ViceEmulator.DefaultBinDirectory,
         };
+        var browseButton = DirectoryBrowseButton.Create(viceBinDirectoryField, y: 2);
 
         var helpLabel = new Label
         {
@@ -302,7 +304,7 @@ public sealed class ProjectSettingsDialog : Dialog
             X = 0, Y = 4, Width = Dim.Fill(1), Height = 3,
         };
 
-        tab.Add(binLabel, viceBinDirectoryField, helpLabel);
+        tab.Add(binLabel, viceBinDirectoryField, browseButton, helpLabel);
         return tab;
     }
 }

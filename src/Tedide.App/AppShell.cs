@@ -160,12 +160,14 @@ public sealed class AppShell : Window
             Width = Dim.Fill(),
             Height = Dim.Fill(1),
         };
-        _outputTab = new View { Title = "_Output", Width = Dim.Fill(), Height = Dim.Fill() };
+        // Every tab title in the app gets a leading/trailing space (" _Output " rather than
+        // "_Output") - a standing style convention, not specific to this pane.
+        _outputTab = new View { Title = " _Output ", Width = Dim.Fill(), Height = Dim.Fill() };
         _outputView.Width = Dim.Fill();
         _outputView.Height = Dim.Fill();
         _outputTab.Add(_outputView);
 
-        var errorListTab = new View { Title = "_Error List", Width = Dim.Fill(), Height = Dim.Fill() };
+        var errorListTab = new View { Title = " _Error List ", Width = Dim.Fill(), Height = Dim.Fill() };
         _errorListView.Width = Dim.Fill();
         _errorListView.Height = Dim.Fill();
         _errorListView.DiagnosticActivated += OpenDiagnostic;
