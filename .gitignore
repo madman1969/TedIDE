@@ -14,3 +14,4 @@ obj/
 *.lst
 *.map
 *.lbl
+/TestResults/
