@@ -50,6 +50,30 @@ samples/
                        (each gets its own .lst next to it if listing generation is on) - gitignored
     include/           screen.h, ruler.h, columns.h, contrast.h, input.h
     bin/               Build output (C128_80.prg) - gitignored
+  Plus4colours/        A single-file demo of the Plus/4 TED chip's full 121-colour palette
+    Plus4colours.tsln
+    Plus4colours.tproj   src/main.c, -I include for the headers - Target is Plus4
+    src/                 main.c
+    include/             main.h
+    bin/                 Build output (Plus4colours.prg) - gitignored
+  bounce/              A single-file demo bouncing characters around the screen
+    bounce.tsln
+    bounce.tproj         src/bounce.c, -I include for the headers - Target is C64
+    src/                 bounce.c
+    include/             main.h
+    bin/                 Build output (bounce.prg) - gitignored
+  c16colours/          A single-file demo of the Commodore 16's full 16-colour palette
+    c16colours.tsln
+    c16colours.tproj     src/main.c, -I include for the headers - Target is C16
+    src/                 main.c
+    include/             main.h
+    bin/                 Build output (c16colours.prg) - gitignored
+  inflate/             A single-file demo of a sprite that grows and shrinks in an off-screen buffer
+    inflate.tsln
+    inflate.tproj        src/inflate.c, -I include for the headers
+    src/                 inflate.c
+    include/             screen.h
+    bin/                 Build output (inflate.prg) - gitignored
 ```
 
 ## Running
@@ -85,6 +109,18 @@ From the **File** menu:
   characters apart that would collide in 40-column mode, and `contrast.c` switches live to
   40-column mode and back with `videomode()`, drawing the same ruler both times so the difference
   is visible side by side.
+- **Open Project...** and pick `samples/Plus4colours/Plus4colours.tsln` for a single-file demo of
+  the Plus/4's full TED palette - a grid of all 128 hue/luminance combinations (8 hues x 16
+  luminance levels) drawn directly into screen/colour RAM, with row (luminance) and column (hue)
+  labels.
+- **Open Project...** and pick `samples/bounce/bounce.tsln` for a single-file demo bouncing five
+  characters (`@`, `A`, `B`, `C`, `D`) diagonally around the screen, each reflecting off whichever
+  edge it hits.
+- **Open Project...** and pick `samples/c16colours/c16colours.tsln` for a single-file demo of the
+  Commodore 16's full 16-colour palette, drawn as a labelled strip of colour blocks (0-F).
+- **Open Project...** and pick `samples/inflate/inflate.tsln` for a single-file demo of a
+  character-fill sprite that grows and shrinks between zero and the full screen size, redrawn each
+  frame from an off-screen buffer.
 - **Recent Projects and Solutions** lists the 10 most-recently-opened `.tproj`/`.tsln` paths
   (persisted per-user, independent of any one project), numbered for Alt+1..9 accelerators like
   Visual Studio's own list. Selecting a stale entry (moved/deleted on disk) drops it from the list
