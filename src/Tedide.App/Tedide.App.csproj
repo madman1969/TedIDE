@@ -8,6 +8,15 @@
   <ItemGroup>
     <PackageReference Include="Terminal.Gui" Version="2.4.17" />
     <PackageReference Include="Terminal.Gui.Editor" Version="2.5.7" />
+    <!-- Decodes the embedded avatar.jpg into pixel data for AboutDialog's ImageView - Terminal.Gui
+         deliberately has no image-decoding dependency of its own, so the caller supplies one.
+         Windows-only, matching this app's existing platform assumption (see ViceEmulator, the
+         run-tedide skill). -->
+    <PackageReference Include="System.Drawing.Common" Version="9.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\avatar.jpg" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -17,8 +26,11 @@
     <Nullable>enable</Nullable>
     <!-- Terminal.Gui v2 is prerelease; it flags the static Application facade and TextView as
          obsolete in favor of an instance-based Application and a separate tui-cs/Editor package
-         that aren't published yet. Suppress until those ship and this app migrates to them. -->
-    <NoWarn>$(NoWarn);CS0618</NoWarn>
+         that aren't published yet. Suppress until those ship and this app migrates to them.
+         CA1416 flags System.Drawing.Common's Windows-only APIs (AboutDialog's avatar decoding) as
+         reachable on all platforms - this whole app already assumes Windows (see ViceEmulator, the
+         run-tedide skill), so that's a non-issue here. -->
+    <NoWarn>$(NoWarn);CS0618;CA1416</NoWarn>
   </PropertyGroup>
 
 </Project>

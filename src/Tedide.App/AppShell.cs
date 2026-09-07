@@ -267,6 +267,11 @@ public sealed class AppShell : Window
             new("_Amber Phosphor", "", () => ThemeSwitcher.Apply(AppTheme.AmberPhosphor), Key.Empty),
         });
 
+        var helpMenu = new MenuBarItem("_Help", new List<MenuItem>
+        {
+            new("_About Tedide...", "", ShowAbout, Key.Empty),
+        });
+
         // Replace the library's default single-file File menu (New/Open/Save/Save As/Quit) with
         // our own project-aware one, but keep its auto-generated EditMenu/ViewMenu - already wired
         // directly to the editor (Find/Replace/Undo/Redo/Cut/Copy/Paste/Select All; Line Numbers/
@@ -278,7 +283,7 @@ public sealed class AppShell : Window
         // its own items via Add().
         var editMenuItems = menuBar.EditMenu.PopoverMenu!.Root!;
         editMenuItems.AddAt(0, new MenuItem("_Find in Files...", "", () => ShowFindInFiles(), Key.F.WithCtrl.WithShift));
-        menuBar.Menus = [fileMenu, menuBar.EditMenu, menuBar.ViewMenu, buildMenu, projectMenu, themeMenu];
+        menuBar.Menus = [fileMenu, menuBar.EditMenu, menuBar.ViewMenu, buildMenu, projectMenu, themeMenu, helpMenu];
         menuBar.X = 0;
         menuBar.Y = 0;
         menuBar.Width = Dim.Fill();
@@ -656,6 +661,12 @@ public sealed class AppShell : Window
         _editorPane.Open(path);
         _editorFrame.Title = Path.GetFileName(path);
         UpdateLanguageIndicator();
+    }
+
+    /// <summary>Opens the Help > About dialog. Read-only - see <see cref="AboutDialog"/>.</summary>
+    private void ShowAbout()
+    {
+        Application.Run(new AboutDialog());
     }
 
     /// <summary>
