@@ -77,6 +77,7 @@ public sealed class AppShell : Window
         _solutionExplorer.Height = Dim.Fill();
         _solutionExplorer.FileActivated += OpenFile;
         _solutionExplorer.NewFileRequested += NewFile;
+        _solutionExplorer.RenameFileRequested += RenameFile;
         _solutionExplorer.DeleteFileRequested += DeleteFile;
         explorerFrame.Add(_solutionExplorer);
 
@@ -436,12 +437,71 @@ public sealed class AppShell : Window
 
         if (SolutionExplorerTree.CompilableExtensions.Contains(Path.GetExtension(filePath), StringComparer.OrdinalIgnoreCase))
         {
-            project.SourceFiles.Add(Path.GetRelativePath(project.Directory, filePath));
+            project.SourceFiles.Add(RelativeSourcePath(project, filePath));
             project.Save();
         }
 
         _solutionExplorer.Rebuild(_workspace);
         OpenFile(filePath);
+    }
+
+    /// <summary>
+    /// Renames a file in place (same folder) after confirming a new name with the user. If the
+    /// file being renamed is the one currently open in the editor, prompts to save unsaved
+    /// changes first (same as <see cref="OpenFile"/> replacing it) - discarding, rather than
+    /// losing them, since the on-disk (not the in-memory) content is what actually gets renamed -
+    /// then reopens it from its new path afterward. Updates every project's SourceFiles that
+    /// referenced the old path: removed if the new name's extension isn't one cl65 compiles,
+    /// added under the new path if it is (covering a rename that changes the extension, e.g.
+    /// .c -> .h, not just the base name), same as <see cref="NewFile"/>/<see cref="DeleteFile"/>'s
+    /// own compilable-extension check.
+    /// </summary>
+    private void RenameFile(string path)
+    {
+        var dialog = new RenameFileDialog(Path.GetFileName(path));
+        Application.Run(dialog);
+        if (dialog.NewFileName is not { } newFileName)
+            return;
+
+        var newPath = Path.Combine(Path.GetDirectoryName(path)!, newFileName);
+        if (File.Exists(newPath))
+        {
+            MessageBox.ErrorQuery(Application.Instance, "File Exists", $"'{newFileName}' already exists.", ["OK"]);
+            return;
+        }
+
+        // Only ask about unsaved changes once the user has actually committed to a real,
+        // non-colliding rename above - not before, or a Cancel out of either step here would
+        // have already saved/discarded their in-progress edits for nothing.
+        var isOpen = string.Equals(_editorPane.OpenPath, path, StringComparison.OrdinalIgnoreCase);
+        if (isOpen && !ConfirmReplaceCurrentFile())
+            return;
+
+        File.Move(path, newPath);
+
+        foreach (var project in _workspace.Projects)
+        {
+            var oldRelativePath = RelativeSourcePath(project, path);
+            var wasTracked = project.SourceFiles.RemoveAll(f => string.Equals(f, oldRelativePath, StringComparison.OrdinalIgnoreCase)) > 0;
+
+            var stillCompilable = SolutionExplorerTree.CompilableExtensions.Contains(Path.GetExtension(newPath), StringComparer.OrdinalIgnoreCase);
+            if (wasTracked && stillCompilable)
+                project.SourceFiles.Add(RelativeSourcePath(project, newPath));
+
+            if (wasTracked)
+                project.Save();
+        }
+
+        _solutionExplorer.Rebuild(_workspace);
+        if (isOpen)
+        {
+            // Not OpenFile(newPath) - it would re-run ConfirmReplaceCurrentFile, prompting a
+            // second time about the (already-handled, now nonexistent) old path if the user chose
+            // Discard above rather than Save.
+            _editorPane.Open(newPath);
+            _editorFrame.Title = newFileName;
+            UpdateLanguageIndicator();
+        }
     }
 
     /// <summary>
@@ -466,13 +526,23 @@ public sealed class AppShell : Window
 
         foreach (var project in _workspace.Projects)
         {
-            var relativePath = Path.GetRelativePath(project.Directory, path);
+            var relativePath = RelativeSourcePath(project, path);
             if (project.SourceFiles.RemoveAll(f => string.Equals(f, relativePath, StringComparison.OrdinalIgnoreCase)) > 0)
                 project.Save();
         }
 
         _solutionExplorer.Rebuild(_workspace);
     }
+
+    /// <summary>
+    /// A file's path relative to <paramref name="project"/>'s own directory, in the same "/"
+    /// (never "\") form <see cref="TedideProject.SourceFiles"/> entries are written in - matching
+    /// how the bundled sample .tproj files (and <see cref="Workspace.NewProject"/>'s scaffolded
+    /// one) are authored, since <see cref="Path.GetRelativePath(string, string)"/> alone returns
+    /// "\"-separated paths on Windows, which would silently fail to match/dedupe against those.
+    /// </summary>
+    private static string RelativeSourcePath(TedideProject project, string path) =>
+        Path.GetRelativePath(project.Directory, path).Replace('\\', '/');
 
     /// <summary>
     /// Opens the given file in the (single) editor pane, replacing whatever's currently open -

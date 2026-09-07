@@ -12,10 +12,11 @@ namespace Tedide.App.Views;
 /// into subdirectories (e.g. a project's src/ and include/ folders) to build a proper folder tree.
 /// Raises <see cref="FileActivated"/> when the user activates (Enter/double-click) a file node.
 ///
-/// Adding and deleting files is driven entirely from a right-click (or Shift+F10) context menu:
-/// "New File..." on a project or folder node creates a file there; a file node additionally offers
-/// "Delete File". <see cref="NewFileRequested"/> and <see cref="DeleteFileRequested"/> carry those
-/// requests up to the host, which owns the actual filesystem/project-file changes.
+/// Adding, renaming and deleting files is driven entirely from a right-click (or Shift+F10)
+/// context menu: "New File..." on a project or folder node creates a file there; a file node
+/// additionally offers "Rename File" and "Delete File". <see cref="NewFileRequested"/>,
+/// <see cref="RenameFileRequested"/> and <see cref="DeleteFileRequested"/> carry those requests
+/// up to the host, which owns the actual filesystem/project-file changes.
 /// </summary>
 public sealed class SolutionExplorerTree : TreeView
 {
@@ -33,6 +34,9 @@ public sealed class SolutionExplorerTree : TreeView
 
     /// <summary>Raised with the target directory when "New File..." is chosen from the context menu.</summary>
     public event Action<string>? NewFileRequested;
+
+    /// <summary>Raised with the file path when "Rename File" is chosen from the context menu.</summary>
+    public event Action<string>? RenameFileRequested;
 
     /// <summary>Raised with the file path when "Delete File" is chosen from the context menu.</summary>
     public event Action<string>? DeleteFileRequested;
@@ -71,10 +75,11 @@ public sealed class SolutionExplorerTree : TreeView
 
     /// <summary>
     /// Builds and shows the context menu for the given node, if it has any applicable commands:
-    /// "New File..." for a folder node, or "New File..."/"Delete File" for a file node. The
-    /// project root node itself offers neither - New File is deliberately only available inside
-    /// one of its subfolders (typically src/include), not directly in the project's own
-    /// directory. Returns false (showing nothing) for a node type with no applicable commands.
+    /// "New File..." for a folder node, or "New File..."/"Rename File"/"Delete File" for a file
+    /// node. The project root node itself offers neither - New File is deliberately only
+    /// available inside one of its subfolders (typically src/include), not directly in the
+    /// project's own directory. Returns false (showing nothing) for a node type with no
+    /// applicable commands.
     /// </summary>
     private bool TryShowContextMenu(TreeNode node, Point screenPosition)
     {
@@ -87,6 +92,7 @@ public sealed class SolutionExplorerTree : TreeView
                 break;
             case string path when File.Exists(path):
                 items.Add(new MenuItem("New File...", "", () => NewFileRequested?.Invoke(Path.GetDirectoryName(path)!)));
+                items.Add(new MenuItem("Rename File", "", () => RenameFileRequested?.Invoke(path)));
                 items.Add(new MenuItem("Delete File", "", () => DeleteFileRequested?.Invoke(path)));
                 break;
         }
