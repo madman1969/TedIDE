@@ -13,10 +13,12 @@ namespace Tedide.App.Views;
 /// Raises <see cref="FileActivated"/> when the user activates (Enter/double-click) a file node.
 ///
 /// Adding, renaming and deleting files is driven entirely from a right-click (or Shift+F10)
-/// context menu: "New File..." on a project or folder node creates a file there; a file node
-/// additionally offers "Rename File" and "Delete File". <see cref="NewFileRequested"/>,
-/// <see cref="RenameFileRequested"/> and <see cref="DeleteFileRequested"/> carry those requests
-/// up to the host, which owns the actual filesystem/project-file changes.
+/// context menu: "New File..." on a project or folder node creates a file there, "Add Existing
+/// Item..." (right below it) copies one or more files picked from anywhere on disk into that same
+/// folder; a file node additionally offers "Rename File" and "Delete File". <see cref="NewFileRequested"/>,
+/// <see cref="AddExistingItemRequested"/>, <see cref="RenameFileRequested"/> and
+/// <see cref="DeleteFileRequested"/> carry those requests up to the host, which owns the actual
+/// filesystem/project-file changes.
 /// </summary>
 public sealed class SolutionExplorerTree : TreeView
 {
@@ -34,6 +36,9 @@ public sealed class SolutionExplorerTree : TreeView
 
     /// <summary>Raised with the target directory when "New File..." is chosen from the context menu.</summary>
     public event Action<string>? NewFileRequested;
+
+    /// <summary>Raised with the target directory when "Add Existing Item..." is chosen from the context menu.</summary>
+    public event Action<string>? AddExistingItemRequested;
 
     /// <summary>Raised with the file path when "Rename File" is chosen from the context menu.</summary>
     public event Action<string>? RenameFileRequested;
@@ -89,9 +94,11 @@ public sealed class SolutionExplorerTree : TreeView
         {
             case string path when Directory.Exists(path):
                 items.Add(new MenuItem("New File...", "", () => NewFileRequested?.Invoke(path)));
+                items.Add(new MenuItem("Add Existing Item...", "", () => AddExistingItemRequested?.Invoke(path)));
                 break;
             case string path when File.Exists(path):
                 items.Add(new MenuItem("New File...", "", () => NewFileRequested?.Invoke(Path.GetDirectoryName(path)!)));
+                items.Add(new MenuItem("Add Existing Item...", "", () => AddExistingItemRequested?.Invoke(Path.GetDirectoryName(path)!)));
                 items.Add(new MenuItem("Rename File", "", () => RenameFileRequested?.Invoke(path)));
                 items.Add(new MenuItem("Delete File", "", () => DeleteFileRequested?.Invoke(path)));
                 break;

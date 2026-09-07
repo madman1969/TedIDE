@@ -85,6 +85,7 @@ public sealed class AppShell : Window
         _solutionExplorer.Height = Dim.Fill();
         _solutionExplorer.FileActivated += OpenFile;
         _solutionExplorer.NewFileRequested += NewFile;
+        _solutionExplorer.AddExistingItemRequested += AddExistingItem;
         _solutionExplorer.RenameFileRequested += RenameFile;
         _solutionExplorer.DeleteFileRequested += DeleteFile;
         explorerFrame.Add(_solutionExplorer);
@@ -460,6 +461,81 @@ public sealed class AppShell : Window
 
         _solutionExplorer.Rebuild(_workspace);
         OpenFile(filePath);
+    }
+
+    /// <summary>
+    /// Copies one or more existing files, picked from anywhere on disk via a multi-select file
+    /// dialog, into <paramref name="directory"/> - the same target folder "New File..." would use
+    /// (see <see cref="NewFile"/>). The dialog's own file-type filter matches the folder's
+    /// convention the same way <see cref="NewFile"/>'s default filename extension does ("include"
+    /// -> headers, "src" -> compilable sources, elsewhere -> anything the Solution Explorer
+    /// displays). A file already sitting at the destination path (e.g. one picked from inside this
+    /// same folder) is left alone rather than copied onto itself; one that would collide with a
+    /// different file already there is skipped, and every skip is reported together in one
+    /// message once the whole batch is done rather than interrupting it file by file. Compilable
+    /// copies not already in the project are added to its SourceFiles, same as <see cref="NewFile"/>.
+    /// </summary>
+    private void AddExistingItem(string directory)
+    {
+        var project = _workspace.Projects.FirstOrDefault(p =>
+            directory.StartsWith(p.Directory, StringComparison.OrdinalIgnoreCase));
+        if (project is null)
+            return;
+
+        var allowedType = Path.GetFileName(directory).ToLowerInvariant() switch
+        {
+            "include" => new AllowedType("Header Files", ".h", ".inc"),
+            "src" => new AllowedType("Source Files", ".c", ".s", ".asm"),
+            _ => new AllowedType("Source/Header Files", SolutionExplorerTree.DisplayedExtensions),
+        };
+        var dialog = new OpenDialog
+        {
+            Title = "Add Existing Item",
+            OpenMode = OpenMode.File,
+            AllowsMultipleSelection = true,
+            AllowedTypes = [allowedType],
+        };
+        Application.Run(dialog);
+        if (dialog.FilePaths.Count == 0)
+            return;
+
+        var skipped = new List<string>();
+        var addedAny = false;
+        foreach (var sourcePath in dialog.FilePaths)
+        {
+            var destinationPath = Path.Combine(directory, Path.GetFileName(sourcePath));
+            var alreadyInPlace = string.Equals(Path.GetFullPath(sourcePath), Path.GetFullPath(destinationPath), StringComparison.OrdinalIgnoreCase);
+
+            if (!alreadyInPlace)
+            {
+                if (File.Exists(destinationPath))
+                {
+                    skipped.Add(Path.GetFileName(destinationPath));
+                    continue;
+                }
+                File.Copy(sourcePath, destinationPath);
+            }
+
+            if (SolutionExplorerTree.CompilableExtensions.Contains(Path.GetExtension(destinationPath), StringComparer.OrdinalIgnoreCase))
+            {
+                var relativePath = RelativeSourcePath(project, destinationPath);
+                if (!project.SourceFiles.Any(f => string.Equals(f, relativePath, StringComparison.OrdinalIgnoreCase)))
+                    project.SourceFiles.Add(relativePath);
+            }
+
+            addedAny = true;
+        }
+
+        if (addedAny)
+            project.Save();
+
+        if (skipped.Count > 0)
+        {
+            MessageBox.ErrorQuery(Application.Instance, "Some Files Skipped",
+                $"Already exists in this folder, skipped:\n{string.Join('\n', skipped)}", ["OK"]);
+        }
+
+        _solutionExplorer.Rebuild(_workspace);
     }
 
     /// <summary>
