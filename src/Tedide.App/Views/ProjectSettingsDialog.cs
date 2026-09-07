@@ -13,9 +13,8 @@ namespace Tedide.App.Views;
 /// arguments), "Optimizer" (the cc65 compiler optimization preset - see
 /// <see cref="Cc65OptimizationLevel"/>), and "Compiler" (other cc65 compile-time flags: whether to
 /// emit an assembler listing file per source file, and whether to interleave C source as comments
-/// in them). Source
-/// files aren't edited here - that's the
-/// Solution Explorer's right-click New File/Delete File job (see <see cref="SolutionExplorerTree"/>).
+/// in them). Source files aren't edited here - that's the Solution Explorer's right-click New
+/// File/Delete File job (see <see cref="SolutionExplorerTree"/>).
 /// On "Save", writes every field from all three tabs onto the given <see cref="TedideProject"/> in
 /// one go and persists it to disk; the caller is responsible for refreshing anything that displays
 /// project state (e.g. the Solution Explorer's "Name (target)" node text).
@@ -37,7 +36,10 @@ public sealed class ProjectSettingsDialog : Dialog
     {
         Title = $"Project Settings - {project.Name}";
         Width = 78;
-        Height = 26;
+        // Tall enough for the "Settings" tab's four label/field pairs, each now with a blank row
+        // above and below its field - see the "every field needs clearance on all 4 sides"
+        // convention - plus the Tabs control's own header/border chrome on top of that.
+        Height = 32;
         // A real Padding adornment (rather than hand-offsetting every child's X/Y by 1) so the
         // whole dialog gets consistent breathing room from its border - children below are
         // positioned relative to this inset content area, i.e. X = 0 is already 2 cells in.
@@ -117,32 +119,35 @@ public sealed class ProjectSettingsDialog : Dialog
     {
         var tab = new View { Title = "_Settings", Width = Dim.Fill(), Height = Dim.Fill() };
 
+        // Every field below sits 2 rows under its own label (a blank row between them) and is at
+        // least 2 rows above whatever follows it (likewise) - see the "every field needs
+        // clearance on all 4 sides" convention.
         var nameLabel = new Label { Text = "Name:", X = 0, Y = 0 };
-        nameField = new TextField { X = 0, Y = 1, Width = Dim.Fill(), Text = project.Name };
+        nameField = new TextField { X = 0, Y = 2, Width = Dim.Fill(1), Text = project.Name };
 
         // Restricted to Commodore hardware - see Cc65TargetExtensions.CommodoreTargets. If the
         // project's current target falls outside that list (e.g. set by hand-editing the .tproj,
         // or before this restriction existed), it's still shown here so Save doesn't silently
         // change it - it just won't appear in the dropdown's own options.
-        var targetLabel = new Label { Text = "Target (Commodore only):", X = 0, Y = 3 };
+        var targetLabel = new Label { Text = "Target (Commodore only):", X = 0, Y = 4 };
         targetField = new DropDownList
         {
-            X = 0, Y = 4, Width = Dim.Fill(),
+            X = 0, Y = 6, Width = Dim.Fill(1),
             Source = new ListWrapper<string>(new ObservableCollection<string>(
                 Cc65TargetExtensions.CommodoreTargets.Select(t => t.ToCl65Id()))),
             Text = project.Target.ToCl65Id(),
         };
 
-        var outputLabel = new Label { Text = $"Output file (blank = {project.Name}{project.Target.DefaultOutputExtension()}):", X = 0, Y = 6 };
-        outputFileField = new TextField { X = 0, Y = 7, Width = Dim.Fill(), Text = project.OutputFile ?? string.Empty };
+        var outputLabel = new Label { Text = $"Output file (blank = {project.Name}{project.Target.DefaultOutputExtension()}):", X = 0, Y = 8 };
+        outputFileField = new TextField { X = 0, Y = 10, Width = Dim.Fill(1), Text = project.OutputFile ?? string.Empty };
 
-        var extraArgsLabel = new Label { Text = "Extra cl65 arguments:", X = 0, Y = 9 };
-        extraArgumentsField = new TextField { X = 0, Y = 10, Width = Dim.Fill(), Text = string.Join(' ', project.ExtraArguments) };
+        var extraArgsLabel = new Label { Text = "Extra cl65 arguments:", X = 0, Y = 12 };
+        extraArgumentsField = new TextField { X = 0, Y = 14, Width = Dim.Fill(1), Text = string.Join(' ', project.ExtraArguments) };
 
         var infoLabel = new Label
         {
             Text = $"{project.SourceFiles.Count} source file(s) in {project.Directory}",
-            X = 0, Y = 12, Width = Dim.Fill(),
+            X = 0, Y = 16, Width = Dim.Fill(1),
         };
 
         tab.Add(nameLabel, nameField, targetLabel, targetField, outputLabel, outputFileField, extraArgsLabel, extraArgumentsField, infoLabel);
@@ -157,7 +162,7 @@ public sealed class ProjectSettingsDialog : Dialog
         var levelLabel = new Label { Text = "Optimization level:", X = 0, Y = 0 };
         optimizationLevelField = new DropDownList
         {
-            X = 0, Y = 1, Width = Dim.Fill(),
+            X = 0, Y = 2, Width = Dim.Fill(1),
             Source = new ListWrapper<string>(new ObservableCollection<string>(
                 Enum.GetValues<Cc65OptimizationLevel>().Select(l => l.DisplayName()))),
             Text = project.OptimizationLevel.DisplayName(),
@@ -171,7 +176,7 @@ public sealed class ProjectSettingsDialog : Dialog
                    "-Os     Optimize code, inline some known functions\n" +
                    "-Ox     Optimize code, extended optimizations\n" +
                    "-Oirs   Combines -Oi, -Or and -Os (most aggressive setting)",
-            X = 0, Y = 3, Width = Dim.Fill(), Height = 6,
+            X = 0, Y = 4, Width = Dim.Fill(1), Height = 6,
         };
 
         tab.Add(levelLabel, optimizationLevelField, helpLabel);

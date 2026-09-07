@@ -24,25 +24,39 @@ public sealed class NewProjectDialog : Dialog
     {
         Title = "New Project";
         Width = 60;
-        Height = 14;
+        Height = 23;
         // A real Padding adornment (rather than hand-offsetting every child's X/Y by 1) so the
         // whole dialog gets consistent breathing room from its border - children below are
         // positioned relative to this inset content area, i.e. X = 0 is already 2 cells in.
         Padding.Thickness = new Thickness(2, 1, 2, 1);
 
+        // Every field below sits 2 rows under its own label (a blank row between them) and is at
+        // least 2 rows above whatever follows it (likewise) - see the "every field needs
+        // clearance on all 4 sides" convention, rather than the label/field pairs sitting
+        // directly adjacent with no breathing room.
         var nameLabel = new Label { Text = "Name:", X = 0, Y = 0 };
-        _nameField = new TextField { X = 0, Y = 1, Width = Dim.Fill(), Text = "NewGame" };
+        _nameField = new TextField { X = 0, Y = 2, Width = Dim.Fill(1), Text = "NewGame" };
 
-        var dirLabel = new Label { Text = "Directory:", X = 0, Y = 3 };
+        var dirLabel = new Label { Text = "Directory:", X = 0, Y = 4 };
         _directoryField = new TextField
         {
-            X = 0, Y = 4, Width = Dim.Fill(),
+            X = 0, Y = 6, Width = Dim.Fill(1),
             Text = Path.Combine(System.Environment.CurrentDirectory, "NewGame"),
         };
 
+        var targetLabel = new Label { Text = "Target:", X = 0, Y = 8 };
+        _targetField = new TextField { X = 0, Y = 10, Width = Dim.Fill(1), Text = "c64" };
+
+        // The full cl65 target list is too long for one line (it silently overflowed the dialog
+        // width here before this wrap), so it gets its own wrapped help block below the field
+        // instead of being crammed into the label - WrapText is generous with height so this
+        // keeps working if cc65 grows more targets later.
         var validTargets = string.Join(", ", Enum.GetValues<Cc65Target>().Select(t => t.ToCl65Id()));
-        var targetLabel = new Label { Text = $"Target ({validTargets}):", X = 0, Y = 6 };
-        _targetField = new TextField { X = 0, Y = 7, Width = Dim.Fill(), Text = "c64" };
+        var targetHelpLabel = new Label
+        {
+            Text = WrapText($"Valid values: {validTargets}", 52),
+            X = 0, Y = 12, Width = Dim.Fill(1), Height = 4,
+        };
 
         // The primary action: Accent-scheme so it visually pops against the dialog's normal
         // chrome, the same accent color the app uses for the menu bar's own highlighted items.
@@ -67,6 +81,29 @@ public sealed class NewProjectDialog : Dialog
             e.Handled = true;
         };
 
-        Add([nameLabel, _nameField, dirLabel, _directoryField, targetLabel, _targetField, createButton, cancelButton]);
+        Add([nameLabel, _nameField, dirLabel, _directoryField, targetLabel, _targetField, targetHelpLabel, createButton, cancelButton]);
+    }
+
+    /// <summary>Greedy word-wraps <paramref name="text"/> to lines no longer than <paramref name="width"/> characters, breaking only on spaces.</summary>
+    private static string WrapText(string text, int width)
+    {
+        var lines = new List<string>();
+        var current = "";
+        foreach (var word in text.Split(' '))
+        {
+            var candidate = current.Length == 0 ? word : $"{current} {word}";
+            if (candidate.Length > width && current.Length > 0)
+            {
+                lines.Add(current);
+                current = word;
+            }
+            else
+            {
+                current = candidate;
+            }
+        }
+        if (current.Length > 0)
+            lines.Add(current);
+        return string.Join('\n', lines);
     }
 }

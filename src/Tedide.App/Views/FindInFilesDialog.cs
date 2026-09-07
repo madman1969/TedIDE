@@ -48,11 +48,13 @@ public sealed class FindInFilesDialog : Dialog
         Padding.Thickness = new Thickness(2, 1, 2, 1);
 
         var searchLabel = new Label { Text = "Find what:", X = 0, Y = 0 };
-        _searchField = new TextField { X = 0, Y = 1, Width = Dim.Fill(14) };
+        // Y = 2, not 1: a blank row between the label and its field, same as every other field
+        // in the app - see the "every field needs clearance on all 4 sides" convention.
+        _searchField = new TextField { X = 0, Y = 2, Width = Dim.Fill(14) };
 
         // The primary action: Accent-scheme so it visually pops against the dialog's normal
         // chrome, the same accent color the app uses for the menu bar's own highlighted items.
-        var findButton = new Button { Text = "_Find", IsDefault = true, SchemeName = "Accent", X = Pos.AnchorEnd(12), Y = 1, Width = 12 };
+        var findButton = new Button { Text = "_Find", IsDefault = true, SchemeName = "Accent", X = Pos.AnchorEnd(12), Y = 2, Width = 12 };
         findButton.Accepting += (_, e) =>
         {
             RunSearch();
@@ -61,9 +63,9 @@ public sealed class FindInFilesDialog : Dialog
             e.Handled = true;
         };
 
-        _statusLabel = new Label { Text = string.Empty, X = 0, Y = 3, Width = Dim.Fill() };
+        _statusLabel = new Label { Text = string.Empty, X = 0, Y = 4, Width = Dim.Fill() };
 
-        var resultsFrame = new FrameView { Title = "Results (Enter to open)", X = 0, Y = 5, Width = Dim.Fill(), Height = Dim.Fill(2) };
+        var resultsFrame = new FrameView { Title = "Results (Enter to open)", X = 0, Y = 6, Width = Dim.Fill(1), Height = Dim.Fill(2) };
         _resultsList = new ListView
         {
             X = 0,
