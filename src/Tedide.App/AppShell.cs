@@ -393,6 +393,11 @@ public sealed class AppShell : Window
 
     private List<MenuItem> BuildRecentProjectsMenuItems()
     {
+        // Silently drops any entry that no longer exists on disk before building the list, so a
+        // moved/deleted project just quietly disappears from the menu rather than sitting there
+        // until the user clicks it and gets the "File Not Found" error in OpenProjectOrSolution.
+        _recentProjects.PruneMissing();
+
         if (_recentProjects.Paths.Count == 0)
             return [new MenuItem("(No Recent Projects or Solutions)", "", () => { }, Key.Empty)];
 

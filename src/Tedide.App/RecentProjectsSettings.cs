@@ -62,4 +62,17 @@ public sealed class RecentProjectsSettings
         if (Paths.RemoveAll(p => string.Equals(p, fullPath, StringComparison.OrdinalIgnoreCase)) > 0)
             Save();
     }
+
+    /// <summary>
+    /// Drops every path that no longer exists on disk (moved/deleted since it was recorded),
+    /// saving only if anything was actually removed. Unlike <see cref="Remove"/> (a single path,
+    /// dropped after the user tried and failed to open it), this proactively cleans the whole list
+    /// - called before the "Recent Projects and Solutions" submenu is built, so a stale entry never
+    /// shows up in the first place instead of only being pruned after a failed click.
+    /// </summary>
+    public void PruneMissing()
+    {
+        if (Paths.RemoveAll(p => !File.Exists(p)) > 0)
+            Save();
+    }
 }
