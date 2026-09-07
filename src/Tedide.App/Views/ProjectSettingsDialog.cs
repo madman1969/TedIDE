@@ -8,16 +8,19 @@ using Terminal.Gui.Views;
 namespace Tedide.App.Views;
 
 /// <summary>
-/// Modal dialog for viewing/editing a loaded project's settings, as three tabs sharing one Save/
+/// Modal dialog for viewing/editing a loaded project's settings, as four tabs sharing one Save/
 /// Cancel footer: "Settings" (display name, cc65 target, output file override, extra cl65
 /// arguments), "Optimizer" (the cc65 compiler optimization preset - see
-/// <see cref="Cc65OptimizationLevel"/>), and "Compiler" (other cc65 compile-time flags: whether to
+/// <see cref="Cc65OptimizationLevel"/>), "Compiler" (other cc65 compile-time flags: whether to
 /// emit an assembler listing file per source file, and whether to interleave C source as comments
-/// in them). Source files aren't edited here - that's the Solution Explorer's right-click New
-/// File/Delete File job (see <see cref="SolutionExplorerTree"/>).
-/// On "Save", writes every field from all three tabs onto the given <see cref="TedideProject"/> in
-/// one go and persists it to disk; the caller is responsible for refreshing anything that displays
-/// project state (e.g. the Solution Explorer's "Name (target)" node text).
+/// in them), and "CC65" (the CC65_HOME environment variable). Source files aren't edited here -
+/// that's the Solution Explorer's right-click New File/Delete File job (see
+/// <see cref="SolutionExplorerTree"/>).
+/// On "Save", writes every field from the project-bound tabs onto the given
+/// <see cref="TedideProject"/> in one go and persists it to disk (CC65_HOME is not project state,
+/// so it's applied straight to the process's environment instead - see the CC65 tab); the caller is
+/// responsible for refreshing anything that displays project state (e.g. the Solution Explorer's
+/// "Name (target)" node text).
 /// </summary>
 public sealed class ProjectSettingsDialog : Dialog
 {
@@ -28,6 +31,7 @@ public sealed class ProjectSettingsDialog : Dialog
     private readonly DropDownList _optimizationLevelField;
     private readonly CheckBox _generateListingField;
     private readonly CheckBox _addSourceAsCommentField;
+    private readonly TextField _cc65HomeField;
 
     /// <summary>True if the user chose Save (and the project was updated and saved to disk).</summary>
     public bool Saved { get; private set; }
@@ -49,9 +53,11 @@ public sealed class ProjectSettingsDialog : Dialog
         var settingsTab = BuildSettingsTab(project, out _nameField, out _targetField, out _outputFileField, out _extraArgumentsField);
         var optimizerTab = BuildOptimizerTab(project, out _optimizationLevelField);
         var compilerTab = BuildCompilerTab(project, out _generateListingField, out _addSourceAsCommentField);
+        var cc65Tab = BuildCc65Tab(out _cc65HomeField);
         tabs.Add(settingsTab);
         tabs.Add(optimizerTab);
         tabs.Add(compilerTab);
+        tabs.Add(cc65Tab);
 
         // The primary action: Accent-scheme so it visually pops against the dialog's normal
         // chrome, the same accent color the app uses for the menu bar's own highlighted items.
@@ -89,6 +95,12 @@ public sealed class ProjectSettingsDialog : Dialog
             project.GenerateAssemblyListing = _generateListingField.Value == CheckState.Checked;
             project.AddSourceAsComment = _addSourceAsCommentField.Value == CheckState.Checked;
             project.Save();
+
+            // Not project state - applied straight to this process's environment so it's picked up
+            // by every cl65 invocation Tedide.Build starts from here on (child processes inherit
+            // their parent's environment by default).
+            var cc65Home = _cc65HomeField.Text.Trim();
+            Environment.SetEnvironmentVariable("CC65_HOME", cc65Home.Length == 0 ? null : cc65Home);
 
             Saved = true;
             Application.RequestStop(this);
@@ -217,6 +229,40 @@ public sealed class ProjectSettingsDialog : Dialog
         };
 
         tab.Add(generateListingField, listingHelpLabel, addSourceAsCommentField, sourceHelpLabel);
+        return tab;
+    }
+
+    /// <summary>
+    /// Builds the "CC65" tab: the CC65_HOME environment variable, shown and edited directly (not
+    /// project state - see the Save handler). Blank means "unset".
+    /// </summary>
+    private static View BuildCc65Tab(out TextField cc65HomeField)
+    {
+        // No mnemonic (unlike the other three tabs) - "CC65" has no letter free to underline
+        // without colliding with "_Compiler"'s C, and a digit mnemonic renders invisible
+        // (foreground/background collide) when this tab is selected.
+        var tab = new View { Title = "CC65", Width = Dim.Fill(), Height = Dim.Fill() };
+
+        // HotKeySpecifier disabled so the literal "_" in "CC65_HOME" isn't parsed as a mnemonic
+        // marker (which would swallow it and color the "H" instead - Label parses hotkeys same as
+        // Button/Tabs titles do).
+        var homeLabel = new Label { Text = "CC65_HOME:", X = 0, Y = 0, HotKeySpecifier = new System.Text.Rune(0xFFFF) };
+        cc65HomeField = new TextField
+        {
+            X = 0, Y = 2, Width = Dim.Fill(1),
+            Text = Environment.GetEnvironmentVariable("CC65_HOME") ?? string.Empty,
+        };
+
+        var helpLabel = new Label
+        {
+            Text = "Root directory of the cc65 installation (contains its include/ and lib/\n" +
+                   "subfolders) - cl65 uses this to find target-specific headers and libraries.\n" +
+                   "Applied to this Tedide process's environment on Save, so it takes effect for\n" +
+                   "builds started from here on; leave blank to unset it.",
+            X = 0, Y = 4, Width = Dim.Fill(1), Height = 4,
+        };
+
+        tab.Add(homeLabel, cc65HomeField, helpLabel);
         return tab;
     }
 }
