@@ -218,15 +218,17 @@ public sealed class AppShell : Window
         var menuBar = new EditorMenuBar(_editorPane.Editor);
 
         _recentProjectsMenuItem = new MenuItem("_Recent Projects and Solutions", "", new Menu(BuildRecentProjectsMenuItems()));
-        var fileMenu = new MenuBarItem("_File", new List<MenuItem>
+        var fileMenu = new MenuBarItem("_File", new List<View>
         {
-            new("_New Project...", "", NewProject, Key.N.WithCtrl),
-            new("_Open Project...", "", OpenProject, Key.O.WithCtrl),
+            new MenuItem("_New Project...", "", NewProject, Key.N.WithCtrl),
+            new MenuItem("_Open Project...", "", OpenProject, Key.O.WithCtrl),
             _recentProjectsMenuItem,
-            new("Close Sol_ution", "", CloseSolution, Key.Empty),
-            new("_Save", "", SaveAll, Key.S.WithCtrl),
-            new("_Close File", "", CloseActiveFile, Key.W.WithCtrl),
-            new("_Quit", "", () => Application.RequestStop(this), Key.Q.WithCtrl),
+            new MenuItem("Close Sol_ution", "", CloseSolution, Key.Empty),
+            new Line(),
+            new MenuItem("_Save", "", SaveAll, Key.S.WithCtrl),
+            new MenuItem("_Close File", "", CloseActiveFile, Key.W.WithCtrl),
+            new Line(),
+            new MenuItem("_Quit", "", () => Application.RequestStop(this), Key.Q.WithCtrl),
         });
 
         var buildMenu = new MenuBarItem("_Build", new List<MenuItem>
