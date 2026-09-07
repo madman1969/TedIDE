@@ -30,6 +30,17 @@ public sealed class TedideProject
     /// </summary>
     public bool AddSourceAsComment { get; set; } = true;
 
+    /// <summary>Whether ld65 should emit a linker map file (-m) alongside the project, showing
+    /// every segment's address/size and where each object file's symbols ended up. Defaults to
+    /// off - most builds don't need it. See <see cref="ResolvedMapFile"/> for its fixed name.</summary>
+    public bool GenerateLinkerMap { get; set; }
+
+    /// <summary>Whether ld65 should emit a VICE-format label file (-Ln) alongside the project,
+    /// loadable into VICE's own monitor (or another machine-language monitor that understands the
+    /// same format) to resolve addresses back to symbol names while debugging. Defaults to off.
+    /// See <see cref="ResolvedLabelsFile"/> for its fixed name.</summary>
+    public bool ExportLabels { get; set; }
+
     /// <summary>Source file paths, relative to the project file's directory.</summary>
     public List<string> SourceFiles { get; set; } = [];
 
@@ -61,6 +72,19 @@ public sealed class TedideProject
     /// </summary>
     [JsonIgnore]
     public IEnumerable<string> ResolvedListingFiles => ResolvedSourceFiles.Select(f => Path.ChangeExtension(f, ".lst"));
+
+    /// <summary>Where ld65's -m linker map is written when <see cref="GenerateLinkerMap"/> is on -
+    /// always "lnk.map" directly in the project's own directory, not per-source like the .lst
+    /// listings above (a link is one invocation covering the whole project, not one per source
+    /// file).</summary>
+    [JsonIgnore]
+    public string ResolvedMapFile => Path.Combine(Directory, "lnk.map");
+
+    /// <summary>Where ld65's -Ln label file is written when <see cref="ExportLabels"/> is on -
+    /// "{Name}.lbl" in the project's own directory, matching how <see cref="ResolvedOutputFile"/>
+    /// defaults to "{Name}" plus a target-specific extension.</summary>
+    [JsonIgnore]
+    public string ResolvedLabelsFile => Path.Combine(Directory, Name + ".lbl");
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {

@@ -153,10 +153,12 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
 
     /// <summary>
     /// Deletes build artifacts without invoking cl65: the per-source .o object file cl65 leaves
-    /// alongside each source file, the final linked output binary, and each source file's
-    /// assembler listing (if <see cref="TedideProject.GenerateAssemblyListing"/> is on). Skips
-    /// whatever doesn't exist (e.g. a project that's never been built, or one that failed to
-    /// compile some of its sources). Returns the full paths actually deleted.
+    /// alongside each source file, the final linked output binary, each source file's assembler
+    /// listing (if <see cref="TedideProject.GenerateAssemblyListing"/> is on), the ld65 linker map
+    /// (if <see cref="TedideProject.GenerateLinkerMap"/> is on) and the ld65 label file (if
+    /// <see cref="TedideProject.ExportLabels"/> is on). Skips whatever doesn't exist (e.g. a
+    /// project that's never been built, or one that failed to compile some of its sources).
+    /// Returns the full paths actually deleted.
     /// </summary>
     public IReadOnlyList<string> Clean(TedideProject project)
     {
@@ -185,6 +187,18 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
                 File.Delete(listingFile);
                 removed.Add(listingFile);
             }
+        }
+
+        if (File.Exists(project.ResolvedMapFile))
+        {
+            File.Delete(project.ResolvedMapFile);
+            removed.Add(project.ResolvedMapFile);
+        }
+
+        if (File.Exists(project.ResolvedLabelsFile))
+        {
+            File.Delete(project.ResolvedLabelsFile);
+            removed.Add(project.ResolvedLabelsFile);
         }
 
         return removed;
@@ -233,6 +247,10 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
             "-t", project.Target.ToCl65Id(),
             "-o", project.ResolvedOutputFile,
         };
+        if (project.GenerateLinkerMap)
+            args.AddRange(["-m", project.ResolvedMapFile]);
+        if (project.ExportLabels)
+            args.AddRange(["-Ln", project.ResolvedLabelsFile]);
         args.AddRange(project.ExtraArguments);
         args.AddRange(objectFiles);
         return args;

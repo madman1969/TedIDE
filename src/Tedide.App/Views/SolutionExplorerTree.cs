@@ -158,29 +158,36 @@ public sealed class SolutionExplorerTree : TreeView
 
     /// <summary>
     /// Adds a "Generated Files" node listing build-generated files that live outside the normal
-    /// source tree - currently the cc65 assembler listings (.lst), one per source file, shown
-    /// only once <see cref="TedideProject.GenerateAssemblyListing"/> is on and at least one has
-    /// actually been written (a project - or a single source file in it - that's never been built
-    /// won't have one yet). Omitted entirely when there's nothing to show, so a never-built (or
-    /// listing-disabled) project doesn't get an empty node. Has no Tag - it's not itself a file or
-    /// directory, so the right-click context menu offers nothing for it.
+    /// source tree: the cc65 assembler listings (.lst, one per source file) if
+    /// <see cref="TedideProject.GenerateAssemblyListing"/> is on, the ld65 linker map (lnk.map) if
+    /// <see cref="TedideProject.GenerateLinkerMap"/> is on, and the ld65 label file ({Name}.lbl) if
+    /// <see cref="TedideProject.ExportLabels"/> is on - each only once it's actually been written
+    /// (a project, or a single source file in it, that's never been built won't have one yet).
+    /// Omitted entirely when there's nothing to show, so a never-built (or nothing-enabled) project
+    /// doesn't get an empty node. Has no Tag - it's not itself a file or directory, so the
+    /// right-click context menu offers nothing for it.
     /// </summary>
     private static void AddGeneratedFilesNode(TreeNode projectNode, TedideProject project)
     {
-        if (!project.GenerateAssemblyListing)
-            return;
+        var generatedFiles = new List<string>();
 
-        var listingFiles = project.ResolvedListingFiles.Where(File.Exists).ToList();
-        if (listingFiles.Count == 0)
+        if (project.GenerateAssemblyListing)
+            generatedFiles.AddRange(project.ResolvedListingFiles.Where(File.Exists));
+        if (project.GenerateLinkerMap && File.Exists(project.ResolvedMapFile))
+            generatedFiles.Add(project.ResolvedMapFile);
+        if (project.ExportLabels && File.Exists(project.ResolvedLabelsFile))
+            generatedFiles.Add(project.ResolvedLabelsFile);
+
+        if (generatedFiles.Count == 0)
             return;
 
         var generatedNode = new TreeNode { Text = "Generated Files" };
-        foreach (var listingFile in listingFiles)
+        foreach (var generatedFile in generatedFiles)
         {
             generatedNode.Children.Add(new TreeNode
             {
-                Text = Path.GetFileName(listingFile),
-                Tag = listingFile,
+                Text = Path.GetFileName(generatedFile),
+                Tag = generatedFile,
             });
         }
         projectNode.Children.Add(generatedNode);

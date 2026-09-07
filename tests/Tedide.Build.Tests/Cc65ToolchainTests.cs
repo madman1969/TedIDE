@@ -189,6 +189,70 @@ public class Cc65ToolchainTests
     }
 
     [Fact]
+    public void BuildLinkArguments_OmitsMapFlag_WhenGenerateLinkerMapIsFalse()
+    {
+        var project = new TedideProject
+        {
+            Name = "Test",
+            Target = Cc65Target.C64,
+            GenerateLinkerMap = false,
+        };
+
+        var args = Cc65Toolchain.BuildLinkArguments(project, ["src/main.o"]);
+
+        Assert.DoesNotContain("-m", args);
+    }
+
+    [Fact]
+    public void BuildLinkArguments_IncludesMapFlag_WithTheResolvedMapPath_WhenGenerateLinkerMapIsTrue()
+    {
+        var project = new TedideProject
+        {
+            Name = "Test",
+            Target = Cc65Target.C64,
+            GenerateLinkerMap = true,
+        };
+
+        var args = Cc65Toolchain.BuildLinkArguments(project, ["src/main.o"]);
+
+        var mapFlagIndex = args.IndexOf("-m");
+        Assert.True(mapFlagIndex >= 0, $"Expected -m in arguments: {string.Join(" ", args)}");
+        Assert.Equal(project.ResolvedMapFile, args[mapFlagIndex + 1]);
+    }
+
+    [Fact]
+    public void BuildLinkArguments_OmitsLabelsFlag_WhenExportLabelsIsFalse()
+    {
+        var project = new TedideProject
+        {
+            Name = "Test",
+            Target = Cc65Target.C64,
+            ExportLabels = false,
+        };
+
+        var args = Cc65Toolchain.BuildLinkArguments(project, ["src/main.o"]);
+
+        Assert.DoesNotContain("-Ln", args);
+    }
+
+    [Fact]
+    public void BuildLinkArguments_IncludesLabelsFlag_WithTheResolvedLabelsPath_WhenExportLabelsIsTrue()
+    {
+        var project = new TedideProject
+        {
+            Name = "Test",
+            Target = Cc65Target.C64,
+            ExportLabels = true,
+        };
+
+        var args = Cc65Toolchain.BuildLinkArguments(project, ["src/main.o"]);
+
+        var labelsFlagIndex = args.IndexOf("-Ln");
+        Assert.True(labelsFlagIndex >= 0, $"Expected -Ln in arguments: {string.Join(" ", args)}");
+        Assert.Equal(project.ResolvedLabelsFile, args[labelsFlagIndex + 1]);
+    }
+
+    [Fact]
     public void Clean_RemovesObjectFilesOutputBinaryAndEachSourceFilesListingFile()
     {
         var dir = Directory.CreateTempSubdirectory();
@@ -217,6 +281,38 @@ public class Cc65ToolchainTests
             Assert.False(File.Exists(objectFile));
             Assert.False(File.Exists(project.ResolvedOutputFile));
             Assert.False(File.Exists(listingFile));
+        }
+        finally
+        {
+            dir.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Clean_RemovesMapAndLabelsFiles_WhenTheyExist()
+    {
+        var dir = Directory.CreateTempSubdirectory();
+        try
+        {
+            var project = new TedideProject
+            {
+                Name = "Test",
+                Target = Cc65Target.C64,
+                SourceFiles = ["main.c"],
+                GenerateLinkerMap = true,
+                ExportLabels = true,
+            };
+            project.Save(Path.Combine(dir.FullName, "Test.tproj"));
+
+            File.WriteAllText(project.ResolvedMapFile, "");
+            File.WriteAllText(project.ResolvedLabelsFile, "");
+
+            var removed = new Cc65Toolchain().Clean(project);
+
+            Assert.Contains(project.ResolvedMapFile, removed);
+            Assert.Contains(project.ResolvedLabelsFile, removed);
+            Assert.False(File.Exists(project.ResolvedMapFile));
+            Assert.False(File.Exists(project.ResolvedLabelsFile));
         }
         finally
         {

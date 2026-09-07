@@ -9,12 +9,13 @@ using Terminal.Gui.Views;
 namespace Tedide.App.Views;
 
 /// <summary>
-/// Modal dialog for viewing/editing a loaded project's settings, as five tabs sharing one Save/
+/// Modal dialog for viewing/editing a loaded project's settings, as six tabs sharing one Save/
 /// Cancel footer: "Settings" (display name, cc65 target, output file override, extra cl65
 /// arguments), "Optimizer" (the cc65 compiler optimization preset - see
 /// <see cref="Cc65OptimizationLevel"/>), "Compiler" (other cc65 compile-time flags: whether to
 /// emit an assembler listing file per source file, and whether to interleave C source as comments
-/// in them), "CC65" (the CC65_HOME environment variable), and "VICE" (the VICE emulator's bin
+/// in them), "Linker" (ld65 link-time flags: whether to emit a linker map file and/or a VICE-format
+/// label file), "CC65" (the CC65_HOME environment variable), and "VICE" (the VICE emulator's bin
 /// directory). Source files aren't edited here - that's the Solution Explorer's right-click New
 /// File/Delete File job (see <see cref="SolutionExplorerTree"/>).
 /// On "Save", writes every field from the project-bound tabs onto the given
@@ -33,6 +34,8 @@ public sealed class ProjectSettingsDialog : Dialog
     private readonly DropDownList _optimizationLevelField;
     private readonly CheckBox _generateListingField;
     private readonly CheckBox _addSourceAsCommentField;
+    private readonly CheckBox _generateLinkerMapField;
+    private readonly CheckBox _exportLabelsField;
     private readonly TextField _cc65HomeField;
     private readonly TextField _viceBinDirectoryField;
 
@@ -56,11 +59,13 @@ public sealed class ProjectSettingsDialog : Dialog
         var settingsTab = BuildSettingsTab(project, out _nameField, out _targetField, out _outputFileField, out _extraArgumentsField);
         var optimizerTab = BuildOptimizerTab(project, out _optimizationLevelField);
         var compilerTab = BuildCompilerTab(project, out _generateListingField, out _addSourceAsCommentField);
+        var linkerTab = BuildLinkerTab(project, out _generateLinkerMapField, out _exportLabelsField);
         var cc65Tab = BuildCc65Tab(out _cc65HomeField);
         var viceTab = BuildViceTab(out _viceBinDirectoryField);
         tabs.Add(settingsTab);
         tabs.Add(optimizerTab);
         tabs.Add(compilerTab);
+        tabs.Add(linkerTab);
         tabs.Add(cc65Tab);
         tabs.Add(viceTab);
 
@@ -99,6 +104,8 @@ public sealed class ProjectSettingsDialog : Dialog
             project.OptimizationLevel = optimizationLevel;
             project.GenerateAssemblyListing = _generateListingField.Value == CheckState.Checked;
             project.AddSourceAsComment = _addSourceAsCommentField.Value == CheckState.Checked;
+            project.GenerateLinkerMap = _generateLinkerMapField.Value == CheckState.Checked;
+            project.ExportLabels = _exportLabelsField.Value == CheckState.Checked;
             project.Save();
 
             // Not project state - this machine's toolchain install, not any one project - so it's
@@ -238,6 +245,44 @@ public sealed class ProjectSettingsDialog : Dialog
         };
 
         tab.Add(generateListingField, listingHelpLabel, addSourceAsCommentField, sourceHelpLabel);
+        return tab;
+    }
+
+    /// <summary>Builds the "Linker" tab: ld65 link-time flags - the -m linker map toggle and the -Ln label file toggle.</summary>
+    private static View BuildLinkerTab(TedideProject project, out CheckBox generateLinkerMapField, out CheckBox exportLabelsField)
+    {
+        var tab = new View { Title = " _Linker ", Width = Dim.Fill(), Height = Dim.Fill() };
+
+        generateLinkerMapField = new CheckBox
+        {
+            Text = "Generate linker map file (-m)",
+            X = 0, Y = 0,
+            Value = project.GenerateLinkerMap ? CheckState.Checked : CheckState.UnChecked,
+        };
+
+        var mapHelpLabel = new Label
+        {
+            Text = "Writes ld65's linker map (every segment's address/size and where each\n" +
+                   "object file's symbols ended up) to lnk.map, next to the project file.",
+            X = 0, Y = 2, Width = Dim.Fill(), Height = 2,
+        };
+
+        exportLabelsField = new CheckBox
+        {
+            Text = "Export labels (-Ln)",
+            X = 0, Y = 5,
+            Value = project.ExportLabels ? CheckState.Checked : CheckState.UnChecked,
+        };
+
+        var labelsHelpLabel = new Label
+        {
+            Text = "Writes a VICE-format label file ({Name}.lbl, next to the project file) that\n" +
+                   "can be loaded into VICE's own monitor or another machine-language monitor\n" +
+                   "that understands the same format, to resolve addresses back to symbol names.",
+            X = 0, Y = 7, Width = Dim.Fill(), Height = 3,
+        };
+
+        tab.Add(generateLinkerMapField, mapHelpLabel, exportLabelsField, labelsHelpLabel);
         return tab;
     }
 
