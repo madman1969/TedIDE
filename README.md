@@ -29,13 +29,13 @@ tests/
   Tedide.Core.Tests/
   Tedide.Build.Tests/
 samples/
-  HelloC64/            A small multi-file sample solution/project, buildable for every Commodore cc65 target
-    HelloC64.tsln
-    HelloC64.tproj     src/*.c plus one hand-written src/border.s, -I include for the headers
+  HelloCBM/            A small multi-file sample solution/project, buildable for every Commodore cc65 target
+    HelloCBM.tsln
+    HelloCBM.tproj     src/*.c plus one hand-written src/border.s, -I include for the headers
     src/               main.c, screen.c, animation.c, input.c, delay.c, border.s (ca65 assembly)
                        (each gets its own .lst next to it if listing generation is on) - gitignored
     include/           screen.h, animation.h, input.h, delay.h, border.h
-    bin/               Build output (HelloC64.prg) - gitignored
+    bin/               Build output (HelloCBM.prg) - gitignored
   HelloPlus4/          A Plus/4-only sample touring TED chip features the C64's VIC-II/SID don't have
     HelloPlus4.tsln
     HelloPlus4.tproj   src/*.c, -I include for the headers - Target is Plus4, not cross-target
@@ -66,7 +66,7 @@ From the **File** menu:
   `#include <conio.h>`/`<stdio.h>` directly), so the include/ folder and its `-I include` are
   exercised by a real, working include from the start, not just present but unused. `OutputFile`
   points at `bin/<Name><target extension>`.
-- **Open Project...** and pick `samples/HelloC64/HelloC64.tsln` (or `samples/HelloC64/HelloC64.tproj`) for a
+- **Open Project...** and pick `samples/HelloCBM/HelloCBM.tsln` (or `samples/HelloCBM/HelloCBM.tproj`) for a
   working example - it's deliberately split across several `.c`/`.h`/`.s` files (see layout above) to
   show off the Solution Explorer's folder tree even though only one of them can be open for editing
   at a time (see "Editing" below), and its `border.s`/`animation.c` use per-target conditional
@@ -156,13 +156,13 @@ an example, laid out the way GitHub's most common C project layout does (`src/`,
 
 ```json
 {
-  "Name": "HelloC64",
+  "Name": "HelloCBM",
   "Target": "C64",
   "OptimizationLevel": "Standard",
   "GenerateAssemblyListing": true,
   "AddSourceAsComment": true,
   "SourceFiles": ["src/main.c", "src/screen.c"],
-  "OutputFile": "bin/HelloC64.prg",
+  "OutputFile": "bin/HelloCBM.prg",
   "ExtraArguments": ["-I", "include"]
 }
 ```

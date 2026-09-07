@@ -10,7 +10,7 @@ namespace Tedide.App.Highlighting;
 /// <see cref="HighlightingManager"/>, the same way <see cref="Cc65ListingHighlighting"/> does for
 /// .lst files.
 ///
-/// A map file is a fixed sequence of sections (see samples/HelloC64/lnk.map, once built with the
+/// A map file is a fixed sequence of sections (see samples/HelloCBM/lnk.map, once built with the
 /// Linker tab's "Generate linker map file" on, for a worked example):
 ///   Modules list:    - one "module.o:" (or "archive.lib(module.o):") header line per input,
 ///                     each followed by that module's segments as "    NAME  Offs=.. Size=..

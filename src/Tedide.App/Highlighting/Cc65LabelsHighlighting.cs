@@ -13,7 +13,7 @@ namespace Tedide.App.Highlighting;
 /// Unlike the map file, a label file's shape is a single repeating line pattern - every line is a
 /// VICE monitor "add label" command: the literal command "al", a 6-digit hex address, and the
 /// symbol name prefixed with "." (VICE's own monitor syntax for referring to a label), e.g.
-/// "al 00FFD2 .BSOUT" or "al 0008C0 ._animation_step" (see samples/HelloC64/HelloC64.lbl, once
+/// "al 00FFD2 .BSOUT" or "al 0008C0 ._animation_step" (see samples/HelloCBM/HelloCBM.lbl, once
 /// built with the Linker tab's "Export labels" on, for a worked example - or generate one from any
 /// bundled sample project the same way). No other command letter has been observed in ld65's own
 /// output, so only "al" is recognized here.

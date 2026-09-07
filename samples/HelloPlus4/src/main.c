@@ -1,6 +1,6 @@
 /*
  * Tedide sample: a tour of Commodore Plus/4-only cc65 features, unlike
- * HelloC64 next door, which deliberately builds for every Commodore target.
+ * HelloCBM next door, which deliberately builds for every Commodore target.
  * Split into modules the same way, one per TED party trick:
  *   palette.c/.h  - the TED chip's 121-color palette (16 hues x 8 luma)
  *   sound.c/.h    - TED's two sound voices, one with a dedicated noise mode

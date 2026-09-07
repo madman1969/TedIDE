@@ -1,5 +1,5 @@
 {
-  "Name": "HelloC64",
+  "Name": "HelloCBM",
   "Target": "Pet",
   "OptimizationLevel": "Maximum",
   "GenerateAssemblyListing": true,
@@ -12,7 +12,7 @@
     "src/delay.c",
     "src/border.s"
   ],
-  "OutputFile": "bin/HelloC64.prg",
+  "OutputFile": "bin/HelloCBM.prg",
   "ExtraArguments": [
     "-I",
     "include"

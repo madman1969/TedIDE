@@ -15,7 +15,7 @@ namespace Tedide.App.Highlighting;
 /// zero or more assembled bytes as hex pairs - or the literal placeholder "rr" where a byte's
 /// value depends on a symbol ld65 hasn't resolved yet, since this file is written by ca65 before
 /// linking), followed by a tab and the original source line it assembled from - see
-/// samples/HelloC64/src/border.lst (once built) for a worked example. That source-line part is
+/// samples/HelloCBM/src/border.lst (once built) for a worked example. That source-line part is
 /// exactly what <see cref="Cc65AssemblyHighlighting"/> already knows how to color (including a
 /// project built with AddSourceAsComment on, which turns interleaved C source lines into ordinary
 /// ";"-comments ca65 was never told apart from any other comment) - its rules are duplicated here

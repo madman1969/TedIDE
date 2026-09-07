@@ -21,7 +21,7 @@ public sealed class Workspace
     /// layout as the bundled samples (see "Project files" in the README) - GitHub's most common
     /// C project layout - rather than a flat directory with main.c and the output binary sitting
     /// next to the .tproj. include/ gets a starter main.h (paired with src/main.c the same way
-    /// e.g. HelloC64's screen.c/screen.h are) rather than sitting empty, so the include/ folder -
+    /// e.g. HelloCBM's screen.c/screen.h are) rather than sitting empty, so the include/ folder -
     /// and the -I include that finds it - are exercised by a real, working #include from the
     /// moment the project is created, not just present but unused; bin/ is deliberately left for
     /// the first build to create, same as the samples (see Cc65Toolchain.BuildAsync).
