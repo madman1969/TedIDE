@@ -89,7 +89,7 @@ From the **File** menu:
   (persisted per-user, independent of any one project), numbered for Alt+1..9 accelerators like
   Visual Studio's own list. Selecting a stale entry (moved/deleted on disk) drops it from the list
   with an error instead of crashing.
-- **Close Solution** clears the currently loaded project(s) from the session (closing the open file
+- **Close Project** clears the currently loaded project(s) from the session (closing the open file
   first, prompting to save if modified) without touching anything on disk.
 
 The Solution Explorer recurses through a project's directory tree, showing every `.c`/`.h`/`.s`/

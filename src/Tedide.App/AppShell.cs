@@ -234,7 +234,7 @@ public sealed class AppShell : Window
             new MenuItem("_New Project...", "", NewProject, Key.N.WithCtrl),
             new MenuItem("_Open Project...", "", OpenProject, Key.O.WithCtrl),
             _recentProjectsMenuItem,
-            new MenuItem("Close Sol_ution", "", CloseSolution, Key.Empty),
+            new MenuItem("Close _Project", "", CloseSolution, Key.Empty),
             new Line(),
             new MenuItem("_Save", "", SaveAll, Key.S.WithCtrl),
             new MenuItem("_Close File", "", CloseActiveFile, Key.W.WithCtrl),
