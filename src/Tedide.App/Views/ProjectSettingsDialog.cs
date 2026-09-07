@@ -12,7 +12,8 @@ namespace Tedide.App.Views;
 /// Cancel footer: "Settings" (display name, cc65 target, output file override, extra cl65
 /// arguments), "Optimizer" (the cc65 compiler optimization preset - see
 /// <see cref="Cc65OptimizationLevel"/>), and "Compiler" (other cc65 compile-time flags: whether to
-/// emit an assembler listing file, and whether to interleave C source as comments in it). Source
+/// emit an assembler listing file per source file, and whether to interleave C source as comments
+/// in them). Source
 /// files aren't edited here - that's the
 /// Solution Explorer's right-click New File/Delete File job (see <see cref="SolutionExplorerTree"/>).
 /// On "Save", writes every field from all three tabs onto the given <see cref="TedideProject"/> in
@@ -192,7 +193,7 @@ public sealed class ProjectSettingsDialog : Dialog
         var listingHelpLabel = new Label
         {
             Text = "Writes an assembler listing (interleaved source and generated 6502\n" +
-                   "assembly) next to the output binary, e.g. bin/Foo.prg -> bin/Foo.lst.",
+                   "assembly) for each source file, next to that file, e.g. src/Foo.c -> src/Foo.lst.",
             X = 0, Y = 2, Width = Dim.Fill(), Height = 2,
         };
 

@@ -18,14 +18,14 @@ public sealed class TedideProject
     /// <summary>The cc65 compiler optimization preset to build with. Defaults to no optimization.</summary>
     public Cc65OptimizationLevel OptimizationLevel { get; set; } = Cc65OptimizationLevel.None;
 
-    /// <summary>Whether cl65 should emit an assembler listing file (-l) alongside the output binary. Defaults to on.</summary>
+    /// <summary>Whether cl65 should emit an assembler listing file (-l) for each source file, alongside that source file. Defaults to on.</summary>
     public bool GenerateAssemblyListing { get; set; } = true;
 
     /// <summary>
     /// Whether cc65 should include each C source line as a comment in the assembly it generates
     /// for that file (cl65 -T / --add-source). Most useful together with
     /// <see cref="GenerateAssemblyListing"/>, which is what actually surfaces those comments to
-    /// the user - it interleaves them with the generated 6502 instructions in the .lst file.
+    /// the user - it interleaves them with the generated 6502 instructions in that file's .lst.
     /// Defaults to on.
     /// </summary>
     public bool AddSourceAsComment { get; set; } = true;
@@ -52,9 +52,15 @@ public sealed class TedideProject
     public string ResolvedOutputFile =>
         Path.Combine(Directory, OutputFile ?? (Name + Target.DefaultOutputExtension()));
 
-    /// <summary>Where cl65's -l assembler listing is written when <see cref="GenerateAssemblyListing"/> is on - the output binary's path with a .lst extension.</summary>
+    /// <summary>
+    /// Where cl65's -l assembler listings are written when <see cref="GenerateAssemblyListing"/>
+    /// is on - one per source file, each source file's own path with a .lst extension (e.g.
+    /// src/main.c -> src/main.lst), the same way its .o object file is placed. Each project source
+    /// is compiled in its own cl65 invocation specifically so this can be one listing per source
+    /// file rather than a single listing covering the whole project.
+    /// </summary>
     [JsonIgnore]
-    public string ResolvedListingFile => Path.ChangeExtension(ResolvedOutputFile, ".lst");
+    public IEnumerable<string> ResolvedListingFiles => ResolvedSourceFiles.Select(f => Path.ChangeExtension(f, ".lst"));
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {

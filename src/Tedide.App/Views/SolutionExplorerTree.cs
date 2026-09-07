@@ -146,23 +146,31 @@ public sealed class SolutionExplorerTree : TreeView
 
     /// <summary>
     /// Adds a "Generated Files" node listing build-generated files that live outside the normal
-    /// source tree - currently just the cc65 assembler listing (.lst), shown only once
-    /// <see cref="TedideProject.GenerateAssemblyListing"/> is on and the project has actually been
-    /// built (the file exists on disk). Omitted entirely when there's nothing to show, so a
-    /// never-built (or listing-disabled) project doesn't get an empty node. Has no Tag - it's not
-    /// itself a file or directory, so the right-click context menu offers nothing for it.
+    /// source tree - currently the cc65 assembler listings (.lst), one per source file, shown
+    /// only once <see cref="TedideProject.GenerateAssemblyListing"/> is on and at least one has
+    /// actually been written (a project - or a single source file in it - that's never been built
+    /// won't have one yet). Omitted entirely when there's nothing to show, so a never-built (or
+    /// listing-disabled) project doesn't get an empty node. Has no Tag - it's not itself a file or
+    /// directory, so the right-click context menu offers nothing for it.
     /// </summary>
     private static void AddGeneratedFilesNode(TreeNode projectNode, TedideProject project)
     {
-        if (!project.GenerateAssemblyListing || !File.Exists(project.ResolvedListingFile))
+        if (!project.GenerateAssemblyListing)
+            return;
+
+        var listingFiles = project.ResolvedListingFiles.Where(File.Exists).ToList();
+        if (listingFiles.Count == 0)
             return;
 
         var generatedNode = new TreeNode { Text = "Generated Files" };
-        generatedNode.Children.Add(new TreeNode
+        foreach (var listingFile in listingFiles)
         {
-            Text = Path.GetFileName(project.ResolvedListingFile),
-            Tag = project.ResolvedListingFile,
-        });
+            generatedNode.Children.Add(new TreeNode
+            {
+                Text = Path.GetFileName(listingFile),
+                Tag = listingFile,
+            });
+        }
         projectNode.Children.Add(generatedNode);
     }
 

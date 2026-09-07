@@ -80,18 +80,23 @@ public class TedideProjectTests
     }
 
     [Fact]
-    public void ResolvedListingFile_IsOutputFileWithLstExtension()
+    public void ResolvedListingFiles_AreSourceFilesWithLstExtension()
     {
-        var project = new TedideProject { Name = "MyGame", Target = Cc65Target.C64, OutputFile = "MyGame.prg" };
-        var path = Path.Combine(Path.GetTempPath(), "MyGame.tproj");
-        project.Save(path);
+        var dir = Directory.CreateTempSubdirectory();
         try
         {
-            Assert.Equal(Path.Combine(Path.GetTempPath(), "MyGame.lst"), project.ResolvedListingFile);
+            var path = Path.Combine(dir.FullName, "MyGame.tproj");
+            var project = new TedideProject { SourceFiles = ["main.c", Path.Combine("sub", "b.c")] };
+            project.Save(path);
+
+            var resolved = project.ResolvedListingFiles.ToList();
+
+            Assert.Equal(Path.Combine(dir.FullName, "main.lst"), resolved[0]);
+            Assert.Equal(Path.Combine(dir.FullName, "sub", "b.lst"), resolved[1]);
         }
         finally
         {
-            File.Delete(path);
+            dir.Delete(recursive: true);
         }
     }
 

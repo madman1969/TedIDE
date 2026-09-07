@@ -5,11 +5,11 @@ namespace Tedide.Build.Tests;
 public class Cc65ToolchainTests
 {
     [Fact]
-    public void BuildArguments_PlacesExtraArgumentsBeforeSourceFiles()
+    public void BuildCompileArguments_PlacesExtraArgumentsBeforeTheSourceFile()
     {
         // cl65 applies flags left-to-right as it encounters them on the command line, so an
         // "-I" include path (or any other ExtraArguments flag) only affects source files listed
-        // after it - putting ExtraArguments after SourceFiles silently makes them no-ops.
+        // after it - putting ExtraArguments after the source file silently makes them no-ops.
         var project = new TedideProject
         {
             Name = "Test",
@@ -18,17 +18,37 @@ public class Cc65ToolchainTests
             ExtraArguments = ["-I", "include"],
         };
 
-        var args = Cc65Toolchain.BuildArguments(project);
+        var args = Cc65Toolchain.BuildCompileArguments(project, "src/main.c");
 
         var extraArgIndex = args.IndexOf("-I");
         var sourceFileIndex = args.IndexOf("src/main.c");
         Assert.True(extraArgIndex >= 0 && sourceFileIndex >= 0);
         Assert.True(extraArgIndex < sourceFileIndex,
-            $"Expected ExtraArguments (at {extraArgIndex}) before SourceFiles (at {sourceFileIndex}): {string.Join(" ", args)}");
+            $"Expected ExtraArguments (at {extraArgIndex}) before the source file (at {sourceFileIndex}): {string.Join(" ", args)}");
     }
 
     [Fact]
-    public void BuildArguments_OmitsOptimizationFlag_WhenLevelIsNone()
+    public void BuildCompileArguments_CompilesOnlyOneSourceFile_WithDashC()
+    {
+        // -c stops cl65 after assembling (no link step), and only the one source file passed in
+        // should appear - BuildAsync calls this once per source file, not once for the project's
+        // whole SourceFiles list.
+        var project = new TedideProject
+        {
+            Name = "Test",
+            Target = Cc65Target.C64,
+            SourceFiles = ["src/main.c", "src/screen.c"],
+        };
+
+        var args = Cc65Toolchain.BuildCompileArguments(project, "src/main.c");
+
+        Assert.Contains("-c", args);
+        Assert.Contains("src/main.c", args);
+        Assert.DoesNotContain("src/screen.c", args);
+    }
+
+    [Fact]
+    public void BuildCompileArguments_OmitsOptimizationFlag_WhenLevelIsNone()
     {
         var project = new TedideProject
         {
@@ -38,13 +58,13 @@ public class Cc65ToolchainTests
             OptimizationLevel = Cc65OptimizationLevel.None,
         };
 
-        var args = Cc65Toolchain.BuildArguments(project);
+        var args = Cc65Toolchain.BuildCompileArguments(project, "src/main.c");
 
         Assert.DoesNotContain(args, a => a.StartsWith("-O", StringComparison.Ordinal));
     }
 
     [Fact]
-    public void BuildArguments_PlacesOptimizationFlagBeforeExtraArgumentsAndSourceFiles()
+    public void BuildCompileArguments_PlacesOptimizationFlagBeforeExtraArgumentsAndSourceFile()
     {
         var project = new TedideProject
         {
@@ -55,17 +75,17 @@ public class Cc65ToolchainTests
             OptimizationLevel = Cc65OptimizationLevel.Extended,
         };
 
-        var args = Cc65Toolchain.BuildArguments(project);
+        var args = Cc65Toolchain.BuildCompileArguments(project, "src/main.c");
 
         var optimizationIndex = args.IndexOf("-Ox");
         var extraArgIndex = args.IndexOf("-I");
         var sourceFileIndex = args.IndexOf("src/main.c");
         Assert.True(optimizationIndex >= 0 && optimizationIndex < extraArgIndex && extraArgIndex < sourceFileIndex,
-            $"Expected -Ox (at {optimizationIndex}) before ExtraArguments (at {extraArgIndex}) before SourceFiles (at {sourceFileIndex}): {string.Join(" ", args)}");
+            $"Expected -Ox (at {optimizationIndex}) before ExtraArguments (at {extraArgIndex}) before the source file (at {sourceFileIndex}): {string.Join(" ", args)}");
     }
 
     [Fact]
-    public void BuildArguments_OmitsListingFlag_WhenGenerateAssemblyListingIsFalse()
+    public void BuildCompileArguments_OmitsListingFlag_WhenGenerateAssemblyListingIsFalse()
     {
         var project = new TedideProject
         {
@@ -75,32 +95,31 @@ public class Cc65ToolchainTests
             GenerateAssemblyListing = false,
         };
 
-        var args = Cc65Toolchain.BuildArguments(project);
+        var args = Cc65Toolchain.BuildCompileArguments(project, "src/main.c");
 
         Assert.DoesNotContain("-l", args);
     }
 
     [Fact]
-    public void BuildArguments_IncludesListingFlag_WithResolvedListingPath_WhenGenerateAssemblyListingIsTrue()
+    public void BuildCompileArguments_IncludesListingFlag_WithThatSourceFilesResolvedListingPath_WhenGenerateAssemblyListingIsTrue()
     {
         var project = new TedideProject
         {
             Name = "Test",
             Target = Cc65Target.C64,
-            SourceFiles = ["src/main.c"],
-            OutputFile = "bin/Test.prg",
+            SourceFiles = ["src/main.c", "src/screen.c"],
             GenerateAssemblyListing = true,
         };
 
-        var args = Cc65Toolchain.BuildArguments(project);
+        var args = Cc65Toolchain.BuildCompileArguments(project, "src/screen.c");
 
         var listingFlagIndex = args.IndexOf("-l");
         Assert.True(listingFlagIndex >= 0, $"Expected -l in arguments: {string.Join(" ", args)}");
-        Assert.Equal(project.ResolvedListingFile, args[listingFlagIndex + 1]);
+        Assert.Equal(project.ResolvedListingFiles.Last(), args[listingFlagIndex + 1]);
     }
 
     [Fact]
-    public void BuildArguments_OmitsSourceCommentFlag_WhenAddSourceAsCommentIsFalse()
+    public void BuildCompileArguments_OmitsSourceCommentFlag_WhenAddSourceAsCommentIsFalse()
     {
         var project = new TedideProject
         {
@@ -110,13 +129,13 @@ public class Cc65ToolchainTests
             AddSourceAsComment = false,
         };
 
-        var args = Cc65Toolchain.BuildArguments(project);
+        var args = Cc65Toolchain.BuildCompileArguments(project, "src/main.c");
 
         Assert.DoesNotContain("-T", args);
     }
 
     [Fact]
-    public void BuildArguments_IncludesSourceCommentFlag_WhenAddSourceAsCommentIsTrue()
+    public void BuildCompileArguments_IncludesSourceCommentFlag_WhenAddSourceAsCommentIsTrue()
     {
         var project = new TedideProject
         {
@@ -126,13 +145,51 @@ public class Cc65ToolchainTests
             AddSourceAsComment = true,
         };
 
-        var args = Cc65Toolchain.BuildArguments(project);
+        var args = Cc65Toolchain.BuildCompileArguments(project, "src/main.c");
 
         Assert.Contains("-T", args);
     }
 
     [Fact]
-    public void Clean_RemovesObjectFilesOutputBinaryAndListingFile()
+    public void BuildLinkArguments_PlacesExtraArgumentsBeforeObjectFiles()
+    {
+        var project = new TedideProject
+        {
+            Name = "Test",
+            Target = Cc65Target.C64,
+            ExtraArguments = ["-C", "custom.cfg"],
+        };
+
+        var args = Cc65Toolchain.BuildLinkArguments(project, ["src/main.o", "src/screen.o"]);
+
+        var extraArgIndex = args.IndexOf("-C");
+        var objectFileIndex = args.IndexOf("src/main.o");
+        Assert.True(extraArgIndex >= 0 && objectFileIndex >= 0);
+        Assert.True(extraArgIndex < objectFileIndex,
+            $"Expected ExtraArguments (at {extraArgIndex}) before object files (at {objectFileIndex}): {string.Join(" ", args)}");
+    }
+
+    [Fact]
+    public void BuildLinkArguments_IncludesEveryObjectFile_AndTheResolvedOutputPath()
+    {
+        var project = new TedideProject
+        {
+            Name = "Test",
+            Target = Cc65Target.C64,
+            OutputFile = "bin/Test.prg",
+        };
+
+        var args = Cc65Toolchain.BuildLinkArguments(project, ["src/main.o", "src/screen.o"]);
+
+        Assert.Contains("src/main.o", args);
+        Assert.Contains("src/screen.o", args);
+        var outputFlagIndex = args.IndexOf("-o");
+        Assert.True(outputFlagIndex >= 0);
+        Assert.Equal(project.ResolvedOutputFile, args[outputFlagIndex + 1]);
+    }
+
+    [Fact]
+    public void Clean_RemovesObjectFilesOutputBinaryAndEachSourceFilesListingFile()
     {
         var dir = Directory.CreateTempSubdirectory();
         try
@@ -148,17 +205,18 @@ public class Cc65ToolchainTests
             project.Save(Path.Combine(dir.FullName, "Test.tproj"));
 
             var objectFile = Path.Combine(dir.FullName, "main.o");
+            var listingFile = Path.Combine(dir.FullName, "main.lst");
             Directory.CreateDirectory(Path.GetDirectoryName(project.ResolvedOutputFile)!);
             File.WriteAllText(objectFile, "");
             File.WriteAllText(project.ResolvedOutputFile, "");
-            File.WriteAllText(project.ResolvedListingFile, "");
+            File.WriteAllText(listingFile, "");
 
             var removed = new Cc65Toolchain().Clean(project);
 
-            Assert.Equal([objectFile, project.ResolvedOutputFile, project.ResolvedListingFile], removed);
+            Assert.Equal([objectFile, project.ResolvedOutputFile, listingFile], removed);
             Assert.False(File.Exists(objectFile));
             Assert.False(File.Exists(project.ResolvedOutputFile));
-            Assert.False(File.Exists(project.ResolvedListingFile));
+            Assert.False(File.Exists(listingFile));
         }
         finally
         {
@@ -167,7 +225,36 @@ public class Cc65ToolchainTests
     }
 
     [Fact]
-    public void Clean_LeavesListingFileAlone_WhenItDoesNotExist()
+    public void Clean_RemovesOnlyTheListingFilesThatExist_WhenSomeSourceFilesWereNeverBuilt()
+    {
+        var dir = Directory.CreateTempSubdirectory();
+        try
+        {
+            var project = new TedideProject
+            {
+                Name = "Test",
+                Target = Cc65Target.C64,
+                SourceFiles = ["main.c", "screen.c"],
+                GenerateAssemblyListing = true,
+            };
+            project.Save(Path.Combine(dir.FullName, "Test.tproj"));
+
+            var mainListing = Path.Combine(dir.FullName, "main.lst");
+            File.WriteAllText(mainListing, "");
+            // screen.lst deliberately left absent, as if screen.c was never (re)compiled.
+
+            var removed = new Cc65Toolchain().Clean(project);
+
+            Assert.Equal([mainListing], removed);
+        }
+        finally
+        {
+            dir.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Clean_LeavesListingFilesAlone_WhenNoneExist()
     {
         var dir = Directory.CreateTempSubdirectory();
         try
@@ -215,6 +302,36 @@ public class Cc65ToolchainTests
 
             Assert.False(result.Succeeded);
             Assert.True(Directory.Exists(Path.Combine(dir.FullName, "bin")));
+        }
+        finally
+        {
+            dir.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task BuildAsync_StopsAfterFirstMissingToolchainFailure_RatherThanRetryingEverySourceFile()
+    {
+        var dir = Directory.CreateTempSubdirectory();
+        try
+        {
+            var project = new TedideProject
+            {
+                Name = "Test",
+                Target = Cc65Target.C64,
+                SourceFiles = ["main.c", "screen.c", "input.c"],
+                OutputFile = "bin/Test.prg",
+            };
+            project.Save(Path.Combine(dir.FullName, "Test.tproj"));
+
+            var toolchain = new Cc65Toolchain("this-executable-definitely-does-not-exist-12345");
+            var result = await toolchain.BuildAsync(project);
+
+            Assert.False(result.Succeeded);
+            // One "Could not launch" line, not one per source file - BuildAsync gives up
+            // immediately rather than repeating a failure that's about the toolchain itself, not
+            // any particular source file.
+            Assert.Single(result.RawOutputLines, l => l.Contains("Could not launch", StringComparison.Ordinal));
         }
         finally
         {

@@ -31,14 +31,16 @@ samples/
   HelloC64/
     HelloC64.tproj     src/*.c plus one hand-written src/border.s, -I include for the headers
     src/               main.c, screen.c, animation.c, input.c, delay.c, border.s (ca65 assembly)
+                       (each gets its own .lst next to it if listing generation is on) - gitignored
     include/           screen.h, animation.h, input.h, delay.h, border.h
-    bin/               Build output (HelloC64.prg, and HelloC64.lst if listing generation is on) - gitignored
+    bin/               Build output (HelloC64.prg) - gitignored
   HelloPlus4.tsln    A Plus/4-only sample touring TED chip features the C64's VIC-II/SID don't have
   HelloPlus4/
     HelloPlus4.tproj   src/*.c, -I include for the headers - Target is Plus4, not cross-target
     src/               main.c, screen.c, palette.c, sound.c, speed.c, input.c, delay.c
+                       (each gets its own .lst next to it if listing generation is on) - gitignored
     include/           screen.h, palette.h, sound.h, speed.h, input.h, delay.h
-    bin/               Build output (HelloPlus4.prg, and HelloPlus4.lst if listing generation is on) - gitignored
+    bin/               Build output (HelloPlus4.prg) - gitignored
 ```
 
 ## Running
@@ -75,16 +77,21 @@ The Solution Explorer recurses through a project's directory tree, showing every
 as proper subfolders, and headers show up for browsing/editing even though they're never compiled
 directly. Build-output folders (`bin/`, `obj/`, `.git/`, `.vs/`) are hidden from the tree, but a
 project that has actually been built with an assembler listing enabled (see "Project Settings
-dialog" below) gets its own **Generated Files** node showing that listing file. Right-click (or Shift+F10)
-a project/folder/file node for **New File...**/**Delete File**. The border between the Solution
-Explorer and the editor is a draggable splitter - drag it to resize both panes.
+dialog" below) gets its own **Generated Files** node listing each source file's own `.lst`.
+Right-click (or Shift+F10) a project/folder/file node for **New File...**/**Delete File**. The
+border between the Solution Explorer and the editor is a draggable splitter - drag it to resize
+both panes.
 
-Press **F5** (or **Build > Build Project**) to invoke `cl65`; output streams live into the
-**Output** pane, and the build's success/failure (with an error count) is reported when it
-finishes. **Build > Clean Project** deletes the project's build artifacts (object files, the
-linked output binary, and the assembler listing if present) without rebuilding. **F6** (or
-**Build > Run Project**) builds first, then launches the built output in the VICE emulator
-matching the project's target, auto-starting it.
+Press **F5** (or **Build > Build Project**) to invoke `cl65` - once per source file (`-c`, compile
+and assemble but don't link) so each gets its own assembler listing, then once more to link the
+resulting object files into the output binary; output from every invocation streams live into the
+**Output** pane as one build, and its success/failure (with an error count) is reported when it
+finishes. A source file that fails to compile doesn't stop the rest from being compiled too - only
+the link step is skipped, so a single build surfaces every file's errors at once. **Build > Clean
+Project** deletes the project's build artifacts (each source file's object file and assembler
+listing, plus the linked output binary) without rebuilding. **F6** (or **Build > Run Project**)
+builds first, then launches the built output in the VICE emulator matching the project's target,
+auto-starting it.
 
 **Edit > Find in Files...** (Ctrl+Shift+F) searches every source/header/assembly file across the
 loaded project(s) for a case-insensitive substring and lists every matching line; activating a
@@ -136,7 +143,8 @@ an example, laid out the way GitHub's most common C project layout does (`src/`,
   `-Oi`, `Register` = `-Or`, `InlineKnownFunctions` = `-Os`, `Extended` = `-Ox`, or `Maximum` =
   `-Oirs`, combining the last three) - see `Cc65OptimizationLevel`.
 - `GenerateAssemblyListing` (`-l`) and `AddSourceAsComment` (`-T`) control the assembler listing
-  cl65 can emit alongside the output binary - see "Project Settings dialog" below. Both default to `true`.
+  cl65 can emit for each source file, alongside that file (e.g. `src/main.c` -> `src/main.lst`) -
+  see "Project Settings dialog" below. Both default to `true`.
 - `OutputFile` defaults to `<Name><platform-default-extension>` (e.g. `.prg` for C64, `.nes` for
   NES) in the project's own directory if not set; Tedide creates the output directory
   automatically if it doesn't exist yet (`ld65` itself won't).
@@ -153,12 +161,13 @@ single Save/Cancel footer:
 - **Settings** - display name, target platform, output file override, extra `cl65` arguments.
 - **Optimizer** - the `OptimizationLevel` preset, with inline help text explaining what each of
   cc65's `-O`/`-Oi`/`-Or`/`-Os`/`-Ox`/`-Oirs` flags does.
-- **Compiler** - two checkboxes: *Generate assembly listing file* (`-l`, written next to the
-  output binary, e.g. `bin/Foo.prg` -> `bin/Foo.lst`, and surfaced in the Solution Explorer's
-  Generated Files node once it exists) and *Include C source as comments in generated assembly*
-  (`-T`, most useful together with the listing - it interleaves each C line as a comment above the
-  6502 instructions it compiled to). Since `cl65` builds a project's sources in one invocation,
-  the listing only ever reflects the last-assembled source file, not one listing per C file.
+- **Compiler** - two checkboxes: *Generate assembly listing file* (`-l`, written next to each
+  source file, e.g. `src/Foo.c` -> `src/Foo.lst`, and surfaced in the Solution Explorer's
+  Generated Files node once at least one exists) and *Include C source as comments in generated
+  assembly* (`-T`, most useful together with the listing - it interleaves each C line as a comment
+  above the 6502 instructions it compiled to). Tedide builds each source file in its own `cl65`
+  invocation specifically so this is one listing per source file, not one covering the whole
+  project - see "Running" above.
 
 Saving writes every field from all three tabs to the `.tproj` in one go.
 

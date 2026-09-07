@@ -36,7 +36,11 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
     }
 
     /// <summary>
-    /// Builds the given project by invoking cl65 with its source files, target and extra arguments.
+    /// Builds the given project: compiles each source file in its own cl65 invocation (so each
+    /// gets its own assembler listing - see <see cref="BuildCompileArguments"/>), then links the
+    /// resulting object files into the project's output binary. Stops after the compile stage
+    /// (skipping the link) if any source file failed to compile, so a failed build doesn't try to
+    /// link with missing or stale object files.
     /// </summary>
     /// <param name="project">The project to build.</param>
     /// <param name="onOutputLine">Optional callback invoked for each line of stdout/stderr as it arrives, for live output panes.</param>
@@ -51,17 +55,6 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
         if (!string.IsNullOrEmpty(outputDirectory))
             Directory.CreateDirectory(outputDirectory);
 
-        var arguments = BuildArguments(project);
-        var startInfo = new ProcessStartInfo(Cl65Path)
-        {
-            WorkingDirectory = project.Directory,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-        };
-        foreach (var arg in arguments)
-            startInfo.ArgumentList.Add(arg);
-
         var lines = new List<string>();
         var stopwatch = Stopwatch.StartNew();
 
@@ -74,6 +67,69 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
             onOutputLine?.Invoke(line);
         }
 
+        // Every source file is compiled even after an earlier one fails, so a single build shows
+        // every file's errors at once rather than stopping at the first - only the link step
+        // (which would just cascade unrelated "undefined symbol" errors from the missing object
+        // file) is skipped once any compile has failed.
+        var objectFiles = new List<string>();
+        var compileFailed = false;
+        var lastExitCode = 0;
+        foreach (var sourceFile in project.SourceFiles)
+        {
+            var exitCode = await RunCl65Async(BuildCompileArguments(project, sourceFile), project.Directory, Capture, cancellationToken);
+            if (exitCode is null)
+            {
+                stopwatch.Stop();
+                return new BuildResult(false, -1, lines, Cc65DiagnosticParser.ParseAll(lines), stopwatch.Elapsed);
+            }
+
+            if (exitCode.Value != 0)
+            {
+                compileFailed = true;
+                lastExitCode = exitCode.Value;
+            }
+            objectFiles.Add(Path.ChangeExtension(Path.Combine(project.Directory, sourceFile), ".o"));
+        }
+
+        if (!compileFailed)
+        {
+            var exitCode = await RunCl65Async(BuildLinkArguments(project, objectFiles), project.Directory, Capture, cancellationToken);
+            if (exitCode is null)
+            {
+                stopwatch.Stop();
+                return new BuildResult(false, -1, lines, Cc65DiagnosticParser.ParseAll(lines), stopwatch.Elapsed);
+            }
+            lastExitCode = exitCode.Value;
+        }
+
+        stopwatch.Stop();
+        var diagnostics = Cc65DiagnosticParser.ParseAll(lines);
+        var succeeded = !compileFailed && lastExitCode == 0 && diagnostics.All(d => d.Severity != DiagnosticSeverity.Error);
+        return new BuildResult(succeeded, lastExitCode, lines, diagnostics, stopwatch.Elapsed);
+    }
+
+    /// <summary>
+    /// Runs one cl65 invocation to completion, streaming its stdout/stderr lines to <paramref name="capture"/>
+    /// as they arrive. Returns its exit code, or null if the process couldn't even be started
+    /// (e.g. cl65 isn't on PATH) - distinct from a normal nonzero exit code, since the caller
+    /// should give up immediately rather than trying further invocations against a missing toolchain.
+    /// </summary>
+    private async Task<int?> RunCl65Async(
+        List<string> arguments,
+        string workingDirectory,
+        Action<string?> capture,
+        CancellationToken cancellationToken)
+    {
+        var startInfo = new ProcessStartInfo(Cl65Path)
+        {
+            WorkingDirectory = workingDirectory,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+        };
+        foreach (var arg in arguments)
+            startInfo.ArgumentList.Add(arg);
+
         Process process;
         try
         {
@@ -82,29 +138,25 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
         }
         catch (Win32Exception ex)
         {
-            var message = $"Could not launch '{Cl65Path}': {ex.Message}. Is cc65 installed and on PATH?";
-            Capture(message);
-            return new BuildResult(false, -1, lines, Cc65DiagnosticParser.ParseAll(lines), stopwatch.Elapsed);
+            capture($"Could not launch '{Cl65Path}': {ex.Message}. Is cc65 installed and on PATH?");
+            return null;
         }
 
-        process.OutputDataReceived += (_, e) => Capture(e.Data);
-        process.ErrorDataReceived += (_, e) => Capture(e.Data);
+        process.OutputDataReceived += (_, e) => capture(e.Data);
+        process.ErrorDataReceived += (_, e) => capture(e.Data);
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
 
         await process.WaitForExitAsync(cancellationToken);
-        stopwatch.Stop();
-
-        var diagnostics = Cc65DiagnosticParser.ParseAll(lines);
-        var succeeded = process.ExitCode == 0 && diagnostics.All(d => d.Severity != DiagnosticSeverity.Error);
-        return new BuildResult(succeeded, process.ExitCode, lines, diagnostics, stopwatch.Elapsed);
+        return process.ExitCode;
     }
 
     /// <summary>
     /// Deletes build artifacts without invoking cl65: the per-source .o object file cl65 leaves
-    /// alongside each source file, the final linked output binary, and the assembler listing file
-    /// (if <see cref="TedideProject.GenerateAssemblyListing"/> is on). Skips whatever doesn't exist
-    /// (e.g. a project that's never been built). Returns the full paths actually deleted.
+    /// alongside each source file, the final linked output binary, and each source file's
+    /// assembler listing (if <see cref="TedideProject.GenerateAssemblyListing"/> is on). Skips
+    /// whatever doesn't exist (e.g. a project that's never been built, or one that failed to
+    /// compile some of its sources). Returns the full paths actually deleted.
     /// </summary>
     public IReadOnlyList<string> Clean(TedideProject project)
     {
@@ -126,35 +178,63 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
             removed.Add(project.ResolvedOutputFile);
         }
 
-        if (File.Exists(project.ResolvedListingFile))
+        foreach (var listingFile in project.ResolvedListingFiles)
         {
-            File.Delete(project.ResolvedListingFile);
-            removed.Add(project.ResolvedListingFile);
+            if (File.Exists(listingFile))
+            {
+                File.Delete(listingFile);
+                removed.Add(listingFile);
+            }
         }
 
         return removed;
     }
 
-    internal static List<string> BuildArguments(TedideProject project)
+    /// <summary>
+    /// The cl65 arguments to compile (and assemble, but not link - <c>-c</c>) a single source
+    /// file, including its own <c>-l</c> listing path if <see cref="TedideProject.GenerateAssemblyListing"/>
+    /// is on. Building a project compiles each of its source files with a separate call to this
+    /// (see <see cref="BuildAsync"/>) rather than listing every source file on one cl65 command
+    /// line, because cl65/ca65 only ever write to one <c>-l</c> target per invocation - a single
+    /// invocation covering every source file would have each file's listing silently overwrite
+    /// the last, leaving only the final source file's listing behind.
+    /// </summary>
+    internal static List<string> BuildCompileArguments(TedideProject project, string sourceFile)
+    {
+        var args = new List<string>
+        {
+            "-t", project.Target.ToCl65Id(),
+            "-c",
+        };
+        if (project.OptimizationLevel.ToCl65Flag() is { } optimizationFlag)
+            args.Add(optimizationFlag);
+        if (project.GenerateAssemblyListing)
+            args.AddRange(["-l", Path.ChangeExtension(Path.Combine(project.Directory, sourceFile), ".lst")]);
+        if (project.AddSourceAsComment)
+            args.Add("-T");
+        // cl65 applies flags left-to-right as it encounters them, so e.g. an "-I" include path
+        // only affects source files listed after it on the command line - ExtraArguments must
+        // come before the source file, not after, or flags like that silently have no effect.
+        // Added after the optimization flag so a manually-specified -O* in ExtraArguments (the
+        // old way of setting this, before Cc65OptimizationLevel existed) still wins.
+        args.AddRange(project.ExtraArguments);
+        args.Add(sourceFile);
+        return args;
+    }
+
+    /// <summary>
+    /// The cl65 arguments to link a project's already-compiled object files into its output
+    /// binary. Run once, after every source file has been compiled with <see cref="BuildCompileArguments"/>.
+    /// </summary>
+    internal static List<string> BuildLinkArguments(TedideProject project, IEnumerable<string> objectFiles)
     {
         var args = new List<string>
         {
             "-t", project.Target.ToCl65Id(),
             "-o", project.ResolvedOutputFile,
         };
-        if (project.OptimizationLevel.ToCl65Flag() is { } optimizationFlag)
-            args.Add(optimizationFlag);
-        if (project.GenerateAssemblyListing)
-            args.AddRange(["-l", project.ResolvedListingFile]);
-        if (project.AddSourceAsComment)
-            args.Add("-T");
-        // cl65 applies flags left-to-right as it encounters them, so e.g. an "-I" include path
-        // only affects source files listed after it on the command line - ExtraArguments must
-        // come before SourceFiles, not after, or flags like that silently have no effect. Added
-        // after the optimization flag so a manually-specified -O* in ExtraArguments (the old way
-        // of setting this, before Cc65OptimizationLevel existed) still wins.
         args.AddRange(project.ExtraArguments);
-        args.AddRange(project.SourceFiles);
+        args.AddRange(objectFiles);
         return args;
     }
 }

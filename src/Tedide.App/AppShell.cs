@@ -666,9 +666,9 @@ public sealed class AppShell : Window
             ? $"------ Build succeeded in {result.Duration.TotalSeconds:0.0}s ------"
             : $"------ Build FAILED ({result.Errors.Count()} error(s)) in {result.Duration.TotalSeconds:0.0}s ------");
 
-        // Refreshes the Solution Explorer's "Generated Files" node - e.g. a newly-written
-        // assembler listing (see SolutionExplorerTree.AddGeneratedFilesNode) only appears once
-        // the tree is rebuilt after this build actually wrote it.
+        // Refreshes the Solution Explorer's "Generated Files" node - e.g. newly-written
+        // assembler listings (see SolutionExplorerTree.AddGeneratedFilesNode) only appear once
+        // the tree is rebuilt after this build actually wrote them.
         _solutionExplorer.Rebuild(_workspace);
 
         return result;
@@ -723,8 +723,8 @@ public sealed class AppShell : Window
             AppendOutputLine($"Deleted {Path.GetFileName(path)}");
         AppendOutputLine($"------ Clean complete: {removed.Count} file(s) removed ------");
 
-        // Drops the Solution Explorer's "Generated Files" node if the assembler listing it was
-        // showing is one of the files just deleted.
+        // Drops (or shrinks) the Solution Explorer's "Generated Files" node if the assembler
+        // listings it was showing are among the files just deleted.
         _solutionExplorer.Rebuild(_workspace);
     }
 

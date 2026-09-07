@@ -11,3 +11,4 @@ obj/
 *.lnx
 *.cvt
 *.o
+*.lst
