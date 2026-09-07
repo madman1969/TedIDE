@@ -30,6 +30,10 @@ public sealed class NewFileDialog : Dialog
         // whole dialog gets consistent breathing room from its border - children below are
         // positioned relative to this inset content area, i.e. X = 0 is already 2 cells in.
         Padding.Thickness = new Thickness(2, 1, 2, 1);
+        // Dialogs default to Movable|Resizable in Terminal.Gui (see ViewArrangement) - fixed size
+        // here since there's nothing in this static, fixed-position layout that benefits from
+        // resizing.
+        Arrangement &= ~ViewArrangement.Resizable;
 
         var dirLabel = new Label { Text = $"In: {targetDirectory}", X = 0, Y = 0, Width = Dim.Fill() };
         var nameLabel = new Label { Text = "File name:", X = 0, Y = 2 };
