@@ -32,7 +32,10 @@ public sealed class FindInFilesDialog : Dialog
     /// <summary>The match the user activated, or null if the dialog was cancelled without picking one.</summary>
     public Match? SelectedMatch { get; private set; }
 
-    public FindInFilesDialog(Workspace workspace)
+    /// <param name="initialSearchText">Pre-populates the search field with this text and runs the
+    /// search immediately - e.g. the editor's current selection, via the right-click context menu.
+    /// Left blank (the default) for a plain "Find in Files..." with nothing to start from.</param>
+    public FindInFilesDialog(Workspace workspace, string initialSearchText = "")
     {
         _workspace = workspace;
 
@@ -93,6 +96,12 @@ public sealed class FindInFilesDialog : Dialog
 
         Add([searchLabel, _searchField, findButton, _statusLabel, resultsFrame, openButton, closeButton]);
         _searchField.SetFocus();
+
+        if (initialSearchText.Length > 0)
+        {
+            _searchField.Text = initialSearchText;
+            RunSearch();
+        }
     }
 
     /// <summary>

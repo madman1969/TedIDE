@@ -96,7 +96,11 @@ auto-starting it.
 
 **Edit > Find in Files...** (Ctrl+Shift+F) searches every source/header/assembly file across the
 loaded project(s) for a case-insensitive substring and lists every matching line; activating a
-result opens that file and jumps the caret straight to the match.
+result opens that file and jumps the caret straight to the match. It's also on the editor's own
+right-click context menu (alongside the library's default Undo/Redo/Cut/Copy/Paste/Select All),
+where it pre-populates the search field with the current selection - just its first line, if the
+selection spans more than one - and runs the search immediately, rather than opening to a blank
+field.
 
 Press **Ctrl+W** (or **File > Close File**) to close the open file. If it has unsaved changes
 you're prompted to save, discard, or cancel first - the same prompt appears if you select a

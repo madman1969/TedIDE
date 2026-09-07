@@ -2,6 +2,7 @@ using Terminal.Gui.Editor;
 using Terminal.Gui.Editor.Document;
 using Terminal.Gui.Editor.Highlighting;
 using Terminal.Gui.ViewBase;
+using Terminal.Gui.Views;
 
 namespace Tedide.App.Views;
 
@@ -27,6 +28,12 @@ public sealed class EditorPane : View
 
     public string? OpenPath { get; private set; }
 
+    /// <summary>Raised when "Find in Files..." is chosen from the editor's right-click context
+    /// menu, carrying the current selection (empty if there is none) to pre-populate the Find in
+    /// Files dialog's search field with. Just the selection's first line - the search field it
+    /// feeds is single-line, and a multi-line selection is rarely a meaningful search term anyway.</summary>
+    public event Action<string>? FindInFilesRequested;
+
     public EditorPane()
     {
         Width = Dim.Fill();
@@ -47,6 +54,15 @@ public sealed class EditorPane : View
             // document overflows the viewport, rather than being permanently shown.
             ViewportSettings = ViewportSettingsFlags.HasScrollBars,
         };
+
+        // The editor's own right-click context menu already covers Undo/Redo/Cut/Copy/Paste/
+        // Select All (Terminal.Gui.Editor's built-in default) - append Find in Files to the end
+        // of that same menu, the same way EditMenu.PopoverMenu.Root.Add is used in AppShell to
+        // append it to the Edit menu, rather than building a second, separate context menu.
+        var contextMenuItems = Editor.ContextMenu!.Root!;
+        contextMenuItems.Add(new Line());
+        contextMenuItems.Add(new MenuItem("Find in Files...", "", () =>
+            FindInFilesRequested?.Invoke(Editor.SelectedText.Split(['\r', '\n'], 2)[0])));
 
         Add(Editor);
     }

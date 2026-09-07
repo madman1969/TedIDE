@@ -104,6 +104,7 @@ public sealed class AppShell : Window
             Arrangement = ViewArrangement.LeftResizable | ViewArrangement.BottomResizable,
             CanFocus = true,
         };
+        _editorPane.FindInFilesRequested += ShowFindInFiles;
         _editorFrame.Add(_editorPane);
         // explorerFrame's Width (above) reads _editorFrame.Frame.Width live, but within a single
         // layout pass explorerFrame is resolved before _editorFrame is - so it reads _editorFrame's
@@ -262,7 +263,7 @@ public sealed class AppShell : Window
         // library builds its own: a separator, then the MenuItem.
         var editMenuItems = menuBar.EditMenu.PopoverMenu!.Root!;
         editMenuItems.Add(new Line());
-        editMenuItems.Add(new MenuItem("_Find in Files...", "", ShowFindInFiles, Key.F.WithCtrl.WithShift));
+        editMenuItems.Add(new MenuItem("_Find in Files...", "", () => ShowFindInFiles(), Key.F.WithCtrl.WithShift));
         menuBar.Menus = [fileMenu, menuBar.EditMenu, menuBar.ViewMenu, buildMenu, projectMenu, themeMenu];
         menuBar.X = 0;
         menuBar.Y = 0;
@@ -485,7 +486,10 @@ public sealed class AppShell : Window
     /// user activates a result, opens its file (prompting to save the currently open one first,
     /// same as <see cref="OpenFile"/>) and moves the caret to the matched line.
     /// </summary>
-    private void ShowFindInFiles()
+    /// <param name="initialSearchText">Pre-populates (and immediately searches for) this text -
+    /// e.g. the editor's current selection, via <see cref="EditorPane.FindInFilesRequested"/>.
+    /// Empty for the Edit menu/Ctrl+Shift+F path, which starts with a blank search field.</param>
+    private void ShowFindInFiles(string initialSearchText = "")
     {
         if (_workspace.Projects.Count == 0)
         {
@@ -493,7 +497,7 @@ public sealed class AppShell : Window
             return;
         }
 
-        var dialog = new FindInFilesDialog(_workspace);
+        var dialog = new FindInFilesDialog(_workspace, initialSearchText);
         Application.Run(dialog);
         if (dialog.SelectedMatch is { } match)
             OpenMatch(match);
