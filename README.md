@@ -86,7 +86,8 @@ Press **F5** (or **Build > Build Project**) to invoke `cl65` - once per source f
 and assemble but don't link) so each gets its own assembler listing, then once more to link the
 resulting object files into the output binary; output from every invocation streams live into the
 **Output** pane as one build, and its success/failure (with an error count) is reported when it
-finishes. A source file that fails to compile doesn't stop the rest from being compiled too - only
+finishes; a successful build additionally reports the output binary's size in bytes. A source file
+that fails to compile doesn't stop the rest from being compiled too - only
 the link step is skipped, so a single build surfaces every file's errors at once. **Build > Clean
 Project** deletes the project's build artifacts (each source file's object file and assembler
 listing, plus the linked output binary) without rebuilding. **F6** (or **Build > Run Project**)
