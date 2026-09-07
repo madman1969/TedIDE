@@ -16,20 +16,45 @@ public sealed class Workspace
 
     public TedideProject? ActiveProject => Projects.Count > 0 ? Projects[0] : null;
 
+    /// <summary>
+    /// Scaffolds a new project in <paramref name="directory"/> using the same src/include/bin
+    /// layout as the bundled samples (see "Project files" in the README) - GitHub's most common
+    /// C project layout - rather than a flat directory with main.c and the output binary sitting
+    /// next to the .tproj. include/ gets a starter main.h (paired with src/main.c the same way
+    /// e.g. HelloC64's screen.c/screen.h are) rather than sitting empty, so the include/ folder -
+    /// and the -I include that finds it - are exercised by a real, working #include from the
+    /// moment the project is created, not just present but unused; bin/ is deliberately left for
+    /// the first build to create, same as the samples (see Cc65Toolchain.BuildAsync).
+    /// </summary>
     public TedideProject NewProject(string directory, string name, Cc65Target target)
     {
         Directory.CreateDirectory(directory);
+        Directory.CreateDirectory(Path.Combine(directory, "src"));
+        Directory.CreateDirectory(Path.Combine(directory, "include"));
 
-        var mainSourceName = "main.c";
-        var mainSourcePath = Path.Combine(directory, mainSourceName);
+        // Relative paths stored in the .tproj use "/" literally (not Path.Combine) to match the
+        // bundled samples' own .tproj files, which are portable, human-authored path strings
+        // rather than filesystem paths - cl65 and Path.Combine both accept "/" fine on Windows.
+        const string mainSourceName = "src/main.c";
+        var mainSourcePath = Path.Combine(directory, "src", "main.c");
         if (!File.Exists(mainSourcePath))
             File.WriteAllText(mainSourcePath, SampleMainC);
+
+        // main.c pulls in conio.h/stdio.h via this header rather than #include-ing them directly,
+        // so the new project has a real, immediately-working example of a project-local header -
+        // resolved through -I include, above, exactly like the bundled samples' own headers are -
+        // rather than an include/ folder that sits empty until the user adds their own.
+        var mainHeaderPath = Path.Combine(directory, "include", "main.h");
+        if (!File.Exists(mainHeaderPath))
+            File.WriteAllText(mainHeaderPath, SampleMainH);
 
         var project = new TedideProject
         {
             Name = name,
             Target = target,
             SourceFiles = [mainSourceName],
+            OutputFile = $"bin/{name}{target.DefaultOutputExtension()}",
+            ExtraArguments = ["-I", "include"],
         };
         project.Save(Path.Combine(directory, name + TedideProject.FileExtension));
 
@@ -76,8 +101,7 @@ public sealed class Workspace
     }
 
     private const string SampleMainC = """
-        #include <stdio.h>
-        #include <conio.h>
+        #include "main.h"
 
         int main(void)
         {
@@ -86,6 +110,17 @@ public sealed class Workspace
             cgetc();
             return 0;
         }
+
+        """;
+
+    private const string SampleMainH = """
+        #ifndef MAIN_H
+        #define MAIN_H
+
+        #include <stdio.h>
+        #include <conio.h>
+
+        #endif
 
         """;
 }

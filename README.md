@@ -51,7 +51,12 @@ dotnet run --project src/Tedide.App
 
 From the **File** menu:
 
-- **New Project...** to scaffold a fresh cc65 project (name, target platform, destination folder) with a starter `main.c`.
+- **New Project...** to scaffold a fresh cc65 project (name, target platform, destination folder)
+  using the same `src`/`include`/`bin` layout as the bundled samples (see "Project files" below) -
+  a starter `src/main.c` that `#include "main.h"`s a starter `include/main.h` (rather than
+  `#include <conio.h>`/`<stdio.h>` directly), so the include/ folder and its `-I include` are
+  exercised by a real, working include from the start, not just present but unused. `OutputFile`
+  points at `bin/<Name><target extension>`.
 - **Open Project...** and pick `samples/HelloC64.tsln` (or `samples/HelloC64/HelloC64.tproj`) for a
   working example - it's deliberately split across several `.c`/`.h`/`.s` files (see layout above) to
   show off the Solution Explorer's folder tree even though only one of them can be open for editing
