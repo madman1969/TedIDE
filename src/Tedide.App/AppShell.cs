@@ -267,14 +267,14 @@ public sealed class AppShell : Window
         // Replace the library's default single-file File menu (New/Open/Save/Save As/Quit) with
         // our own project-aware one, but keep its auto-generated EditMenu/ViewMenu - already wired
         // directly to the editor (Find/Replace/Undo/Redo/Cut/Copy/Paste/Select All; Line Numbers/
-        // Fold Indicators/Word Wrap/Show Tabs/Scrollbars) - for free. Append our own Find in Files
-        // to the end of that same Edit menu rather than giving it a top-level menu of its own -
-        // EditMenu.PopoverMenu.Root is the live Menu backing the dropdown (EditMenu itself only
-        // holds the items it was constructed with), so items are added to it the same way the
-        // library builds its own: a separator, then the MenuItem.
+        // Fold Indicators/Word Wrap/Show Tabs/Scrollbars) - for free. Insert our own Find in Files
+        // at the very top of that same Edit menu (above Find, as the first item of its search
+        // group) rather than giving it a top-level menu of its own - EditMenu.PopoverMenu.Root is
+        // the live Menu backing the dropdown (EditMenu itself only holds the items it was
+        // constructed with), so AddAt(0, ...) inserts it before Find the same way the library adds
+        // its own items via Add().
         var editMenuItems = menuBar.EditMenu.PopoverMenu!.Root!;
-        editMenuItems.Add(new Line());
-        editMenuItems.Add(new MenuItem("_Find in Files...", "", () => ShowFindInFiles(), Key.F.WithCtrl.WithShift));
+        editMenuItems.AddAt(0, new MenuItem("_Find in Files...", "", () => ShowFindInFiles(), Key.F.WithCtrl.WithShift));
         menuBar.Menus = [fileMenu, menuBar.EditMenu, menuBar.ViewMenu, buildMenu, projectMenu, themeMenu];
         menuBar.X = 0;
         menuBar.Y = 0;
