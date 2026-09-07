@@ -180,7 +180,11 @@ bundled C++ definition (close enough for C keywords), and `.s`/`.asm` get a hand
 definition of Tedide's own (`Tedide.App.Highlighting.Cc65AssemblyHighlighting`), covering line
 comments, string/character literals, ca65 directives, labels, numeric literals (hex/binary/
 decimal) and the 56 official 6502 mnemonics, since Terminal.Gui.Editor ships nothing for 6502
-assembly itself.
+assembly itself. `.lst` gets a third definition built on top of that one
+(`Tedide.App.Highlighting.Cc65ListingHighlighting`): each line's ca65-generated address/byte-dump
+prefix (e.g. `0000A5r 1  A9 08` - see "Running" above) is its own muted color, and everything after
+it - the assembled source line, including interleaved C source turned into ordinary `;`-comments
+when `AddSourceAsComment` is on - is colored with the same rules as `.s`/`.asm`.
 
 Tedide is deliberately single-document: only one file can be open at a time. Selecting a
 different file in the Solution Explorer (or opening one that's already open, which is a no-op)
