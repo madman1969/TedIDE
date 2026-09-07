@@ -1,5 +1,6 @@
 using Terminal.Gui.Editor;
 using Terminal.Gui.Editor.Document;
+using Terminal.Gui.Editor.Document.Folding;
 using Terminal.Gui.Editor.Highlighting;
 using Terminal.Gui.ViewBase;
 using Terminal.Gui.Views;
@@ -47,9 +48,17 @@ public sealed class EditorPane : View
         {
             Width = Dim.Fill(),
             Height = Dim.Fill(),
-            GutterOptions = GutterOptions.LineNumbers,
+            GutterOptions = GutterOptions.LineNumbers | GutterOptions.Folding,
             ReadOnly = true, // no file open yet
             Document = new TextDocument(string.Empty),
+            // Assigning a strategy is what actually makes the Folding gutter above do anything -
+            // ted's own TedApp.cs does the same. BraceFoldingStrategy is language-agnostic (any
+            // {...} spanning multiple lines folds), which covers our C sources; ca65 assembly has
+            // no brace blocks to fold, so .s/.asm/.inc files just show no fold points, same as
+            // before. Assigning this also auto-enables Editor.AutomaticFolding (see
+            // Editor.FoldingStrategy's setter), and the Document setter re-runs it on every Open()
+            // below, so foldings stay current as files are opened/edited without any extra wiring.
+            FoldingStrategy = new BraceFoldingStrategy(),
             // HasScrollBars uses ScrollBarVisibilityMode.Auto - scrollbars only appear once the
             // document overflows the viewport, rather than being permanently shown.
             ViewportSettings = ViewportSettingsFlags.HasScrollBars,
