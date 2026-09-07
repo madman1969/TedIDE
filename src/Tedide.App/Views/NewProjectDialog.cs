@@ -47,15 +47,14 @@ public sealed class NewProjectDialog : Dialog
 
         var browseButton = DirectoryBrowseButton.Create(_directoryField, y: 6);
 
-        // Every cl65 target, not just Commodore hardware (unlike ProjectSettingsDialog's own
-        // target dropdown) - scaffolding a brand new project for e.g. Apple II or Atari is a
-        // reasonable thing to want straight from File > New Project.
-        var targetLabel = new Label { Text = "Target:", X = 0, Y = 8 };
+        // Restricted to Commodore hardware, same as ProjectSettingsDialog's own target dropdown -
+        // see Cc65TargetExtensions.CommodoreTargets.
+        var targetLabel = new Label { Text = "Target (Commodore only):", X = 0, Y = 8 };
         _targetField = new DropDownList
         {
             X = 0, Y = 10, Width = Dim.Fill(1),
             Source = new ListWrapper<string>(new ObservableCollection<string>(
-                Enum.GetValues<Cc65Target>().Select(t => t.ToCl65Id()))),
+                Cc65TargetExtensions.CommodoreTargets.Select(t => t.ToCl65Id()))),
             Text = "c64",
         };
 
