@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Tedide.Build;
 using Tedide.Core;
 using Terminal.Gui.App;
 using Terminal.Gui.Drawing;
@@ -8,19 +9,20 @@ using Terminal.Gui.Views;
 namespace Tedide.App.Views;
 
 /// <summary>
-/// Modal dialog for viewing/editing a loaded project's settings, as four tabs sharing one Save/
+/// Modal dialog for viewing/editing a loaded project's settings, as five tabs sharing one Save/
 /// Cancel footer: "Settings" (display name, cc65 target, output file override, extra cl65
 /// arguments), "Optimizer" (the cc65 compiler optimization preset - see
 /// <see cref="Cc65OptimizationLevel"/>), "Compiler" (other cc65 compile-time flags: whether to
 /// emit an assembler listing file per source file, and whether to interleave C source as comments
-/// in them), and "CC65" (the CC65_HOME environment variable). Source files aren't edited here -
-/// that's the Solution Explorer's right-click New File/Delete File job (see
-/// <see cref="SolutionExplorerTree"/>).
+/// in them), "CC65" (the CC65_HOME environment variable), and "VICE" (the VICE emulator's bin
+/// directory). Source files aren't edited here - that's the Solution Explorer's right-click New
+/// File/Delete File job (see <see cref="SolutionExplorerTree"/>).
 /// On "Save", writes every field from the project-bound tabs onto the given
-/// <see cref="TedideProject"/> in one go and persists it to disk (CC65_HOME is not project state,
-/// so it's applied straight to the process's environment instead - see the CC65 tab); the caller is
-/// responsible for refreshing anything that displays project state (e.g. the Solution Explorer's
-/// "Name (target)" node text).
+/// <see cref="TedideProject"/> in one go and persists it to disk; the "CC65"/"VICE" tabs aren't
+/// project state (they're this machine's toolchain install, not any one project) so they're
+/// persisted separately to <see cref="ToolchainSettings"/> instead - the caller (AppShell) reloads
+/// and applies that immediately after a save, and is also responsible for refreshing anything that
+/// displays project state (e.g. the Solution Explorer's "Name (target)" node text).
 /// </summary>
 public sealed class ProjectSettingsDialog : Dialog
 {
@@ -32,6 +34,7 @@ public sealed class ProjectSettingsDialog : Dialog
     private readonly CheckBox _generateListingField;
     private readonly CheckBox _addSourceAsCommentField;
     private readonly TextField _cc65HomeField;
+    private readonly TextField _viceBinDirectoryField;
 
     /// <summary>True if the user chose Save (and the project was updated and saved to disk).</summary>
     public bool Saved { get; private set; }
@@ -54,10 +57,12 @@ public sealed class ProjectSettingsDialog : Dialog
         var optimizerTab = BuildOptimizerTab(project, out _optimizationLevelField);
         var compilerTab = BuildCompilerTab(project, out _generateListingField, out _addSourceAsCommentField);
         var cc65Tab = BuildCc65Tab(out _cc65HomeField);
+        var viceTab = BuildViceTab(out _viceBinDirectoryField);
         tabs.Add(settingsTab);
         tabs.Add(optimizerTab);
         tabs.Add(compilerTab);
         tabs.Add(cc65Tab);
+        tabs.Add(viceTab);
 
         // The primary action: Accent-scheme so it visually pops against the dialog's normal
         // chrome, the same accent color the app uses for the menu bar's own highlighted items.
@@ -96,11 +101,15 @@ public sealed class ProjectSettingsDialog : Dialog
             project.AddSourceAsComment = _addSourceAsCommentField.Value == CheckState.Checked;
             project.Save();
 
-            // Not project state - applied straight to this process's environment so it's picked up
-            // by every cl65 invocation Tedide.Build starts from here on (child processes inherit
-            // their parent's environment by default).
-            var cc65Home = _cc65HomeField.Text.Trim();
-            Environment.SetEnvironmentVariable("CC65_HOME", cc65Home.Length == 0 ? null : cc65Home);
+            // Not project state - this machine's toolchain install, not any one project - so it's
+            // persisted separately rather than onto the TedideProject above. AppShell reloads and
+            // applies it (CC65_HOME to this process's environment, ViceBinDirectory to its
+            // ViceEmulator instance) immediately after this dialog closes.
+            new ToolchainSettings
+            {
+                Cc65Home = _cc65HomeField.Text.Trim() is { Length: > 0 } cc65Home ? cc65Home : null,
+                ViceBinDirectory = _viceBinDirectoryField.Text.Trim() is { Length: > 0 } viceBinDirectory ? viceBinDirectory : null,
+            }.Save();
 
             Saved = true;
             Application.RequestStop(this);
@@ -250,19 +259,50 @@ public sealed class ProjectSettingsDialog : Dialog
         cc65HomeField = new TextField
         {
             X = 0, Y = 2, Width = Dim.Fill(1),
-            Text = Environment.GetEnvironmentVariable("CC65_HOME") ?? string.Empty,
+            Text = ToolchainSettings.Load().Cc65Home ?? string.Empty,
         };
 
+        // HotKeySpecifier disabled here too - this text also contains a literal "_" (in
+        // "CC65_HOME"), same gotcha as homeLabel above.
         var helpLabel = new Label
         {
             Text = "Root directory of the cc65 installation (contains its include/ and lib/\n" +
                    "subfolders) - cl65 uses this to find target-specific headers and libraries.\n" +
-                   "Applied to this Tedide process's environment on Save, so it takes effect for\n" +
-                   "builds started from here on; leave blank to unset it.",
+                   "Saved to Tedide's settings and applied to this process's environment on Save;\n" +
+                   "leave blank to unset it (won't affect a CC65_HOME set outside Tedide).",
             X = 0, Y = 4, Width = Dim.Fill(1), Height = 4,
+            HotKeySpecifier = new System.Text.Rune(0xFFFF),
         };
 
         tab.Add(homeLabel, cc65HomeField, helpLabel);
+        return tab;
+    }
+
+    /// <summary>
+    /// Builds the "VICE" tab: the directory containing the VICE emulator executables (x64sc.exe
+    /// etc - see <see cref="ViceEmulator.ExecutableNameFor"/>), shown and edited directly (not
+    /// project state - see the Save handler and <see cref="ToolchainSettings"/>).
+    /// </summary>
+    private static View BuildViceTab(out TextField viceBinDirectoryField)
+    {
+        var tab = new View { Title = "_VICE", Width = Dim.Fill(), Height = Dim.Fill() };
+
+        var binLabel = new Label { Text = "VICE bin directory:", X = 0, Y = 0 };
+        viceBinDirectoryField = new TextField
+        {
+            X = 0, Y = 2, Width = Dim.Fill(1),
+            Text = ToolchainSettings.Load().ViceBinDirectory ?? ViceEmulator.DefaultBinDirectory,
+        };
+
+        var helpLabel = new Label
+        {
+            Text = "The VICE install's bin/ folder - contains the emulator executables (x64sc.exe,\n" +
+                   "xplus4.exe, etc) that Build > Run Project launches. Saved to Tedide's settings\n" +
+                   "and applied immediately, so a changed path takes effect without restarting Tedide.",
+            X = 0, Y = 4, Width = Dim.Fill(1), Height = 3,
+        };
+
+        tab.Add(binLabel, viceBinDirectoryField, helpLabel);
         return tab;
     }
 }

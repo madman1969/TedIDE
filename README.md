@@ -11,9 +11,11 @@ Projects and Solutions list.
 - .NET SDK 10.0+
 - The [cc65](https://cc65.github.io/) toolchain, with `cl65` on your `PATH`
 - (Optional) [VICE](https://vice-emu.sourceforge.io) - only needed for **Build > Run Project**,
-  which launches a project's built output in the matching Commodore emulator. Tedide looks for it
-  at `C:\GTK3VICE-3.9-win64` by default (see `ViceEmulator` in `Tedide.Build`); everything else,
-  including Build Project and Clean Project, works fine without it.
+  which launches a project's built output in the matching Commodore emulator. Tedide looks for its
+  executables at `C:\GTK3VICE-3.9-win64\bin` by default (see `ViceEmulator` in `Tedide.Build`) -
+  configurable via **Project > Settings > VICE**, alongside `CC65_HOME` under its own **CC65** tab
+  (both are per-machine toolchain settings, not project state, so they're saved once and apply to
+  every project). Everything else, including Build Project and Clean Project, works fine without it.
 
 ## Solution layout
 

@@ -26,6 +26,9 @@ public sealed class AppShell : Window
 {
     private readonly Workspace _workspace = new();
     private readonly Cc65Toolchain _toolchain = new();
+    // Not inline-initialized (unlike its siblings below) - its BinDirectory depends on
+    // ToolchainSettings, applied in the constructor via ApplyToolchainSettings (also reapplied
+    // after every ProjectSettingsDialog save - see ShowProjectSettings).
     private readonly ViceEmulator _vice = new();
     private readonly RecentProjectsSettings _recentProjects = RecentProjectsSettings.Load();
     private readonly LayoutSettings _layoutSettings = LayoutSettings.Load();
@@ -49,6 +52,11 @@ public sealed class AppShell : Window
         Title = "Tedide - CC65 IDE";
         Width = Dim.Fill();
         Height = Dim.Fill();
+
+        // At startup, an unset Cc65Home must not clobber a CC65_HOME the user has set some other
+        // way (shell profile, system env) before launching Tedide - only an explicit edit via the
+        // CC65 tab's Save (see ShowProjectSettings) is allowed to unset it, hence allowUnsettingCc65Home: false here.
+        ApplyToolchainSettings(ToolchainSettings.Load(), allowUnsettingCc65Home: false);
 
         _menuBar = BuildMenuBar();
         _statusBar = BuildStatusBar();
@@ -843,10 +851,34 @@ public sealed class AppShell : Window
         if (!dialog.Saved)
             return;
 
+        // The dialog's "CC65"/"VICE" tabs already persisted to ToolchainSettings on Save (they're
+        // not project state - see ProjectSettingsDialog) - reload and apply immediately so a
+        // changed value takes effect without restarting Tedide. Unlike the startup call in the
+        // constructor, an explicit Save is allowed to unset CC65_HOME.
+        ApplyToolchainSettings(ToolchainSettings.Load(), allowUnsettingCc65Home: true);
+
         if (oldFilePath is not null && !string.Equals(project.Name, oldName, StringComparison.Ordinal))
             RenameProjectFolder(project, oldFilePath, oldDirectory);
 
         _solutionExplorer.Rebuild(_workspace);
+    }
+
+    /// <summary>
+    /// Applies <see cref="ToolchainSettings"/> to this running instance: <see cref="_vice"/>'s
+    /// BinDirectory always follows the setting (falling back to <see cref="ViceEmulator.DefaultBinDirectory"/>
+    /// when unset - it has no ambient equivalent to preserve), while CC65_HOME is only ever set, never
+    /// cleared, unless <paramref name="allowUnsettingCc65Home"/> is true - see call sites for why.
+    /// </summary>
+    private void ApplyToolchainSettings(ToolchainSettings settings, bool allowUnsettingCc65Home)
+    {
+        if (!string.IsNullOrWhiteSpace(settings.Cc65Home))
+            Environment.SetEnvironmentVariable("CC65_HOME", settings.Cc65Home);
+        else if (allowUnsettingCc65Home)
+            Environment.SetEnvironmentVariable("CC65_HOME", null);
+
+        _vice.BinDirectory = string.IsNullOrWhiteSpace(settings.ViceBinDirectory)
+            ? ViceEmulator.DefaultBinDirectory
+            : settings.ViceBinDirectory;
     }
 
     /// <summary>

@@ -8,9 +8,16 @@ namespace Tedide.Build;
 /// Launches a project's built output in the matching VICE emulator (the standard Commodore 8/16-bit
 /// emulator suite - https://vice-emu.sourceforge.io), auto-starting the program.
 /// </summary>
-public sealed class ViceEmulator(string installDirectory = @"C:\GTK3VICE-3.9-win64")
+public sealed class ViceEmulator(string binDirectory = ViceEmulator.DefaultBinDirectory)
 {
-    public string InstallDirectory { get; } = installDirectory;
+    public const string DefaultBinDirectory = @"C:\GTK3VICE-3.9-win64\bin";
+
+    /// <summary>
+    /// Not constructor-only (unlike most of this codebase's config-holding properties) - AppShell
+    /// reassigns this in place when the user changes it via ProjectSettingsDialog's "VICE" tab, so
+    /// the change takes effect for the next launch without needing a new ViceEmulator instance.
+    /// </summary>
+    public string BinDirectory { get; set; } = binDirectory;
 
     /// <summary>
     /// The VICE emulator executable for each Commodore machine cc65 can target - see
@@ -38,7 +45,7 @@ public sealed class ViceEmulator(string installDirectory = @"C:\GTK3VICE-3.9-win
     /// <paramref name="onOutputLine"/> is given) rather than blocking on it. Throws
     /// <see cref="NotSupportedException"/> if the target has no VICE emulator, or
     /// <see cref="FileNotFoundException"/> if that emulator isn't installed at
-    /// <see cref="InstallDirectory"/>.
+    /// <see cref="BinDirectory"/>.
     /// </summary>
     /// <param name="project">The project whose built output to auto-start.</param>
     /// <param name="onOutputLine">
@@ -51,7 +58,7 @@ public sealed class ViceEmulator(string installDirectory = @"C:\GTK3VICE-3.9-win
         var executableName = ExecutableNameFor(project.Target)
             ?? throw new NotSupportedException($"VICE has no emulator for target '{project.Target.ToCl65Id()}'.");
 
-        var executablePath = Path.Combine(InstallDirectory, "bin", executableName);
+        var executablePath = Path.Combine(BinDirectory, executableName);
         if (!File.Exists(executablePath))
             throw new FileNotFoundException($"VICE emulator not found at '{executablePath}'.", executablePath);
 
