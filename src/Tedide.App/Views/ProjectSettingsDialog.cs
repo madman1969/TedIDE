@@ -35,7 +35,7 @@ public sealed class ProjectSettingsDialog : Dialog
     public ProjectSettingsDialog(TedideProject project)
     {
         Title = $"Project Settings - {project.Name}";
-        Width = 78;
+        Width = 101; // 30% wider than the original 78
         // Tall enough for the "Settings" tab's four label/field pairs, each now with a blank row
         // above and below its field - see the "every field needs clearance on all 4 sides"
         // convention - plus the Tabs control's own header/border chrome on top of that.
