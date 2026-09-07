@@ -86,7 +86,7 @@ linked output binary, and the assembler listing if present) without rebuilding. 
 **Build > Run Project**) builds first, then launches the built output in the VICE emulator
 matching the project's target, auto-starting it.
 
-**Search > Find in Files** (Ctrl+Shift+F) searches every source/header/assembly file across the
+**Edit > Find in Files...** (Ctrl+Shift+F) searches every source/header/assembly file across the
 loaded project(s) for a case-insensitive substring and lists every matching line; activating a
 result opens that file and jumps the caret straight to the match.
 
@@ -192,8 +192,9 @@ menus (Find/Replace/Undo/Redo/Cut/Copy/Paste/Select All; Line Numbers/Fold Indic
 Show Tabs/Scrollbars) and the status bar's row/column indicator (`Ln X, Col Y`, plus insert-mode
 and language shortcuts) come wired to the editor already; only `EditorMenuBar`'s default File
 menu is replaced with our own project-aware one (New/Open/Recent **Project**s and **Close
-Solution**, rather than a single loose file - see "Running" above), and its Search/Build/Project/
-Theme menus are added alongside it. `EditorStatusBar`'s `ThemeDropDown` is hidden, since it drives
+Solution**, rather than a single loose file - see "Running" above), a **Find in Files...** item is
+appended to its own Edit menu, and Build/Project/Theme menus are added alongside it.
+`EditorStatusBar`'s `ThemeDropDown` is hidden, since it drives
 Terminal.Gui's own `ConfigurationManager`-based `ThemeManager` - a separate system from our own
 `SchemeManager`-based theme switcher below, and leaving both active would let it silently
 overwrite our custom themes.
