@@ -29,22 +29,22 @@ tests/
   Tedide.Core.Tests/
   Tedide.Build.Tests/
 samples/
-  HelloC64.tsln      A small multi-file sample solution/project, buildable for every Commodore cc65 target
-  HelloC64/
+  HelloC64/            A small multi-file sample solution/project, buildable for every Commodore cc65 target
+    HelloC64.tsln
     HelloC64.tproj     src/*.c plus one hand-written src/border.s, -I include for the headers
     src/               main.c, screen.c, animation.c, input.c, delay.c, border.s (ca65 assembly)
                        (each gets its own .lst next to it if listing generation is on) - gitignored
     include/           screen.h, animation.h, input.h, delay.h, border.h
     bin/               Build output (HelloC64.prg) - gitignored
-  HelloPlus4.tsln    A Plus/4-only sample touring TED chip features the C64's VIC-II/SID don't have
-  HelloPlus4/
+  HelloPlus4/          A Plus/4-only sample touring TED chip features the C64's VIC-II/SID don't have
+    HelloPlus4.tsln
     HelloPlus4.tproj   src/*.c, -I include for the headers - Target is Plus4, not cross-target
     src/               main.c, screen.c, palette.c, sound.c, speed.c, input.c, delay.c
                        (each gets its own .lst next to it if listing generation is on) - gitignored
     include/           screen.h, palette.h, sound.h, speed.h, input.h, delay.h
     bin/               Build output (HelloPlus4.prg) - gitignored
-  C128_80.tsln       A C128-only sample touring the VDC chip's 80-column text mode
-  C128_80/
+  C128_80/             A C128-only sample touring the VDC chip's 80-column text mode
+    C128_80.tsln
     C128_80.tproj      src/*.c, -I include for the headers - Target is C128, not cross-target
     src/               main.c, screen.c, ruler.c, columns.c, contrast.c, input.c
                        (each gets its own .lst next to it if listing generation is on) - gitignored
@@ -66,19 +66,19 @@ From the **File** menu:
   `#include <conio.h>`/`<stdio.h>` directly), so the include/ folder and its `-I include` are
   exercised by a real, working include from the start, not just present but unused. `OutputFile`
   points at `bin/<Name><target extension>`.
-- **Open Project...** and pick `samples/HelloC64.tsln` (or `samples/HelloC64/HelloC64.tproj`) for a
+- **Open Project...** and pick `samples/HelloC64/HelloC64.tsln` (or `samples/HelloC64/HelloC64.tproj`) for a
   working example - it's deliberately split across several `.c`/`.h`/`.s` files (see layout above) to
   show off the Solution Explorer's folder tree even though only one of them can be open for editing
   at a time (see "Editing" below), and its `border.s`/`animation.c` use per-target conditional
   compilation so the same sample builds correctly on every Commodore machine cc65 targets, not just
   the C64.
-- **Open Project...** and pick `samples/HelloPlus4.tsln` for the opposite story - a Plus/4-only tour
+- **Open Project...** and pick `samples/HelloPlus4/HelloPlus4.tsln` for the opposite story - a Plus/4-only tour
   of TED-chip features the C64's VIC-II/SID can't do: `palette.c` cycles the border/background
   through TED's full 121-color palette (16 hues x 8 luminance levels, not the C64's fixed 16
   colors), `sound.c` pokes TED's sound registers directly for a voice-1 arpeggio and a burst from
   voice 2's dedicated noise generator, and `speed.c` benchmarks `fast()`/`slow()`, the C16/Plus4's
   CPU clock-doubling switch that the C64/128 doesn't have.
-- **Open Project...** and pick `samples/C128_80.tsln` for a tour of the C128's VDC-chip 80-column
+- **Open Project...** and pick `samples/C128_80/C128_80.tsln` for a tour of the C128's VDC-chip 80-column
   text mode, a feature none of cc65's other Commodore targets have (they're all fixed at 40 columns
   or fewer): `ruler.c` reports the real screen width via `screensize()` and draws a column-number
   ruler spanning every column to prove it, `columns.c` lays out two independent text columns 40

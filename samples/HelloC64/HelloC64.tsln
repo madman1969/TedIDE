@@ -1,6 +1,6 @@
 {
   "Name": "HelloC64",
   "ProjectPaths": [
-    "HelloC64/HelloC64.tproj"
+    "HelloC64.tproj"
   ]
 }
