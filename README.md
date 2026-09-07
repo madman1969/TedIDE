@@ -78,9 +78,11 @@ as proper subfolders, and headers show up for browsing/editing even though they'
 directly. Build-output folders (`bin/`, `obj/`, `.git/`, `.vs/`) are hidden from the tree, but a
 project that has actually been built with an assembler listing enabled (see "Project Settings
 dialog" below) gets its own **Generated Files** node listing each source file's own `.lst`.
-Right-click (or Shift+F10) a project/folder/file node for **New File...**/**Delete File**. The
-border between the Solution Explorer and the editor is a draggable splitter - drag it to resize
-both panes.
+Right-click (or Shift+F10) a folder/file node for **New File...**/**Delete File** - not offered on
+the project root itself, only inside one of its subfolders. **New File...** defaults the new
+file's name to `newfile.h` in an `include` folder or `newfile.c` anywhere else (matching whichever
+folder - or the folder of whichever file - was right-clicked). The border between the Solution
+Explorer and the editor is a draggable splitter - drag it to resize both panes.
 
 Press **F5** (or **Build > Build Project**) to invoke `cl65` - once per source file (`-c`, compile
 and assemble but don't link) so each gets its own assembler listing, then once more to link the

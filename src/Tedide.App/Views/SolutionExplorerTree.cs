@@ -71,8 +71,10 @@ public sealed class SolutionExplorerTree : TreeView
 
     /// <summary>
     /// Builds and shows the context menu for the given node, if it has any applicable commands:
-    /// "New File..." for a project or folder node, or "New File..."/"Delete File" for a file node.
-    /// Returns false (showing nothing) for a node type with no applicable commands.
+    /// "New File..." for a folder node, or "New File..."/"Delete File" for a file node. The
+    /// project root node itself offers neither - New File is deliberately only available inside
+    /// one of its subfolders (typically src/include), not directly in the project's own
+    /// directory. Returns false (showing nothing) for a node type with no applicable commands.
     /// </summary>
     private bool TryShowContextMenu(TreeNode node, Point screenPosition)
     {
@@ -80,9 +82,6 @@ public sealed class SolutionExplorerTree : TreeView
 
         switch (node.Tag)
         {
-            case TedideProject project:
-                items.Add(new MenuItem("New File...", "", () => NewFileRequested?.Invoke(project.Directory)));
-                break;
             case string path when Directory.Exists(path):
                 items.Add(new MenuItem("New File...", "", () => NewFileRequested?.Invoke(path)));
                 break;

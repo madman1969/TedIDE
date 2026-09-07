@@ -396,11 +396,12 @@ public sealed class AppShell : Window
     }
 
     /// <summary>
-    /// Creates a new source/header file directly in <paramref name="directory"/> - the folder (or
-    /// project root) the user right-clicked in the Solution Explorer to get here. Compilable files
-    /// (.c/.s/.asm) are added to the owning project's SourceFiles and the project is saved; headers
-    /// are not, since cl65 never compiles them directly. The new file is opened in the editor once
-    /// created.
+    /// Creates a new source/header file directly in <paramref name="directory"/> - the folder the
+    /// user right-clicked in the Solution Explorer to get here (New File isn't offered on the
+    /// project root itself - see <see cref="SolutionExplorerTree.TryShowContextMenu"/>).
+    /// Compilable files (.c/.s/.asm) are added to the owning project's SourceFiles and the
+    /// project is saved; headers are not, since cl65 never compiles them directly. The new file
+    /// is opened in the editor once created.
     /// </summary>
     private void NewFile(string directory)
     {
@@ -409,7 +410,17 @@ public sealed class AppShell : Window
         if (project is null)
             return;
 
-        var dialog = new NewFileDialog(directory);
+        // Default the new file's name/extension to match the convention the folder itself
+        // implies - "include" is where headers live, "src" is where compiled sources live - so
+        // the common case needs no manual edit beyond the base name. Anywhere else keeps the old
+        // plain "newfile.c" default.
+        var defaultFileName = Path.GetFileName(directory).ToLowerInvariant() switch
+        {
+            "include" => "newfile.h",
+            _ => "newfile.c",
+        };
+
+        var dialog = new NewFileDialog(directory, defaultFileName);
         Application.Run(dialog);
         if (dialog.FileName is not { } fileName)
             return;

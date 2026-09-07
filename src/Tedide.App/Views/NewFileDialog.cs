@@ -17,11 +17,15 @@ public sealed class NewFileDialog : Dialog
     /// <summary>The entered filename, or null if the dialog was cancelled.</summary>
     public string? FileName { get; private set; }
 
-    public NewFileDialog(string targetDirectory)
+    /// <param name="targetDirectory">The folder the new file is created directly in.</param>
+    /// <param name="defaultFileName">Pre-fills the file name field with this - e.g. "newfile.h"
+    /// when creating a file in an "include" folder, "newfile.c" in a "src" folder or anywhere
+    /// else (see <see cref="AppShell.NewFile"/>).</param>
+    public NewFileDialog(string targetDirectory, string defaultFileName = "newfile.c")
     {
         Title = "New File";
         Width = 64;
-        Height = 10;
+        Height = 15;
         // A real Padding adornment (rather than hand-offsetting every child's X/Y by 1) so the
         // whole dialog gets consistent breathing room from its border - children below are
         // positioned relative to this inset content area, i.e. X = 0 is already 2 cells in.
@@ -29,7 +33,9 @@ public sealed class NewFileDialog : Dialog
 
         var dirLabel = new Label { Text = $"In: {targetDirectory}", X = 0, Y = 0, Width = Dim.Fill() };
         var nameLabel = new Label { Text = "File name:", X = 0, Y = 2 };
-        _nameField = new TextField { X = 0, Y = 3, Width = Dim.Fill(), Text = "newfile.c" };
+        // Y = 4, not 3: a blank row between the label and its field, same as every other field
+        // in the app - see the "every field needs clearance on all 4 sides" convention.
+        _nameField = new TextField { X = 0, Y = 4, Width = Dim.Fill(1), Text = defaultFileName };
 
         // The primary action: Accent-scheme so it visually pops against the dialog's normal
         // chrome, the same accent color the app uses for the menu bar's own highlighted items.
