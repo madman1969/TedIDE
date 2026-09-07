@@ -43,6 +43,13 @@ samples/
                        (each gets its own .lst next to it if listing generation is on) - gitignored
     include/           screen.h, palette.h, sound.h, speed.h, input.h, delay.h
     bin/               Build output (HelloPlus4.prg) - gitignored
+  C128_80.tsln       A C128-only sample touring the VDC chip's 80-column text mode
+  C128_80/
+    C128_80.tproj      src/*.c, -I include for the headers - Target is C128, not cross-target
+    src/               main.c, screen.c, ruler.c, columns.c, contrast.c, input.c
+                       (each gets its own .lst next to it if listing generation is on) - gitignored
+    include/           screen.h, ruler.h, columns.h, contrast.h, input.h
+    bin/               Build output (C128_80.prg) - gitignored
 ```
 
 ## Running
@@ -71,6 +78,13 @@ From the **File** menu:
   colors), `sound.c` pokes TED's sound registers directly for a voice-1 arpeggio and a burst from
   voice 2's dedicated noise generator, and `speed.c` benchmarks `fast()`/`slow()`, the C16/Plus4's
   CPU clock-doubling switch that the C64/128 doesn't have.
+- **Open Project...** and pick `samples/C128_80.tsln` for a tour of the C128's VDC-chip 80-column
+  text mode, a feature none of cc65's other Commodore targets have (they're all fixed at 40 columns
+  or fewer): `ruler.c` reports the real screen width via `screensize()` and draws a column-number
+  ruler spanning every column to prove it, `columns.c` lays out two independent text columns 40
+  characters apart that would collide in 40-column mode, and `contrast.c` switches live to
+  40-column mode and back with `videomode()`, drawing the same ruler both times so the difference
+  is visible side by side.
 - **Recent Projects and Solutions** lists the 10 most-recently-opened `.tproj`/`.tsln` paths
   (persisted per-user, independent of any one project), numbered for Alt+1..9 accelerators like
   Visual Studio's own list. Selecting a stale entry (moved/deleted on disk) drops it from the list
