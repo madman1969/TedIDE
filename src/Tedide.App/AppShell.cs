@@ -820,7 +820,8 @@ public sealed class AppShell : Window
     /// Opens the settings dialog for the active project - its Settings tab (name, target, output
     /// file, extra cl65 arguments) and Optimizer tab (cc65 optimization preset). Rebuilds the
     /// Solution Explorer afterward since its project node label includes the name and target,
-    /// which the dialog may have just changed.
+    /// which the dialog may have just changed. If the name changed, also renames the project's
+    /// folder (and its .tproj file) on disk to match - see <see cref="RenameProjectFolder"/>.
     /// </summary>
     private void ShowProjectSettings()
     {
@@ -831,10 +832,100 @@ public sealed class AppShell : Window
             return;
         }
 
+        var oldName = project.Name;
+        var oldFilePath = project.FilePath;
+        var oldDirectory = project.Directory;
+
         var dialog = new ProjectSettingsDialog(project);
         Application.Run(dialog);
-        if (dialog.Saved)
-            _solutionExplorer.Rebuild(_workspace);
+        if (!dialog.Saved)
+            return;
+
+        if (oldFilePath is not null && !string.Equals(project.Name, oldName, StringComparison.Ordinal))
+            RenameProjectFolder(project, oldFilePath, oldDirectory);
+
+        _solutionExplorer.Rebuild(_workspace);
+    }
+
+    /// <summary>
+    /// Renames a project's own directory (and its .tproj file) to match a name change just saved
+    /// by <see cref="ProjectSettingsDialog"/> - e.g. renaming "HelloGame" to "SuperGame" moves
+    /// .../HelloGame/ to .../SuperGame/ and HelloGame.tproj to SuperGame.tproj within it, following
+    /// the same "folder named after the project" convention <see cref="Workspace.NewProject"/>
+    /// scaffolds. The dialog has already written the new name into the .tproj at its old location
+    /// by the time this runs, so the move carries the up-to-date content with it - no re-save
+    /// needed. Also repoints the owning solution's ProjectPaths entry, and the editor's open file
+    /// if it was inside this project, since neither follows a directory move on its own.
+    /// </summary>
+    private void RenameProjectFolder(TedideProject project, string oldFilePath, string oldDirectory)
+    {
+        var parentDirectory = Path.GetDirectoryName(oldDirectory);
+        if (parentDirectory is null)
+            return;
+
+        var newDirectory = Path.Combine(parentDirectory, project.Name);
+        if (Directory.Exists(newDirectory))
+        {
+            MessageBox.ErrorQuery(Application.Instance, "Directory Exists",
+                $"Cannot rename the project folder to '{project.Name}' - '{newDirectory}' already exists.\n" +
+                "The project's name was saved, but its folder was left as-is.", ["OK"]);
+            return;
+        }
+
+        // The currently open file won't follow a Directory.Move on its own - EditorPane.OpenPath
+        // is just a string. If it's inside this project, confirm/save unsaved changes now (while
+        // the old path is still valid) and remember it relative to the project root so it can be
+        // reopened from the new location afterward.
+        string? relativeOpenPath = null;
+        if (_editorPane.OpenPath is { } openPath &&
+            openPath.StartsWith(oldDirectory + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+        {
+            if (!ConfirmReplaceCurrentFile())
+            {
+                MessageBox.ErrorQuery(Application.Instance, "Rename Cancelled",
+                    "The project's name was saved, but its folder was not renamed because the open file has unsaved changes.", ["OK"]);
+                return;
+            }
+
+            relativeOpenPath = Path.GetRelativePath(oldDirectory, openPath);
+        }
+
+        try
+        {
+            Directory.Move(oldDirectory, newDirectory);
+
+            var movedFilePath = Path.Combine(newDirectory, Path.GetFileName(oldFilePath));
+            var newFilePath = Path.Combine(newDirectory, project.Name + TedideProject.FileExtension);
+            if (!string.Equals(movedFilePath, newFilePath, StringComparison.OrdinalIgnoreCase))
+                File.Move(movedFilePath, newFilePath);
+
+            project.FilePath = newFilePath;
+        }
+        catch (IOException ex)
+        {
+            MessageBox.ErrorQuery(Application.Instance, "Rename Failed",
+                $"The project's name was saved, but its folder could not be renamed: {ex.Message}", ["OK"]);
+            return;
+        }
+
+        if (_workspace.Solution is { } solution)
+        {
+            var oldRelative = Path.GetRelativePath(solution.Directory, oldFilePath).Replace('\\', '/');
+            var index = solution.ProjectPaths.FindIndex(p => string.Equals(p, oldRelative, StringComparison.OrdinalIgnoreCase));
+            if (index >= 0)
+            {
+                solution.ProjectPaths[index] = Path.GetRelativePath(solution.Directory, project.FilePath).Replace('\\', '/');
+                solution.Save();
+            }
+        }
+
+        if (relativeOpenPath is not null)
+        {
+            var newOpenPath = Path.Combine(newDirectory, relativeOpenPath);
+            _editorPane.Open(newOpenPath);
+            _editorFrame.Title = Path.GetFileName(newOpenPath);
+            UpdateLanguageIndicator();
+        }
     }
 
     private void AppendOutputLine(string line) => _outputView.AppendLine(line);

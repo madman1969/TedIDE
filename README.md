@@ -185,7 +185,14 @@ single Save/Cancel footer:
   invocation specifically so this is one listing per source file, not one covering the whole
   project - see "Running" above.
 
-Saving writes every field from all three tabs to the `.tproj` in one go.
+Saving writes every field from all three tabs to the `.tproj` in one go. If the display name
+changed, the project's own folder (and its `.tproj` file) is renamed to match - e.g. renaming
+"HelloGame" to "SuperGame" moves `.../HelloGame/` to `.../SuperGame/` and `HelloGame.tproj` to
+`SuperGame.tproj` within it, following the same "folder named after the project" convention File >
+New Project scaffolds. Source files move along with the folder, so `SourceFiles` needs no changes;
+if the project belongs to a solution, the solution's own reference to it is updated too. If a
+folder with the new name already exists, the name change is still saved but the folder itself is
+left alone and an error explains why.
 
 ## Editing
 
