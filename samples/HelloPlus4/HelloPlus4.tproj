@@ -1,0 +1,21 @@
+{
+  "Name": "HelloPlus4",
+  "Target": "Plus4",
+  "OptimizationLevel": "Maximum",
+  "GenerateAssemblyListing": true,
+  "AddSourceAsComment": true,
+  "SourceFiles": [
+    "src/main.c",
+    "src/screen.c",
+    "src/palette.c",
+    "src/sound.c",
+    "src/speed.c",
+    "src/input.c",
+    "src/delay.c"
+  ],
+  "OutputFile": "bin/HelloPlus4.prg",
+  "ExtraArguments": [
+    "-I",
+    "include"
+  ]
+}

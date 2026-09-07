@@ -33,6 +33,12 @@ samples/
     src/               main.c, screen.c, animation.c, input.c, delay.c, border.s (ca65 assembly)
     include/           screen.h, animation.h, input.h, delay.h, border.h
     bin/               Build output (HelloC64.prg, and HelloC64.lst if listing generation is on) - gitignored
+  HelloPlus4.tsln    A Plus/4-only sample touring TED chip features the C64's VIC-II/SID don't have
+  HelloPlus4/
+    HelloPlus4.tproj   src/*.c, -I include for the headers - Target is Plus4, not cross-target
+    src/               main.c, screen.c, palette.c, sound.c, speed.c, input.c, delay.c
+    include/           screen.h, palette.h, sound.h, speed.h, input.h, delay.h
+    bin/               Build output (HelloPlus4.prg, and HelloPlus4.lst if listing generation is on) - gitignored
 ```
 
 ## Running
@@ -50,6 +56,12 @@ From the **File** menu:
   at a time (see "Editing" below), and its `border.s`/`animation.c` use per-target conditional
   compilation so the same sample builds correctly on every Commodore machine cc65 targets, not just
   the C64.
+- **Open Project...** and pick `samples/HelloPlus4.tsln` for the opposite story - a Plus/4-only tour
+  of TED-chip features the C64's VIC-II/SID can't do: `palette.c` cycles the border/background
+  through TED's full 121-color palette (16 hues x 8 luminance levels, not the C64's fixed 16
+  colors), `sound.c` pokes TED's sound registers directly for a voice-1 arpeggio and a burst from
+  voice 2's dedicated noise generator, and `speed.c` benchmarks `fast()`/`slow()`, the C16/Plus4's
+  CPU clock-doubling switch that the C64/128 doesn't have.
 - **Recent Projects and Solutions** lists the 10 most-recently-opened `.tproj`/`.tsln` paths
   (persisted per-user, independent of any one project), numbered for Alt+1..9 accelerators like
   Visual Studio's own list. Selecting a stale entry (moved/deleted on disk) drops it from the list
