@@ -120,4 +120,67 @@ public class TedideProjectTests
             dir.Delete(recursive: true);
         }
     }
+
+    [Fact]
+    public void ResolvedLibFiles_IsEmpty_WhenLibFolderDoesNotExist()
+    {
+        var dir = Directory.CreateTempSubdirectory();
+        try
+        {
+            var project = new TedideProject();
+            project.Save(Path.Combine(dir.FullName, "NoLib.tproj"));
+
+            Assert.Empty(project.ResolvedLibFiles);
+        }
+        finally
+        {
+            dir.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ResolvedLibFiles_IsEmpty_WhenLibFolderExistsButHasNoLibFiles()
+    {
+        var dir = Directory.CreateTempSubdirectory();
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(dir.FullName, "lib"));
+            var project = new TedideProject();
+            project.Save(Path.Combine(dir.FullName, "EmptyLib.tproj"));
+
+            Assert.Empty(project.ResolvedLibFiles);
+        }
+        finally
+        {
+            dir.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ResolvedLibFiles_ReturnsEveryLibFile_InTheLibFolder()
+    {
+        var dir = Directory.CreateTempSubdirectory();
+        try
+        {
+            var libDir = Path.Combine(dir.FullName, "lib");
+            Directory.CreateDirectory(libDir);
+            File.WriteAllText(Path.Combine(libDir, "b.lib"), "");
+            File.WriteAllText(Path.Combine(libDir, "a.lib"), "");
+            // Not a .lib file - shouldn't show up alongside the two above.
+            File.WriteAllText(Path.Combine(libDir, "readme.txt"), "");
+
+            var project = new TedideProject();
+            project.Save(Path.Combine(dir.FullName, "WithLibs.tproj"));
+
+            var resolved = project.ResolvedLibFiles.ToList();
+
+            Assert.Equal(
+                [Path.Combine(libDir, "a.lib"), Path.Combine(libDir, "b.lib")],
+                resolved);
+        }
+        finally
+        {
+            dir.Delete(recursive: true);
+        }
+    }
 }

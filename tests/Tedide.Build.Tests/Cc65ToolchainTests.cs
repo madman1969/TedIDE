@@ -253,6 +253,43 @@ public class Cc65ToolchainTests
     }
 
     [Fact]
+    public void BuildLinkArguments_OmitsLibFiles_WhenLibFolderIsAbsentOrEmpty()
+    {
+        var project = new TedideProject { Name = "Test", Target = Cc65Target.C64 };
+
+        var args = Cc65Toolchain.BuildLinkArguments(project, ["src/main.o"]);
+
+        Assert.DoesNotContain(args, a => a.EndsWith(".lib"));
+    }
+
+    [Fact]
+    public void BuildLinkArguments_AppendsEveryLibFile_AfterTheObjectFiles()
+    {
+        var dir = Directory.CreateTempSubdirectory();
+        try
+        {
+            var libDir = Path.Combine(dir.FullName, "lib");
+            Directory.CreateDirectory(libDir);
+            File.WriteAllText(Path.Combine(libDir, "vendor.lib"), "");
+
+            var project = new TedideProject { Name = "Test", Target = Cc65Target.C64 };
+            project.Save(Path.Combine(dir.FullName, "Test.tproj"));
+
+            var args = Cc65Toolchain.BuildLinkArguments(project, ["src/main.o"]);
+
+            var objectFileIndex = args.IndexOf("src/main.o");
+            var libFileIndex = args.IndexOf(Path.Combine(libDir, "vendor.lib"));
+            Assert.True(objectFileIndex >= 0 && libFileIndex >= 0);
+            Assert.True(objectFileIndex < libFileIndex,
+                $"Expected the object file (at {objectFileIndex}) before the .lib file (at {libFileIndex}): {string.Join(" ", args)}");
+        }
+        finally
+        {
+            dir.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
     public void Clean_RemovesObjectFilesOutputBinaryAndEachSourceFilesListingFile()
     {
         var dir = Directory.CreateTempSubdirectory();

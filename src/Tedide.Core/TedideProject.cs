@@ -112,4 +112,24 @@ public sealed class TedideProject
     /// <summary>Absolute paths of all source files.</summary>
     [JsonIgnore]
     public IEnumerable<string> ResolvedSourceFiles => SourceFiles.Select(f => Path.Combine(Directory, f));
+
+    /// <summary>
+    /// Absolute paths of every .lib file directly inside the project's lib/ folder (not
+    /// recursive), sorted for a deterministic link command line. Every project gets an empty lib/
+    /// folder (see NewProject in Tedide.App's Workspace, and every bundled sample), so a prebuilt
+    /// cc65 library archive can be linked in by just dropping it there - no .tproj change needed;
+    /// see Tedide.Build's Cc65Toolchain.BuildLinkArguments for where these are actually passed to
+    /// ld65, alongside the compiled object files. Empty if lib/ doesn't exist or has no .lib files.
+    /// </summary>
+    [JsonIgnore]
+    public IEnumerable<string> ResolvedLibFiles
+    {
+        get
+        {
+            var libDirectory = Path.Combine(Directory, "lib");
+            return System.IO.Directory.Exists(libDirectory)
+                ? System.IO.Directory.EnumerateFiles(libDirectory, "*.lib").OrderBy(f => f, StringComparer.Ordinal)
+                : [];
+        }
+    }
 }

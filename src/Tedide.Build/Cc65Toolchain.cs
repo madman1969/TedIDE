@@ -239,6 +239,9 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
     /// <summary>
     /// The cl65 arguments to link a project's already-compiled object files into its output
     /// binary. Run once, after every source file has been compiled with <see cref="BuildCompileArguments"/>.
+    /// Any .lib files found in the project's lib/ folder (<see cref="TedideProject.ResolvedLibFiles"/>)
+    /// are appended after the object files, so ld65 resolves undefined symbols from them the same
+    /// way it would object-file-then-library arguments on a hand-written command line.
     /// </summary>
     internal static List<string> BuildLinkArguments(TedideProject project, IEnumerable<string> objectFiles)
     {
@@ -253,6 +256,7 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
             args.AddRange(["-Ln", project.ResolvedLabelsFile]);
         args.AddRange(project.ExtraArguments);
         args.AddRange(objectFiles);
+        args.AddRange(project.ResolvedLibFiles);
         return args;
     }
 }

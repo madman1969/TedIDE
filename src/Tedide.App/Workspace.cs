@@ -17,24 +17,27 @@ public sealed class Workspace
     public TedideProject? ActiveProject => Projects.Count > 0 ? Projects[0] : null;
 
     /// <summary>
-    /// Scaffolds a new project in <paramref name="directory"/> using the same src/include/bin
+    /// Scaffolds a new project in <paramref name="directory"/> using the same src/include/lib/bin
     /// layout as the bundled samples (see "Project files" in the README) - GitHub's most common
-    /// C project layout - rather than a flat directory with main.c and the output binary sitting
-    /// next to the .tproj. include/ gets a starter main.h (paired with src/main.c the same way
-    /// e.g. HelloCBM's screen.c/screen.h are) rather than sitting empty, so the include/ folder -
-    /// and the -I include that finds it - are exercised by a real, working #include from the
+    /// C project layout, plus lib/ - rather than a flat directory with main.c and the output binary
+    /// sitting next to the .tproj. include/ gets a starter main.h (paired with src/main.c the same
+    /// way e.g. HelloCBM's screen.c/screen.h are) rather than sitting empty, so the include/ folder
+    /// - and the -I include that finds it - are exercised by a real, working #include from the
     /// moment the project is created, not just present but unused; bin/ is deliberately left for
-    /// the first build to create, same as the samples (see Cc65Toolchain.BuildAsync). Also creates
-    /// a same-named .tsln wrapping the new .tproj, right beside it, the same way every bundled
-    /// sample is wrapped - so the freshly-created project shows up in the Solution Explorer, Recent
-    /// Projects, etc. exactly like one you'd open via "samples/Name/Name.tsln", not as a bare
-    /// project some other path through the app happens to leave unwrapped.
+    /// the first build to create, same as the samples (see Cc65Toolchain.BuildAsync). lib/ is
+    /// created empty - dropping a prebuilt cc65 .lib archive into it is enough to link against it,
+    /// no .tproj change needed (see TedideProject.ResolvedLibFiles). Also creates a same-named
+    /// .tsln wrapping the new .tproj, right beside it, the same way every bundled sample is wrapped
+    /// - so the freshly-created project shows up in the Solution Explorer, Recent Projects, etc.
+    /// exactly like one you'd open via "samples/Name/Name.tsln", not as a bare project some other
+    /// path through the app happens to leave unwrapped.
     /// </summary>
     public TedideProject NewProject(string directory, string name, Cc65Target target)
     {
         Directory.CreateDirectory(directory);
         Directory.CreateDirectory(Path.Combine(directory, "src"));
         Directory.CreateDirectory(Path.Combine(directory, "include"));
+        Directory.CreateDirectory(Path.Combine(directory, "lib"));
 
         // Relative paths stored in the .tproj use "/" literally (not Path.Combine) to match the
         // bundled samples' own .tproj files, which are portable, human-authored path strings
