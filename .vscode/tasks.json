@@ -75,6 +75,24 @@
       ],
       "problemMatcher": "$msCompile",
       "group": "build"
+    },
+    {
+      "label": "publish Tedide.DocViewer (standalone exe)",
+      "type": "process",
+      "command": "dotnet",
+      "args": [
+        "publish",
+        "${workspaceFolder}/src/Tedide.DocViewer/Tedide.DocViewer.csproj",
+        "-c", "Release",
+        "-r", "win-x64",
+        "--self-contained", "true",
+        "-p:PublishSingleFile=true",
+        "-p:IncludeNativeLibrariesForSelfExtract=true",
+        "-p:DebugType=none",
+        "-o", "${workspaceFolder}/publish-docviewer"
+      ],
+      "problemMatcher": "$msCompile",
+      "group": "build"
     }
   ]
 }
