@@ -11,10 +11,44 @@ namespace Tedide.DocViewer;
 /// specific heading in it.</summary>
 public sealed record DocLink(int Row, int Column, int Length, string TargetFileName, string? TargetAnchor);
 
+/// <summary>How a <see cref="DocSpan"/> or <see cref="DocBlockSpan"/> should be drawn - see
+/// <see cref="DocTextView"/>, which maps each to a <c>Terminal.Gui.Drawing.TextStyle</c> layered on
+/// top of whatever color the active theme already uses, rather than a new color of its own: that
+/// keeps this purely presentational distinction working consistently across every theme without
+/// touching <c>Tedide.Theming</c>'s shared (and Tedide.App-visible) scheme definitions.</summary>
+public enum DocSpanKind
+{
+    /// <summary><c>&lt;B&gt;</c>/<c>&lt;STRONG&gt;</c> and heading text.</summary>
+    Bold,
+
+    /// <summary><c>&lt;EM&gt;</c>/<c>&lt;I&gt;</c>.</summary>
+    Emphasis,
+
+    /// <summary><c>&lt;CODE&gt;</c>/<c>&lt;TT&gt;</c> inline, and <c>&lt;PRE&gt;</c> blocks (as a
+    /// <see cref="DocBlockSpan"/> covering every column of the block's rows, not a <see cref="DocSpan"/>).</summary>
+    Code,
+}
+
+/// <summary>A single-row styled run (bold/emphasis/inline code) - see <see cref="DocSpanKind"/>.
+/// Unlike <see cref="DocLink"/> this carries no navigation target, just presentation.</summary>
+public sealed record DocSpan(int Row, int Column, int Length, DocSpanKind Kind);
+
+/// <summary>A styled run spanning every column of rows <see cref="StartRow"/>..<see cref="EndRow"/>
+/// inclusive - used for <c>&lt;PRE&gt;</c> blocks, which (unlike an inline <see cref="DocSpan"/>) have
+/// no single row/column/length to anchor a precise span to.</summary>
+public sealed record DocBlockSpan(int StartRow, int EndRow, DocSpanKind Kind);
+
 /// <summary>The result of converting one manual page: its plain text, the internal hyperlinks found
-/// in it (<see cref="Links"/>), and every <c>&lt;A NAME&gt;</c> anchor's row (<see cref="AnchorRows"/>)
-/// so a link targeting this page can jump straight to the right heading.</summary>
-public sealed record DocConversionResult(string Text, IReadOnlyList<DocLink> Links, IReadOnlyDictionary<string, int> AnchorRows);
+/// in it (<see cref="Links"/>), every <c>&lt;A NAME&gt;</c> anchor's row (<see cref="AnchorRows"/>)
+/// so a link targeting this page can jump straight to the right heading, and the presentational
+/// spans (<see cref="Spans"/>, <see cref="BlockSpans"/>) that keep bold/emphasis/code text visually
+/// distinct from plain prose.</summary>
+public sealed record DocConversionResult(
+    string Text,
+    IReadOnlyList<DocLink> Links,
+    IReadOnlyDictionary<string, int> AnchorRows,
+    IReadOnlyList<DocSpan> Spans,
+    IReadOnlyList<DocBlockSpan> BlockSpans);
 
 /// <summary>
 /// Reduces a cc65 manual page's HTML (LinuxDoc-Tools output - a small, consistent set of tags; see
@@ -27,10 +61,12 @@ public sealed record DocConversionResult(string Text, IReadOnlyList<DocLink> Lin
 /// Internal hyperlinks (same-page <c>#anchor</c>, or cross-page <c>page.html</c>/<c>page.html#anchor</c>
 /// - these manuals never use bare same-page anchors for cross-page links, always
 /// <c>currentpage.html#anchor</c>, even for a link to a heading on the very page it's on) are kept as
-/// <see cref="DocLink"/>s alongside the text; everything else (external http(s) links, table cell
-/// content, code hyperlinks) is simplified rather than faithfully reproduced - table cells lose any
-/// links they contain, since flattening a whole row's cells to one line has no sensible place to put
-/// a hanging indent for a wrapped link anyway.
+/// <see cref="DocLink"/>s alongside the text; bold/emphasis/inline code and code blocks are kept as
+/// <see cref="DocSpan"/>/<see cref="DocBlockSpan"/>s (see <see cref="DocSpanKind"/>) so the display
+/// isn't uniformly flat plain text. Everything else (external http(s) links, table cell content) is
+/// simplified rather than faithfully reproduced - table cells lose any links/styling they contain,
+/// since flattening a whole row's cells to one line has no sensible place to put a hanging indent for
+/// a wrapped link anyway.
 /// </summary>
 public static class DocTextConverter
 {
@@ -68,6 +104,8 @@ public static class DocTextConverter
         public readonly IReadOnlySet<string> KnownFileNames = knownFileNames;
         public readonly List<DocLink> Links = [];
         public readonly Dictionary<string, int> AnchorRows = [];
+        public readonly List<DocSpan> Spans = [];
+        public readonly List<DocBlockSpan> BlockSpans = [];
 
         /// <summary>Prepended after any line-wrap <see cref="AppendBlockText"/> inserts, so a
         /// wrapped list item or definition's continuation lines land under its marker instead of at
@@ -170,6 +208,21 @@ public static class DocTextConverter
                 AppendAnchor(ctx, node);
                 return;
 
+            case "b":
+            case "strong":
+                AppendStyledSpan(ctx, node, DocSpanKind.Bold);
+                return;
+
+            case "em":
+            case "i":
+                AppendStyledSpan(ctx, node, DocSpanKind.Emphasis);
+                return;
+
+            case "code":
+            case "tt":
+                AppendStyledSpan(ctx, node, DocSpanKind.Code);
+                return;
+
             case "h1":
                 AppendHeading(ctx, node, '=');
                 return;
@@ -201,6 +254,7 @@ public static class DocTextConverter
 
             case "pre":
                 EnsureBlankLine(ctx.Writer);
+                var preStartRow = ctx.Writer.Row;
                 foreach (var line in HtmlEntity.DeEntitize(node.InnerText).TrimEnd('\n', '\r').Split('\n'))
                 {
                     ctx.Writer.Append(ctx.Indent);
@@ -208,6 +262,11 @@ public static class DocTextConverter
                     ctx.Writer.Append(line.TrimEnd('\r'));
                     ctx.Writer.Append('\n');
                 }
+                // ctx.Writer.Row has already moved past the block's last line (each line above ends
+                // with '\n'), so the block's own last row is one behind it - unless the block was
+                // empty (no lines at all, preStartRow == current Row), which BlockSpans has no use for.
+                if (ctx.Writer.Row > preStartRow)
+                    ctx.BlockSpans.Add(new DocBlockSpan(preStartRow, ctx.Writer.Row - 1, DocSpanKind.Code));
                 EnsureBlankLine(ctx.Writer);
                 return;
 
@@ -231,8 +290,8 @@ public static class DocTextConverter
                 return;
 
             default:
-                // Inline elements (b, em, code, tt, ...) and anything else unrecognized: just keep
-                // their text content flowing into the surrounding paragraph.
+                // Any other inline or unrecognized element: just keep its text content flowing into
+                // the surrounding paragraph, unstyled.
                 AppendChildren(node, ctx);
                 return;
         }
@@ -262,15 +321,43 @@ public static class DocTextConverter
             return;
         }
 
+        var (row, column, length) = CaptureInlineSpan(ctx, node);
+        if (length > 0)
+            ctx.Links.Add(new DocLink(row, column, length, t.FileName, t.Anchor));
+    }
+
+    /// <summary><c>&lt;B&gt;</c>/<c>&lt;STRONG&gt;</c>/<c>&lt;EM&gt;</c>/<c>&lt;I&gt;</c>/inline
+    /// <c>&lt;CODE&gt;</c>/<c>&lt;TT&gt;</c>: records the rendered span as a <see cref="DocSpan"/>
+    /// once its (inline) content has been appended like normal text, same approach as
+    /// <see cref="AppendAnchor"/>'s <see cref="DocLink"/> - see <see cref="CaptureInlineSpan"/>.</summary>
+    private static void AppendStyledSpan(Context ctx, HtmlNode node, DocSpanKind kind)
+    {
+        var (row, column, length) = CaptureInlineSpan(ctx, node);
+        if (length > 0)
+            ctx.Spans.Add(new DocSpan(row, column, length, kind));
+    }
+
+    /// <summary>
+    /// Appends <paramref name="node"/>'s (inline) content like normal text - so its wrapping,
+    /// whitespace-collapsing etc. all match plain prose exactly - and returns where it landed, for
+    /// <see cref="AppendAnchor"/>/<see cref="AppendStyledSpan"/> to record as a <see cref="DocLink"/>
+    /// or <see cref="DocSpan"/>. A span whose text happens to wrap onto a second row (still fully
+    /// readable, just not a precisely locatable single-row range - its target, for a link, is still
+    /// reachable via wherever else in the document links to the same place) comes back with
+    /// <c>Length</c> 0 rather than mis-locating/mis-highlighting the wrong text; callers skip
+    /// recording anything in that case.
+    /// </summary>
+    private static (int Row, int Column, int Length) CaptureInlineSpan(Context ctx, HtmlNode node)
+    {
         var startRow = ctx.Writer.Row;
         var startColumn = ctx.Writer.CurrentLineLength;
         var startIndex = ctx.Writer.Length;
         AppendChildren(node, ctx);
 
-        // A separator space this link's own first word needed (e.g. the space between "1." and
-        // this "Overview" link in "1. Overview") is written from inside the AppendChildren call
-        // just above, landing inside [startIndex, ...) - trim it so the link's highlighted/clickable
-        // span starts at its actual visible text, not the space before it.
+        // A separator space this span's own first word needed (e.g. the space between "1." and a
+        // following "Overview" link in "1. Overview") is written from inside the AppendChildren call
+        // just above, landing inside [startIndex, ...) - trim it so the recorded span starts at the
+        // actual visible text, not the space before it.
         while (startIndex < ctx.Writer.Length && ctx.Writer[startIndex] == ' ')
         {
             startIndex++;
@@ -278,8 +365,7 @@ public static class DocTextConverter
         }
 
         var length = ctx.Writer.Row == startRow ? ctx.Writer.Length - startIndex : 0;
-        if (length > 0)
-            ctx.Links.Add(new DocLink(startRow, startColumn, length, t.FileName, t.Anchor));
+        return (startRow, startColumn, length);
     }
 
     /// <summary>
@@ -321,6 +407,8 @@ public static class DocTextConverter
         AppendChildren(node, ctx);
 
         var length = ctx.Writer.Row == startRow ? ctx.Writer.Length - startIndex : 0;
+        if (length > 0)
+            ctx.Spans.Add(new DocSpan(startRow, 0, length, DocSpanKind.Bold));
         ctx.Writer.Append('\n');
         if (length > 0)
         {
@@ -425,10 +513,10 @@ public static class DocTextConverter
         string.Join(' ', text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
 
     /// <summary>
-    /// Collapses runs of 2+ blank lines down to exactly one, renumbering every <see cref="DocLink"/>/
-    /// anchor row as each removed line shifts everything below it up - a plain <c>string.Replace</c>
-    /// (as this used before links/anchors existed) would silently desync <see cref="Context.Links"/>
-    /// and <see cref="Context.AnchorRows"/> from the text it rewrote out from under them.
+    /// Collapses runs of 2+ blank lines down to exactly one, renumbering every recorded row (links,
+    /// anchors, spans, block spans) as each removed line shifts everything below it up - a plain
+    /// <c>string.Replace</c> (as this used before any of that existed) would silently desync them
+    /// from the text it rewrote out from under them.
     /// </summary>
     private static DocConversionResult CollapseBlankLines(Context ctx)
     {
@@ -468,9 +556,13 @@ public static class DocTextConverter
         // turned out to be trailing whitespace) outside [0, lastRow] - clamp rather than let it
         // address a row DocViewerShell's InsertionPoint can't actually scroll to.
         var lastRow = Math.Max(0, end - start - 1);
-        var links = ctx.Links.Select(l => l with { Row = Math.Clamp(rowMap[l.Row] - start, 0, lastRow) }).ToList();
-        var anchorRows = ctx.AnchorRows.ToDictionary(kv => kv.Key, kv => Math.Clamp(rowMap[kv.Value] - start, 0, lastRow));
+        int MapRow(int row) => Math.Clamp(rowMap[row] - start, 0, lastRow);
 
-        return new DocConversionResult(text, links, anchorRows);
+        var links = ctx.Links.Select(l => l with { Row = MapRow(l.Row) }).ToList();
+        var anchorRows = ctx.AnchorRows.ToDictionary(kv => kv.Key, kv => MapRow(kv.Value));
+        var spans = ctx.Spans.Select(s => s with { Row = MapRow(s.Row) }).ToList();
+        var blockSpans = ctx.BlockSpans.Select(b => b with { StartRow = MapRow(b.StartRow), EndRow = MapRow(b.EndRow) }).ToList();
+
+        return new DocConversionResult(text, links, anchorRows, spans, blockSpans);
     }
 }

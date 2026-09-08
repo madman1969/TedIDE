@@ -119,6 +119,8 @@ public sealed class DocViewerShell : Window
 
         _contentFrame.Title = $"{entry.FileName} - {entry.Description}";
         _contentView.Links = result.Links;
+        _contentView.Spans = result.Spans;
+        _contentView.BlockSpans = result.BlockSpans;
         _contentView.Text = result.Text;
         // A freshly loaded page starts scrolled to the top, same as before this had anchors to jump
         // to - unless a link named a specific heading on it, in which case straight to that row.

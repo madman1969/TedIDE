@@ -2,6 +2,7 @@ using System.Drawing;
 using Terminal.Gui.Drawing;
 using Terminal.Gui.Input;
 using Terminal.Gui.Views;
+using GuiAttribute = Terminal.Gui.Drawing.Attribute;
 
 namespace Tedide.DocViewer;
 
@@ -12,10 +13,16 @@ namespace Tedide.DocViewer;
 /// plain <c>TextView { ReadOnly = true }</c> renders as a blank pane; overriding
 /// <see cref="OnDrawReadOnlyColor"/> to draw with the Normal role instead fixes it) that additionally
 /// knows how to highlight and follow the internal hyperlinks <see cref="DocTextConverter"/> found in
-/// the page it's showing: a link's own span is drawn in the theme's HotNormal color, Tab/Shift+Tab
+/// the page it's showing (a link's own span is drawn in the theme's HotNormal color, Tab/Shift+Tab
 /// move the caret to the next/previous link, Enter follows whichever link the caret is on or inside,
-/// and a left click follows whichever link is under the pointer (which also focuses this view, like
-/// any click target). Getting keyboard focus here in the first place needs an explicit
+/// and a left click follows whichever link is under the pointer - which also focuses this view, like
+/// any click target) and its presentational spans (<see cref="Spans"/>/<see cref="BlockSpans"/> -
+/// bold, emphasis, inline/block code): each is layered as a <c>Terminal.Gui.Drawing.TextStyle</c> on
+/// top of whichever color a link/plain text would already use there, rather than a color of its own,
+/// so it reads correctly under every theme without this view (or <see cref="DocTextConverter"/>)
+/// needing to know any theme's actual colors.
+///
+/// Getting keyboard focus here in the first place needs an explicit
 /// <see cref="Terminal.Gui.ViewBase.View.SetFocus"/> call - Tab alone can't do it, since it only
 /// advances among peer views under the same immediate SuperView, and this view doesn't share one
 /// with the sidebar tree; see <see cref="DocViewerShell"/>'s tree Accepted handler.
@@ -28,6 +35,10 @@ public sealed class DocTextView : TextView
 {
     private IReadOnlyList<DocLink> _links = [];
     private Dictionary<int, List<DocLink>> _linksByRow = [];
+    private IReadOnlyList<DocSpan> _spans = [];
+    private Dictionary<int, List<DocSpan>> _spansByRow = [];
+    private IReadOnlyList<DocBlockSpan> _blockSpans = [];
+    private Dictionary<int, DocSpanKind> _blockSpanKindByRow = [];
 
     /// <summary>Raised when the user follows a link, by any of the input methods described above.</summary>
     public event Action<DocLink>? LinkActivated;
@@ -41,6 +52,35 @@ public sealed class DocTextView : TextView
         {
             _links = value;
             _linksByRow = value.GroupBy(l => l.Row).ToDictionary(g => g.Key, g => g.ToList());
+            SetNeedsDraw();
+        }
+    }
+
+    /// <summary>The current page's bold/emphasis/inline-code runs - <see cref="DocViewerShell"/>
+    /// replaces this every time it shows a different page.</summary>
+    public IReadOnlyList<DocSpan> Spans
+    {
+        get => _spans;
+        set
+        {
+            _spans = value;
+            _spansByRow = value.GroupBy(s => s.Row).ToDictionary(g => g.Key, g => g.ToList());
+            SetNeedsDraw();
+        }
+    }
+
+    /// <summary>The current page's code blocks (each covering every column of its own row range) -
+    /// <see cref="DocViewerShell"/> replaces this every time it shows a different page.</summary>
+    public IReadOnlyList<DocBlockSpan> BlockSpans
+    {
+        get => _blockSpans;
+        set
+        {
+            _blockSpans = value;
+            _blockSpanKindByRow = [];
+            foreach (var block in value)
+                for (var row = block.StartRow; row <= block.EndRow; row++)
+                    _blockSpanKindByRow[row] = block.Kind;
             SetNeedsDraw();
         }
     }
@@ -91,8 +131,35 @@ public sealed class DocTextView : TextView
     {
         var isLink = _linksByRow.TryGetValue(idxRow, out var rowLinks) &&
             rowLinks.Any(l => idxCol >= l.Column && idxCol < l.Column + l.Length);
-        SetAttribute(isLink ? GetScheme()!.HotNormal : GetScheme()!.Normal);
+        var baseAttribute = isLink ? GetScheme()!.HotNormal : GetScheme()!.Normal;
+
+        var style = StyleAt(idxRow, idxCol);
+        SetAttribute(style == TextStyle.None ? baseAttribute : new GuiAttribute(baseAttribute.Foreground, baseAttribute.Background, style));
     }
+
+    /// <summary>The <see cref="TextStyle"/> a bold/emphasis/code span at this position calls for -
+    /// <see cref="TextStyle.None"/> if none applies. A whole-row <see cref="BlockSpans"/> code block
+    /// takes precedence over an inline <see cref="Spans"/> entry, though the two aren't expected to
+    /// ever actually overlap (a &lt;PRE&gt; block's own content isn't walked for nested spans).</summary>
+    private TextStyle StyleAt(int row, int column)
+    {
+        if (_blockSpanKindByRow.TryGetValue(row, out var blockKind))
+            return ToTextStyle(blockKind);
+
+        if (_spansByRow.TryGetValue(row, out var rowSpans) &&
+            rowSpans.FirstOrDefault(s => column >= s.Column && column < s.Column + s.Length) is { } span)
+            return ToTextStyle(span.Kind);
+
+        return TextStyle.None;
+    }
+
+    private static TextStyle ToTextStyle(DocSpanKind kind) => kind switch
+    {
+        DocSpanKind.Bold => TextStyle.Bold,
+        DocSpanKind.Emphasis => TextStyle.Italic,
+        DocSpanKind.Code => TextStyle.Faint,
+        _ => TextStyle.None,
+    };
 
     private DocLink? FindLinkAt(int row, int column) =>
         _linksByRow.TryGetValue(row, out var rowLinks)
