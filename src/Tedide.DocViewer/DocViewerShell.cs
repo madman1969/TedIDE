@@ -43,7 +43,7 @@ public sealed class DocViewerShell : Window
     private readonly Dictionary<string, TreeNode> _nodesByFileName = [];
 
     private readonly TreeView _tree = new();
-    private readonly Terminal.Gui.Views.Markdown _contentView = new();
+    private readonly FindableMarkdown _contentView = new();
     private readonly FrameView _contentFrame;
     private readonly TextMateSyntaxHighlighter _syntaxHighlighter = new();
 
@@ -154,6 +154,9 @@ public sealed class DocViewerShell : Window
             e.Handled = true;
             NavigateTo(fileName, anchor, pushHistory: true);
         };
+        // FindableMarkdown (see that class) keeps "Find..." on the content pane's right-click
+        // context menu across the base Markdown view's own from-scratch rebuilds of it.
+        _contentView.FindRequested += ShowPageFind;
         _contentFrame.Add(_contentView);
 
         Add([menuBar, treeFrame, _contentFrame, statusBar]);
@@ -222,6 +225,11 @@ public sealed class DocViewerShell : Window
             NavigateTo(result.FileName, null, pushHistory: true);
     }
 
+    /// <summary>Opens the in-page Find dialog (see <see cref="PageFindDialog"/>), from the content
+    /// pane's right-click context menu - distinct from Ctrl+F's <see cref="ShowSearchDialog"/>,
+    /// which searches every page rather than just the one currently shown.</summary>
+    private void ShowPageFind() => Application.Run(new PageFindDialog(_contentView));
+
     /// <summary>Opens the Help > About dialog. Read-only - see <see cref="AboutDialog"/>.</summary>
     private void ShowAbout()
     {
@@ -276,20 +284,10 @@ public sealed class DocViewerShell : Window
             _bookmarksListItem,
         });
 
-        // Same nine themes, same SchemeManager-based switching, as Tedide.App's own Theme menu
-        // (AppShell.BuildMenuBar) - see Tedide.Theming/ThemeSwitcher.cs.
-        var themeMenu = new MenuBarItem("_Theme", new List<MenuItem>
-        {
-            new("VS2026 _Dark", "", () => ThemeSwitcher.Apply(AppTheme.Vs2026Dark), Key.Empty),
-            new("VS2026 _Light", "", () => ThemeSwitcher.Apply(AppTheme.Vs2026Light), Key.Empty),
-            new("_Borland Turbo C", "", () => ThemeSwitcher.Apply(AppTheme.BorlandTurboC), Key.Empty),
-            new("_Monokai", "", () => ThemeSwitcher.Apply(AppTheme.Monokai), Key.Empty),
-            new("_Dracula", "", () => ThemeSwitcher.Apply(AppTheme.Dracula), Key.Empty),
-            new("Solarized D_ark", "", () => ThemeSwitcher.Apply(AppTheme.SolarizedDark), Key.Empty),
-            new("Solarized Li_ght", "", () => ThemeSwitcher.Apply(AppTheme.SolarizedLight), Key.Empty),
-            new("_Commodore 64", "", () => ThemeSwitcher.Apply(AppTheme.Commodore64), Key.Empty),
-            new("_Amber Phosphor", "", () => ThemeSwitcher.Apply(AppTheme.AmberPhosphor), Key.Empty),
-        });
+        // Shared with Tedide.App (ThemeMenuBuilder, in Tedide.Theming) - same nine entries, same
+        // SchemeManager-based switching, and the currently active one is marked with a leading
+        // checkmark, kept live via ThemeSwitcher.Changed.
+        var themeMenu = ThemeMenuBuilder.Build();
 
         var helpMenu = new MenuBarItem("_Help", new List<MenuItem>
         {
