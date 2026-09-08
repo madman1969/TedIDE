@@ -239,6 +239,10 @@ from cc65's own HTML manuals - regenerate it (and rebuild) if that tool's `Sourc
   cross-page link (or pressing Enter on one) does too. A same-page `#slug` link is scrolled to
   directly by the Markdown view itself, without adding a history entry. **Search Documentation...**
   (Ctrl+F) runs a full-text search (Docs.db's FTS5 index) across every page at once.
+- The content pane's right-click context menu (alongside the library's default Select All/Copy)
+  has **Find...**, modeled on Tedide.App's own Editor Find - searches just the page currently on
+  screen rather than every page, jumping to (scrolling toward) the next match and wrapping around
+  once it reaches the end.
 - **Bookmarks** - **Add/Remove Bookmark for Current Page** (Ctrl+D) toggles a bookmark for
   whatever's open (prompting for a label when adding one); **Saved Bookmarks** lists them all,
   each jumping straight back to its page.
@@ -372,7 +376,9 @@ overwrite our custom themes.
 
 ## Themes
 
-The **Theme** menu switches between nine color themes at runtime, with no restart needed:
+The **Theme** menu switches between nine color themes at runtime, with no restart needed - a
+checkmark next to the active one always reflects the current theme, in both Tedide.App and
+Tedide.DocViewer:
 
 | Theme | Look |
 | --- | --- |
