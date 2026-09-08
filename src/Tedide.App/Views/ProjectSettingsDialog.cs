@@ -48,8 +48,10 @@ public sealed class ProjectSettingsDialog : Dialog
         Width = 101; // 30% wider than the original 78
         // Tall enough for the "Settings" tab's four label/field pairs, each now with a blank row
         // above and below its field - see the "every field needs clearance on all 4 sides"
-        // convention - plus the Tabs control's own header/border chrome on top of that.
-        Height = 32;
+        // convention - plus the Tabs control's own header/border chrome, and +2 for each tab's own
+        // Padding.Thickness(2,1,2,1) below (1 row top, 1 row bottom - Tabs' border/tab-strip chrome
+        // does not by itself give a tab's content view any inset from its own edges).
+        Height = 34;
         // A real Padding adornment (rather than hand-offsetting every child's X/Y by 1) so the
         // whole dialog gets consistent breathing room from its border - children below are
         // positioned relative to this inset content area, i.e. X = 0 is already 2 cells in.
@@ -150,6 +152,10 @@ public sealed class ProjectSettingsDialog : Dialog
         out TextField extraArgumentsField)
     {
         var tab = new View { Title = " _Settings ", Width = Dim.Fill(), Height = Dim.Fill() };
+        // A real Padding adornment, same as the Dialog itself uses - Tabs' own header/border
+        // chrome does NOT give its content view any inset of its own, so without this every
+        // field/label sat flush against the tab's edges.
+        tab.Padding.Thickness = new Thickness(2, 1, 2, 1);
 
         // Every field below sits 2 rows under its own label (a blank row between them) and is at
         // least 2 rows above whatever follows it (likewise) - see the "every field needs
@@ -190,6 +196,8 @@ public sealed class ProjectSettingsDialog : Dialog
     private static View BuildOptimizerTab(TedideProject project, out DropDownList optimizationLevelField)
     {
         var tab = new View { Title = " _Optimizer ", Width = Dim.Fill(), Height = Dim.Fill() };
+        // See BuildSettingsTab's comment on this same line - every tab needs its own Padding.
+        tab.Padding.Thickness = new Thickness(2, 1, 2, 1);
 
         var levelLabel = new Label { Text = "Optimization level:", X = 0, Y = 0 };
         optimizationLevelField = new DropDownList
@@ -219,6 +227,8 @@ public sealed class ProjectSettingsDialog : Dialog
     private static View BuildCompilerTab(TedideProject project, out CheckBox generateListingField, out CheckBox addSourceAsCommentField)
     {
         var tab = new View { Title = " _Compiler ", Width = Dim.Fill(), Height = Dim.Fill() };
+        // See BuildSettingsTab's comment on this same line - every tab needs its own Padding.
+        tab.Padding.Thickness = new Thickness(2, 1, 2, 1);
 
         generateListingField = new CheckBox
         {
@@ -256,6 +266,8 @@ public sealed class ProjectSettingsDialog : Dialog
     private static View BuildLinkerTab(TedideProject project, out CheckBox generateLinkerMapField, out CheckBox exportLabelsField)
     {
         var tab = new View { Title = " _Linker ", Width = Dim.Fill(), Height = Dim.Fill() };
+        // See BuildSettingsTab's comment on this same line - every tab needs its own Padding.
+        tab.Padding.Thickness = new Thickness(2, 1, 2, 1);
 
         generateLinkerMapField = new CheckBox
         {
@@ -300,6 +312,8 @@ public sealed class ProjectSettingsDialog : Dialog
         // without colliding with "_Compiler"'s C, and a digit mnemonic renders invisible
         // (foreground/background collide) when this tab is selected.
         var tab = new View { Title = " CC65 ", Width = Dim.Fill(), Height = Dim.Fill() };
+        // See BuildSettingsTab's comment on this same line - every tab needs its own Padding.
+        tab.Padding.Thickness = new Thickness(2, 1, 2, 1);
 
         // HotKeySpecifier disabled so the literal "_" in "CC65_HOME" isn't parsed as a mnemonic
         // marker (which would swallow it and color the "H" instead - Label parses hotkeys same as
@@ -336,6 +350,8 @@ public sealed class ProjectSettingsDialog : Dialog
     private static View BuildViceTab(out TextField viceBinDirectoryField)
     {
         var tab = new View { Title = " _VICE ", Width = Dim.Fill(), Height = Dim.Fill() };
+        // See BuildSettingsTab's comment on this same line - every tab needs its own Padding.
+        tab.Padding.Thickness = new Thickness(2, 1, 2, 1);
 
         var binLabel = new Label { Text = "VICE bin directory:", X = 0, Y = 0 };
         viceBinDirectoryField = new TextField
