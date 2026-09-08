@@ -1,5 +1,9 @@
 # Tedide
 
+![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4)
+![Platform: Windows](https://img.shields.io/badge/platform-Windows-0078D6)
+![License: MIT](https://img.shields.io/badge/license-MIT-green)
+
 A terminal (TUI) IDE for [cc65](https://cc65.github.io/) development, modeled loosely
 on Visual Studio: a resizable solution explorer, a single-file source editor with 6502/ca65
 syntax highlighting, a build output pane and a menu/status bar, all driven by `cl65` - plus
@@ -7,6 +11,19 @@ project/optimizer/compiler settings, Find in Files, a VICE emulator launcher, an
 Projects and Solutions list. A companion app, **Tedide.DocViewer**, browses cc65's own manuals
 offline with a category tree, full-text search and bookmarks - see "Running the Doc Viewer"
 below.
+
+## Contents
+
+- [Prerequisites](#prerequisites)
+- [Solution layout](#solution-layout)
+- [Running](#running)
+- [Running the Doc Viewer](#running-the-doc-viewer)
+- [Publishing a standalone executable](#publishing-a-standalone-executable)
+- [Project files](#project-files)
+- [Project Settings dialog](#project-settings-dialog)
+- [Editing](#editing)
+- [Themes](#themes)
+- [Status](#status)
 
 ## Prerequisites
 
@@ -42,6 +59,7 @@ samples/
     src/               main.c, screen.c, animation.c, input.c, delay.c, border.s (ca65 assembly)
                        (each gets its own .lst next to it if listing generation is on) - gitignored
     include/           screen.h, animation.h, input.h, delay.h, border.h
+    lib/               Empty - drop a prebuilt .lib archive here to link against it
     bin/               Build output (HelloCBM.prg) - gitignored
   HelloPlus4/          A Plus/4-only sample touring TED chip features the C64's VIC-II/SID don't have
     HelloPlus4.tsln
@@ -49,6 +67,7 @@ samples/
     src/               main.c, screen.c, palette.c, sound.c, speed.c, input.c, delay.c
                        (each gets its own .lst next to it if listing generation is on) - gitignored
     include/           screen.h, palette.h, sound.h, speed.h, input.h, delay.h
+    lib/               Empty - drop a prebuilt .lib archive here to link against it
     bin/               Build output (HelloPlus4.prg) - gitignored
   C128_80/             A C128-only sample touring the VDC chip's 80-column text mode
     C128_80.tsln
@@ -56,30 +75,35 @@ samples/
     src/               main.c, screen.c, ruler.c, columns.c, contrast.c, input.c
                        (each gets its own .lst next to it if listing generation is on) - gitignored
     include/           screen.h, ruler.h, columns.h, contrast.h, input.h
+    lib/               Empty - drop a prebuilt .lib archive here to link against it
     bin/               Build output (C128_80.prg) - gitignored
   Plus4colours/        A single-file demo of the Plus/4 TED chip's full 121-colour palette
     Plus4colours.tsln
     Plus4colours.tproj   src/main.c, -I include for the headers - Target is Plus4
     src/                 main.c
     include/             main.h
+    lib/                 Empty - drop a prebuilt .lib archive here to link against it
     bin/                 Build output (Plus4colours.prg) - gitignored
   bounce/              A single-file demo bouncing characters around the screen
     bounce.tsln
     bounce.tproj         src/bounce.c, -I include for the headers - Target is C64
     src/                 bounce.c
     include/             main.h
+    lib/                 Empty - drop a prebuilt .lib archive here to link against it
     bin/                 Build output (bounce.prg) - gitignored
   c16colours/          A single-file demo of the Commodore 16's full 16-colour palette
     c16colours.tsln
     c16colours.tproj     src/main.c, -I include for the headers - Target is C16
     src/                 main.c
     include/             main.h
+    lib/                 Empty - drop a prebuilt .lib archive here to link against it
     bin/                 Build output (c16colours.prg) - gitignored
   inflate/             A single-file demo of a sprite that grows and shrinks in an off-screen buffer
     inflate.tsln
     inflate.tproj        src/inflate.c, -I include for the headers
     src/                 inflate.c
     include/             screen.h
+    lib/                 Empty - drop a prebuilt .lib archive here to link against it
     bin/                 Build output (inflate.prg) - gitignored
   Nano128/             A nano-style full-screen text editor for the C128, in 80-column (VDC) mode
     Nano128.tsln
@@ -87,6 +111,7 @@ samples/
     src/                 main.c, screen.c, buffer.c, fileio.c, input.c, editor.c, vblank.c
                          (each gets its own .lst next to it if listing generation is on) - gitignored
     include/             screen.h, buffer.h, fileio.h, input.h, editor.h, vblank.h
+    lib/                 Empty - drop a prebuilt .lib archive here to link against it
     bin/                 Build output (Nano128.prg) - gitignored
 ```
 
@@ -99,11 +124,13 @@ dotnet run --project src/Tedide.App
 From the **File** menu:
 
 - **New Project...** to scaffold a fresh cc65 project (name, target platform, destination folder)
-  using the same `src`/`include`/`bin` layout as the bundled samples (see "Project files" below) -
-  a starter `src/main.c` that `#include "main.h"`s a starter `include/main.h` (rather than
+  using the same `src`/`include`/`lib`/`bin` layout as the bundled samples (see "Project files"
+  below) - a starter `src/main.c` that `#include "main.h"`s a starter `include/main.h` (rather than
   `#include <conio.h>`/`<stdio.h>` directly), so the include/ folder and its `-I include` are
-  exercised by a real, working include from the start, not just present but unused. `OutputFile`
-  points at `bin/<Name><target extension>`.
+  exercised by a real, working include from the start, not just present but unused. `lib/` starts
+  empty - drop a prebuilt cc65 `.lib` archive in it and it's linked in automatically, no `.tproj`
+  change needed (every `.lib` file found there is passed to `ld65` after the compiled object
+  files). `OutputFile` points at `bin/<Name><target extension>`.
 - **Open Project...** and pick `samples/HelloCBM/HelloCBM.tsln` (or `samples/HelloCBM/HelloCBM.tproj`) for a
   working example - it's deliberately split across several `.c`/`.h`/`.s` files (see layout above) to
   show off the Solution Explorer's folder tree even though only one of them can be open for editing
@@ -266,21 +293,14 @@ an example, laid out the way GitHub's most common C project layout does (`src/`,
 }
 ```
 
-- `Target` is any of the platforms `cl65 -t` supports (`C64`, `Apple2`, `Nes`, `Atari`, ...; see
-  `Cc65Target` in `Tedide.Core`) - the Project Settings dialog's dropdown restricts this to the
-  nine Commodore 8-bit machines cc65 targets (`Cc65TargetExtensions.CommodoreTargets`), since
-  that's Tedide's focus, but any value `cl65` accepts works if set by hand.
-- `OptimizationLevel` is one of cc65's optimizer presets (`None`, `Standard` = `-O`, `Inline` =
-  `-Oi`, `Register` = `-Or`, `InlineKnownFunctions` = `-Os`, `Extended` = `-Ox`, or `Maximum` =
-  `-Oirs`, combining the last three) - see `Cc65OptimizationLevel`.
-- `GenerateAssemblyListing` (`-l`) and `AddSourceAsComment` (`-T`) control the assembler listing
-  cl65 can emit for each source file, alongside that file (e.g. `src/main.c` -> `src/main.lst`) -
-  see "Project Settings dialog" below. Both default to `true`.
-- `OutputFile` defaults to `<Name><platform-default-extension>` (e.g. `.prg` for C64, `.nes` for
-  NES) in the project's own directory if not set; Tedide creates the output directory
-  automatically if it doesn't exist yet (`ld65` itself won't).
-- `ExtraArguments` are passed to `cl65` *before* `SourceFiles` - `-I <dir>` (used above to find
-  `include/`) and similar flags only affect source files listed after them on the command line.
+| Field | What it controls |
+| --- | --- |
+| `Target` | Any of the platforms `cl65 -t` supports (`C64`, `Apple2`, `Nes`, `Atari`, ...; see `Cc65Target` in `Tedide.Core`) - the Project Settings dialog's dropdown restricts this to the nine Commodore 8-bit machines cc65 targets (`Cc65TargetExtensions.CommodoreTargets`), since that's Tedide's focus, but any value `cl65` accepts works if set by hand. |
+| `OptimizationLevel` | One of cc65's optimizer presets (`None`, `Standard` = `-O`, `Inline` = `-Oi`, `Register` = `-Or`, `InlineKnownFunctions` = `-Os`, `Extended` = `-Ox`, or `Maximum` = `-Oirs`, combining the last three) - see `Cc65OptimizationLevel`. |
+| `GenerateAssemblyListing` / `AddSourceAsComment` | Control the assembler listing cl65 can emit for each source file (`-l` / `-T`), alongside that file (e.g. `src/main.c` -> `src/main.lst`) - see "Project Settings dialog" below. Both default to `true`. |
+| `OutputFile` | Defaults to `<Name><platform-default-extension>` (e.g. `.prg` for C64, `.nes` for NES) in the project's own directory if not set; Tedide creates the output directory automatically if it doesn't exist yet (`ld65` itself won't). |
+| `ExtraArguments` | Passed to `cl65` *before* `SourceFiles` - `-I <dir>` (used above to find `include/`) and similar flags only affect source files listed after them on the command line. |
+| `lib/` folder | Not a `.tproj` field at all - just a folder Tedide scans on every build (`TedideProject.ResolvedLibFiles`). Every `.lib` file found directly inside it is passed to `ld65` at link time, after the compiled object files, so linking against a prebuilt cc65 library archive is a matter of dropping it in `lib/`, nothing more. |
 
 A `.tsln` file just lists the `.tproj` files that make up a solution.
 
@@ -354,12 +374,14 @@ overwrite our custom themes.
 
 The **Theme** menu switches between nine color themes at runtime, with no restart needed:
 
-- **VS2026 Dark** / **VS2026 Light** - modern true-color palettes similar to current Visual Studio/VS Code themes.
-- **Borland Turbo C** - the classic navy-blue-background DOS IDE look, built from the 16-color ANSI palette for authenticity.
-- **Monokai** / **Dracula** - the well-known Sublime/TextMate and Dracula Theme dark palettes.
-- **Solarized Dark** / **Solarized Light** - Ethan Schoonover's low-contrast, accessibility-minded palette, both variants.
-- **Commodore 64** - the C64's own boot-screen look (Pepto palette): blue background, light-blue text.
-- **Amber Phosphor** - a monochrome amber-on-black CRT terminal look, evoking early 6502-era terminals.
+| Theme | Look |
+| --- | --- |
+| VS2026 Dark / VS2026 Light | Modern true-color palettes similar to current Visual Studio/VS Code themes. |
+| Borland Turbo C | The classic navy-blue-background DOS IDE look, built from the 16-color ANSI palette for authenticity. |
+| Monokai / Dracula | The well-known Sublime/TextMate and Dracula Theme dark palettes. |
+| Solarized Dark / Solarized Light | Ethan Schoonover's low-contrast, accessibility-minded palette, both variants. |
+| Commodore 64 | The C64's own boot-screen look (Pepto palette): blue background, light-blue text. |
+| Amber Phosphor | A monochrome amber-on-black CRT terminal look, evoking early 6502-era terminals. |
 
 Themes are implemented in `Tedide.App/Theming` (`ThemeSwitcher`) by registering five named
 `Scheme`s ("Base", "Menu", "Dialog", "Accent", "Error") with Terminal.Gui's `SchemeManager`;
