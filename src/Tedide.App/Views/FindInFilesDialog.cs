@@ -55,6 +55,18 @@ public sealed class FindInFilesDialog : Dialog
         // Y = 2, not 1: a blank row between the label and its field, same as every other field
         // in the app - see the "every field needs clearance on all 4 sides" convention.
         _searchField = new TextField { X = 0, Y = 2, Width = Dim.Fill(14) };
+        // Also handled here, not just on findButton below: pressing Enter in the field falls
+        // through to the dialog's IsDefault button (findButton) and correctly runs the search
+        // either way - but only handling it on the button still leaves the field's own Accept
+        // unhandled, and an unhandled Accept from the actually-focused view is what the Dialog's
+        // default behavior reads as "close me" (confirmed by direct testing on Tedide.DocViewer's
+        // SearchDialog, which had the exact same shape: without this handler, the search ran -
+        // the button's own Accepting did fire - but the dialog closed anyway).
+        _searchField.Accepting += (_, e) =>
+        {
+            RunSearch();
+            e.Handled = true;
+        };
 
         // The primary action: Accent-scheme so it visually pops against the dialog's normal
         // chrome, the same accent color the app uses for the menu bar's own highlighted items.
