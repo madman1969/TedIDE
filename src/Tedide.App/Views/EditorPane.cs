@@ -1,7 +1,9 @@
+using Terminal.Gui.App;
 using Terminal.Gui.Editor;
 using Terminal.Gui.Editor.Document;
 using Terminal.Gui.Editor.Document.Folding;
 using Terminal.Gui.Editor.Highlighting;
+using Terminal.Gui.Input;
 using Terminal.Gui.ViewBase;
 using Terminal.Gui.Views;
 
@@ -64,12 +66,29 @@ public sealed class EditorPane : View
             ViewportSettings = ViewportSettingsFlags.HasScrollBars,
         };
 
+        // Editor.FindRequested/ReplaceRequested fire whenever Command.Find/Command.Replace runs -
+        // that's both Ctrl+F/Ctrl+H (EditorKeyBindingDefaults) and the library's own auto-generated
+        // Edit menu (EditorMenuBar.cs calls ActiveEditor.InvokeCommand(Command.Find/Replace)) - but
+        // per the library's own doc comment on FindRequested, it's the consumer's job to subscribe
+        // and actually open a dialog; nothing here was doing that, so Find/Replace has been a
+        // silent no-op everywhere in Tedide (Edit menu included) until now. FindReplaceDialog(Editor,
+        // bool) is the exact call ted's own ShowFindReplaceDialog (TedApp.EditCommands.cs) makes in
+        // its equivalent subscription - same dialog, same construction.
+        Editor.FindRequested += (_, _) => Application.Run(new FindReplaceDialog(Editor, false));
+        Editor.ReplaceRequested += (_, _) => Application.Run(new FindReplaceDialog(Editor, true));
+
         // The editor's own right-click context menu already covers Undo/Redo/Cut/Copy/Paste/
-        // Select All (Terminal.Gui.Editor's built-in default) - append Find in Files to the end
-        // of that same menu, the same way EditMenu.PopoverMenu.Root.Add is used in AppShell to
-        // append it to the Edit menu, rather than building a second, separate context menu.
+        // Select All (Terminal.Gui.Editor's built-in default) but not Find/Replace, unlike the
+        // library's auto-generated Edit menu (see AppShell's editMenuItems comment) - append the
+        // same search group (Find, Replace, then our own Find in Files) to the end of this menu,
+        // the same way EditMenu.PopoverMenu.Root.Add is used in AppShell to extend the Edit menu,
+        // rather than building a second, separate context menu. Invoking the same Command.Find/
+        // Command.Replace the Edit menu uses (rather than constructing FindReplaceDialog here too)
+        // keeps exactly one place responsible for how that dialog gets shown.
         var contextMenuItems = Editor.ContextMenu!.Root!;
         contextMenuItems.Add(new Line());
+        contextMenuItems.Add(new MenuItem("Find...", "", () => Editor.InvokeCommand(Command.Find)));
+        contextMenuItems.Add(new MenuItem("Replace...", "", () => Editor.InvokeCommand(Command.Replace)));
         contextMenuItems.Add(new MenuItem("Find in Files...", "", () =>
             FindInFilesRequested?.Invoke(Editor.SelectedText.Split(['\r', '\n'], 2)[0])));
 
