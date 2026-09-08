@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Parses the source HTML (see SourceHtml/) - same library Tedide.DocViewer used to use for
+         this at runtime, before this tool moved the conversion to a one-time dev-time step. -->
+    <PackageReference Include="HtmlAgilityPack" Version="1.11.71" />
+    <!-- Writes the resulting Markdown + catalog metadata into Docs.db (see DocsDatabaseWriter). -->
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.11" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="SourceHtml\*.html" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

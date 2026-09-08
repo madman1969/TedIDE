@@ -1,59 +1,78 @@
-using System.Drawing;
 using Tedide.Theming;
 using Terminal.Gui.App;
+using Terminal.Gui.Configuration;
+using Terminal.Gui.Drawing;
 using Terminal.Gui.Input;
 using Terminal.Gui.ViewBase;
 using Terminal.Gui.Views;
+using TextMateSharp.Grammars;
 
 namespace Tedide.DocViewer;
 
 /// <summary>
-/// The doc viewer's only window: a category/page tree on the left (built from <see cref="Cc65DocCatalog"/>)
-/// and a read-only text pane on the right showing the selected page, converted from its bundled
-/// HTML by <see cref="DocTextConverter"/>. Arrow-key browsing the tree (or clicking an entry) swaps
-/// the text pane's content immediately as a live preview; pressing Enter on a tree entry
-/// additionally moves keyboard focus into the content pane itself (Tab can't do this on its own -
-/// see the comment on the tree's Accepted handler below), ready to Tab/Shift+Tab/Enter between its
-/// internal links.
+/// The doc viewer's only window: a category/page tree on the left (from <see cref="DocDatabase.LoadCatalog"/>)
+/// and a native <see cref="Terminal.Gui.Views.Markdown"/> pane on the right showing the selected
+/// page's Markdown (converted from cc65's HTML manuals by <c>tools/Cc65DocsDbBuilder</c>, once,
+/// ahead of time - not at runtime; see <see cref="DocDatabase"/>). Arrow-key browsing the tree (or
+/// clicking an entry) swaps the content pane immediately as a live preview; pressing Enter on a tree
+/// entry additionally moves keyboard focus into the content pane itself (Tab can't do this on its
+/// own - see the comment on the tree's Accepted handler below).
 ///
-/// The content pane's internal hyperlinks (see <see cref="DocTextConverter"/>) are followable via
-/// <see cref="DocTextView.LinkActivated"/> - <see cref="NavigateToLink"/> selects the target page in
-/// the tree (which shows it, via the same path a manual click would) and, if the link named a
-/// specific heading, scrolls straight to it.
+/// The Markdown view's own built-in link highlighting/Tab-cycling/mouse-click handling does almost
+/// all of the work an earlier hand-rolled TextView-based version of this had to implement itself -
+/// <see cref="Terminal.Gui.Views.Markdown.LinkClicked"/> only needs to step in for a *cross-page*
+/// link (<see cref="NavigateTo"/>); a same-page <c>#slug</c> link is already auto-scrolled to by the
+/// view itself (confirmed by direct testing - see this project's Markdown view usage notes).
+///
+/// <see cref="NavigationHistory"/> and <see cref="DocBookmarks"/> add browser-style Back/Forward and
+/// saved-location bookmarks on top; <see cref="SearchDialog"/> adds full-text search over every
+/// page via Docs.db's FTS5 index.
 ///
 /// Theming is shared with Tedide.App via <c>Tedide.Theming</c>: <c>Program.cs</c> applies the
 /// last-saved <see cref="ThemeSettings"/> on startup (the same per-user settings.json Tedide.App
 /// reads/writes), and the Theme menu below switches <see cref="ThemeSwitcher"/>'s SchemeManager
-/// schemes the same way AppShell's own Theme menu does - every view here (Window, MenuBar,
-/// StatusBar, FrameView, TreeView, TextView) resolves its scheme by name at draw time, so no
-/// per-view styling code is needed in this class itself.
+/// schemes the same way AppShell's own Theme menu does.
 /// </summary>
 public sealed class DocViewerShell : Window
 {
-    /// <summary>Converted pages, keyed by <see cref="Cc65DocEntry.FileName"/> - filled in the first
-    /// time each page is selected, since converting the largest pages (e.g. funcref.html, with well
-    /// over a thousand internal links) is noticeable work that a repeat visit - or following a link
-    /// back to an already-visited page - shouldn't pay for again.</summary>
-    private readonly Dictionary<string, DocConversionResult> _cache = [];
+    private readonly DocDatabase _database;
+    private readonly NavigationHistory _history = new();
+    private readonly DocBookmarks _bookmarks = DocBookmarks.Load();
 
-    /// <summary>Every page's tree node, keyed by its <see cref="Cc65DocEntry.FileName"/>, so
-    /// <see cref="NavigateToLink"/> can select the right one when the user follows a cross-page link -
-    /// keeping the sidebar in sync with whatever a link click just navigated to, the same as it
-    /// would be had the user clicked that entry in the tree themselves.</summary>
+    private readonly Dictionary<string, PageEntry> _entriesByFileName = [];
     private readonly Dictionary<string, TreeNode> _nodesByFileName = [];
 
     private readonly TreeView _tree = new();
-    private readonly DocTextView _contentView = new();
+    private readonly Terminal.Gui.Views.Markdown _contentView = new();
     private readonly FrameView _contentFrame;
+    private readonly TextMateSyntaxHighlighter _syntaxHighlighter = new();
 
-    public DocViewerShell()
+    private MenuItem _bookmarksListItem = null!;
+    private PageEntry? _currentEntry;
+
+    public DocViewerShell(DocDatabase database)
     {
+        _database = database;
+
         Title = "CC65 Documentation Viewer";
         Width = Dim.Fill();
         Height = Dim.Fill();
 
         var menuBar = BuildMenuBar();
         var statusBar = BuildStatusBar();
+
+        // Keys with no default binding anywhere (Tab/arrows are already claimed by the tree/content
+        // pane's own navigation) bubble up to the focused view's ancestors when nothing else handles
+        // them, which is what lets these window-level bindings work regardless of which pane
+        // currently has focus - unlike a MenuItem's own Key, which is only a live shortcut while
+        // that menu is actually open.
+        KeyDown += (_, key) =>
+        {
+            if (key == Key.CursorLeft.WithAlt) { GoBack(); key.Handled = true; }
+            else if (key == Key.CursorRight.WithAlt) { GoForward(); key.Handled = true; }
+            else if (key == Key.F.WithCtrl) { ShowSearchDialog(); key.Handled = true; }
+            else if (key == Key.D.WithCtrl) { ToggleBookmark(); key.Handled = true; }
+        };
 
         var treeFrame = new FrameView
         {
@@ -65,7 +84,7 @@ public sealed class DocViewerShell : Window
         };
         _tree.Width = Dim.Fill();
         _tree.Height = Dim.Fill();
-        foreach (var category in Cc65DocCatalog.Categories)
+        foreach (var category in _database.LoadCatalog())
         {
             var categoryNode = new TreeNode { Text = category.Name };
             foreach (var entry in category.Entries)
@@ -73,23 +92,28 @@ public sealed class DocViewerShell : Window
                 var entryNode = new TreeNode { Text = entry.FileName, Tag = entry };
                 categoryNode.Children.Add(entryNode);
                 _nodesByFileName[entry.FileName] = entryNode;
+                _entriesByFileName[entry.FileName] = entry;
             }
             _tree.AddObject(categoryNode);
         }
         _tree.ExpandAll();
         _tree.SelectionChanged += (_, _) =>
         {
-            if (_tree.SelectedObject is TreeNode { Tag: Cc65DocEntry entry })
+            if (_tree.SelectedObject is TreeNode { Tag: PageEntry entry })
                 ShowDoc(entry);
         };
-        // Tab can't do this on its own: it only advances focus among peer views under the same
+        // Tab can't move focus here on its own: it only advances among peer views under the same
         // immediate SuperView (see Terminal.Gui's navigation docs), and the tree and content pane
         // each sit alone in their own FrameView, so they're never peers. Enter on a tree item is a
         // deliberate "open this" action (distinct from SelectionChanged, which also fires for mere
         // arrow-key browsing and must NOT steal focus away from the tree mid-browse) - a natural
-        // point to move focus into the content pane, ready for its own Tab/Shift+Tab/Enter link
-        // navigation.
-        _tree.Accepted += (_, _) => _contentView.SetFocus();
+        // point to both move focus into the content pane and record the visit in history.
+        _tree.Accepted += (_, _) =>
+        {
+            if (_tree.SelectedObject is TreeNode { Tag: PageEntry entry })
+                _history.Push(new NavigationEntry(entry.FileName, null));
+            _contentView.SetFocus();
+        };
         treeFrame.Add(_tree);
 
         _contentFrame = new FrameView
@@ -102,64 +126,124 @@ public sealed class DocViewerShell : Window
         };
         _contentView.Width = Dim.Fill();
         _contentView.Height = Dim.Fill();
-        _contentView.WordWrap = true;
+        _contentView.ViewportSettings = ViewportSettingsFlags.HasScrollBars;
+        // Real per-token syntax highlighting (via TextMateSharp's VS Code grammars) instead of the
+        // plain dimmed code-block background Markdown falls back to with no highlighter set - makes
+        // fenced code genuinely stand out rather than just visually separated from prose. Tracks
+        // whichever of the app's own themes is active (see UpdateSyntaxHighlighterTheme) rather than
+        // a fixed light/dark choice.
+        _contentView.SyntaxHighlighter = _syntaxHighlighter;
+        UpdateSyntaxHighlighterTheme();
+        ThemeSwitcher.Changed += UpdateSyntaxHighlighterTheme;
         _contentView.Text = "Select a topic on the left to view its documentation.\n\n" +
-            "Press Enter on it (or click here) to jump into this pane: Tab / Shift+Tab then move " +
-            "between its internal links, Enter follows the one under the caret, and clicking a " +
-            "link follows it directly from anywhere.";
-        _contentView.LinkActivated += NavigateToLink;
+            "Press Enter on it (or click here) to jump into this pane: Tab / Shift+Tab move between " +
+            "its internal links, Enter follows the one under the caret, and clicking a link follows " +
+            "it directly from anywhere.\n\n" +
+            "Alt+Left / Alt+Right go back/forward, Ctrl+D bookmarks the current page, and Ctrl+F " +
+            "searches every page's text.";
+        _contentView.LinkClicked += (_, e) =>
+        {
+            if (e.Url.StartsWith('#'))
+                return; // a same-page anchor - the view's own default handling scrolls to it already.
+
+            var hashIndex = e.Url.IndexOf('#');
+            var filePart = hashIndex >= 0 ? e.Url[..hashIndex] : e.Url;
+            var anchor = hashIndex >= 0 ? e.Url[(hashIndex + 1)..] : null;
+            var fileName = Path.GetFileNameWithoutExtension(filePart);
+
+            e.Handled = true;
+            NavigateTo(fileName, anchor, pushHistory: true);
+        };
         _contentFrame.Add(_contentView);
 
         Add([menuBar, treeFrame, _contentFrame, statusBar]);
     }
 
-    private void ShowDoc(Cc65DocEntry entry, string? anchor = null)
+    /// <summary>Picks a light or dark TextMate theme for <see cref="_syntaxHighlighter"/> matching
+    /// whichever of the app's own themes is currently active, so code blocks read naturally against
+    /// both e.g. Vs2026Light and the mostly-dark remaining themes - called once at startup and again
+    /// on every <see cref="ThemeSwitcher.Changed"/> (theme menu selection).</summary>
+    private void UpdateSyntaxHighlighterTheme()
     {
-        var result = GetOrConvert(entry);
+        var editorBackground = SchemeManager.GetScheme("Base").Normal.Background;
+        _syntaxHighlighter.SetTheme(TextMateSyntaxHighlighter.GetThemeForBackground(editorBackground));
+        _contentView.SetNeedsDraw();
+    }
 
+    /// <summary>Displays a page (optionally scrolled to one of its headings) without touching
+    /// <see cref="_history"/> - the single rendering path every navigation action (tree selection,
+    /// a followed link, Back/Forward, a bookmark, a search result) ultimately calls.</summary>
+    private void ShowDoc(PageEntry entry, string? anchor = null)
+    {
+        _currentEntry = entry;
         _contentFrame.Title = $"{entry.FileName} - {entry.Description}";
-        _contentView.Links = result.Links;
-        _contentView.Spans = result.Spans;
-        _contentView.BlockSpans = result.BlockSpans;
-        _contentView.Text = result.Text;
-        // A freshly loaded page starts scrolled to the top, same as before this had anchors to jump
-        // to - unless a link named a specific heading on it, in which case straight to that row.
-        var row = anchor is not null && result.AnchorRows.TryGetValue(anchor, out var anchorRow) ? anchorRow : 0;
-        _contentView.InsertionPoint = new Point(0, row);
-        // InsertionPoint alone only scrolls as far as needed to bring the caret into view (e.g.
-        // leaving it mid-viewport if it was already visible) - ScrollTo forces the target row to the
-        // very top instead, so following a link always lands its heading at the top of the pane
-        // rather than somewhere in the middle of whatever was already on screen.
-        _contentView.ScrollTo(new Point(0, row));
+        _contentView.Text = _database.GetMarkdown(entry.FileName);
+        if (anchor is not null)
+            _contentView.ScrollToAnchor(anchor);
+        else
+            _contentView.Viewport = _contentView.Viewport with { X = 0, Y = 0 };
     }
 
-    private DocConversionResult GetOrConvert(Cc65DocEntry entry)
+    /// <summary>Shows a page, syncing the tree's own selection to match (so the sidebar highlight
+    /// always reflects whatever a link/bookmark/search result/Back-Forward just navigated to, the
+    /// same as clicking that entry in the tree directly would), and records the visit in
+    /// <see cref="_history"/> unless <paramref name="pushHistory"/> is false (Back/Forward navigate
+    /// *within* existing history rather than extending it).</summary>
+    private void NavigateTo(string fileName, string? anchor, bool pushHistory)
     {
-        if (!_cache.TryGetValue(entry.FileName, out var result))
-        {
-            result = DocTextConverter.Convert(Cc65DocLoader.LoadHtml(entry.FileName), entry.FileName, Cc65DocCatalog.AllFileNames);
-            _cache[entry.FileName] = result;
-        }
-        return result;
-    }
-
-    /// <summary>
-    /// Follows a link the user just activated in the content pane. Selecting the target page's tree
-    /// node (if it isn't already selected) shows it via <see cref="TreeView.SelectionChanged"/>
-    /// exactly as a manual click would - including, incidentally, a redundant top-of-page
-    /// <see cref="ShowDoc"/> call when the target differs from the current page, immediately
-    /// superseded by this method's own call below, which is the one that actually knows about
-    /// <see cref="DocLink.TargetAnchor"/>.
-    /// </summary>
-    private void NavigateToLink(DocLink link)
-    {
-        if (!Cc65DocCatalog.TryGetEntry(link.TargetFileName, out var entry))
+        if (!_entriesByFileName.TryGetValue(fileName, out var entry))
             return;
 
-        if (_nodesByFileName.TryGetValue(link.TargetFileName, out var node))
-            _tree.SelectedObject = node;
+        if (_nodesByFileName.TryGetValue(fileName, out var node))
+            _tree.SelectedObject = node; // may also call ShowDoc via SelectionChanged - harmless, superseded below.
 
-        ShowDoc(entry, link.TargetAnchor);
+        ShowDoc(entry, anchor);
+        if (pushHistory)
+            _history.Push(new NavigationEntry(fileName, anchor));
+    }
+
+    private void GoBack()
+    {
+        if (_history.GoBack() is { } entry)
+            NavigateTo(entry.FileName, entry.Anchor, pushHistory: false);
+    }
+
+    private void GoForward()
+    {
+        if (_history.GoForward() is { } entry)
+            NavigateTo(entry.FileName, entry.Anchor, pushHistory: false);
+    }
+
+    private void ShowSearchDialog()
+    {
+        var dialog = new SearchDialog(_database);
+        Application.Run(dialog);
+        if (dialog.SelectedResult is { } result)
+            NavigateTo(result.FileName, null, pushHistory: true);
+    }
+
+    /// <summary>Adds a bookmark for the current page (prompting for a label via
+    /// <see cref="AddBookmarkDialog"/>), or removes it without prompting if one already exists -
+    /// bookmarks don't yet track a specific heading, only the page itself.</summary>
+    private void ToggleBookmark()
+    {
+        if (_currentEntry is not { } entry)
+            return;
+
+        if (_bookmarks.Contains(entry.FileName, null))
+        {
+            _bookmarks.Toggle(entry.FileName, null, "");
+            RefreshBookmarksMenu();
+            return;
+        }
+
+        var dialog = new AddBookmarkDialog(entry.Description);
+        Application.Run(dialog);
+        if (dialog.Label is { } label)
+        {
+            _bookmarks.Toggle(entry.FileName, null, label);
+            RefreshBookmarksMenu();
+        }
     }
 
     private MenuBar BuildMenuBar()
@@ -168,6 +252,22 @@ public sealed class DocViewerShell : Window
         var fileMenu = new MenuBarItem("_File", new List<View>
         {
             new MenuItem("_Quit", "", () => Application.RequestStop(this), Key.Q.WithCtrl),
+        });
+
+        var navigateMenu = new MenuBarItem("_Navigate", new List<View>
+        {
+            new MenuItem("_Back", "", GoBack, Key.CursorLeft.WithAlt),
+            new MenuItem("_Forward", "", GoForward, Key.CursorRight.WithAlt),
+            new Line(),
+            new MenuItem("_Search Documentation...", "", ShowSearchDialog, Key.F.WithCtrl),
+        });
+
+        _bookmarksListItem = new MenuItem("_Saved Bookmarks", "", new Menu(BuildBookmarkMenuItems()));
+        var bookmarksMenu = new MenuBarItem("_Bookmarks", new List<View>
+        {
+            new MenuItem("_Add/Remove Bookmark for Current Page", "", ToggleBookmark, Key.D.WithCtrl),
+            new Line(),
+            _bookmarksListItem,
         });
 
         // Same nine themes, same SchemeManager-based switching, as Tedide.App's own Theme menu
@@ -185,17 +285,44 @@ public sealed class DocViewerShell : Window
             new("_Amber Phosphor", "", () => ThemeSwitcher.Apply(AppTheme.AmberPhosphor), Key.Empty),
         });
 
-        menuBar.Menus = [fileMenu, themeMenu];
+        menuBar.Menus = [fileMenu, navigateMenu, bookmarksMenu, themeMenu];
         menuBar.X = 0;
         menuBar.Y = 0;
         menuBar.Width = Dim.Fill();
         return menuBar;
     }
 
+    private List<MenuItem> BuildBookmarkMenuItems()
+    {
+        if (_bookmarks.Items.Count == 0)
+            return [new MenuItem("(No Bookmarks)", "", () => { }, Key.Empty)];
+
+        return _bookmarks.Items
+            .Select(b => new MenuItem(b.Label, b.FileName, () => NavigateTo(b.FileName, b.Anchor, pushHistory: true), Key.Empty))
+            .ToList();
+    }
+
+    /// <summary>Repopulates the "Saved Bookmarks" submenu in place - deferred the same way (and for
+    /// the same reason) as AppShell's own RefreshRecentProjectsMenu: this runs from inside a click
+    /// handler on the very menu tree still being torn down by that click's in-progress close
+    /// sequence, so the rebuild has to wait for that to finish first.</summary>
+    private void RefreshBookmarksMenu()
+    {
+        Application.AddTimeout(TimeSpan.Zero, () =>
+        {
+            var menu = _bookmarksListItem.SubMenu!;
+            menu.RemoveAll();
+            foreach (var item in BuildBookmarkMenuItems())
+                menu.Add(item);
+            return false;
+        });
+    }
+
     private StatusBar BuildStatusBar()
     {
         var statusBar = new StatusBar();
         statusBar.Add(new Shortcut(Key.Q.WithCtrl, "~^Q~ Quit", () => Application.RequestStop(this)));
+        statusBar.Add(new Shortcut(Key.F.WithCtrl, "~^F~ Search", ShowSearchDialog));
         statusBar.X = 0;
         statusBar.Y = Pos.AnchorEnd(1);
         statusBar.Width = Dim.Fill();

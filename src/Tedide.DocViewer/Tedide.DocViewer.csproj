@@ -8,18 +8,21 @@
 
   <ItemGroup>
     <PackageReference Include="Terminal.Gui" Version="2.4.17" />
-    <!-- Parses the bundled cc65 manual pages (plain HTML, no JavaScript) so DocTextConverter can
-         reduce them to plain text for display in a Terminal.Gui TextView. -->
-    <PackageReference Include="HtmlAgilityPack" Version="1.11.71" />
+    <!-- Reads Docs.db - see DocDatabase. Markdig (which Terminal.Gui.Views.Markdown itself depends
+         on to parse/render Markdown) is pulled in transitively via the Terminal.Gui package above;
+         no direct reference to it is needed here. -->
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.11" />
   </ItemGroup>
 
   <ItemGroup>
-    <!-- A local copy of the cc65 manual pages from https://cc65.github.io/doc/, downloaded once and
-         embedded here rather than fetched at runtime - see Cc65DocCatalog for the indexed list and
-         DocTextConverter for how each page's HTML is reduced to plain text. May drift from whatever
-         cc65 version the user has installed, but keeps this viewer usable offline and independent of
-         any particular cc65 install. -->
-    <EmbeddedResource Include="Cc65Docs\*.html" />
+    <!-- Every bundled page's Markdown (converted from https://cc65.github.io/doc/'s HTML) plus its
+         catalog metadata and a full-text search index, built once by tools/Cc65DocsDbBuilder from
+         SourceHtml/*.html there - see that project for the actual HTML-to-Markdown conversion and
+         its own doc comments for why cross-references resolve to Markdown heading-slug anchors
+         rather than cc65's original anchor names. A loose file copied next to the built exe (SQLite
+         needs a real file path to open), not an embedded resource - re-run the builder tool and
+         rebuild to pick up any change to it. -->
+    <None Include="Docs.db" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <PropertyGroup>

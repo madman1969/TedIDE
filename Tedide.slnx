@@ -10,4 +10,7 @@
     <Project Path="tests/Tedide.Build.Tests/Tedide.Build.Tests.csproj" />
     <Project Path="tests/Tedide.Core.Tests/Tedide.Core.Tests.csproj" />
   </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/Cc65DocsDbBuilder/Cc65DocsDbBuilder.csproj" />
+  </Folder>
 </Solution>
