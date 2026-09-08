@@ -3,48 +3,117 @@ using HtmlAgilityPack;
 
 namespace Tedide.DocViewer;
 
+/// <summary>One <c>&lt;A HREF&gt;</c> resolved to a location <see cref="DocViewerShell"/> can jump
+/// to: <see cref="Row"/>/<see cref="Column"/>/<see cref="Length"/> locate the link's own rendered
+/// text (for highlighting and for detecting "the caret is on a link"), while
+/// <see cref="TargetFileName"/>/<see cref="TargetAnchor"/> say where it points - always a bundled
+/// page (see <see cref="DocTextConverter.Convert"/>'s knownFileNames parameter), optionally a
+/// specific heading in it.</summary>
+public sealed record DocLink(int Row, int Column, int Length, string TargetFileName, string? TargetAnchor);
+
+/// <summary>The result of converting one manual page: its plain text, the internal hyperlinks found
+/// in it (<see cref="Links"/>), and every <c>&lt;A NAME&gt;</c> anchor's row (<see cref="AnchorRows"/>)
+/// so a link targeting this page can jump straight to the right heading.</summary>
+public sealed record DocConversionResult(string Text, IReadOnlyList<DocLink> Links, IReadOnlyDictionary<string, int> AnchorRows);
+
 /// <summary>
 /// Reduces a cc65 manual page's HTML (LinuxDoc-Tools output - a small, consistent set of tags; see
 /// <see cref="Cc65DocCatalog"/>) to plain text for display in a Terminal.Gui <c>TextView</c>.
-/// Headings get an underline, paragraphs are word-wrapped to <see cref="WrapWidth"/>, and
-/// &lt;PRE&gt; blocks (command examples, code listings) are kept verbatim so their alignment
-/// survives - everything else is simplified rather than faithfully reproduced (hyperlinks lose
-/// their target, tables become one line per row).
+/// Headings get an underline, paragraphs/list items/definitions are word-wrapped to
+/// <see cref="WrapWidth"/> (list items and definitions get their continuation lines indented under
+/// their marker - see <see cref="Context.Indent"/>), and &lt;PRE&gt; blocks (command examples, code
+/// listings) are kept verbatim so their alignment survives.
+///
+/// Internal hyperlinks (same-page <c>#anchor</c>, or cross-page <c>page.html</c>/<c>page.html#anchor</c>
+/// - these manuals never use bare same-page anchors for cross-page links, always
+/// <c>currentpage.html#anchor</c>, even for a link to a heading on the very page it's on) are kept as
+/// <see cref="DocLink"/>s alongside the text; everything else (external http(s) links, table cell
+/// content, code hyperlinks) is simplified rather than faithfully reproduced - table cells lose any
+/// links they contain, since flattening a whole row's cells to one line has no sensible place to put
+/// a hanging indent for a wrapped link anyway.
 /// </summary>
 public static class DocTextConverter
 {
     private const int WrapWidth = 78;
 
-    public static string ToPlainText(string html)
+    /// <param name="html">The page's raw HTML (see <see cref="Cc65DocLoader"/>).</param>
+    /// <param name="currentFileName">This page's own <see cref="Cc65DocEntry.FileName"/> - a bare
+    /// <c>#anchor</c> href, or one written as <c>currentFileName.html#anchor</c>, both resolve to a
+    /// same-page <see cref="DocLink"/> against this.</param>
+    /// <param name="knownFileNames">Every bundled page's <see cref="Cc65DocEntry.FileName"/> - an
+    /// href to anything outside this set (a page cc65's docs don't ship, or an external URL) is left
+    /// as plain text rather than a dead link.</param>
+    public static DocConversionResult Convert(string html, string currentFileName, IReadOnlySet<string> knownFileNames)
     {
         var document = new HtmlDocument();
         document.LoadHtml(html);
 
-        var writer = new Writer();
-        AppendChildren(document.DocumentNode.SelectSingleNode("//body") ?? document.DocumentNode, writer);
+        var context = new Context(new Writer(), currentFileName, knownFileNames);
+        AppendChildren(document.DocumentNode.SelectSingleNode("//body") ?? document.DocumentNode, context);
 
         // Collapses the runs of blank lines that block elements' leading/trailing EnsureBlankLine
-        // calls leave between each other down to exactly one.
-        var text = writer.ToString();
-        while (text.Contains("\n\n\n", StringComparison.Ordinal))
-            text = text.Replace("\n\n\n", "\n\n", StringComparison.Ordinal);
-        return text.Trim('\n') + "\n";
+        // calls leave between each other down to exactly one. Links/anchors were already recorded
+        // against the pre-collapse row numbers, so do this via a single top-to-bottom rewrite that
+        // renumbers rows as it goes, rather than string.Replace (which would silently desync them).
+        return CollapseBlankLines(context);
     }
 
-    /// <summary>Wraps a <see cref="StringBuilder"/> with a running count of the current (last)
-    /// line's length, so <see cref="AppendBlockText"/> can word-wrap without re-scanning the whole
-    /// buffer for its last newline on every text node - the naive approach, for a ~380KB manual
-    /// page split across many small text nodes, made conversion visibly slow.</summary>
+    /// <summary>Bundles the handful of things every Append* method needs, so adding a new one
+    /// (like <see cref="Links"/>/<see cref="AnchorRows"/> for this feature) doesn't mean threading
+    /// another parameter through every method signature in the file.</summary>
+    private sealed class Context(Writer writer, string currentFileName, IReadOnlySet<string> knownFileNames)
+    {
+        public readonly Writer Writer = writer;
+        public readonly string CurrentFileName = currentFileName;
+        public readonly IReadOnlySet<string> KnownFileNames = knownFileNames;
+        public readonly List<DocLink> Links = [];
+        public readonly Dictionary<string, int> AnchorRows = [];
+
+        /// <summary>Prepended after any line-wrap <see cref="AppendBlockText"/> inserts, so a
+        /// wrapped list item or definition's continuation lines land under its marker instead of at
+        /// column 0. Empty at the top level and around block elements that don't hang-indent (p,
+        /// headings, ...). Not a stack - a list/definition nested inside another briefly overwrites
+        /// the outer one's indent for its own extent, which very occasionally under-indents a line
+        /// immediately after a nested list back at the outer level; none of the bundled manuals
+        /// nest lists deeply enough for this to matter in practice.</summary>
+        public string Indent = "";
+
+        /// <summary>Set when the most recently visited text node ended in whitespace, or was
+        /// whitespace-only (e.g. the literal single space between two adjacent <c>&lt;A&gt;</c>
+        /// elements, or the indentation between sibling tags) - carries "a separating space belongs
+        /// here" forward to whatever real text comes next, possibly several AppendNode calls later
+        /// (through an anchor tag's own start-of-span bookkeeping, say). Without this, a
+        /// whitespace-only text node's only trace - it collapses to "" and is otherwise skipped
+        /// entirely - would be lost, and adjacent inline elements with genuine source whitespace
+        /// between them would run together with no space at all.</summary>
+        public bool PendingSpace;
+    }
+
+    /// <summary>Wraps a <see cref="StringBuilder"/> with a running (row, column) position, so
+    /// <see cref="AppendBlockText"/> can word-wrap - and <c>&lt;A&gt;</c> handling can record a
+    /// link's/anchor's location - without re-scanning the whole buffer on every text node. The
+    /// naive re-scan approach, for a ~380KB manual page split across many small text nodes, made
+    /// conversion visibly slow.</summary>
     private sealed class Writer
     {
         private readonly StringBuilder _sb = new();
         public int CurrentLineLength { get; private set; }
+        public int Row { get; private set; }
 
         public void Append(string s)
         {
             _sb.Append(s);
             var lastNewline = s.LastIndexOf('\n');
-            CurrentLineLength = lastNewline >= 0 ? s.Length - lastNewline - 1 : CurrentLineLength + s.Length;
+            if (lastNewline < 0)
+            {
+                CurrentLineLength += s.Length;
+                return;
+            }
+
+            foreach (var c in s)
+                if (c == '\n')
+                    Row++;
+            CurrentLineLength = s.Length - lastNewline - 1;
         }
 
         public void Append(char c) => Append(c.ToString());
@@ -55,20 +124,37 @@ public static class DocTextConverter
         public override string ToString() => _sb.ToString();
     }
 
-    private static void AppendChildren(HtmlNode node, Writer w)
+    private static void AppendChildren(HtmlNode node, Context ctx)
     {
         foreach (var child in node.ChildNodes)
-            AppendNode(child, w);
+            AppendNode(child, ctx);
     }
 
-    private static void AppendNode(HtmlNode node, Writer w)
+    private static void AppendNode(HtmlNode node, Context ctx)
     {
         if (node.NodeType == HtmlNodeType.Comment)
             return;
 
         if (node.NodeType == HtmlNodeType.Text)
         {
-            AppendBlockText(w, CollapseWhitespace(HtmlEntity.DeEntitize(node.InnerText)));
+            var raw = HtmlEntity.DeEntitize(node.InnerText);
+            var leadingSpace = raw.Length > 0 && char.IsWhiteSpace(raw[0]);
+            var trailingSpace = raw.Length > 0 && char.IsWhiteSpace(raw[^1]);
+            var collapsed = CollapseWhitespace(raw);
+
+            if (collapsed.Length == 0)
+            {
+                // A whitespace-only node (source indentation between tags, or a literal single
+                // space between two elements - e.g. "<A>1.</A> <A>Overview</A>") has no visible text
+                // of its own, but if it held any whitespace at all, that still means a real word
+                // coming up needs a separating space before it - see Context.PendingSpace.
+                if (raw.Length > 0)
+                    ctx.PendingSpace = true;
+                return;
+            }
+
+            AppendBlockText(ctx, collapsed, leadingSpace || ctx.PendingSpace);
+            ctx.PendingSpace = trailingSpace;
             return;
         }
 
@@ -80,186 +166,249 @@ public static class DocTextConverter
             case "style":
                 return;
 
+            case "a":
+                AppendAnchor(ctx, node);
+                return;
+
             case "h1":
-                AppendHeading(w, node, '=');
+                AppendHeading(ctx, node, '=');
                 return;
             case "h2":
             case "h3":
-                AppendHeading(w, node, '-');
+                AppendHeading(ctx, node, '-');
                 return;
 
             case "p":
             case "center":
             case "blockquote":
             case "div":
-                EnsureBlankLine(w);
-                AppendChildren(node, w);
-                EnsureBlankLine(w);
+                EnsureBlankLine(ctx.Writer);
+                AppendChildren(node, ctx);
+                EnsureBlankLine(ctx.Writer);
                 return;
 
             case "br":
-                w.Append('\n');
+                ctx.Writer.Append('\n');
+                ctx.Writer.Append(ctx.Indent);
                 return;
 
             case "hr":
-                EnsureBlankLine(w);
-                w.Append(new string('-', WrapWidth));
-                w.Append('\n');
-                EnsureBlankLine(w);
+                EnsureBlankLine(ctx.Writer);
+                ctx.Writer.Append(new string('-', WrapWidth));
+                ctx.Writer.Append('\n');
+                EnsureBlankLine(ctx.Writer);
                 return;
 
             case "pre":
-                EnsureBlankLine(w);
+                EnsureBlankLine(ctx.Writer);
                 foreach (var line in HtmlEntity.DeEntitize(node.InnerText).TrimEnd('\n', '\r').Split('\n'))
                 {
-                    w.Append("    ");
-                    w.Append(line.TrimEnd('\r'));
-                    w.Append('\n');
+                    ctx.Writer.Append(ctx.Indent);
+                    ctx.Writer.Append("    ");
+                    ctx.Writer.Append(line.TrimEnd('\r'));
+                    ctx.Writer.Append('\n');
                 }
-                EnsureBlankLine(w);
+                EnsureBlankLine(ctx.Writer);
                 return;
 
             case "ul":
             case "ol":
-                EnsureBlankLine(w);
-                AppendListItems(node, w, ordered: string.Equals(node.Name, "ol", StringComparison.OrdinalIgnoreCase));
-                EnsureBlankLine(w);
+                EnsureBlankLine(ctx.Writer);
+                AppendListItems(ctx, node, ordered: string.Equals(node.Name, "ol", StringComparison.OrdinalIgnoreCase));
+                EnsureBlankLine(ctx.Writer);
                 return;
 
             case "dl":
-                EnsureBlankLine(w);
-                AppendDefinitionList(node, w);
-                EnsureBlankLine(w);
+                EnsureBlankLine(ctx.Writer);
+                AppendDefinitionList(ctx, node);
+                EnsureBlankLine(ctx.Writer);
                 return;
 
             case "table":
-                EnsureBlankLine(w);
-                AppendTable(node, w);
-                EnsureBlankLine(w);
+                EnsureBlankLine(ctx.Writer);
+                AppendTable(ctx, node);
+                EnsureBlankLine(ctx.Writer);
                 return;
 
             default:
-                // Inline elements (a, b, em, code, tt, ...) and anything else unrecognized: just
-                // keep their text content flowing into the surrounding paragraph.
-                AppendChildren(node, w);
+                // Inline elements (b, em, code, tt, ...) and anything else unrecognized: just keep
+                // their text content flowing into the surrounding paragraph.
+                AppendChildren(node, ctx);
                 return;
         }
     }
 
-    private static void AppendHeading(Writer w, HtmlNode node, char underline)
+    /// <summary>
+    /// Handles both roles an <c>&lt;A&gt;</c> can play in these manuals - sometimes both at once
+    /// (<c>&lt;A NAME="apple-def-cfg"&gt;&lt;/A&gt; &lt;A NAME="ss4.1"&gt;4.1&lt;/A&gt; &lt;A HREF="..."&gt;...&lt;/A&gt;</c>
+    /// on one heading): a <c>NAME</c> records this row as that anchor's target (<see cref="Context.AnchorRows"/>),
+    /// and an internal <c>HREF</c> (resolved by <see cref="ResolveInternalHref"/>) records the
+    /// rendered span as a <see cref="DocLink"/> once its (inline) content has been appended like
+    /// normal text - so its wrapping, whitespace-collapsing etc. all match plain prose exactly.
+    /// A link whose text happens to wrap onto a second row (its target is still reachable via
+    /// wherever else in the document links to the same place - just not highlightable/clickable at
+    /// this particular occurrence) is silently dropped rather than mis-highlighting the wrong text.
+    /// </summary>
+    private static void AppendAnchor(Context ctx, HtmlNode node)
     {
-        var text = CollapseWhitespace(HtmlEntity.DeEntitize(node.InnerText)).Trim();
-        if (text.Length == 0)
-            return;
+        var name = node.GetAttributeValue("name", "");
+        if (!string.IsNullOrEmpty(name))
+            ctx.AnchorRows[name] = ctx.Writer.Row;
 
-        EnsureBlankLine(w);
-        w.Append(text);
-        w.Append('\n');
-        w.Append(new string(underline, text.Length));
-        w.Append('\n');
-        EnsureBlankLine(w);
+        var target = ResolveInternalHref(node.GetAttributeValue("href", ""), ctx.CurrentFileName);
+        if (target is not { } t || !ctx.KnownFileNames.Contains(t.FileName))
+        {
+            AppendChildren(node, ctx);
+            return;
+        }
+
+        var startRow = ctx.Writer.Row;
+        var startColumn = ctx.Writer.CurrentLineLength;
+        var startIndex = ctx.Writer.Length;
+        AppendChildren(node, ctx);
+
+        // A separator space this link's own first word needed (e.g. the space between "1." and
+        // this "Overview" link in "1. Overview") is written from inside the AppendChildren call
+        // just above, landing inside [startIndex, ...) - trim it so the link's highlighted/clickable
+        // span starts at its actual visible text, not the space before it.
+        while (startIndex < ctx.Writer.Length && ctx.Writer[startIndex] == ' ')
+        {
+            startIndex++;
+            startColumn++;
+        }
+
+        var length = ctx.Writer.Row == startRow ? ctx.Writer.Length - startIndex : 0;
+        if (length > 0)
+            ctx.Links.Add(new DocLink(startRow, startColumn, length, t.FileName, t.Anchor));
     }
 
-    private static void AppendListItems(HtmlNode list, Writer w, bool ordered)
+    /// <summary>
+    /// Resolves an <c>HREF</c> to a bundled page + optional anchor, or null if it isn't an internal
+    /// link this viewer can navigate to (an external http(s)/mailto URL, or - defensively - anything
+    /// with no path at all). Handles both forms these manuals use for a same-page link: a bare
+    /// <c>#anchor</c>, and <c>currentFileName.html#anchor</c> (what the generator actually emits for
+    /// same-page section links in most of these pages - see the doc comment on
+    /// <see cref="DocTextConverter"/>). The caller still checks the resolved file name against the
+    /// known bundle (a defensive backstop against an href to a page cc65's docs don't ship).
+    /// </summary>
+    private static (string FileName, string? Anchor)? ResolveInternalHref(string href, string currentFileName)
+    {
+        if (string.IsNullOrWhiteSpace(href))
+            return null;
+        if (href.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+            href.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ||
+            href.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        var hashIndex = href.IndexOf('#');
+        var filePart = hashIndex >= 0 ? href[..hashIndex] : href;
+        var anchorPart = hashIndex >= 0 ? href[(hashIndex + 1)..] : "";
+
+        var fileName = filePart.Length == 0 ? currentFileName : Path.GetFileNameWithoutExtension(filePart);
+        return (fileName, anchorPart.Length == 0 ? null : anchorPart);
+    }
+
+    private static void AppendHeading(Context ctx, HtmlNode node, char underline)
+    {
+        EnsureBlankLine(ctx.Writer);
+        var startRow = ctx.Writer.Row;
+        var startIndex = ctx.Writer.Length;
+
+        // Recurses like any other container (rather than flattening via node.InnerText, as before
+        // this feature) so a heading's own <A NAME>/<A HREF> - very common; see this file's own doc
+        // comment - are captured the same way as everywhere else. Headings in these manuals are
+        // always short enough that this never actually wraps in practice.
+        AppendChildren(node, ctx);
+
+        var length = ctx.Writer.Row == startRow ? ctx.Writer.Length - startIndex : 0;
+        ctx.Writer.Append('\n');
+        if (length > 0)
+        {
+            ctx.Writer.Append(new string(underline, length));
+            ctx.Writer.Append('\n');
+        }
+        EnsureBlankLine(ctx.Writer);
+    }
+
+    private static void AppendListItems(Context ctx, HtmlNode list, bool ordered)
     {
         var index = 1;
         foreach (var item in list.ChildNodes.Where(n => string.Equals(n.Name, "li", StringComparison.OrdinalIgnoreCase)))
         {
             var marker = ordered ? $"{index++}. " : "- ";
-            var continuation = new string(' ', marker.Length);
-            var text = CollapseWhitespace(HtmlEntity.DeEntitize(item.InnerText)).Trim();
+            ctx.Writer.Append(marker);
 
-            var isFirstLine = true;
-            foreach (var line in WrapText(text, WrapWidth - marker.Length))
-            {
-                w.Append(isFirstLine ? marker : continuation);
-                w.Append(line);
-                w.Append('\n');
-                isFirstLine = false;
-            }
+            var previousIndent = ctx.Indent;
+            ctx.Indent = new string(' ', marker.Length);
+            AppendChildren(item, ctx);
+            ctx.Indent = previousIndent;
+
+            ctx.Writer.Append('\n');
         }
     }
 
-    private static void AppendDefinitionList(HtmlNode dl, Writer w)
+    private static void AppendDefinitionList(Context ctx, HtmlNode dl)
     {
         foreach (var child in dl.ChildNodes)
         {
-            var text = CollapseWhitespace(HtmlEntity.DeEntitize(child.InnerText)).Trim();
-            if (text.Length == 0)
-                continue;
-
             if (string.Equals(child.Name, "dt", StringComparison.OrdinalIgnoreCase))
             {
-                w.Append(text);
-                w.Append('\n');
+                AppendChildren(child, ctx);
+                if (ctx.Writer.CurrentLineLength > 0)
+                    ctx.Writer.Append('\n');
             }
             else if (string.Equals(child.Name, "dd", StringComparison.OrdinalIgnoreCase))
             {
-                foreach (var line in WrapText(text, WrapWidth - 4))
-                {
-                    w.Append("    ");
-                    w.Append(line);
-                    w.Append('\n');
-                }
-                w.Append('\n');
+                var previousIndent = ctx.Indent;
+                ctx.Indent = "    ";
+                ctx.Writer.Append(ctx.Indent);
+                AppendChildren(child, ctx);
+                ctx.Indent = previousIndent;
+
+                ctx.Writer.Append('\n');
+                ctx.Writer.Append('\n');
             }
         }
     }
 
-    private static void AppendTable(HtmlNode table, Writer w)
+    /// <summary>Flattens each cell to plain text (no link-tracking - see this file's own doc
+    /// comment) since a whole row's cells are joined onto one line with no sensible place to hang a
+    /// wrapped link's continuation anyway. Tables are rare across the bundled manuals.</summary>
+    private static void AppendTable(Context ctx, HtmlNode table)
     {
         foreach (var row in table.Descendants("tr"))
         {
             var cells = row.ChildNodes
                 .Where(n => n.Name is "td" or "th")
                 .Select(n => CollapseWhitespace(HtmlEntity.DeEntitize(n.InnerText)).Trim());
-            w.Append(string.Join("  |  ", cells));
-            w.Append('\n');
+            ctx.Writer.Append(string.Join("  |  ", cells));
+            ctx.Writer.Append('\n');
         }
     }
 
-    /// <summary>Appends already-collapsed text into the current paragraph, word-wrapping the
-    /// running line at <see cref="WrapWidth"/>. Whitespace-only text (e.g. the indentation between
-    /// two &lt;LI&gt;s) collapses to "" upstream and is skipped here, so it can't force a spurious
-    /// line break.</summary>
-    private static void AppendBlockText(Writer w, string text)
+    /// <summary>Appends already-collapsed, non-empty text into the current paragraph, word-wrapping
+    /// the running line at <see cref="WrapWidth"/> and indenting any wrapped continuation line by
+    /// <see cref="Context.Indent"/>. <paramref name="leadingSpace"/> says whether a space belongs
+    /// between whatever was written last and this text's first word - the source HTML's own
+    /// whitespace (or lack of it) between elements, not a guess (see <see cref="Context.PendingSpace"/>),
+    /// so adjacent inline elements with no space between them in the source (e.g. <c>(&lt;CODE&gt;x&lt;/CODE&gt;)</c>)
+    /// don't get one invented.</summary>
+    private static void AppendBlockText(Context ctx, string text, bool leadingSpace)
     {
-        if (text.Length == 0)
-            return;
-
-        var separator = w.CurrentLineLength > 0 && !text.StartsWith(' ') ? " " : "";
+        var w = ctx.Writer;
+        var separator = w.CurrentLineLength > 0 && leadingSpace ? " " : "";
         foreach (var word in text.Split(' ', StringSplitOptions.RemoveEmptyEntries))
         {
             if (w.CurrentLineLength > 0 && w.CurrentLineLength + separator.Length + word.Length > WrapWidth)
             {
                 w.Append('\n');
+                w.Append(ctx.Indent);
                 separator = "";
             }
             w.Append(separator);
             w.Append(word);
             separator = " ";
         }
-    }
-
-    private static IEnumerable<string> WrapText(string text, int width)
-    {
-        if (width < 10)
-            width = 10;
-
-        var line = new StringBuilder();
-        foreach (var word in text.Split(' ', StringSplitOptions.RemoveEmptyEntries))
-        {
-            if (line.Length > 0 && line.Length + 1 + word.Length > width)
-            {
-                yield return line.ToString();
-                line.Clear();
-            }
-            if (line.Length > 0)
-                line.Append(' ');
-            line.Append(word);
-        }
-        if (line.Length > 0)
-            yield return line.ToString();
     }
 
     private static void EnsureBlankLine(Writer w)
@@ -274,4 +423,54 @@ public static class DocTextConverter
 
     private static string CollapseWhitespace(string text) =>
         string.Join(' ', text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+
+    /// <summary>
+    /// Collapses runs of 2+ blank lines down to exactly one, renumbering every <see cref="DocLink"/>/
+    /// anchor row as each removed line shifts everything below it up - a plain <c>string.Replace</c>
+    /// (as this used before links/anchors existed) would silently desync <see cref="Context.Links"/>
+    /// and <see cref="Context.AnchorRows"/> from the text it rewrote out from under them.
+    /// </summary>
+    private static DocConversionResult CollapseBlankLines(Context ctx)
+    {
+        var lines = ctx.Writer.ToString().Split('\n');
+        var outputLines = new List<string>(lines.Length);
+        var rowMap = new int[lines.Length + 1]; // +1: a link/anchor can legitimately sit on a trailing empty "row" past the last '\n'.
+
+        var previousWasBlank = false;
+        for (var i = 0; i < lines.Length; i++)
+        {
+            var isBlank = lines[i].Length == 0;
+            if (isBlank && previousWasBlank)
+            {
+                rowMap[i] = outputLines.Count - 1; // collapsed into the previous (already-emitted) blank line
+                continue;
+            }
+
+            rowMap[i] = outputLines.Count;
+            outputLines.Add(lines[i]);
+            previousWasBlank = isBlank;
+        }
+        rowMap[lines.Length] = outputLines.Count;
+
+        // Leading/trailing blank lines (from the outermost block's own EnsureBlankLine calls) are
+        // trimmed same as the old string.Trim('\n') did - tracked as an offset so row numbers below
+        // still line up with the trimmed text.
+        var start = 0;
+        while (start < outputLines.Count && outputLines[start].Length == 0)
+            start++;
+        var end = outputLines.Count;
+        while (end > start && outputLines[end - 1].Length == 0)
+            end--;
+
+        var text = string.Join('\n', outputLines.GetRange(start, end - start)) + "\n";
+
+        // rowMap can point a link/anchor made irrelevant by trimming (e.g. an anchor on a line that
+        // turned out to be trailing whitespace) outside [0, lastRow] - clamp rather than let it
+        // address a row DocViewerShell's InsertionPoint can't actually scroll to.
+        var lastRow = Math.Max(0, end - start - 1);
+        var links = ctx.Links.Select(l => l with { Row = Math.Clamp(rowMap[l.Row] - start, 0, lastRow) }).ToList();
+        var anchorRows = ctx.AnchorRows.ToDictionary(kv => kv.Key, kv => Math.Clamp(rowMap[kv.Value] - start, 0, lastRow));
+
+        return new DocConversionResult(text, links, anchorRows);
+    }
 }

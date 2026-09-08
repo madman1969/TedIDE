@@ -85,4 +85,17 @@ public static class Cc65DocCatalog
             new Cc65DocEntry("vic20", "Topics specific to the Commodore VIC20."),
         ]),
     ];
+
+    private static readonly IReadOnlyDictionary<string, Cc65DocEntry> ByFileName =
+        Categories.SelectMany(c => c.Entries).ToDictionary(e => e.FileName);
+
+    /// <summary>Every bundled page's <see cref="Cc65DocEntry.FileName"/> - used by
+    /// <see cref="DocTextConverter.Convert"/> to tell an internal hyperlink (one of these) from a
+    /// dead one (an href to a page cc65's docs don't ship).</summary>
+    public static readonly IReadOnlySet<string> AllFileNames = ByFileName.Keys.ToHashSet();
+
+    /// <summary>Looks up the entry a <see cref="DocLink.TargetFileName"/> points to, e.g. to select
+    /// it in <see cref="DocViewerShell"/>'s tree when the user follows the link.</summary>
+    public static bool TryGetEntry(string fileName, out Cc65DocEntry entry) =>
+        ByFileName.TryGetValue(fileName, out entry!);
 }
