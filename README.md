@@ -4,7 +4,9 @@ A terminal (TUI) IDE for [cc65](https://cc65.github.io/) development, modeled lo
 on Visual Studio: a resizable solution explorer, a single-file source editor with 6502/ca65
 syntax highlighting, a build output pane and a menu/status bar, all driven by `cl65` - plus
 project/optimizer/compiler settings, Find in Files, a VICE emulator launcher, and a Recent
-Projects and Solutions list.
+Projects and Solutions list. A companion app, **Tedide.DocViewer**, browses cc65's own manuals
+offline with a category tree, full-text search and bookmarks - see "Running the Doc Viewer"
+below.
 
 ## Prerequisites
 
@@ -22,12 +24,17 @@ Projects and Solutions list.
 ```text
 Tedide.slnx
 src/
-  Tedide.Core/       Project & solution file model (.tproj / .tsln), cc65 target/optimization metadata
-  Tedide.Build/       Drives cl65 as an external process, parses its output into diagnostics, launches VICE
-  Tedide.App/         The Terminal.Gui TUI shell (menu bar, solution explorer, editor, output pane, dialogs)
+  Tedide.Core/         Project & solution file model (.tproj / .tsln), cc65 target/optimization metadata
+  Tedide.Build/        Drives cl65 as an external process, parses its output into diagnostics, launches VICE
+  Tedide.Theming/      The nine color themes/scheme switching shared by Tedide.App and Tedide.DocViewer
+  Tedide.App/          The Terminal.Gui TUI shell (menu bar, solution explorer, editor, output pane, dialogs)
+  Tedide.DocViewer/    A standalone cc65 manual browser - category tree, full-text search, bookmarks
 tests/
   Tedide.Core.Tests/
   Tedide.Build.Tests/
+tools/
+  Cc65DocsDbBuilder/   One-off converter: cc65's HTML manuals -> Docs.db (Markdown + FTS5 search index),
+                       embedded in Tedide.DocViewer - see "Running the Doc Viewer" below
 samples/
   HelloCBM/            A small multi-file sample solution/project, buildable for every Commodore cc65 target
     HelloCBM.tsln
@@ -74,6 +81,13 @@ samples/
     src/                 inflate.c
     include/             screen.h
     bin/                 Build output (inflate.prg) - gitignored
+  Nano128/             A nano-style full-screen text editor for the C128, in 80-column (VDC) mode
+    Nano128.tsln
+    Nano128.tproj        src/*.c, -I include for the headers - Target is C128, not cross-target
+    src/                 main.c, screen.c, buffer.c, fileio.c, input.c, editor.c, vblank.c
+                         (each gets its own .lst next to it if listing generation is on) - gitignored
+    include/             screen.h, buffer.h, fileio.h, input.h, editor.h, vblank.h
+    bin/                 Build output (Nano128.prg) - gitignored
 ```
 
 ## Running
@@ -121,6 +135,17 @@ From the **File** menu:
 - **Open Project...** and pick `samples/inflate/inflate.tsln` for a single-file demo of a
   character-fill sprite that grows and shrinks between zero and the full screen size, redrawn each
   frame from an off-screen buffer.
+- **Open Project...** and pick `samples/Nano128/Nano128.tsln` for the largest sample - Nano128, a
+  nano-style full-screen text editor for the C128, running in the VDC chip's 80-column mode from
+  "C128_80" above. Commodore keyboards don't have most of the Ctrl+letter combos nano uses on a PC
+  keyboard, so the eight function keys stand in for its Ctrl-shortcuts instead (F2 Save, F3/F4
+  Search, F5/F6 Cut/Uncut Line, F7/F8 Page Up/Down, Home for start-of-line, Stop to open a
+  different file) - except Exit, which really is Ctrl+X: Commodore's Ctrl masks a key to its low 5
+  bits the same way a real terminal's does, and that happens to match nano's own binding exactly.
+  Typed text is genuinely mixed-case (switching to the C128's lower/upper PETSCII character set, so
+  Shift+letter capitalizes rather than producing a graphics symbol), and the title bar shows free
+  heap RAM live, since `buffer.c` grows/shrinks each line's allocation as you type rather than
+  reserving a worst-case block per line.
 - **Recent Projects and Solutions** lists the 10 most-recently-opened `.tproj`/`.tsln` paths
   (persisted per-user, independent of any one project), numbered for Alt+1..9 accelerators like
   Visual Studio's own list. Selecting a stale entry (moved/deleted on disk) drops it from the list
@@ -159,30 +184,68 @@ auto-starting it.
 
 **Edit > Find in Files...** (Ctrl+Shift+F) searches every source/header/assembly file across the
 loaded project(s) for a case-insensitive substring and lists every matching line; activating a
-result opens that file and jumps the caret straight to the match. It's also on the editor's own
-right-click context menu (alongside the library's default Undo/Redo/Cut/Copy/Paste/Select All),
-where it pre-populates the search field with the current selection - just its first line, if the
-selection spans more than one - and runs the search immediately, rather than opening to a blank
-field.
+result opens that file and jumps the caret straight to the match. The editor's own right-click
+context menu (alongside the library's default Undo/Redo/Cut/Copy/Paste/Select All) has Find,
+Replace and Find in Files appended to it - Find/Replace open the same Find/Replace dialog as the
+Edit menu's own (`Editor.InvokeCommand(Command.Find/Replace)`, exactly what that menu does), and
+Find in Files pre-populates the search field with the current selection - just its first line, if
+the selection spans more than one - and runs the search immediately, rather than opening to a
+blank field.
 
 Press **Ctrl+W** (or **File > Close File**) to close the open file. If it has unsaved changes
 you're prompted to save, discard, or cancel first - the same prompt appears if you select a
 *different* file in the Solution Explorer while the current one is modified, since opening a new
 file replaces whatever's currently open (see "Editing" below).
 
-## Publishing a standalone executable
-
-The VS Code task **publish Tedide.App (standalone exe)** builds Tedide itself (not a cc65 project -
-see above for that) into a single, self-contained `Tedide.App.exe` under `publish/` that runs on a
-Windows machine with no .NET runtime installed. Equivalent from the command line:
+## Running the Doc Viewer
 
 ```bash
-dotnet publish src/Tedide.App/Tedide.App.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -o publish
+dotnet run --project src/Tedide.DocViewer
 ```
 
-The result is one ~80MB `.exe` (the .NET runtime bundled in accounts for most of that) - drop it
+A single window: a category/page tree of every cc65 manual on the left, and the selected page's
+rendered Markdown on the right (via Terminal.Gui's own `Markdown` view). Both panes' content comes
+from `Docs.db`, an embedded SQLite database built once ahead of time by `tools/Cc65DocsDbBuilder`
+from cc65's own HTML manuals - regenerate it (and rebuild) if that tool's `SourceHtml/` changes.
+
+- **Navigate** - **Back**/**Forward** (Alt+Left/Right) walk browser-style history; clicking a
+  cross-page link (or pressing Enter on one) does too. A same-page `#slug` link is scrolled to
+  directly by the Markdown view itself, without adding a history entry. **Search Documentation...**
+  (Ctrl+F) runs a full-text search (Docs.db's FTS5 index) across every page at once.
+- **Bookmarks** - **Add/Remove Bookmark for Current Page** (Ctrl+D) toggles a bookmark for
+  whatever's open (prompting for a label when adding one); **Saved Bookmarks** lists them all,
+  each jumping straight back to its page.
+- **Theme** - the same nine runtime-switchable color themes as Tedide.App (see "Themes" below);
+  picking one here also changes what Tedide.App opens with next, and vice versa, since both share
+  the same per-user `ThemeSettings`.
+- **Help > About Tedide DocViewer...** - name, description, credits and a repo link (Tedide.App
+  has the same **Help > About Tedide...**, its text adapted for the IDE rather than this viewer).
+
+## Publishing a standalone executable
+
+Two VS Code tasks build single, self-contained executables that run on a Windows machine with no
+.NET runtime installed - **publish Tedide.App (standalone exe)** into `publish/Tedide.App.exe`,
+and **publish Tedide.DocViewer (standalone exe)** into `publish-docviewer/Tedide.DocViewer.exe`
+(alongside its `Docs.db`, copied there explicitly by a post-publish MSBuild target - see the
+comment on `CopyDocsDbToPublishDir` in `Tedide.DocViewer.csproj` for why a plain
+`CopyToPublishDirectory` isn't reliable enough for this on its own). Equivalent from the command
+line:
+
+```bash
+dotnet publish src/Tedide.App/Tedide.App.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -p:EnableCompressionInSingleFile=true -p:InvariantGlobalization=true -o publish
+
+dotnet publish src/Tedide.DocViewer/Tedide.DocViewer.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -p:EnableCompressionInSingleFile=true -p:InvariantGlobalization=true -o publish-docviewer
+```
+
+Each result is one ~40MB `.exe` (down from ~86MB without the last two flags: compressing the
+self-contained .NET runtime bundled inside a single-file exe, and dropping ICU globalization data
+neither app needs since nothing in either does culture-sensitive comparison/formatting) - drop it
 anywhere and run it directly. `win-x64` is the only target tested; swap `-r` for another
 [RID](https://learn.microsoft.com/dotnet/core/rid-catalog) to publish for a different platform.
+Trimming (`-p:PublishTrimmed=true`) would shrink `Tedide.App.exe` further to ~14MB but isn't
+enabled - it flags every JSON persistence class (project/solution loading, themes, layout, recent
+projects, toolchain settings) as trim-unsafe, since none of them use a source-generated
+`JsonSerializerContext`.
 
 ## Project files
 
@@ -322,11 +385,11 @@ Two things worth knowing:
 
 Project/solution model, cc65 build integration with diagnostic parsing, VICE emulator launching,
 the core IDE layout (resizable explorer / editor / output panes), a 6502/ca65 syntax highlighter,
-Find in Files, a Recent Projects and Solutions list, nine runtime-switchable themes, and a
-standalone-executable publish task are all in place and tested. Not yet implemented: a dedicated
-error-list pane with jump-to-line (build diagnostics are parsed but only summarized in the Output
-pane today), and true multi-project solution builds (a loaded solution's *first* project is always
-the one Build/Clean/Run act on).
+Find in Files, a Recent Projects and Solutions list, nine runtime-switchable themes, and
+standalone-executable publish tasks for both Tedide.App and Tedide.DocViewer are all in place and
+tested. Not yet implemented: a dedicated error-list pane with jump-to-line (build diagnostics are
+parsed but only summarized in the Output pane today), and true multi-project solution builds (a
+loaded solution's *first* project is always the one Build/Clean/Run act on).
 
 Note: this app is built against **prerelease** builds of
 [Terminal.Gui v2](https://github.com/gui-cs/Terminal.Gui) (`2.4.17`) and
