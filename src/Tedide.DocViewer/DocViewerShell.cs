@@ -126,6 +126,11 @@ public sealed class DocViewerShell : Window
         // to - unless a link named a specific heading on it, in which case straight to that row.
         var row = anchor is not null && result.AnchorRows.TryGetValue(anchor, out var anchorRow) ? anchorRow : 0;
         _contentView.InsertionPoint = new Point(0, row);
+        // InsertionPoint alone only scrolls as far as needed to bring the caret into view (e.g.
+        // leaving it mid-viewport if it was already visible) - ScrollTo forces the target row to the
+        // very top instead, so following a link always lands its heading at the top of the pane
+        // rather than somewhere in the middle of whatever was already on screen.
+        _contentView.ScrollTo(new Point(0, row));
     }
 
     private DocConversionResult GetOrConvert(Cc65DocEntry entry)
