@@ -7,7 +7,7 @@ namespace Tedide.App;
 /// "Recent Projects and Solutions" list - the same feature Visual Studio offers under that name.
 /// Most-recent-first, capped at <see cref="MaxEntries"/>; opening (or creating) a project/solution
 /// moves it to the front, adding it if it's new. This is a per-user preference like
-/// <see cref="Theming.ThemeSettings"/>, not project state, so it lives under the OS's per-user
+/// <see cref="Tedide.Theming.ThemeSettings"/>, not project state, so it lives under the OS's per-user
 /// application data folder rather than any .tproj/.tsln file.
 /// </summary>
 public sealed class RecentProjectsSettings

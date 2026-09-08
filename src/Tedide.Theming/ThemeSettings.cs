@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Tedide.App.Theming;
+namespace Tedide.Theming;
 
 /// <summary>
 /// The small on-disk settings file that remembers the user's last-selected <see cref="AppTheme"/>

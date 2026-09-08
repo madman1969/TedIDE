@@ -34,6 +34,24 @@
       }
     },
     {
+      "label": "run Tedide.DocViewer",
+      "type": "shell",
+      "command": "wt.exe -w new dotnet run --project \"${workspaceFolder}\\src\\Tedide.DocViewer\\Tedide.DocViewer.csproj\"",
+      "options": {
+        "shell": {
+          "executable": "cmd.exe",
+          "args": ["/d", "/c"]
+        }
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "silent",
+        "panel": "shared",
+        "close": true
+      },
+      "group": "test"
+    },
+    {
       "label": "test",
       "type": "process",
       "command": "dotnet",

@@ -3,6 +3,8 @@
     <Project Path="src/Tedide.App/Tedide.App.csproj" />
     <Project Path="src/Tedide.Build/Tedide.Build.csproj" />
     <Project Path="src/Tedide.Core/Tedide.Core.csproj" />
+    <Project Path="src/Tedide.DocViewer/Tedide.DocViewer.csproj" />
+    <Project Path="src/Tedide.Theming/Tedide.Theming.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Tedide.Build.Tests/Tedide.Build.Tests.csproj" />

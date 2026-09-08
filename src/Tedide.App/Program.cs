@@ -1,7 +1,7 @@
 using Terminal.Gui.App;
 using Tedide.App;
 using Tedide.App.Highlighting;
-using Tedide.App.Theming;
+using Tedide.Theming;
 
 Application.Init();
 try

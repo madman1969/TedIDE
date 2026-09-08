@@ -1,4 +1,4 @@
-using Tedide.App.Theming;
+using Tedide.Theming;
 using Tedide.App.Views;
 using Tedide.Build;
 using Tedide.Core;
@@ -294,7 +294,7 @@ public sealed class AppShell : Window
     {
         var statusBar = new EditorStatusBar(_editorPane.Editor);
         // ThemeDropDown drives Terminal.Gui's own ConfigurationManager-based ThemeManager, separate
-        // from our own SchemeManager-based ThemeSwitcher (see Theming/ThemeSwitcher.cs) - leaving
+        // from our own SchemeManager-based ThemeSwitcher (see Tedide.Theming/ThemeSwitcher.cs) - leaving
         // both active would let this dropdown silently overwrite our custom Schemes. Hide it; the
         // Theme menu above is our one theme switcher.
         statusBar.ThemeDropDown.Visible = false;

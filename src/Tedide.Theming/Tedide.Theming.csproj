@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="Terminal.Gui" Version="2.4.17" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- Terminal.Gui v2 is prerelease; it flags the static Application facade (ThemeSwitcher.Apply
+         calls Application.LayoutAndDraw) as obsolete in favor of an instance-based Application that
+         isn't published yet - same suppression as every other project referencing Terminal.Gui here. -->
+    <NoWarn>$(NoWarn);CS0618</NoWarn>
+  </PropertyGroup>
+
+</Project>

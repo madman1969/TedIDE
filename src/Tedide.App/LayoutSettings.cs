@@ -6,7 +6,7 @@ namespace Tedide.App;
 /// Persists the two draggable splitter positions - Solution Explorer/Editor width and
 /// Explorer+Editor row/Output+Error List row height - across runs, each as a percentage of the
 /// window's full width/height so it still makes sense after resizing the terminal or moving to a
-/// different one. This is a per-user preference like <see cref="Theming.ThemeSettings"/>, not
+/// different one. This is a per-user preference like <see cref="Tedide.Theming.ThemeSettings"/>, not
 /// project state, so it lives under the OS's per-user application data folder.
 /// </summary>
 public sealed class LayoutSettings

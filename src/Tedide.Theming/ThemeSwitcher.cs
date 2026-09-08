@@ -3,7 +3,7 @@ using Terminal.Gui.Configuration;
 using Terminal.Gui.Drawing;
 using GuiAttribute = Terminal.Gui.Drawing.Attribute;
 
-namespace Tedide.App.Theming;
+namespace Tedide.Theming;
 
 /// <summary>
 /// Builds and registers the six named <see cref="Scheme"/> slots Terminal.Gui resolves views

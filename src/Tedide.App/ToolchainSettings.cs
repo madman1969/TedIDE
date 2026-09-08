@@ -7,7 +7,7 @@ namespace Tedide.App;
 /// and the VICE emulator's bin directory (see <see cref="Tedide.Build.ViceEmulator"/>). Both are
 /// edited via ProjectSettingsDialog's "CC65" and "VICE" tabs, but neither is project state - they're
 /// specific to this machine's toolchain install, not any one project - so like
-/// <see cref="Theming.ThemeSettings"/> and <see cref="RecentProjectsSettings"/> this lives under the
+/// <see cref="Tedide.Theming.ThemeSettings"/> and <see cref="RecentProjectsSettings"/> this lives under the
 /// OS's per-user application data folder rather than a .tproj/.tsln file. AppShell applies both
 /// values (CC65_HOME to this process's environment, ViceBinDirectory to its <see cref="Tedide.Build.ViceEmulator"/>
 /// instance) on startup and again immediately after either tab is saved.

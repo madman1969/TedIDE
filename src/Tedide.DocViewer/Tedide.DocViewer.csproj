@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <!-- Shared with Tedide.App - the same nine color themes and the same per-user settings.json,
+         so this viewer opens in whatever theme was last selected in either app. -->
+    <ProjectReference Include="..\Tedide.Theming\Tedide.Theming.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Terminal.Gui" Version="2.4.17" />
+    <!-- Parses the bundled cc65 manual pages (plain HTML, no JavaScript) so DocTextConverter can
+         reduce them to plain text for display in a Terminal.Gui TextView. -->
+    <PackageReference Include="HtmlAgilityPack" Version="1.11.71" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- A local copy of the cc65 manual pages from https://cc65.github.io/doc/, downloaded once and
+         embedded here rather than fetched at runtime - see Cc65DocCatalog for the indexed list and
+         DocTextConverter for how each page's HTML is reduced to plain text. May drift from whatever
+         cc65 version the user has installed, but keeps this viewer usable offline and independent of
+         any particular cc65 install. -->
+    <EmbeddedResource Include="Cc65Docs\*.html" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- Terminal.Gui v2 is prerelease; it flags the static Application facade as obsolete in favor
+         of an instance-based Application that isn't published yet - same suppression as
+         Tedide.App.csproj, which this project otherwise has no dependency on. -->
+    <NoWarn>$(NoWarn);CS0618</NoWarn>
+  </PropertyGroup>
+
+</Project>

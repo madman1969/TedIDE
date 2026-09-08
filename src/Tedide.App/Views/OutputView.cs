@@ -17,7 +17,7 @@ namespace Tedide.App.Views;
 /// <remarks>
 /// Colors are baked into each line's <see cref="GuiCell"/>s when appended, not re-resolved later,
 /// so switching the app's theme mid-build restyles the chrome around this pane but not lines
-/// already printed - the same tradeoff <see cref="Theming.ThemeSwitcher"/> already documents for
+/// already printed - the same tradeoff <see cref="Tedide.Theming.ThemeSwitcher"/> already documents for
 /// the code editor's own syntax highlighting.
 /// </remarks>
 public sealed class OutputView : TextView

@@ -1,4 +1,4 @@
-namespace Tedide.App.Theming;
+namespace Tedide.Theming;
 
 /// <summary>The IDE color themes Tedide ships with.</summary>
 public enum AppTheme
