@@ -1,3 +1,4 @@
+using Tedide.Theming;
 using Terminal.Gui.App;
 using Terminal.Gui.Drawing;
 using Terminal.Gui.ViewBase;
@@ -28,7 +29,7 @@ public sealed class AboutDialog : Dialog
     {
         Title = "About Tedide DocViewer";
         Width = 100;
-        Height = 16;
+        Height = 18; // +2 rows over the previous 16, for the added versionLabel below
         // A real Padding adornment (rather than hand-offsetting every child's X/Y by 1) so the
         // whole dialog gets consistent breathing room from its border - children below are
         // positioned relative to this inset content area, i.e. X = 0 is already 2 cells in.
@@ -62,7 +63,13 @@ public sealed class AboutDialog : Dialog
             X = 0, Y = 7, Width = textWidth,
         };
 
-        var views = new List<View> { titleLabel, descriptionLabel, creditsLabel, repoLabel };
+        var versionLabel = new Label
+        {
+            Text = $"Version {AppVersion.Current}",
+            X = 0, Y = 9, Width = textWidth,
+        };
+
+        var views = new List<View> { titleLabel, descriptionLabel, creditsLabel, repoLabel, versionLabel };
 
         // Null if the embedded resource is somehow missing - the dialog still shows its text
         // rather than failing to open at all.
