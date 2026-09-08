@@ -1,6 +1,7 @@
 using System.Drawing;
 using Terminal.Gui.Drawing;
 using Terminal.Gui.Input;
+using Terminal.Gui.ViewBase;
 using Terminal.Gui.Views;
 using GuiAttribute = Terminal.Gui.Drawing.Attribute;
 
@@ -88,6 +89,9 @@ public sealed class DocTextView : TextView
     public DocTextView()
     {
         ReadOnly = true;
+        // HasScrollBars uses ScrollBarVisibilityMode.Auto - scrollbars only appear once a page's
+        // content actually overflows the viewport, same as Tedide.App's OutputView/EditorPane.
+        ViewportSettings = ViewportSettingsFlags.HasScrollBars;
 
         KeyDown += (_, key) =>
         {
