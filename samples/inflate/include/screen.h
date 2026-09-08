@@ -30,6 +30,7 @@ typedef struct {
   char c;  
 } Sprite;
 
+// Structure used for double-buffering
 typedef struct {
   byte width;
   byte height;
