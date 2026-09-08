@@ -1,0 +1,24 @@
+{
+  "Name": "Nano128",
+  "Target": "C128",
+  "OptimizationLevel": "Maximum",
+  "GenerateAssemblyListing": true,
+  "AddSourceAsComment": true,
+  "GenerateLinkerMap": true,
+  "ExportLabels": true,
+  "SourceFiles": [
+    "src/main.c",
+    "src/screen.c",
+    "src/buffer.c",
+    "src/fileio.c",
+    "src/input.c",
+    "src/editor.c",
+    "src/vblank.c"
+  ],
+  "OutputFile": "bin/Nano128.prg",
+  "ExtraArguments": [
+    "-I",
+    "include",
+    "-Cl"
+  ]
+}
