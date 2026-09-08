@@ -12,6 +12,15 @@
          on to parse/render Markdown) is pulled in transitively via the Terminal.Gui package above;
          no direct reference to it is needed here. -->
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.11" />
+    <!-- Decodes the embedded avatar.jpg into pixel data for AboutDialog's ImageView - Terminal.Gui
+         deliberately has no image-decoding dependency of its own, so the caller supplies one. Same
+         package/version as Tedide.App.csproj's AboutDialog, which this project otherwise has no
+         dependency on. -->
+    <PackageReference Include="System.Drawing.Common" Version="9.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\avatar.jpg" />
   </ItemGroup>
 
   <ItemGroup>
@@ -21,9 +30,26 @@
          its own doc comments for why cross-references resolve to Markdown heading-slug anchors
          rather than cc65's original anchor names. A loose file copied next to the built exe (SQLite
          needs a real file path to open), not an embedded resource - re-run the builder tool and
-         rebuild to pick up any change to it. -->
-    <None Include="Docs.db" CopyToOutputDirectory="PreserveNewest" />
+         rebuild to pick up any change to it. CopyToOutputDirectory alone lands it next to the DLL
+         under bin/ for a normal build, but the standalone-exe publish task (PublishSingleFile)
+         composes its publish output differently and can drop loose content that isn't also marked
+         CopyToPublishDirectory. Kept here for a normal (non-single-file) publish/build, but it's not
+         sufficient on its own for the single-file task - see the CopyDocsDbToPublishDir target
+         below, which is what that task actually depends on. -->
+    <None Include="Docs.db" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
+
+  <!-- Belt-and-suspenders for the standalone-exe publish task (PublishSingleFile): even with
+       CopyToPublishDirectory above, Docs.db was observed missing from the publish folder on a
+       second, incremental `dotnet publish` run (present after a clean build, silently dropped on
+       the next run without an intervening clean) - some part of single-file publish's incremental
+       up-to-date check evidently doesn't durably track this loose content file as an expected
+       output and prunes it. An explicit post-publish copy sidesteps that logic entirely instead of
+       depending on it: SkipUnchangedFiles="false" means this always re-copies, so there's no
+       incremental state to get out of sync with. -->
+  <Target Name="CopyDocsDbToPublishDir" AfterTargets="Publish">
+    <Copy SourceFiles="$(MSBuildProjectDirectory)\Docs.db" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="false" />
+  </Target>
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -32,8 +58,12 @@
     <Nullable>enable</Nullable>
     <!-- Terminal.Gui v2 is prerelease; it flags the static Application facade as obsolete in favor
          of an instance-based Application that isn't published yet - same suppression as
-         Tedide.App.csproj, which this project otherwise has no dependency on. -->
-    <NoWarn>$(NoWarn);CS0618</NoWarn>
+         Tedide.App.csproj, which this project otherwise has no dependency on.
+         CA1416 flags System.Drawing.Common's Windows-only APIs (AboutDialog's avatar decoding) as
+         reachable on all platforms - same suppression and same reasoning as Tedide.App.csproj,
+         which ships as a win-x64 standalone exe (see the publish task in .vscode/tasks.json) same
+         as this project does. -->
+    <NoWarn>$(NoWarn);CS0618;CA1416</NoWarn>
   </PropertyGroup>
 
 </Project>

@@ -222,6 +222,12 @@ public sealed class DocViewerShell : Window
             NavigateTo(result.FileName, null, pushHistory: true);
     }
 
+    /// <summary>Opens the Help > About dialog. Read-only - see <see cref="AboutDialog"/>.</summary>
+    private void ShowAbout()
+    {
+        Application.Run(new AboutDialog());
+    }
+
     /// <summary>Adds a bookmark for the current page (prompting for a label via
     /// <see cref="AddBookmarkDialog"/>), or removes it without prompting if one already exists -
     /// bookmarks don't yet track a specific heading, only the page itself.</summary>
@@ -285,7 +291,12 @@ public sealed class DocViewerShell : Window
             new("_Amber Phosphor", "", () => ThemeSwitcher.Apply(AppTheme.AmberPhosphor), Key.Empty),
         });
 
-        menuBar.Menus = [fileMenu, navigateMenu, bookmarksMenu, themeMenu];
+        var helpMenu = new MenuBarItem("_Help", new List<MenuItem>
+        {
+            new("_About Tedide DocViewer...", "", ShowAbout, Key.Empty),
+        });
+
+        menuBar.Menus = [fileMenu, navigateMenu, bookmarksMenu, themeMenu, helpMenu];
         menuBar.X = 0;
         menuBar.Y = 0;
         menuBar.Width = Dim.Fill();
