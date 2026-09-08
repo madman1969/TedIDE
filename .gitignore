@@ -1,6 +1,7 @@
 bin/
 obj/
 /publish/
+/publish-docviewer/
 *.user
 .vs/
 .idea/
