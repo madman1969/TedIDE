@@ -71,6 +71,8 @@
         "-p:PublishSingleFile=true",
         "-p:IncludeNativeLibrariesForSelfExtract=true",
         "-p:DebugType=none",
+        "-p:EnableCompressionInSingleFile=true",
+        "-p:InvariantGlobalization=true",
         "-o", "${workspaceFolder}/publish"
       ],
       "problemMatcher": "$msCompile",
@@ -89,6 +91,8 @@
         "-p:PublishSingleFile=true",
         "-p:IncludeNativeLibrariesForSelfExtract=true",
         "-p:DebugType=none",
+        "-p:EnableCompressionInSingleFile=true",
+        "-p:InvariantGlobalization=true",
         "-o", "${workspaceFolder}/publish-docviewer"
       ],
       "problemMatcher": "$msCompile",
