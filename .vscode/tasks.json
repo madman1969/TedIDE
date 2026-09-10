@@ -13,6 +13,14 @@
       }
     },
     {
+      "label": "Build All",
+      "type": "process",
+      "command": "dotnet",
+      "args": ["build", "${workspaceFolder}/Tedide.slnx"],
+      "problemMatcher": "$msCompile",
+      "group": "build"
+    },
+    {
       "label": "run Tedide.App",
       "type": "shell",
       "command": "wt.exe -w new dotnet run --project \"${workspaceFolder}\\src\\Tedide.App\\Tedide.App.csproj\"",
@@ -94,6 +102,16 @@
         "-p:EnableCompressionInSingleFile=true",
         "-p:InvariantGlobalization=true",
         "-o", "${workspaceFolder}/publish-docviewer"
+      ],
+      "problemMatcher": "$msCompile",
+      "group": "build"
+    },
+    {
+      "label": "publish all (standalone exes)",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "publish Tedide.App (standalone exe)",
+        "publish Tedide.DocViewer (standalone exe)"
       ],
       "problemMatcher": "$msCompile",
       "group": "build"
