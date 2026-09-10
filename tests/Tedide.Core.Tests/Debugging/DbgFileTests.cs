@@ -157,6 +157,41 @@ public class DbgFileTests
     }
 
     [Fact]
+    public void FindEnclosingFunctionName_ResolvesTheFunctionAddressFallsInside()
+    {
+        var dbg = DbgFile.Parse(LoadCBMInfoFixture());
+        var detectSystemSymbol = dbg.Symbols.Single(s => s.Name == "_detect_system" && s.Type == "lab");
+
+        var name = dbg.FindEnclosingFunctionName(detectSystemSymbol.Value!.Value);
+
+        Assert.Equal("detect_system", name);
+    }
+
+    [Fact]
+    public void FindEnclosingFunctionName_ResolvesAnAddressPartwayThroughTheFunctionToo()
+    {
+        var dbg = DbgFile.Parse(LoadFixture());
+        var mainSymbol = dbg.Symbols.Single(s => s.Name == "_main" && s.Type == "lab");
+
+        // A function's own scope span covers its *entire* compiled range (unlike a source line's
+        // much narrower span) - an address partway in, not just the very first byte, should still
+        // resolve to the same function.
+        var name = dbg.FindEnclosingFunctionName(mainSymbol.Value!.Value + 4);
+
+        Assert.Equal("main", name);
+    }
+
+    [Fact]
+    public void FindEnclosingFunctionName_ReturnsNull_ForAnAddressOutsideEveryFunctionScope()
+    {
+        var dbg = DbgFile.Parse(LoadFixture());
+
+        var name = dbg.FindEnclosingFunctionName(0xFFFF);
+
+        Assert.Null(name);
+    }
+
+    [Fact]
     public void FindSourceLocationForAddress_ReturnsNull_ForAnAddressOutsideEverySegment()
     {
         var dbg = DbgFile.Parse(LoadFixture());

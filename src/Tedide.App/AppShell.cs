@@ -937,7 +937,9 @@ public sealed class AppShell : Window
     /// Recomputes <see cref="_breakpointLineTransformer"/>'s highlighted line set from
     /// <see cref="_breakpoints"/>, scoped to whichever file is currently open (a breakpoint in any
     /// other file is irrelevant since only one file is ever open at once - see EditorPane's class
-    /// summary). Called whenever either the open file or the breakpoint set itself changes.
+    /// summary), and refreshes the Debug tab's breakpoints strip (unscoped - every breakpoint in
+    /// the project, not just the open file). Called whenever either the open file or the
+    /// breakpoint set itself changes.
     /// </summary>
     private void RefreshBreakpointHighlights()
     {
@@ -950,6 +952,7 @@ public sealed class AppShell : Window
                     _breakpointLineTransformer.BreakpointLines.Add(breakpoint.Line);
         }
         _editorPane.Editor.SetNeedsDraw();
+        _debugPanel.SetBreakpoints(_breakpoints.Breakpoints);
     }
 
     /// <summary>
@@ -1036,6 +1039,7 @@ public sealed class AppShell : Window
         // as the session comes up, rather than whatever tab (Output/Error List/Symbols) happened
         // to be selected before.
         ShowDebugTab();
+        _debugPanel.ClearHistory();
 
         var buildResult = await BuildActiveProjectAsync();
         if (buildResult is not { Succeeded: true })
@@ -1145,6 +1149,16 @@ public sealed class AppShell : Window
         await _debugClient.ContinueAsync();
     }
 
+    /// <summary>Builds a "Stopped [in {function}] at {where}" status string, prepending the
+    /// enclosing function name (via <see cref="_dbgFile"/>) when it resolves - e.g. code with no
+    /// debug info at all (cc65's own runtime library) has no scope info, so this falls back to
+    /// just "Stopped at {where}".</summary>
+    private string FunctionAwareStoppedAt(ushort? pc, string where)
+    {
+        var function = pc is { } pcValue ? _dbgFile?.FindEnclosingFunctionName(pcValue) : null;
+        return function is { } name ? $"Stopped in {name} at {where}" : $"Stopped at {where}";
+    }
+
     /// <summary>
     /// Fires whenever VICE stops at a checkpoint - reads registers, resolves the PC back to a
     /// source location (<see cref="_dbgFile"/>), and jumps the editor there. Runs on
@@ -1194,12 +1208,17 @@ public sealed class AppShell : Window
                         OpenSymbol((resolvedPath, resolved.Line));
                         CenterEditorOnLine(resolvedPath, resolved.Line);
                         _debugLineTransformer.CurrentLineNumber = resolved.Line;
-                        _debugPanel.SetStatus($"Stopped at {resolved.FilePath}:{resolved.Line} (checkpoint #{args.Checkpoint.Number})");
+                        var where = $"{resolved.FilePath}:{resolved.Line}";
+                        var status = FunctionAwareStoppedAt(pc, where) + $" (checkpoint #{args.Checkpoint.Number})";
+                        _debugPanel.SetStatus(status);
+                        _debugPanel.AddHistoryEntry(status);
                     }
                     else
                     {
                         _debugLineTransformer.CurrentLineNumber = null;
-                        _debugPanel.SetStatus(pc is { } pcv ? $"Stopped at ${pcv:X4} (checkpoint #{args.Checkpoint.Number})" : "Stopped.");
+                        var status = pc is { } pcv ? $"Stopped at ${pcv:X4} (checkpoint #{args.Checkpoint.Number})" : "Stopped.";
+                        _debugPanel.SetStatus(status);
+                        _debugPanel.AddHistoryEntry(status);
                     }
                     _editorPane.Editor.SetNeedsDraw();
                     Log.Debug("CheckpointHit done: status is now {Status}", _debugPanel.StatusText);
@@ -1281,12 +1300,16 @@ public sealed class AppShell : Window
                             OpenSymbol((locPath, loc.Line));
                             CenterEditorOnLine(locPath, loc.Line);
                             _debugLineTransformer.CurrentLineNumber = loc.Line;
-                            _debugPanel.SetStatus($"Stopped at {loc.FilePath}:{loc.Line}");
+                            var status = FunctionAwareStoppedAt(pc, $"{loc.FilePath}:{loc.Line}");
+                            _debugPanel.SetStatus(status);
+                            _debugPanel.AddHistoryEntry(status);
                         }
                         else
                         {
                             _debugLineTransformer.CurrentLineNumber = null;
-                            _debugPanel.SetStatus($"Stopped at ${pc:X4}");
+                            var status = $"Stopped at ${pc:X4}";
+                            _debugPanel.SetStatus(status);
+                            _debugPanel.AddHistoryEntry(status);
                         }
                         _editorPane.Editor.SetNeedsDraw();
                     });
@@ -1327,6 +1350,7 @@ public sealed class AppShell : Window
             _debugLineTransformer.CurrentLineNumber = null;
             _debugPanel.SetStatus("Not debugging.");
             _debugPanel.SetRegisters(null);
+            _debugPanel.ClearHistory();
             // Only if a file is actually open - EditorPane itself keeps ReadOnly true with nothing
             // open (see its constructor), and this shouldn't override that.
             if (_editorPane.OpenPath is not null)
