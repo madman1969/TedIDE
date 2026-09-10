@@ -119,6 +119,12 @@ public sealed class TedideProject
     [JsonIgnore]
     public string ResolvedBreakpointsFile => Path.Combine(Directory, Name + ".breakpoints.json");
 
+    /// <summary>Where this project's editor session state (currently just the last open file) is
+    /// stored - see <see cref="SessionStateFile"/> for why it's a separate sidecar file rather than
+    /// a field on this class.</summary>
+    [JsonIgnore]
+    public string ResolvedSessionFile => Path.Combine(Directory, Name + ".session.json");
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         WriteIndented = true,

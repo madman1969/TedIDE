@@ -7,6 +7,7 @@
     <Project Path="src/Tedide.Theming/Tedide.Theming.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Tedide.App.Tests/Tedide.App.Tests.csproj" />
     <Project Path="tests/Tedide.Build.Tests/Tedide.Build.Tests.csproj" />
     <Project Path="tests/Tedide.Core.Tests/Tedide.Core.Tests.csproj" />
   </Folder>

@@ -1,3 +1,4 @@
+using System.Globalization;
 using Serilog;
 using Tedide.Theming;
 using Tedide.App.Views;
@@ -50,6 +51,7 @@ public sealed class AppShell : Window
     private readonly CurrentDebugLineTransformer _debugLineTransformer = new();
     private readonly BreakpointLineTransformer _breakpointLineTransformer = new();
     private BreakpointsFile _breakpoints = new();
+    private SessionStateFile _sessionState = new();
     private ViceMonitorClient? _debugClient;
     private DbgFile? _dbgFile;
     private bool _isDebugging;
@@ -59,6 +61,9 @@ public sealed class AppShell : Window
     /// <see cref="ViceMonitorClient.SetCheckpointAsync"/> returned for it, so it can be deleted
     /// again later - see <see cref="SyncCheckpointsWithViceAsync"/>.</summary>
     private readonly Dictionary<BreakpointEntry, uint> _checkpointNumbers = new();
+    /// <summary>User-added memory watches for the active debug session - see <see cref="WatchEntry"/>'s
+    /// own doc comment for why these aren't persisted the way <see cref="_breakpoints"/> is.</summary>
+    private readonly List<WatchEntry> _watches = new();
     private Tabs _outputTabs = null!;
     private View _outputTab = null!;
     private View _debugTab = null!;
@@ -264,6 +269,13 @@ public sealed class AppShell : Window
         _layoutSettings.Save();
     }
 
+    /// <summary>Records the active project's currently open file (see
+    /// <see cref="SaveLastOpenFileForActiveProject"/>) so it's reopened next time this same
+    /// project loads (see <see cref="LoadLastOpenFileForActiveProject"/>). Called once, from
+    /// Program.cs, right after <c>Application.Run(shell)</c> returns - i.e. when the user quits -
+    /// alongside <see cref="SaveLayoutSettings"/>.</summary>
+    public void SaveSessionState() => SaveLastOpenFileForActiveProject();
+
     private EditorMenuBar BuildMenuBar()
     {
         var menuBar = new EditorMenuBar(_editorPane.Editor);
@@ -318,6 +330,9 @@ public sealed class AppShell : Window
             new Line(),
             new MenuItem("_Toggle Breakpoint", "", ToggleBreakpointAtCursor, Key.F9),
             new MenuItem("_Breakpoints...", "", ShowBreakpointsDialog, Key.Empty),
+            new Line(),
+            new MenuItem("Add _Watch...", "", ShowAddWatchDialog, Key.Empty),
+            new MenuItem("C_lear Watches", "", ClearWatches, Key.Empty),
         });
 
         var projectMenu = new MenuBarItem("_Project", new List<MenuItem>
@@ -390,10 +405,12 @@ public sealed class AppShell : Window
         Application.Run(dialog);
         if (dialog.Target is { } target && !string.IsNullOrWhiteSpace(dialog.ProjectName))
         {
+            SaveLastOpenFileForActiveProject();
             _workspace.NewProject(dialog.Directory, dialog.ProjectName, target);
             _solutionExplorer.Rebuild(_workspace);
             _symbolPanel.Refresh(_workspace.ActiveProject);
             LoadBreakpointsForActiveProject();
+            LoadLastOpenFileForActiveProject();
             // NewProject always creates a wrapping .tsln alongside the .tproj (see its own doc
             // comment) - remember that, not the bare project, matching how opening one of the
             // bundled samples remembers its .tsln rather than the .tproj inside it.
@@ -429,9 +446,15 @@ public sealed class AppShell : Window
         }
 
         if (path.EndsWith(TedideSolution.FileExtension, StringComparison.OrdinalIgnoreCase))
+        {
+            SaveLastOpenFileForActiveProject();
             _workspace.OpenSolution(path);
+        }
         else if (path.EndsWith(TedideProject.FileExtension, StringComparison.OrdinalIgnoreCase))
+        {
+            SaveLastOpenFileForActiveProject();
             _workspace.OpenProject(path);
+        }
         else
         {
             TedideMessageBox.ErrorQuery("Unsupported file",
@@ -442,6 +465,7 @@ public sealed class AppShell : Window
         _solutionExplorer.Rebuild(_workspace);
         _symbolPanel.Refresh(_workspace.ActiveProject);
         LoadBreakpointsForActiveProject();
+        LoadLastOpenFileForActiveProject();
         RememberRecentProject(path);
     }
 
@@ -541,7 +565,10 @@ public sealed class AppShell : Window
             return;
         }
 
-        File.WriteAllText(filePath, string.Empty);
+        var initialContent = string.Equals(Path.GetExtension(filePath), ".h", StringComparison.OrdinalIgnoreCase)
+            ? BuildHeaderGuardContent(fileName)
+            : string.Empty;
+        File.WriteAllText(filePath, initialContent);
 
         if (SolutionExplorerTree.CompilableExtensions.Contains(Path.GetExtension(filePath), StringComparer.OrdinalIgnoreCase))
         {
@@ -551,6 +578,28 @@ public sealed class AppShell : Window
 
         _solutionExplorer.Rebuild(_workspace);
         OpenFile(filePath);
+    }
+
+    /// <summary>Builds a freshly-created header's starting content: the standard
+    /// <c>#ifndef</c>/<c>#define</c>/<c>#endif</c> include guard, named after the file itself (e.g.
+    /// "screen.h" -> "SCREEN_H") - the same convention every bundled sample's own headers already
+    /// follow (see e.g. samples/bounce/include/main.h) and <see cref="Workspace.NewProject"/>'s own
+    /// generated main.h uses, just applied here to every new header, not only that one.</summary>
+    internal static string BuildHeaderGuardContent(string fileName)
+    {
+        var guard = BuildIncludeGuardMacro(fileName);
+        return $"#ifndef {guard}\n#define {guard}\n\n#endif\n";
+    }
+
+    /// <summary>Turns a header's base file name (extension stripped) into a valid, all-uppercase
+    /// C preprocessor macro name suffixed with "_H" - e.g. "screen.h" -> "SCREEN_H" - by uppercasing
+    /// every letter/digit and replacing anything else (spaces, hyphens, ...) with an underscore, so
+    /// even an unusual file name still produces a syntactically valid guard.</summary>
+    internal static string BuildIncludeGuardMacro(string fileName)
+    {
+        var baseName = Path.GetFileNameWithoutExtension(fileName);
+        var macroChars = baseName.Select(c => char.IsLetterOrDigit(c) ? char.ToUpperInvariant(c) : '_').ToArray();
+        return new string(macroChars) + "_H";
     }
 
     /// <summary>
@@ -937,6 +986,49 @@ public sealed class AppShell : Window
         RefreshBreakpointHighlights();
     }
 
+    /// <summary>Records whichever file is currently open (if any) as the active project's "last
+    /// open file", so <see cref="LoadLastOpenFileForActiveProject"/> can reopen it automatically
+    /// next time this same project becomes active again. Called right before switching away from
+    /// the active project - to a different project/solution (<see cref="OpenProjectOrSolution"/>),
+    /// a freshly created one (<see cref="NewProject"/>), or none at all (<see cref="CloseSolution"/>) -
+    /// and once more from Program.cs on quit (see <see cref="SaveSessionState"/>), the same two
+    /// moments <see cref="SaveLayoutSettings"/> is saved at. A no-op if no project is loaded (there's
+    /// nowhere to save the sidecar file).</summary>
+    private void SaveLastOpenFileForActiveProject()
+    {
+        if (_workspace.ActiveProject is not { } project)
+            return;
+
+        _sessionState.LastOpenFile = _editorPane.OpenPath is { } openPath
+            ? Path.GetRelativePath(project.Directory, openPath)
+            : null;
+        _sessionState.Save(project.ResolvedSessionFile);
+    }
+
+    /// <summary>Reloads <see cref="_sessionState"/> from the active project's session sidecar file
+    /// (see <see cref="TedideProject.ResolvedSessionFile"/>) and reopens whichever file it recorded
+    /// (via the same <see cref="OpenFile"/> used elsewhere, so an unsaved current file still prompts
+    /// before being replaced) - or closes the editor if nothing was recorded, or the recorded file
+    /// no longer exists on disk. Called alongside <see cref="LoadBreakpointsForActiveProject"/> at
+    /// every point the active project itself changes (open/new/close) - deliberately not also at
+    /// Project Settings save, since that keeps the same project active and already has its own
+    /// reopen-after-rename handling (see <see cref="RenameProjectFolder"/>).</summary>
+    private void LoadLastOpenFileForActiveProject()
+    {
+        _sessionState = _workspace.ActiveProject is { } project
+            ? SessionStateFile.Load(project.ResolvedSessionFile)
+            : new SessionStateFile();
+
+        var fullPath = _workspace.ActiveProject is { } activeProject && _sessionState.LastOpenFile is { } relativePath
+            ? Path.Combine(activeProject.Directory, relativePath)
+            : null;
+
+        if (fullPath is not null && File.Exists(fullPath))
+            OpenFile(fullPath);
+        else
+            CloseActiveFile();
+    }
+
     /// <summary>
     /// Recomputes <see cref="_breakpointLineTransformer"/>'s highlighted line set from
     /// <see cref="_breakpoints"/>, scoped to whichever file is currently open (a breakpoint in any
@@ -1018,6 +1110,119 @@ public sealed class AppShell : Window
         // resync itself is a full re-sync (delete everything tracked, re-set every still-enabled
         // breakpoint), not incremental, so one call after it closes covers all of them.
         _ = SyncCheckpointsWithViceAsync();
+    }
+
+    /// <summary>
+    /// Prompts for a watch expression, resolves it to an address (a matching <see cref="_dbgFile"/>
+    /// symbol name if one's loaded, otherwise a raw <c>$hex</c>/decimal address), and adds it to
+    /// <see cref="_watches"/>. Shows a placeholder value immediately and, if a session is currently
+    /// stopped, kicks off a real read right away rather than waiting for the next step/checkpoint.
+    /// </summary>
+    private void ShowAddWatchDialog()
+    {
+        var dialog = new AddWatchDialog();
+        Application.Run(dialog);
+        if (dialog.Expression is not { } expression)
+            return;
+
+        if (!TryResolveWatchAddress(expression, out var address, out var error))
+        {
+            AppendOutputLine(error);
+            return;
+        }
+
+        _watches.Add(new WatchEntry(expression, address, dialog.Size));
+        _debugPanel.SetWatches(_watches.Select(w => $"{w.Label} (${w.Address:X4}) = ?").ToList());
+        _ = RefreshWatchesIfStoppedAsync();
+    }
+
+    private void ClearWatches()
+    {
+        _watches.Clear();
+        _debugPanel.SetWatches([]);
+    }
+
+    /// <summary>
+    /// Resolves a watch expression to an address: first as a <see cref="_dbgFile"/> symbol name
+    /// (matched with or without cc65's leading underscore - the same convention
+    /// <see cref="DbgFile.FindEnclosingFunctionName"/> uses), falling back to a literal address
+    /// (<c>$hex</c>, <c>0xhex</c>, or plain decimal) so hardware registers (e.g. <c>$D012</c> for
+    /// the VIC-II raster line) work even without debug info loaded.
+    /// </summary>
+    private bool TryResolveWatchAddress(string expression, out ushort address, out string error)
+    {
+        expression = expression.Trim();
+
+        var symbol = _dbgFile?.Symbols.FirstOrDefault(s =>
+            s.Value is not null &&
+            (string.Equals(s.Name, expression, StringComparison.Ordinal) ||
+             string.Equals(s.Name.TrimStart('_'), expression, StringComparison.Ordinal)));
+        if (symbol is not null)
+        {
+            address = (ushort)symbol.Value!.Value;
+            error = "";
+            return true;
+        }
+
+        var hexText = expression.StartsWith('$') ? expression[1..]
+            : expression.StartsWith("0x", StringComparison.OrdinalIgnoreCase) ? expression[2..]
+            : null;
+        if (hexText is not null && ushort.TryParse(hexText, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var hexValue))
+        {
+            address = hexValue;
+            error = "";
+            return true;
+        }
+
+        if (ushort.TryParse(expression, NumberStyles.Integer, CultureInfo.InvariantCulture, out var decimalValue))
+        {
+            address = decimalValue;
+            error = "";
+            return true;
+        }
+
+        address = 0;
+        error = $"Could not resolve watch \"{expression}\" - enter a known symbol name, or an address as $hex, 0xhex, or decimal.";
+        return false;
+    }
+
+    /// <summary>Reads every watch's current value from VICE and formats it for display - pure data
+    /// fetching (no UI touched), so unlike the callers around it this needs no re-marshaling onto
+    /// the UI thread; see <see cref="RefreshWatchesIfStoppedAsync"/> and the nested-Invoke call
+    /// sites in <see cref="OnCheckpointHit"/>/<see cref="StepDebuggingAsync"/> for where the result
+    /// actually reaches <see cref="_debugPanel"/>.</summary>
+    private async Task<List<string>> FormatWatchesAsync(ViceMonitorClient debugClient)
+    {
+        var formatted = new List<string>(_watches.Count);
+        foreach (var watch in _watches)
+        {
+            try
+            {
+                var bytes = await debugClient.GetMemoryAsync(watch.Address, (ushort)(watch.Address + watch.Size - 1));
+                var text = watch.Size == 2 && bytes.Length >= 2
+                    ? $"${(ushort)(bytes[0] | (bytes[1] << 8)):X4}"
+                    : bytes.Length >= 1 ? $"${bytes[0]:X2}" : "?";
+                formatted.Add($"{watch.Label} (${watch.Address:X4}) = {text}");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug(ex, "Could not read memory for watch {Label} (${Address:X4})", watch.Label, watch.Address);
+                formatted.Add($"{watch.Label} (${watch.Address:X4}) = ?");
+            }
+        }
+        return formatted;
+    }
+
+    /// <summary>Fire-and-forget refresh for when a watch is added/cleared outside the normal
+    /// stop/step flow - a no-op unless a session is both connected and currently stopped (reading
+    /// memory while running would race the emulator).</summary>
+    private async Task RefreshWatchesIfStoppedAsync()
+    {
+        if (_debugClient is not { } debugClient || !_isDebugging || !_isStopped)
+            return;
+
+        var watchLines = await FormatWatchesAsync(debugClient);
+        Application.Invoke(() => _debugPanel.SetWatches(watchLines));
     }
 
     /// <summary>
@@ -1248,6 +1453,11 @@ public sealed class AppShell : Window
                     return;
 
                 var registers = await _debugClient.GetRegistersAsync();
+                // Fetched here (still in the outer async continuation) rather than inside the
+                // nested Invoke below - it's pure network I/O against VICE, same as GetRegistersAsync
+                // just above, with none of the UI-thread affinity concerns that block touching
+                // Editor/TextDocument state after an await (see the nested-Invoke comment below).
+                var watchLines = await FormatWatchesAsync(_debugClient);
 
                 // Everything below touches Editor/TextDocument state, which enforces single-thread
                 // ownership (TextDocument.VerifyAccess). Application.Invoke only guarantees the UI
@@ -1259,6 +1469,7 @@ public sealed class AppShell : Window
                 Application.Invoke(() =>
                 {
                     _debugPanel.SetRegisters(registers);
+                    _debugPanel.SetWatches(watchLines);
 
                     // "PC" is VICE's register name for the 6502 program counter on the main
                     // memspace - confirmed for real against a live VICE 3.9 instance during
@@ -1353,6 +1564,10 @@ public sealed class AppShell : Window
 
                 if (location is null || location != startLocation)
                 {
+                    // Pure network I/O against VICE, same as StepAsync/GetRegistersAsync above -
+                    // fetched here rather than inside the nested Invoke below, which is UI-only.
+                    var watchLines = await FormatWatchesAsync(_debugClient);
+
                     // Re-marshal onto the UI thread before touching Editor/TextDocument state -
                     // see OnCheckpointHit's own comment on this same pattern. The awaits above
                     // (StepAsync/GetRegistersAsync) don't guarantee this loop iteration is still
@@ -1361,6 +1576,7 @@ public sealed class AppShell : Window
                     Application.Invoke(() =>
                     {
                         _debugPanel.SetRegisters(registers);
+                        _debugPanel.SetWatches(watchLines);
                         var project = _workspace.ActiveProject;
                         if (project is not null && location is { } loc)
                         {
@@ -1413,6 +1629,10 @@ public sealed class AppShell : Window
         _isStopped = false;
         // Stale once the connection's gone - StartDebuggingAsync repopulates this from scratch.
         _checkpointNumbers.Clear();
+        // A watch's address was resolved against this session's own _dbgFile - stale the moment
+        // it's gone (a rebuild can shift where a symbol ends up), so watches are re-entered per
+        // session rather than carried forward, same as WatchEntry's own doc comment says.
+        _watches.Clear();
         // Re-marshal onto the UI thread - see OnCheckpointHit's own comment on why the awaits
         // above don't guarantee this continuation is still there.
         Application.Invoke(() =>
@@ -1420,6 +1640,7 @@ public sealed class AppShell : Window
             _debugLineTransformer.CurrentLineNumber = null;
             _debugPanel.SetStatus("Not debugging.");
             _debugPanel.SetRegisters(null);
+            _debugPanel.SetWatches([]);
             _debugPanel.ClearHistory();
             // Only if a file is actually open - EditorPane itself keeps ReadOnly true with nothing
             // open (see its constructor), and this shouldn't override that.
@@ -1454,6 +1675,8 @@ public sealed class AppShell : Window
         if (!ConfirmReplaceCurrentFile())
             return;
 
+        SaveLastOpenFileForActiveProject();
+
         _editorPane.Close();
         _editorFrame.Title = NoFileOpenTitle;
         UpdateLanguageIndicator();
@@ -1462,6 +1685,7 @@ public sealed class AppShell : Window
         _solutionExplorer.Rebuild(_workspace);
         _symbolPanel.Refresh(_workspace.ActiveProject);
         LoadBreakpointsForActiveProject();
+        LoadLastOpenFileForActiveProject();
     }
 
     /// <summary>

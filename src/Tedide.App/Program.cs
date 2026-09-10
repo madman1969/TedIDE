@@ -34,6 +34,7 @@ try
     var shell = new AppShell();
     Application.Run(shell);
     shell.SaveLayoutSettings();
+    shell.SaveSessionState();
 }
 finally
 {

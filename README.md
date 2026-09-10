@@ -218,7 +218,10 @@ file) and `{Name}.dbg` (debug info). Right-click (or Shift+F10) a folder/file no
 File...**/**Rename File**/**Delete File** -
 not offered on the project root itself, only inside one of its subfolders. **New File...** defaults
 the new file's name to `newfile.h` in an `include` folder or `newfile.c` anywhere else (matching
-whichever folder - or the folder of whichever file - was right-clicked). **Rename File** renames
+whichever folder - or the folder of whichever file - was right-clicked). A newly created header
+(any `.h` file, not just ones named `newfile.h`) starts pre-filled with the standard
+`#ifndef`/`#define`/`#endif` include guard, named after the file itself (e.g. `screen.h` ->
+`SCREEN_H`) - the same convention every bundled sample's own headers already follow. **Rename File** renames
 in place (same folder) and keeps a project's `SourceFiles` in sync with the new path - removed if
 the new name's extension isn't one cl65 compiles, added under the new path if it is, so renaming
 e.g. `main.c` to `main.h` (or vice versa) is tracked correctly too, not just a same-extension
@@ -299,6 +302,20 @@ line, not just launching the emulator and watching it run.
    statement, not one machine instruction - though stepping into a runtime library call (e.g.
    `printf`) does step into its implementation, same as any debugger without a "step over". **Stop
    Debugging** disconnects (leaving VICE itself running) and makes the editor editable again.
+4. The **Debug** tab itself shows, beyond the register table: the register values with the 6502
+   status register (`FL`) decoded into its individual flags (`N V - B D I Z C`, set flags shown as
+   their letter and clear ones as `.`, alongside the raw hex byte); the status line's enclosing
+   function name when it resolves (`Stopped in detect_system at main.c:116`, from the `.dbg` file's
+   own `scope` records) rather than just a line number; a compact strip of every breakpoint in the
+   project (not just the current file), each marked `(disabled)` if toggled off; a short "recent
+   stops" history (last 20, most recent first) so earlier stops aren't lost the moment a new one
+   overwrites the status line; and a **watches** strip - **Debug > Add Watch...** prompts for a
+   symbol name (matched against the `.dbg` file's own symbol table, with or without cc65's leading
+   underscore) or a raw address (`$d020`, `0xd020`, or decimal), plus whether to read it as a single
+   byte or a little-endian word, and shows its live value (`raster ($D012) = $34`) refreshed on every
+   stop/step via `ViceMonitorClient.GetMemoryAsync`. Watches aren't persisted - a rebuild can shift
+   where a symbol resolves to, so **Debug > Clear Watches** (or simply stopping the session) drops
+   them rather than risk showing a stale address.
 
 The binary monitor's own protocol details (header layout, command bytes, how a checkpoint hit is
 reported, which register names VICE reports for the 6502) were confirmed against a real VICE 3.9
@@ -405,6 +422,7 @@ an example, laid out the way GitHub's most common C project layout does (`src/`,
 | `ExtraArguments` | Appended verbatim to the `cl65` command line, after the fields above - positional flags like a hand-written `-I`/`-D` here only affect source files listed after them on the command line, same as `IncludePaths`/`PreprocessorDefines`. |
 | `lib/` folder | Not a `.tproj` field at all - just a folder Tedide scans on every build (`TedideProject.ResolvedLibFiles`). Every `.lib` file found directly inside it is passed to `ld65` at link time, after the compiled object files, so linking against a prebuilt cc65 library archive is a matter of dropping it in `lib/`, nothing more. |
 | `{Name}.breakpoints.json` | Not a `.tproj` field either - a separate sidecar file for the project's debugger breakpoints (see "Debugging" above), kept out of `.tproj` since it's session/debugging state, not build configuration. |
+| `{Name}.session.json` | Another sidecar file, recording which file was open in the editor - written when you quit Tedide or switch to a different project/solution, and reopened automatically the next time this same project loads (see `SessionStateFile`), for the same "not build configuration" reason as the breakpoints file above. |
 
 A `.tsln` file just lists the `.tproj` files that make up a solution.
 
@@ -529,7 +547,8 @@ Two things worth knowing:
 Project/solution model, cc65 build integration with diagnostic parsing, VICE emulator launching,
 the core IDE layout (resizable explorer / editor / output/error-list/symbols/debug panes), a
 6502/ca65 syntax highlighter, Find in Files, Go To Line, source-level debugging against VICE's
-binary monitor protocol (breakpoints with persistent in-editor highlighting, registers, source-line
+binary monitor protocol (breakpoints with persistent in-editor highlighting, registers with decoded
+status flags, enclosing function name resolution, memory watches, a stop history, source-line
 stepping, a read-only editor and auto-centered current line while a session is active), a symbol
 browser for linker maps/labels, a Recent Projects and Solutions list, nine runtime-switchable
 themes, file-based logging for crash diagnosis, and standalone-executable publish tasks for both

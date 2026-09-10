@@ -7,19 +7,28 @@ using Terminal.Gui.Views;
 
 namespace Tedide.App.Views;
 
+/// <summary>A user-requested memory watch - a label (the expression as typed, e.g. a symbol name
+/// or a raw address) plus the resolved address and read size. Not persisted across sessions
+/// (unlike <see cref="BreakpointEntry"/>): a fresh debug session's own <c>DbgFile</c> may resolve
+/// the same symbol name to a different address, so watches are re-entered per session rather than
+/// carrying stale addresses forward.</summary>
+public sealed record WatchEntry(string Label, ushort Address, int Size);
+
 /// <summary>
 /// The "Debug" tab: a status line (not debugging / connecting / running / stopped-at-file:line,
 /// now including the enclosing function name when it's resolvable), a compact breakpoints strip
 /// (every breakpoint for the active project, not just the current file - unlike the editor's own
-/// red-line highlighting), a short "recent stops" history, and a register table refreshed from a
-/// <see cref="RegisterSnapshot"/> each time execution stops (see AppShell's own debugging wiring).
-/// The full breakpoint list (toggle/delete) still lives in <see cref="BreakpointsDialog"/> - the
-/// strip here is read-only, just enough to see what's armed without leaving this tab.
+/// red-line highlighting), a compact watches strip (arbitrary addresses/symbols, refreshed from
+/// VICE each time execution stops), a short "recent stops" history, and a register table refreshed
+/// from a <see cref="RegisterSnapshot"/> each time execution stops (see AppShell's own debugging
+/// wiring). The full breakpoint list (toggle/delete) still lives in <see cref="BreakpointsDialog"/> -
+/// the strip here is read-only, just enough to see what's armed without leaving this tab.
 /// </summary>
 public sealed class DebugPanelView : View
 {
     private readonly Label _statusLabel;
     private readonly Label _breakpointsLabel;
+    private readonly Label _watchesLabel;
     private readonly ListView _historyList;
     private readonly TableView _registersTable;
     private readonly ObservableCollection<string> _history = [];
@@ -30,9 +39,10 @@ public sealed class DebugPanelView : View
     {
         _statusLabel = new Label { X = 0, Y = 0, Width = Dim.Fill(), Text = "Not debugging." };
         _breakpointsLabel = new Label { X = 0, Y = 1, Width = Dim.Fill(), Text = "Breakpoints: none" };
+        _watchesLabel = new Label { X = 0, Y = 2, Width = Dim.Fill(), Text = "Watches: none" };
         _historyList = new ListView
         {
-            X = 0, Y = 2, Width = Dim.Fill(), Height = 6,
+            X = 0, Y = 3, Width = Dim.Fill(), Height = 6,
             ViewportSettings = ViewportSettingsFlags.HasScrollBars,
         };
         _historyList.SetSource(_history);
@@ -42,7 +52,7 @@ public sealed class DebugPanelView : View
             FullRowSelect = true,
             ViewportSettings = ViewportSettingsFlags.HasScrollBars,
         };
-        Add(_statusLabel, _breakpointsLabel, _historyList, _registersTable);
+        Add(_statusLabel, _breakpointsLabel, _watchesLabel, _historyList, _registersTable);
         SetRegisters(null);
     }
 
@@ -65,6 +75,16 @@ public sealed class DebugPanelView : View
             ? $"{b.SourceFile}:{b.Line}"
             : $"{b.SourceFile}:{b.Line} (disabled)");
         _breakpointsLabel.Text = $"Breakpoints: {string.Join(", ", entries)}";
+    }
+
+    /// <summary>Replaces the watches strip with each entry's label and current value (already
+    /// formatted by the caller, e.g. "raster ($D012) = $34" or "score ($033C) = $1234") - called
+    /// after every stop (checkpoint hit or step), same as <see cref="SetRegisters"/>.</summary>
+    public void SetWatches(IReadOnlyList<string> formattedWatches)
+    {
+        _watchesLabel.Text = formattedWatches.Count == 0
+            ? "Watches: none"
+            : $"Watches: {string.Join(", ", formattedWatches)}";
     }
 
     /// <summary>Prepends one line to the "recent stops" history (most recent first), trimming to
