@@ -88,21 +88,21 @@ public sealed class ProjectSettingsDialog : Dialog
         {
             if (!Cc65TargetExtensions.TryParse(_targetField.Text, out var target))
             {
-                MessageBox.ErrorQuery(Application.Instance, "Invalid target", $"'{_targetField.Text}' is not a known cc65 target.", ["OK"]);
+                TedideMessageBox.ErrorQuery("Invalid target", $"'{_targetField.Text}' is not a known cc65 target.", ["OK"]);
                 e.Handled = true;
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(_nameField.Text))
             {
-                MessageBox.ErrorQuery(Application.Instance, "Invalid name", "Name cannot be blank.", ["OK"]);
+                TedideMessageBox.ErrorQuery("Invalid name", "Name cannot be blank.", ["OK"]);
                 e.Handled = true;
                 return;
             }
 
             if (!Cc65OptimizationLevelExtensions.TryParse(_optimizationLevelField.Text, out var optimizationLevel))
             {
-                MessageBox.ErrorQuery(Application.Instance, "Invalid optimization level", $"'{_optimizationLevelField.Text}' is not a known optimization level.", ["OK"]);
+                TedideMessageBox.ErrorQuery("Invalid optimization level", $"'{_optimizationLevelField.Text}' is not a known optimization level.", ["OK"]);
                 e.Handled = true;
                 return;
             }

@@ -186,7 +186,17 @@ public sealed class DbgFile
             if (span is null)
                 continue;
 
-            var line = Lines.FirstOrDefault(l => l.Spans.Contains(span.Id));
+            // A span compiled from C source carries TWO line records against the exact same code:
+            // one against cl65's own generated .s intermediate and one against the original .c/.h
+            // - confirmed against tests/Tedide.Core.Tests/Fixtures/HelloCBM.dbg, where span 7 has
+            // both "file=0 (src/main.s), line=62" and "file=2 (src/main.c), line=26". Picking
+            // whichever comes first (the .s one, since its file record sorts earlier) pointed the
+            // debugger at a generated file the user never sees on disk instead of their own source.
+            // Prefer any non-assembly candidate; fall back to assembly only when that's genuinely
+            // the only source (a hand-written .s file with no C counterpart, e.g. HelloCBM's
+            // border.s, which has its own module and no paired .c line record for its spans).
+            var candidates = Lines.Where(l => l.Spans.Contains(span.Id)).ToList();
+            var line = candidates.FirstOrDefault(l => !IsAssemblyFile(l.File)) ?? candidates.FirstOrDefault();
             if (line is null)
                 continue;
 
@@ -196,6 +206,13 @@ public sealed class DbgFile
         }
 
         return null;
+    }
+
+    private bool IsAssemblyFile(int fileId)
+    {
+        var extension = Path.GetExtension(Files.FirstOrDefault(f => f.Id == fileId)?.Name);
+        return string.Equals(extension, ".s", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(extension, ".asm", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>

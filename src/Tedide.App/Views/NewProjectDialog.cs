@@ -69,7 +69,7 @@ public sealed class NewProjectDialog : Dialog
         {
             if (!Cc65TargetExtensions.TryParse(_targetField.Text, out var target))
             {
-                MessageBox.ErrorQuery(Application.Instance, "Invalid target", $"'{_targetField.Text}' is not a known cc65 target.", ["OK"]);
+                TedideMessageBox.ErrorQuery("Invalid target", $"'{_targetField.Text}' is not a known cc65 target.", ["OK"]);
                 e.Handled = true;
                 return;
             }

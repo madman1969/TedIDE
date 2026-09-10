@@ -55,6 +55,7 @@ public sealed class AppShell : Window
     private bool _isStopped;
     private Tabs _outputTabs = null!;
     private View _outputTab = null!;
+    private View _debugTab = null!;
     private readonly EditorMenuBar _menuBar;
     private readonly EditorStatusBar _statusBar;
 
@@ -191,15 +192,15 @@ public sealed class AppShell : Window
         _symbolPanel.LineActivated += OpenSymbol;
         symbolsTab.Add(_symbolPanel);
 
-        var debugTab = new View { Title = " _Debug ", Width = Dim.Fill(), Height = Dim.Fill() };
+        _debugTab = new View { Title = " _Debug ", Width = Dim.Fill(), Height = Dim.Fill() };
         _debugPanel.Width = Dim.Fill();
         _debugPanel.Height = Dim.Fill();
-        debugTab.Add(_debugPanel);
+        _debugTab.Add(_debugPanel);
 
         _outputTabs.Add(_outputTab);
         _outputTabs.Add(errorListTab);
         _outputTabs.Add(symbolsTab);
-        _outputTabs.Add(debugTab);
+        _outputTabs.Add(_debugTab);
 
         // Breakpoint highlighting registered before the current-debug-line one, so the latter's
         // Accent color wins on a line that's both a breakpoint and the paused line - see
@@ -397,7 +398,7 @@ public sealed class AppShell : Window
     {
         if (!File.Exists(path))
         {
-            MessageBox.ErrorQuery(Application.Instance, "File Not Found", $"'{path}' no longer exists.", ["OK"]);
+            TedideMessageBox.ErrorQuery("File Not Found", $"'{path}' no longer exists.", ["OK"]);
             _recentProjects.Remove(path);
             RefreshRecentProjectsMenu();
             return;
@@ -409,7 +410,7 @@ public sealed class AppShell : Window
             _workspace.OpenProject(path);
         else
         {
-            MessageBox.ErrorQuery(Application.Instance, "Unsupported file",
+            TedideMessageBox.ErrorQuery("Unsupported file",
                 $"Expected a {TedideProject.FileExtension} or {TedideSolution.FileExtension} file.", ["OK"]);
             return;
         }
@@ -512,7 +513,7 @@ public sealed class AppShell : Window
         var filePath = Path.Combine(directory, fileName);
         if (File.Exists(filePath))
         {
-            MessageBox.ErrorQuery(Application.Instance, "File Exists", $"'{fileName}' already exists.", ["OK"]);
+            TedideMessageBox.ErrorQuery("File Exists", $"'{fileName}' already exists.", ["OK"]);
             return;
         }
 
@@ -596,7 +597,7 @@ public sealed class AppShell : Window
 
         if (skipped.Count > 0)
         {
-            MessageBox.ErrorQuery(Application.Instance, "Some Files Skipped",
+            TedideMessageBox.ErrorQuery("Some Files Skipped",
                 $"Already exists in this folder, skipped:\n{string.Join('\n', skipped)}", ["OK"]);
         }
 
@@ -624,7 +625,7 @@ public sealed class AppShell : Window
         var newPath = Path.Combine(Path.GetDirectoryName(path)!, newFileName);
         if (File.Exists(newPath))
         {
-            MessageBox.ErrorQuery(Application.Instance, "File Exists", $"'{newFileName}' already exists.", ["OK"]);
+            TedideMessageBox.ErrorQuery("File Exists", $"'{newFileName}' already exists.", ["OK"]);
             return;
         }
 
@@ -669,7 +670,7 @@ public sealed class AppShell : Window
     /// </summary>
     private void DeleteFile(string path)
     {
-        var choice = MessageBox.Query(Application.Instance, "Delete File",
+        var choice = TedideMessageBox.Query("Delete File",
             $"Delete '{Path.GetFileName(path)}'? This cannot be undone.", ["Delete", "Cancel"]);
         if (choice != 0)
             return;
@@ -957,7 +958,10 @@ public sealed class AppShell : Window
         }
         if (!project.GenerateDebugInfo)
         {
-            AppendOutputLine("Enable \"Generate debug info\" on the Linker tab of Project Settings first.");
+            TedideMessageBox.ErrorQuery("Debug Info Required",
+                "\"Generate debug info\" is off for this project.\n" +
+                "Enable it on the Linker tab of Project Settings, then rebuild before starting a debug session.",
+                ["OK"]);
             return;
         }
         if (_isDebugging)
@@ -965,6 +969,11 @@ public sealed class AppShell : Window
             AppendOutputLine("Already debugging - use Debug > Stop Debugging first.");
             return;
         }
+
+        // Switch to the Debug tab immediately so its status/register panel is what the user sees
+        // as the session comes up, rather than whatever tab (Output/Error List/Symbols) happened
+        // to be selected before.
+        ShowDebugTab();
 
         var buildResult = await BuildActiveProjectAsync();
         if (buildResult is not { Succeeded: true })
@@ -1218,7 +1227,7 @@ public sealed class AppShell : Window
         if (_editorPane.OpenPath is not { } currentPath || !_editorPane.IsModified)
             return true;
 
-        var choice = MessageBox.Query(Application.Instance, "Unsaved Changes",
+        var choice = TedideMessageBox.Query("Unsaved Changes",
             $"Save changes to {Path.GetFileName(currentPath)}?", ["Save", "Discard", "Cancel"]);
         switch (choice)
         {
@@ -1403,7 +1412,7 @@ public sealed class AppShell : Window
         var newDirectory = Path.Combine(parentDirectory, project.Name);
         if (Directory.Exists(newDirectory))
         {
-            MessageBox.ErrorQuery(Application.Instance, "Directory Exists",
+            TedideMessageBox.ErrorQuery("Directory Exists",
                 $"Cannot rename the project folder to '{project.Name}' - '{newDirectory}' already exists.\n" +
                 "The project's name was saved, but its folder was left as-is.", ["OK"]);
             return;
@@ -1419,7 +1428,7 @@ public sealed class AppShell : Window
         {
             if (!ConfirmReplaceCurrentFile())
             {
-                MessageBox.ErrorQuery(Application.Instance, "Rename Cancelled",
+                TedideMessageBox.ErrorQuery("Rename Cancelled",
                     "The project's name was saved, but its folder was not renamed because the open file has unsaved changes.", ["OK"]);
                 return;
             }
@@ -1440,7 +1449,7 @@ public sealed class AppShell : Window
         }
         catch (IOException ex)
         {
-            MessageBox.ErrorQuery(Application.Instance, "Rename Failed",
+            TedideMessageBox.ErrorQuery("Rename Failed",
                 $"The project's name was saved, but its folder could not be renamed: {ex.Message}", ["OK"]);
             return;
         }
@@ -1477,5 +1486,19 @@ public sealed class AppShell : Window
     {
         _outputTabs.Value = _outputTab;
         _outputView.SetFocus();
+    }
+
+    /// <summary>
+    /// Switches the Output/Error List pane to its "Debug" tab and gives the debug panel input
+    /// focus - used when a debug session starts, so its status/register panel is immediately
+    /// visible rather than left behind whatever tab the user had last selected. Focus moves back
+    /// to the editor as soon as execution actually stops somewhere (see <see cref="OpenSymbol"/>,
+    /// called from <see cref="OnCheckpointHit"/>/<see cref="StepDebuggingAsync"/>), so this is only
+    /// the very first thing the user sees while the session is coming up.
+    /// </summary>
+    private void ShowDebugTab()
+    {
+        _outputTabs.Value = _debugTab;
+        _debugPanel.SetFocus();
     }
 }

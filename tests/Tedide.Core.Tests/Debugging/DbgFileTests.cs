@@ -110,6 +110,25 @@ public class DbgFileTests
     }
 
     [Fact]
+    public void FindSourceLocationForAddress_PrefersTheOriginalCSourceOverCl65sGeneratedAssembly()
+    {
+        var dbg = DbgFile.Parse(LoadFixture());
+
+        // Span 7 carries two line records for the exact same compiled code: "file=0 (src/main.s),
+        // line=62" and "file=2 (src/main.c), line=26" - the .s one sorts first in the fixture, so
+        // resolving by address must actively prefer main.c or it silently points at a generated
+        // file the user never sees on disk (the actual bug this test guards against).
+        var address = dbg.FindAddressForSourceLine("src/main.c", 26);
+        Assert.NotNull(address);
+
+        var location = dbg.FindSourceLocationForAddress(address!.Value);
+
+        Assert.NotNull(location);
+        Assert.Equal("src/main.c", location.Value.FilePath);
+        Assert.Equal(26, location.Value.Line);
+    }
+
+    [Fact]
     public void FindSourceLocationForAddress_ReturnsNull_ForAnAddressOutsideEverySegment()
     {
         var dbg = DbgFile.Parse(LoadFixture());
