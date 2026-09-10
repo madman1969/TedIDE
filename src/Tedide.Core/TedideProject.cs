@@ -35,6 +35,13 @@ public sealed class TedideProject
     /// off - most builds don't need it. See <see cref="ResolvedMapFile"/> for its fixed name.</summary>
     public bool GenerateLinkerMap { get; set; }
 
+    /// <summary>Whether cc65/ca65 should embed debug info (-g) and ld65 should consolidate it into
+    /// a .dbg file (--dbgfile - forwarded through cl65 as "-Wl --dbgfile,path" since cl65 has no
+    /// top-level flag for it, unlike -m/-Ln above) alongside the project. Defaults to off. See
+    /// <see cref="ResolvedDebugInfoFile"/> for its fixed name, and Tedide.Core.Debugging.DbgFile
+    /// for what this feeds - source-line <-> address resolution for the VICE debugger.</summary>
+    public bool GenerateDebugInfo { get; set; }
+
     /// <summary>Whether ld65 should emit a VICE-format label file (-Ln) alongside the project,
     /// loadable into VICE's own monitor (or another machine-language monitor that understands the
     /// same format) to resolve addresses back to symbol names while debugging. Defaults to off.
@@ -46,6 +53,22 @@ public sealed class TedideProject
 
     /// <summary>Output binary name, relative to the project file's directory. Defaults to Name + target extension.</summary>
     public string? OutputFile { get; set; }
+
+    /// <summary>Custom ld65 linker configuration file (-C), relative to the project file's
+    /// directory. Null/blank means use cl65's built-in per-target default configuration - a custom
+    /// config typically replaces that default rather than layering on top of it (see the ld65
+    /// manual for how -C and -t interact).</summary>
+    public string? LinkerConfigPath { get; set; }
+
+    /// <summary>Directories passed to cl65 as -I include paths (compile-time only), each relative
+    /// to the project file's directory. Applied to every source file compiled after them on the
+    /// command line - see Cc65Toolchain.BuildCompileArguments for why they're emitted before
+    /// ExtraArguments and the source file itself.</summary>
+    public List<string> IncludePaths { get; set; } = [];
+
+    /// <summary>Preprocessor defines passed to cl65 as -D flags (compile-time only), each either
+    /// "NAME" or "NAME=VALUE".</summary>
+    public List<string> PreprocessorDefines { get; set; } = [];
 
     /// <summary>Extra arguments appended verbatim to the cl65 command line.</summary>
     public List<string> ExtraArguments { get; set; } = [];
@@ -85,6 +108,16 @@ public sealed class TedideProject
     /// defaults to "{Name}" plus a target-specific extension.</summary>
     [JsonIgnore]
     public string ResolvedLabelsFile => Path.Combine(Directory, Name + ".lbl");
+
+    /// <summary>Where ld65's --dbgfile debug info is written when <see cref="GenerateDebugInfo"/>
+    /// is on - "{Name}.dbg" in the project's own directory, matching <see cref="ResolvedLabelsFile"/>'s convention.</summary>
+    [JsonIgnore]
+    public string ResolvedDebugInfoFile => Path.Combine(Directory, Name + ".dbg");
+
+    /// <summary>Where this project's breakpoints are stored - see <see cref="BreakpointsFile"/> for
+    /// why they're a separate sidecar file rather than a field on this class.</summary>
+    [JsonIgnore]
+    public string ResolvedBreakpointsFile => Path.Combine(Directory, Name + ".breakpoints.json");
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {

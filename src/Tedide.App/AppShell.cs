@@ -2,6 +2,8 @@ using Tedide.Theming;
 using Tedide.App.Views;
 using Tedide.Build;
 using Tedide.Core;
+using Tedide.Core.Debugging;
+using Tedide.Debug;
 using Terminal.Gui.App;
 using Terminal.Gui.Editor;
 using Terminal.Gui.Input;
@@ -42,6 +44,14 @@ public sealed class AppShell : Window
     private readonly FrameView _editorFrame;
     private readonly OutputView _outputView = new();
     private readonly ErrorListView _errorListView = new();
+    private readonly SymbolPanelView _symbolPanel = new();
+    private readonly DebugPanelView _debugPanel = new();
+    private readonly CurrentDebugLineTransformer _debugLineTransformer = new();
+    private BreakpointsFile _breakpoints = new();
+    private ViceMonitorClient? _debugClient;
+    private DbgFile? _dbgFile;
+    private bool _isDebugging;
+    private bool _isStopped;
     private Tabs _outputTabs = null!;
     private View _outputTab = null!;
     private readonly EditorMenuBar _menuBar;
@@ -174,8 +184,26 @@ public sealed class AppShell : Window
         _errorListView.DiagnosticActivated += OpenDiagnostic;
         errorListTab.Add(_errorListView);
 
+        var symbolsTab = new View { Title = " _Symbols ", Width = Dim.Fill(), Height = Dim.Fill() };
+        _symbolPanel.Width = Dim.Fill();
+        _symbolPanel.Height = Dim.Fill();
+        _symbolPanel.LineActivated += OpenSymbol;
+        symbolsTab.Add(_symbolPanel);
+
+        var debugTab = new View { Title = " _Debug ", Width = Dim.Fill(), Height = Dim.Fill() };
+        _debugPanel.Width = Dim.Fill();
+        _debugPanel.Height = Dim.Fill();
+        debugTab.Add(_debugPanel);
+
         _outputTabs.Add(_outputTab);
         _outputTabs.Add(errorListTab);
+        _outputTabs.Add(symbolsTab);
+        _outputTabs.Add(debugTab);
+
+        // Highlights the source line execution is stopped at during a debug session - see its own
+        // doc comment for why LineTransformers (not BackgroundRenderers) is the right extension
+        // point for this.
+        _editorPane.Editor.LineTransformers.Add(_debugLineTransformer);
 
         Add([_menuBar, explorerFrame, _editorFrame, _outputTabs, _statusBar]);
     }
@@ -249,6 +277,18 @@ public sealed class AppShell : Window
             new("_Run Project", "", () => _ = RunActiveProjectAsync(), Key.F6),
         });
 
+        // F5/F6 above are already Build/Run - Start Debugging/Continue/Step use keys of their own.
+        var debugMenu = new MenuBarItem("_Debug", new List<View>
+        {
+            new MenuItem("_Start Debugging", "", () => _ = StartDebuggingAsync(), Key.F5.WithShift),
+            new MenuItem("_Continue", "", () => _ = ContinueDebuggingAsync(), Key.F5.WithCtrl),
+            new MenuItem("S_tep", "", () => _ = StepDebuggingAsync(), Key.F10),
+            new MenuItem("Sto_p Debugging", "", () => _ = StopDebuggingAsync(), Key.Empty),
+            new Line(),
+            new MenuItem("_Toggle Breakpoint", "", ToggleBreakpointAtCursor, Key.F9),
+            new MenuItem("_Breakpoints...", "", ShowBreakpointsDialog, Key.Empty),
+        });
+
         var projectMenu = new MenuBarItem("_Project", new List<MenuItem>
         {
             new("_Settings...", "", ShowProjectSettings, Key.Empty),
@@ -275,7 +315,7 @@ public sealed class AppShell : Window
         // its own items via Add().
         var editMenuItems = menuBar.EditMenu.PopoverMenu!.Root!;
         editMenuItems.AddAt(0, new MenuItem("_Find in Files...", "", () => ShowFindInFiles(), Key.F.WithCtrl.WithShift));
-        menuBar.Menus = [fileMenu, menuBar.EditMenu, menuBar.ViewMenu, buildMenu, projectMenu, themeMenu, helpMenu];
+        menuBar.Menus = [fileMenu, menuBar.EditMenu, menuBar.ViewMenu, buildMenu, debugMenu, projectMenu, themeMenu, helpMenu];
         menuBar.X = 0;
         menuBar.Y = 0;
         menuBar.Width = Dim.Fill();
@@ -291,6 +331,9 @@ public sealed class AppShell : Window
         // Theme menu above is our one theme switcher.
         statusBar.ThemeDropDown.Visible = false;
         statusBar.Add(new Shortcut(Key.F5, "~F5~ Build", () => _ = BuildActiveProjectAsync()));
+        // A plain MenuItem's Key only acts as a hotkey while its menu is already open - a Shortcut
+        // is what actually makes a key global, the same reason Build's F5 above needs one too.
+        statusBar.Add(new Shortcut(Key.F9, "~F9~ Breakpoint", ToggleBreakpointAtCursor));
         statusBar.Add(new Shortcut(Key.Q.WithCtrl, "~^Q~ Quit", () => Application.RequestStop(this)));
         statusBar.X = 0;
         statusBar.Y = Pos.AnchorEnd(1);
@@ -306,6 +349,8 @@ public sealed class AppShell : Window
         {
             _workspace.NewProject(dialog.Directory, dialog.ProjectName, target);
             _solutionExplorer.Rebuild(_workspace);
+            _symbolPanel.Refresh(_workspace.ActiveProject);
+            LoadBreakpointsForActiveProject();
             // NewProject always creates a wrapping .tsln alongside the .tproj (see its own doc
             // comment) - remember that, not the bare project, matching how opening one of the
             // bundled samples remembers its .tsln rather than the .tproj inside it.
@@ -352,6 +397,8 @@ public sealed class AppShell : Window
         }
 
         _solutionExplorer.Rebuild(_workspace);
+        _symbolPanel.Refresh(_workspace.ActiveProject);
+        LoadBreakpointsForActiveProject();
         RememberRecentProject(path);
     }
 
@@ -743,6 +790,298 @@ public sealed class AppShell : Window
         _editorPane.Editor.SetFocus();
     }
 
+    /// <summary>
+    /// Opens a symbol panel entry's source file (lnk.map or .lbl - both plain text, unaffected by
+    /// this being a structured panel over them, see <see cref="SymbolPanelView"/>) and moves the
+    /// caret to its line, the same way <see cref="OpenMatch"/> does for a Find in Files result.
+    /// </summary>
+    private void OpenSymbol((string FilePath, int LineNumber) entry)
+    {
+        if (!File.Exists(entry.FilePath))
+            return;
+
+        if (!string.Equals(_editorPane.OpenPath, entry.FilePath, StringComparison.OrdinalIgnoreCase))
+        {
+            OpenFile(entry.FilePath);
+            if (!string.Equals(_editorPane.OpenPath, entry.FilePath, StringComparison.OrdinalIgnoreCase))
+                return; // User cancelled replacing the currently open (modified) file.
+        }
+
+        var document = _editorPane.Editor.Document;
+        if (document is null || entry.LineNumber < 1 || entry.LineNumber > document.LineCount)
+            return;
+
+        var line = document.GetLineByNumber(entry.LineNumber);
+        _editorPane.Editor.CaretOffset = line.Offset;
+        _editorPane.Editor.SetFocus();
+    }
+
+    /// <summary>Reloads <see cref="_breakpoints"/> from the active project's breakpoints sidecar
+    /// file (see <see cref="TedideProject.ResolvedBreakpointsFile"/>), or resets to an empty set if
+    /// no project is loaded. Called everywhere the active project itself changes (open/new/close,
+    /// Project Settings save) - not on every build, since breakpoints don't change from a build.</summary>
+    private void LoadBreakpointsForActiveProject()
+    {
+        _breakpoints = _workspace.ActiveProject is { } project
+            ? BreakpointsFile.Load(project.ResolvedBreakpointsFile)
+            : new BreakpointsFile();
+    }
+
+    /// <summary>
+    /// Toggles a breakpoint on the currently open file's cursor line (F9) - the fallback for
+    /// setting breakpoints since Terminal.Gui.Editor's Editor has no clickable gutter (see
+    /// <see cref="CurrentDebugLineTransformer"/>'s own doc comment). Saves immediately so it
+    /// survives even if the debug session (or Tedide itself) is closed without an explicit save.
+    /// </summary>
+    private void ToggleBreakpointAtCursor()
+    {
+        var project = _workspace.ActiveProject;
+        if (project is null || _editorPane.OpenPath is not { } openPath || _editorPane.Editor.Document is not { } document)
+            return;
+
+        var line = document.GetLineByOffset(_editorPane.Editor.CaretOffset).LineNumber;
+        // .dbg file paths are forward-slashed (cl65 was invoked with e.g. "src/main.c") regardless
+        // of this being Windows - normalize so breakpoints resolve against DbgFile.FindAddressForSourceLine.
+        var relativePath = Path.GetRelativePath(project.Directory, openPath).Replace('\\', '/');
+
+        var existingIndex = _breakpoints.Breakpoints.FindIndex(b =>
+            b.Line == line && string.Equals(b.SourceFile, relativePath, StringComparison.OrdinalIgnoreCase));
+        if (existingIndex >= 0)
+        {
+            _breakpoints.Breakpoints.RemoveAt(existingIndex);
+            AppendOutputLine($"Breakpoint removed: {relativePath}:{line}");
+        }
+        else
+        {
+            _breakpoints.Breakpoints.Add(new BreakpointEntry(relativePath, line));
+            AppendOutputLine($"Breakpoint set: {relativePath}:{line}");
+        }
+
+        _breakpoints.Save(project.ResolvedBreakpointsFile);
+    }
+
+    private void ShowBreakpointsDialog()
+    {
+        var project = _workspace.ActiveProject;
+        if (project is null)
+        {
+            AppendOutputLine("No project loaded. Use File > Open Project or File > New Project first.");
+            return;
+        }
+
+        Application.Run(new BreakpointsDialog(_breakpoints, project.ResolvedBreakpointsFile));
+    }
+
+    /// <summary>
+    /// Builds the active project (if needed), launches it in VICE with the binary monitor enabled,
+    /// connects <see cref="_debugClient"/>, sets every enabled breakpoint (resolved to an address
+    /// via <see cref="_dbgFile"/>), and starts it running. Requires <see cref="TedideProject.GenerateDebugInfo"/>
+    /// to be on - without it there's no .dbg file to resolve breakpoints/addresses against.
+    /// </summary>
+    private async Task StartDebuggingAsync()
+    {
+        var project = _workspace.ActiveProject;
+        if (project is null)
+        {
+            AppendOutputLine("No project loaded. Use File > Open Project or File > New Project first.");
+            return;
+        }
+        if (!project.GenerateDebugInfo)
+        {
+            AppendOutputLine("Enable \"Generate debug info\" on the Linker tab of Project Settings first.");
+            return;
+        }
+        if (_isDebugging)
+        {
+            AppendOutputLine("Already debugging - use Debug > Stop Debugging first.");
+            return;
+        }
+
+        var buildResult = await BuildActiveProjectAsync();
+        if (buildResult is not { Succeeded: true })
+            return;
+
+        if (!File.Exists(project.ResolvedDebugInfoFile))
+        {
+            AppendOutputLine("Build succeeded but no debug info file was produced.");
+            return;
+        }
+        _dbgFile = DbgFile.Parse(File.ReadAllText(project.ResolvedDebugInfoFile));
+
+        _vice.Launch(project, AppendOutputLine, enableBinaryMonitor: true);
+
+        _debugClient = new ViceMonitorClient();
+        _debugClient.CheckpointHit += OnCheckpointHit;
+        _debugClient.Resumed += _ => Application.Invoke(() =>
+        {
+            _isStopped = false;
+            _debugLineTransformer.CurrentLineNumber = null;
+            _debugPanel.SetStatus("Running...");
+            _editorPane.Editor.SetNeedsDraw();
+        });
+
+        _debugPanel.SetStatus("Connecting to VICE...");
+        var connected = false;
+        // VICE needs a moment to start listening on its binary monitor port after the process
+        // starts - retry rather than failing on the first attempt.
+        for (var attempt = 0; attempt < 20 && !connected; attempt++)
+        {
+            try
+            {
+                await _debugClient.ConnectAsync();
+                connected = true;
+            }
+            catch
+            {
+                await Task.Delay(250);
+            }
+        }
+        if (!connected)
+        {
+            AppendOutputLine("Could not connect to VICE's binary monitor - is VICE installed and did it launch correctly?");
+            await _debugClient.DisposeAsync();
+            _debugClient = null;
+            _debugPanel.SetStatus("Not debugging.");
+            return;
+        }
+
+        _isDebugging = true;
+
+        foreach (var breakpoint in _breakpoints.Breakpoints.Where(b => b.Enabled))
+        {
+            var address = _dbgFile.FindAddressForSourceLine(breakpoint.SourceFile, breakpoint.Line);
+            if (address is { } addr)
+                await _debugClient.SetCheckpointAsync((ushort)addr);
+            else
+                AppendOutputLine($"Could not resolve breakpoint {breakpoint.SourceFile}:{breakpoint.Line} to an address - it may be on a line with no compiled code.");
+        }
+
+        _debugPanel.SetStatus("Running...");
+        await _debugClient.ContinueAsync();
+    }
+
+    /// <summary>
+    /// Fires whenever VICE stops at a checkpoint - reads registers, resolves the PC back to a
+    /// source location (<see cref="_dbgFile"/>), and jumps the editor there. Runs on
+    /// <see cref="ViceMonitorClient"/>'s own background read-loop thread, so every UI touch (and
+    /// the nested GetRegistersAsync request/response, which needs that same read loop free to
+    /// process it) is marshaled onto the UI thread via Application.Invoke - which posts and returns
+    /// immediately rather than blocking the calling thread, so this doesn't deadlock against the
+    /// read loop it was raised from.
+    /// </summary>
+    private void OnCheckpointHit(CheckpointHitEventArgs args)
+    {
+        Application.Invoke(async () =>
+        {
+            try
+            {
+                _isStopped = true;
+                if (_debugClient is null)
+                    return;
+
+                var registers = await _debugClient.GetRegistersAsync();
+                _debugPanel.SetRegisters(registers);
+
+                // "PC" is VICE's register name for the 6502 program counter on the main memspace -
+                // confirmed for real against a live VICE 3.9 instance during implementation (its
+                // ids are assigned dynamically per the binary monitor protocol docs, but this name
+                // was stable), not just inferred from community tooling.
+                var project = _workspace.ActiveProject;
+                var pc = registers["PC"];
+                if (project is not null && pc is { } pcValue && _dbgFile?.FindSourceLocationForAddress(pcValue) is { } location)
+                {
+                    OpenSymbol((Path.Combine(project.Directory, location.FilePath), location.Line));
+                    _debugLineTransformer.CurrentLineNumber = location.Line;
+                    _debugPanel.SetStatus($"Stopped at {location.FilePath}:{location.Line} (checkpoint #{args.Checkpoint.Number})");
+                }
+                else
+                {
+                    _debugLineTransformer.CurrentLineNumber = null;
+                    _debugPanel.SetStatus(pc is { } pcv ? $"Stopped at ${pcv:X4} (checkpoint #{args.Checkpoint.Number})" : "Stopped.");
+                }
+                _editorPane.Editor.SetNeedsDraw();
+            }
+            catch (Exception ex)
+            {
+                AppendOutputLine($"Error handling checkpoint hit: {ex.Message}");
+            }
+        });
+    }
+
+    private async Task ContinueDebuggingAsync()
+    {
+        if (_debugClient is null || !_isDebugging)
+            return;
+
+        _isStopped = false;
+        _debugLineTransformer.CurrentLineNumber = null;
+        _debugPanel.SetStatus("Running...");
+        _editorPane.Editor.SetNeedsDraw();
+        await _debugClient.ContinueAsync();
+    }
+
+    /// <summary>
+    /// Steps by source line, not raw instruction: single-steps repeatedly until the resolved
+    /// location changes from where it started (or the step count safety cap is hit - an address
+    /// with no line mapping, e.g. inside a library routine with no debug info, would otherwise
+    /// single-step forever).
+    /// </summary>
+    private async Task StepDebuggingAsync()
+    {
+        if (_debugClient is null || _dbgFile is null || !_isDebugging || !_isStopped)
+            return;
+
+        var startRegisters = await _debugClient.GetRegistersAsync();
+        var startLocation = startRegisters["PC"] is { } startPc ? _dbgFile.FindSourceLocationForAddress(startPc) : null;
+
+        for (var i = 0; i < 500; i++)
+        {
+            await _debugClient.StepAsync();
+            var registers = await _debugClient.GetRegistersAsync();
+            if (registers["PC"] is not { } pc)
+                break;
+
+            var location = _dbgFile.FindSourceLocationForAddress(pc);
+            if (location is null || location != startLocation)
+            {
+                _debugPanel.SetRegisters(registers);
+                var project = _workspace.ActiveProject;
+                if (project is not null && location is { } loc)
+                {
+                    OpenSymbol((Path.Combine(project.Directory, loc.FilePath), loc.Line));
+                    _debugLineTransformer.CurrentLineNumber = loc.Line;
+                    _debugPanel.SetStatus($"Stopped at {loc.FilePath}:{loc.Line}");
+                }
+                else
+                {
+                    _debugLineTransformer.CurrentLineNumber = null;
+                    _debugPanel.SetStatus($"Stopped at ${pc:X4}");
+                }
+                _editorPane.Editor.SetNeedsDraw();
+                return;
+            }
+        }
+    }
+
+    private async Task StopDebuggingAsync()
+    {
+        if (_debugClient is null)
+            return;
+
+        try { await _debugClient.ContinueAsync(); }
+        catch { /* VICE may already be gone - fine, we're tearing down the connection either way. */ }
+
+        await _debugClient.DisposeAsync();
+        _debugClient = null;
+        _dbgFile = null;
+        _isDebugging = false;
+        _isStopped = false;
+        _debugLineTransformer.CurrentLineNumber = null;
+        _debugPanel.SetStatus("Not debugging.");
+        _debugPanel.SetRegisters(null);
+        _editorPane.Editor.SetNeedsDraw();
+    }
+
     private void CloseActiveFile()
     {
         if (_editorPane.OpenPath is null || !ConfirmReplaceCurrentFile())
@@ -773,6 +1112,8 @@ public sealed class AppShell : Window
 
         _workspace.Close();
         _solutionExplorer.Rebuild(_workspace);
+        _symbolPanel.Refresh(_workspace.ActiveProject);
+        LoadBreakpointsForActiveProject();
     }
 
     /// <summary>
@@ -857,6 +1198,7 @@ public sealed class AppShell : Window
         // assembler listings (see SolutionExplorerTree.AddGeneratedFilesNode) only appear once
         // the tree is rebuilt after this build actually wrote them.
         _solutionExplorer.Rebuild(_workspace);
+        _symbolPanel.Refresh(project);
 
         return result;
     }
@@ -950,6 +1292,8 @@ public sealed class AppShell : Window
             RenameProjectFolder(project, oldFilePath, oldDirectory);
 
         _solutionExplorer.Rebuild(_workspace);
+        _symbolPanel.Refresh(_workspace.ActiveProject);
+        LoadBreakpointsForActiveProject();
     }
 
     /// <summary>

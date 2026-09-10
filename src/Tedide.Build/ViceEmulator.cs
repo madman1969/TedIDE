@@ -53,7 +53,12 @@ public sealed class ViceEmulator(string binDirectory = ViceEmulator.DefaultBinDi
     /// once more when it exits. VICE is mostly a GUI app and rarely writes much, but it does log
     /// things like ROM/cartridge load errors here. Omit to run without redirecting output at all.
     /// </param>
-    public void Launch(TedideProject project, Action<string>? onOutputLine = null)
+    /// <param name="enableBinaryMonitor">
+    /// When true, also passes "-binarymonitor" (VICE then listens on its default 127.0.0.1:6502)
+    /// so a debugging session (Tedide.Debug's ViceMonitorClient) can connect to this instance.
+    /// Defaults to false so a plain Build &gt; Run Project launch is unaffected.
+    /// </param>
+    public void Launch(TedideProject project, Action<string>? onOutputLine = null, bool enableBinaryMonitor = false)
     {
         var executableName = ExecutableNameFor(project.Target)
             ?? throw new NotSupportedException($"VICE has no emulator for target '{project.Target.ToCl65Id()}'.");
@@ -68,8 +73,8 @@ public sealed class ViceEmulator(string binDirectory = ViceEmulator.DefaultBinDi
             RedirectStandardOutput = onOutputLine is not null,
             RedirectStandardError = onOutputLine is not null,
         };
-        startInfo.ArgumentList.Add("-autostart");
-        startInfo.ArgumentList.Add(project.ResolvedOutputFile);
+        foreach (var arg in BuildArguments(project, enableBinaryMonitor))
+            startInfo.ArgumentList.Add(arg);
 
         Process process;
         try
@@ -92,5 +97,14 @@ public sealed class ViceEmulator(string binDirectory = ViceEmulator.DefaultBinDi
 
         process.EnableRaisingEvents = true;
         process.Exited += (_, _) => onOutputLine($"------ {executableName} exited (code {process.ExitCode}) ------");
+    }
+
+    /// <summary>The VICE command-line arguments for launching <paramref name="project"/>'s built output - a pure function, split out from <see cref="Launch"/> so it's directly unit-testable without spawning a process.</summary>
+    internal static List<string> BuildArguments(TedideProject project, bool enableBinaryMonitor)
+    {
+        var args = new List<string> { "-autostart", project.ResolvedOutputFile };
+        if (enableBinaryMonitor)
+            args.Add("-binarymonitor");
+        return args;
     }
 }

@@ -52,6 +52,36 @@ public class ViceEmulatorTests
     }
 
     [Fact]
+    public void BuildArguments_OmitsBinaryMonitorFlag_WhenEnableBinaryMonitorIsFalse()
+    {
+        var project = new TedideProject { Name = "Test", Target = Cc65Target.C64 };
+
+        var args = ViceEmulator.BuildArguments(project, enableBinaryMonitor: false);
+
+        Assert.DoesNotContain("-binarymonitor", args);
+    }
+
+    [Fact]
+    public void BuildArguments_IncludesBinaryMonitorFlag_WhenEnableBinaryMonitorIsTrue()
+    {
+        var project = new TedideProject { Name = "Test", Target = Cc65Target.C64 };
+
+        var args = ViceEmulator.BuildArguments(project, enableBinaryMonitor: true);
+
+        Assert.Contains("-binarymonitor", args);
+    }
+
+    [Fact]
+    public void BuildArguments_AlwaysIncludesAutostartAndTheResolvedOutputFile()
+    {
+        var project = new TedideProject { Name = "Test", Target = Cc65Target.C64 };
+
+        var args = ViceEmulator.BuildArguments(project, enableBinaryMonitor: false);
+
+        Assert.Equal(["-autostart", project.ResolvedOutputFile], args);
+    }
+
+    [Fact]
     public void Launch_ThrowsNotSupportedException_WhenTargetHasNoViceEmulator()
     {
         var vice = new ViceEmulator();

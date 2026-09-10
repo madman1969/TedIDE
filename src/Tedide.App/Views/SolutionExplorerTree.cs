@@ -22,8 +22,10 @@ namespace Tedide.App.Views;
 /// </summary>
 public sealed class SolutionExplorerTree : TreeView
 {
-    /// <summary>Source/header extensions shown in the tree.</summary>
-    public static readonly string[] DisplayedExtensions = [".c", ".h", ".s", ".asm", ".inc"];
+    /// <summary>Source/header extensions shown in the tree. ".cfg" (a ld65 linker config file) is
+    /// included even though it's never compiled - see <see cref="CompilableExtensions"/> - so a
+    /// project's linker config can be opened and edited from here like any other file.</summary>
+    public static readonly string[] DisplayedExtensions = [".c", ".h", ".s", ".asm", ".inc", ".cfg"];
 
     /// <summary>The subset of <see cref="DisplayedExtensions"/> that cl65 actually compiles, and
     /// so should be tracked in a project's SourceFiles - as opposed to headers, which are only
@@ -160,8 +162,9 @@ public sealed class SolutionExplorerTree : TreeView
     /// Adds a "Generated Files" node listing build-generated files that live outside the normal
     /// source tree: the cc65 assembler listings (.lst, one per source file) if
     /// <see cref="TedideProject.GenerateAssemblyListing"/> is on, the ld65 linker map (lnk.map) if
-    /// <see cref="TedideProject.GenerateLinkerMap"/> is on, and the ld65 label file ({Name}.lbl) if
-    /// <see cref="TedideProject.ExportLabels"/> is on - each only once it's actually been written
+    /// <see cref="TedideProject.GenerateLinkerMap"/> is on, the ld65 label file ({Name}.lbl) if
+    /// <see cref="TedideProject.ExportLabels"/> is on, and the debug info file ({Name}.dbg) if
+    /// <see cref="TedideProject.GenerateDebugInfo"/> is on - each only once it's actually been written
     /// (a project, or a single source file in it, that's never been built won't have one yet).
     /// Omitted entirely when there's nothing to show, so a never-built (or nothing-enabled) project
     /// doesn't get an empty node. Has no Tag - it's not itself a file or directory, so the
@@ -177,6 +180,8 @@ public sealed class SolutionExplorerTree : TreeView
             generatedFiles.Add(project.ResolvedMapFile);
         if (project.ExportLabels && File.Exists(project.ResolvedLabelsFile))
             generatedFiles.Add(project.ResolvedLabelsFile);
+        if (project.GenerateDebugInfo && File.Exists(project.ResolvedDebugInfoFile))
+            generatedFiles.Add(project.ResolvedDebugInfoFile);
 
         if (generatedFiles.Count == 0)
             return;

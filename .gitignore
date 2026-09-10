@@ -15,4 +15,10 @@ obj/
 *.lst
 *.map
 *.lbl
+*.dbg
+# Real ld65/cc65 output, checked in as test fixtures (see LinkerMapFileTests/LabelsFileTests/
+# DbgFileTests) rather than excluded like every other build artifact above.
+!tests/Tedide.Core.Tests/Fixtures/*.map
+!tests/Tedide.Core.Tests/Fixtures/*.lbl
+!tests/Tedide.Core.Tests/Fixtures/*.dbg
 /TestResults/

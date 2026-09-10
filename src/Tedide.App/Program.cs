@@ -10,6 +10,7 @@ try
     Cc65ListingHighlighting.Register();
     Cc65LinkerMapHighlighting.Register();
     Cc65LabelsHighlighting.Register();
+    Cc65CfgHighlighting.Register();
     ThemeSwitcher.Apply(ThemeSettings.Load().Theme);
     var shell = new AppShell();
     Application.Run(shell);

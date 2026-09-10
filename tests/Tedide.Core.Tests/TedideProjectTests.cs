@@ -17,6 +17,10 @@ public class TedideProjectTests
                 Target = Cc65Target.Nes,
                 SourceFiles = ["main.c", "sprites.s"],
                 ExtraArguments = ["-Oi"],
+                IncludePaths = ["include", "../shared/include"],
+                PreprocessorDefines = ["DEBUG", "VERSION=3"],
+                LinkerConfigPath = "custom.cfg",
+                GenerateDebugInfo = true,
                 OptimizationLevel = Cc65OptimizationLevel.Extended,
                 GenerateAssemblyListing = true,
                 AddSourceAsComment = true,
@@ -29,6 +33,10 @@ public class TedideProjectTests
             Assert.Equal(Cc65Target.Nes, loaded.Target);
             Assert.Equal(["main.c", "sprites.s"], loaded.SourceFiles);
             Assert.Equal(["-Oi"], loaded.ExtraArguments);
+            Assert.Equal(["include", "../shared/include"], loaded.IncludePaths);
+            Assert.Equal(["DEBUG", "VERSION=3"], loaded.PreprocessorDefines);
+            Assert.Equal("custom.cfg", loaded.LinkerConfigPath);
+            Assert.True(loaded.GenerateDebugInfo);
             Assert.Equal(Cc65OptimizationLevel.Extended, loaded.OptimizationLevel);
             Assert.True(loaded.GenerateAssemblyListing);
             Assert.True(loaded.AddSourceAsComment);

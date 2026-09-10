@@ -22,4 +22,13 @@
     <ProjectReference Include="..\..\src\Tedide.Core\Tedide.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Real lnk.map/.lbl/.dbg output, captured by building samples/HelloCBM with the Linker tab's
+         "Generate linker map file"/"Export labels"/"Generate debug info" toggles on -
+         LinkerMapFileTests/LabelsFileTests/DbgFileTests parse these directly rather than a
+         hand-written fixture, so the parser isn't tested against the same guess about the format
+         that wrote it. -->
+    <None Include="Fixtures\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

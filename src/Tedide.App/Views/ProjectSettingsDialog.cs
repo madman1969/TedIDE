@@ -11,7 +11,7 @@ namespace Tedide.App.Views;
 /// <summary>
 /// Modal dialog for viewing/editing a loaded project's settings, as six tabs sharing one Save/
 /// Cancel footer: "Settings" (display name, cc65 target, output file override, extra cl65
-/// arguments), "Optimizer" (the cc65 compiler optimization preset - see
+/// arguments, include paths, preprocessor defines), "Optimizer" (the cc65 compiler optimization preset - see
 /// <see cref="Cc65OptimizationLevel"/>), "Compiler" (other cc65 compile-time flags: whether to
 /// emit an assembler listing file per source file, and whether to interleave C source as comments
 /// in them), "Linker" (ld65 link-time flags: whether to emit a linker map file and/or a VICE-format
@@ -31,11 +31,15 @@ public sealed class ProjectSettingsDialog : Dialog
     private readonly DropDownList _targetField;
     private readonly TextField _outputFileField;
     private readonly TextField _extraArgumentsField;
+    private readonly TextField _includePathsField;
+    private readonly TextField _preprocessorDefinesField;
     private readonly DropDownList _optimizationLevelField;
     private readonly CheckBox _generateListingField;
     private readonly CheckBox _addSourceAsCommentField;
     private readonly CheckBox _generateLinkerMapField;
     private readonly CheckBox _exportLabelsField;
+    private readonly CheckBox _generateDebugInfoField;
+    private readonly TextField _linkerConfigPathField;
     private readonly TextField _cc65HomeField;
     private readonly TextField _viceBinDirectoryField;
 
@@ -46,12 +50,12 @@ public sealed class ProjectSettingsDialog : Dialog
     {
         Title = $"Project Settings - {project.Name}";
         Width = 101; // 30% wider than the original 78
-        // Tall enough for the "Settings" tab's four label/field pairs, each now with a blank row
+        // Tall enough for the "Settings" tab's six label/field pairs, each now with a blank row
         // above and below its field - see the "every field needs clearance on all 4 sides"
         // convention - plus the Tabs control's own header/border chrome, and +2 for each tab's own
         // Padding.Thickness(2,1,2,1) below (1 row top, 1 row bottom - Tabs' border/tab-strip chrome
         // does not by itself give a tab's content view any inset from its own edges).
-        Height = 34;
+        Height = 42;
         // A real Padding adornment (rather than hand-offsetting every child's X/Y by 1) so the
         // whole dialog gets consistent breathing room from its border - children below are
         // positioned relative to this inset content area, i.e. X = 0 is already 2 cells in.
@@ -62,10 +66,12 @@ public sealed class ProjectSettingsDialog : Dialog
         Arrangement &= ~ViewArrangement.Resizable;
 
         var tabs = new Tabs { X = 0, Y = 0, Width = Dim.Fill(), Height = Dim.Fill(2) };
-        var settingsTab = BuildSettingsTab(project, out _nameField, out _targetField, out _outputFileField, out _extraArgumentsField);
+        var settingsTab = BuildSettingsTab(
+            project, out _nameField, out _targetField, out _outputFileField, out _extraArgumentsField,
+            out _includePathsField, out _preprocessorDefinesField);
         var optimizerTab = BuildOptimizerTab(project, out _optimizationLevelField);
         var compilerTab = BuildCompilerTab(project, out _generateListingField, out _addSourceAsCommentField);
-        var linkerTab = BuildLinkerTab(project, out _generateLinkerMapField, out _exportLabelsField);
+        var linkerTab = BuildLinkerTab(project, out _generateLinkerMapField, out _exportLabelsField, out _generateDebugInfoField, out _linkerConfigPathField);
         var cc65Tab = BuildCc65Tab(out _cc65HomeField);
         var viceTab = BuildViceTab(out _viceBinDirectoryField);
         tabs.Add(settingsTab);
@@ -107,11 +113,19 @@ public sealed class ProjectSettingsDialog : Dialog
             project.ExtraArguments = _extraArgumentsField.Text
                 .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 .ToList();
+            project.IncludePaths = _includePathsField.Text
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .ToList();
+            project.PreprocessorDefines = _preprocessorDefinesField.Text
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .ToList();
             project.OptimizationLevel = optimizationLevel;
             project.GenerateAssemblyListing = _generateListingField.Value == CheckState.Checked;
             project.AddSourceAsComment = _addSourceAsCommentField.Value == CheckState.Checked;
             project.GenerateLinkerMap = _generateLinkerMapField.Value == CheckState.Checked;
             project.ExportLabels = _exportLabelsField.Value == CheckState.Checked;
+            project.GenerateDebugInfo = _generateDebugInfoField.Value == CheckState.Checked;
+            project.LinkerConfigPath = string.IsNullOrWhiteSpace(_linkerConfigPathField.Text) ? null : _linkerConfigPathField.Text.Trim();
             project.Save();
 
             // Not project state - this machine's toolchain install, not any one project - so it's
@@ -149,7 +163,9 @@ public sealed class ProjectSettingsDialog : Dialog
         out TextField nameField,
         out DropDownList targetField,
         out TextField outputFileField,
-        out TextField extraArgumentsField)
+        out TextField extraArgumentsField,
+        out TextField includePathsField,
+        out TextField preprocessorDefinesField)
     {
         var tab = new View { Title = " _Settings ", Width = Dim.Fill(), Height = Dim.Fill() };
         // A real Padding adornment, same as the Dialog itself uses - Tabs' own header/border
@@ -182,13 +198,22 @@ public sealed class ProjectSettingsDialog : Dialog
         var extraArgsLabel = new Label { Text = "Extra cl65 arguments:", X = 0, Y = 12 };
         extraArgumentsField = new TextField { X = 0, Y = 14, Width = Dim.Fill(1), Text = string.Join(' ', project.ExtraArguments) };
 
+        var includePathsLabel = new Label { Text = "Include paths (-I, space-separated):", X = 0, Y = 16 };
+        includePathsField = new TextField { X = 0, Y = 18, Width = Dim.Fill(1), Text = string.Join(' ', project.IncludePaths) };
+
+        var definesLabel = new Label { Text = "Preprocessor defines (-D, space-separated, NAME or NAME=VALUE):", X = 0, Y = 20 };
+        preprocessorDefinesField = new TextField { X = 0, Y = 22, Width = Dim.Fill(1), Text = string.Join(' ', project.PreprocessorDefines) };
+
         var infoLabel = new Label
         {
             Text = $"{project.SourceFiles.Count} source file(s) in {project.Directory}",
-            X = 0, Y = 16, Width = Dim.Fill(1),
+            X = 0, Y = 24, Width = Dim.Fill(1),
         };
 
-        tab.Add(nameLabel, nameField, targetLabel, targetField, outputLabel, outputFileField, extraArgsLabel, extraArgumentsField, infoLabel);
+        tab.Add(
+            nameLabel, nameField, targetLabel, targetField, outputLabel, outputFileField,
+            extraArgsLabel, extraArgumentsField, includePathsLabel, includePathsField,
+            definesLabel, preprocessorDefinesField, infoLabel);
         return tab;
     }
 
@@ -262,8 +287,14 @@ public sealed class ProjectSettingsDialog : Dialog
         return tab;
     }
 
-    /// <summary>Builds the "Linker" tab: ld65 link-time flags - the -m linker map toggle and the -Ln label file toggle.</summary>
-    private static View BuildLinkerTab(TedideProject project, out CheckBox generateLinkerMapField, out CheckBox exportLabelsField)
+    /// <summary>Builds the "Linker" tab: ld65 link-time flags - the -m linker map toggle, the -Ln
+    /// label file toggle, and a custom -C linker configuration file path.</summary>
+    private static View BuildLinkerTab(
+        TedideProject project,
+        out CheckBox generateLinkerMapField,
+        out CheckBox exportLabelsField,
+        out CheckBox generateDebugInfoField,
+        out TextField linkerConfigPathField)
     {
         var tab = new View { Title = " _Linker ", Width = Dim.Fill(), Height = Dim.Fill() };
         // See BuildSettingsTab's comment on this same line - every tab needs its own Padding.
@@ -298,7 +329,35 @@ public sealed class ProjectSettingsDialog : Dialog
             X = 0, Y = 7, Width = Dim.Fill(), Height = 3,
         };
 
-        tab.Add(generateLinkerMapField, mapHelpLabel, exportLabelsField, labelsHelpLabel);
+        generateDebugInfoField = new CheckBox
+        {
+            Text = "Generate debug info (-g / --dbgfile)",
+            X = 0, Y = 11,
+            Value = project.GenerateDebugInfo ? CheckState.Checked : CheckState.UnChecked,
+        };
+
+        var debugInfoHelpLabel = new Label
+        {
+            Text = "Embeds source-line debug info and writes it to {Name}.dbg, next to the project\n" +
+                   "file - needed for source-level debugging (breakpoints, current-line highlighting).",
+            X = 0, Y = 13, Width = Dim.Fill(), Height = 2,
+        };
+
+        var linkerConfigLabel = new Label { Text = "Custom linker config (-C, blank = target default):", X = 0, Y = 16 };
+        linkerConfigPathField = new TextField { X = 0, Y = 18, Width = Dim.Fill(12), Text = project.LinkerConfigPath ?? string.Empty };
+        var browseButton = FileBrowseButton.Create(linkerConfigPathField, y: 18, "Select Linker Config File", ".cfg");
+
+        var linkerConfigHelpLabel = new Label
+        {
+            Text = "A custom ld65 config typically replaces the target default above, rather than\n" +
+                   "layering on top of it - see the ld65 manual for how -C and -t interact.",
+            X = 0, Y = 20, Width = Dim.Fill(1), Height = 2,
+        };
+
+        tab.Add(
+            generateLinkerMapField, mapHelpLabel, exportLabelsField, labelsHelpLabel,
+            generateDebugInfoField, debugInfoHelpLabel,
+            linkerConfigLabel, linkerConfigPathField, browseButton, linkerConfigHelpLabel);
         return tab;
     }
 

@@ -85,6 +85,99 @@ public class Cc65ToolchainTests
     }
 
     [Fact]
+    public void BuildCompileArguments_OmitsIncludePathFlags_WhenIncludePathsIsEmpty()
+    {
+        var project = new TedideProject
+        {
+            Name = "Test",
+            Target = Cc65Target.C64,
+            SourceFiles = ["src/main.c"],
+        };
+
+        var args = Cc65Toolchain.BuildCompileArguments(project, "src/main.c");
+
+        Assert.DoesNotContain("-I", args);
+    }
+
+    [Fact]
+    public void BuildCompileArguments_AddsAnIncludeFlagPair_ForEachIncludePath_BeforeTheSourceFile()
+    {
+        var project = new TedideProject
+        {
+            Name = "Test",
+            Target = Cc65Target.C64,
+            SourceFiles = ["src/main.c"],
+            IncludePaths = ["include", "../shared/include"],
+        };
+
+        var args = Cc65Toolchain.BuildCompileArguments(project, "src/main.c");
+
+        var firstIncludeIndex = args.IndexOf("-I");
+        Assert.True(firstIncludeIndex >= 0, $"Expected -I in arguments: {string.Join(" ", args)}");
+        Assert.Equal("include", args[firstIncludeIndex + 1]);
+        var secondIncludeIndex = args.IndexOf("-I", firstIncludeIndex + 1);
+        Assert.True(secondIncludeIndex >= 0, $"Expected a second -I in arguments: {string.Join(" ", args)}");
+        Assert.Equal("../shared/include", args[secondIncludeIndex + 1]);
+        Assert.True(secondIncludeIndex < args.IndexOf("src/main.c"));
+    }
+
+    [Fact]
+    public void BuildCompileArguments_OmitsDefineFlags_WhenPreprocessorDefinesIsEmpty()
+    {
+        var project = new TedideProject
+        {
+            Name = "Test",
+            Target = Cc65Target.C64,
+            SourceFiles = ["src/main.c"],
+        };
+
+        var args = Cc65Toolchain.BuildCompileArguments(project, "src/main.c");
+
+        Assert.DoesNotContain("-D", args);
+    }
+
+    [Fact]
+    public void BuildCompileArguments_AddsADefineFlagPair_ForEachPreprocessorDefine_BeforeTheSourceFile()
+    {
+        var project = new TedideProject
+        {
+            Name = "Test",
+            Target = Cc65Target.C64,
+            SourceFiles = ["src/main.c"],
+            PreprocessorDefines = ["DEBUG", "VERSION=3"],
+        };
+
+        var args = Cc65Toolchain.BuildCompileArguments(project, "src/main.c");
+
+        var firstDefineIndex = args.IndexOf("-D");
+        Assert.True(firstDefineIndex >= 0, $"Expected -D in arguments: {string.Join(" ", args)}");
+        Assert.Equal("DEBUG", args[firstDefineIndex + 1]);
+        var secondDefineIndex = args.IndexOf("-D", firstDefineIndex + 1);
+        Assert.True(secondDefineIndex >= 0, $"Expected a second -D in arguments: {string.Join(" ", args)}");
+        Assert.Equal("VERSION=3", args[secondDefineIndex + 1]);
+        Assert.True(secondDefineIndex < args.IndexOf("src/main.c"));
+    }
+
+    [Fact]
+    public void BuildLinkArguments_NeverEmitsIncludePathOrDefineFlags_EvenWhenProjectHasThem()
+    {
+        // -I/-D are compile-time-only cl65 flags - ld65 has no use for them, so the link step
+        // must never emit them regardless of what's set on the project.
+        var project = new TedideProject
+        {
+            Name = "Test",
+            Target = Cc65Target.C64,
+            IncludePaths = ["include"],
+            PreprocessorDefines = ["DEBUG"],
+        };
+
+        var args = Cc65Toolchain.BuildLinkArguments(project, ["src/main.o"]);
+
+        Assert.DoesNotContain("-I", args);
+        Assert.DoesNotContain("-D", args);
+    }
+
+    [Fact]
     public void BuildCompileArguments_OmitsListingFlag_WhenGenerateAssemblyListingIsFalse()
     {
         var project = new TedideProject
@@ -186,6 +279,115 @@ public class Cc65ToolchainTests
         var outputFlagIndex = args.IndexOf("-o");
         Assert.True(outputFlagIndex >= 0);
         Assert.Equal(project.ResolvedOutputFile, args[outputFlagIndex + 1]);
+    }
+
+    [Fact]
+    public void BuildCompileArguments_OmitsDebugFlag_WhenGenerateDebugInfoIsFalse()
+    {
+        var project = new TedideProject { Name = "Test", Target = Cc65Target.C64, SourceFiles = ["src/main.c"] };
+
+        var args = Cc65Toolchain.BuildCompileArguments(project, "src/main.c");
+
+        Assert.DoesNotContain("-g", args);
+    }
+
+    [Fact]
+    public void BuildCompileArguments_IncludesDebugFlag_WhenGenerateDebugInfoIsTrue()
+    {
+        var project = new TedideProject { Name = "Test", Target = Cc65Target.C64, SourceFiles = ["src/main.c"], GenerateDebugInfo = true };
+
+        var args = Cc65Toolchain.BuildCompileArguments(project, "src/main.c");
+
+        Assert.Contains("-g", args);
+    }
+
+    [Fact]
+    public void BuildLinkArguments_OmitsWlDbgfile_WhenGenerateDebugInfoIsFalse()
+    {
+        var project = new TedideProject { Name = "Test", Target = Cc65Target.C64 };
+
+        var args = Cc65Toolchain.BuildLinkArguments(project, ["src/main.o"]);
+
+        Assert.DoesNotContain("-Wl", args);
+    }
+
+    [Fact]
+    public void BuildLinkArguments_IncludesWlDbgfile_WithTheResolvedDebugInfoPath_WhenGenerateDebugInfoIsTrue()
+    {
+        // cl65 has no top-level flag for ld65's --dbgfile - it has to go through -Wl's linker-
+        // option passthrough, comma-joined ("--dbgfile,<path>") the way cc65's own -Wl syntax
+        // expects, confirmed against a real cl65/ld65 build (see DbgFileTests).
+        var dir = Directory.CreateTempSubdirectory();
+        try
+        {
+            var project = new TedideProject { Name = "Test", Target = Cc65Target.C64, GenerateDebugInfo = true };
+            project.Save(Path.Combine(dir.FullName, "Test.tproj"));
+
+            var args = Cc65Toolchain.BuildLinkArguments(project, ["src/main.o"]);
+
+            var wlIndex = args.IndexOf("-Wl");
+            Assert.True(wlIndex >= 0, $"Expected -Wl in arguments: {string.Join(" ", args)}");
+            Assert.Equal($"--dbgfile,{project.ResolvedDebugInfoFile}", args[wlIndex + 1]);
+            Assert.True(wlIndex < args.IndexOf("src/main.o"));
+        }
+        finally
+        {
+            dir.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Clean_RemovesDebugInfoFile_WhenItExists()
+    {
+        var dir = Directory.CreateTempSubdirectory();
+        try
+        {
+            var project = new TedideProject { Name = "Test", Target = Cc65Target.C64, SourceFiles = ["main.c"], GenerateDebugInfo = true };
+            project.Save(Path.Combine(dir.FullName, "Test.tproj"));
+
+            File.WriteAllText(project.ResolvedDebugInfoFile, "");
+
+            var removed = new Cc65Toolchain().Clean(project);
+
+            Assert.Contains(project.ResolvedDebugInfoFile, removed);
+            Assert.False(File.Exists(project.ResolvedDebugInfoFile));
+        }
+        finally
+        {
+            dir.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public void BuildLinkArguments_OmitsConfigFlag_WhenLinkerConfigPathIsUnset()
+    {
+        var project = new TedideProject { Name = "Test", Target = Cc65Target.C64 };
+
+        var args = Cc65Toolchain.BuildLinkArguments(project, ["src/main.o"]);
+
+        Assert.DoesNotContain("-C", args);
+    }
+
+    [Fact]
+    public void BuildLinkArguments_IncludesConfigFlag_WithTheResolvedConfigPath_WhenLinkerConfigPathIsSet()
+    {
+        var dir = Directory.CreateTempSubdirectory();
+        try
+        {
+            var project = new TedideProject { Name = "Test", Target = Cc65Target.C64, LinkerConfigPath = "custom.cfg" };
+            project.Save(Path.Combine(dir.FullName, "Test.tproj"));
+
+            var args = Cc65Toolchain.BuildLinkArguments(project, ["src/main.o"]);
+
+            var configFlagIndex = args.IndexOf("-C");
+            Assert.True(configFlagIndex >= 0, $"Expected -C in arguments: {string.Join(" ", args)}");
+            Assert.Equal(Path.Combine(dir.FullName, "custom.cfg"), args[configFlagIndex + 1]);
+            Assert.True(configFlagIndex < args.IndexOf("src/main.o"));
+        }
+        finally
+        {
+            dir.Delete(recursive: true);
+        }
     }
 
     [Fact]

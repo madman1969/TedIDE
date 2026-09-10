@@ -155,8 +155,9 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
     /// Deletes build artifacts without invoking cl65: the per-source .o object file cl65 leaves
     /// alongside each source file, the final linked output binary, each source file's assembler
     /// listing (if <see cref="TedideProject.GenerateAssemblyListing"/> is on), the ld65 linker map
-    /// (if <see cref="TedideProject.GenerateLinkerMap"/> is on) and the ld65 label file (if
-    /// <see cref="TedideProject.ExportLabels"/> is on). Skips whatever doesn't exist (e.g. a
+    /// (if <see cref="TedideProject.GenerateLinkerMap"/> is on), the ld65 label file (if
+    /// <see cref="TedideProject.ExportLabels"/> is on) and the debug info file (if
+    /// <see cref="TedideProject.GenerateDebugInfo"/> is on). Skips whatever doesn't exist (e.g. a
     /// project that's never been built, or one that failed to compile some of its sources).
     /// Returns the full paths actually deleted.
     /// </summary>
@@ -201,6 +202,12 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
             removed.Add(project.ResolvedLabelsFile);
         }
 
+        if (File.Exists(project.ResolvedDebugInfoFile))
+        {
+            File.Delete(project.ResolvedDebugInfoFile);
+            removed.Add(project.ResolvedDebugInfoFile);
+        }
+
         return removed;
     }
 
@@ -226,11 +233,19 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
             args.AddRange(["-l", Path.ChangeExtension(Path.Combine(project.Directory, sourceFile), ".lst")]);
         if (project.AddSourceAsComment)
             args.Add("-T");
+        if (project.GenerateDebugInfo)
+            args.Add("-g");
+        foreach (var includePath in project.IncludePaths)
+            args.AddRange(["-I", includePath]);
+        foreach (var define in project.PreprocessorDefines)
+            args.AddRange(["-D", define]);
         // cl65 applies flags left-to-right as it encounters them, so e.g. an "-I" include path
         // only affects source files listed after it on the command line - ExtraArguments must
         // come before the source file, not after, or flags like that silently have no effect.
         // Added after the optimization flag so a manually-specified -O* in ExtraArguments (the
-        // old way of setting this, before Cc65OptimizationLevel existed) still wins.
+        // old way of setting this, before Cc65OptimizationLevel existed) still wins. IncludePaths
+        // and PreprocessorDefines are placed before ExtraArguments too, so a hand-written -I/-D in
+        // ExtraArguments can still layer on top if needed.
         args.AddRange(project.ExtraArguments);
         args.Add(sourceFile);
         return args;
@@ -250,6 +265,14 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
             "-t", project.Target.ToCl65Id(),
             "-o", project.ResolvedOutputFile,
         };
+        if (!string.IsNullOrWhiteSpace(project.LinkerConfigPath))
+            args.AddRange(["-C", Path.Combine(project.Directory, project.LinkerConfigPath)]);
+        if (project.GenerateDebugInfo)
+            // cl65 has no top-level flag for ld65's --dbgfile (confirmed against a real cl65
+            // --help - only -g/--debug-info exist, and cl65 rejects "--dbgfile" outright as an
+            // unknown option), so it has to go through -Wl's linker-option passthrough instead,
+            // comma-joined the same way cc65's own -Wl syntax expects multiple pieces.
+            args.AddRange(["-Wl", $"--dbgfile,{project.ResolvedDebugInfoFile}"]);
         if (project.GenerateLinkerMap)
             args.AddRange(["-m", project.ResolvedMapFile]);
         if (project.ExportLabels)
