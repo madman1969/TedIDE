@@ -722,6 +722,11 @@ public sealed class AppShell : Window
         _editorFrame.Title = Path.GetFileName(path);
         UpdateLanguageIndicator();
         RefreshBreakpointHighlights();
+        // EditorPane.Open always makes the freshly-opened file editable - reassert read-only if
+        // a debug session is in progress (e.g. a breakpoint in a different file, or the user
+        // browsing via Solution Explorer while paused), same as StartDebuggingAsync sets initially.
+        if (_isDebugging)
+            _editorPane.Editor.ReadOnly = true;
     }
 
     /// <summary>Opens the Help > About dialog. Read-only - see <see cref="AboutDialog"/>.</summary>
@@ -1024,6 +1029,12 @@ public sealed class AppShell : Window
         }
 
         _isDebugging = true;
+        // Read-only for the whole session - editing source while the compiled binary it no longer
+        // matches is running would be misleading, and this also guarantees the unsaved-changes
+        // prompt in ConfirmReplaceCurrentFile (via OpenFile) can never fire/get cancelled while a
+        // breakpoint/step tries to jump to a different file, since no further edits are possible
+        // once this is set (the BuildActiveProjectAsync call above already saved everything).
+        _editorPane.Editor.ReadOnly = true;
 
         foreach (var breakpoint in _breakpoints.Breakpoints.Where(b => b.Enabled))
         {
@@ -1157,6 +1168,10 @@ public sealed class AppShell : Window
         _debugLineTransformer.CurrentLineNumber = null;
         _debugPanel.SetStatus("Not debugging.");
         _debugPanel.SetRegisters(null);
+        // Only if a file is actually open - EditorPane itself keeps ReadOnly true with nothing
+        // open (see its constructor), and this shouldn't override that.
+        if (_editorPane.OpenPath is not null)
+            _editorPane.Editor.ReadOnly = false;
         _editorPane.Editor.SetNeedsDraw();
     }
 
