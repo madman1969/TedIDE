@@ -10,6 +10,8 @@
   <ItemGroup>
     <PackageReference Include="Terminal.Gui" Version="2.4.17" />
     <PackageReference Include="Terminal.Gui.Editor" Version="2.5.7" />
+    <PackageReference Include="Serilog" Version="4.2.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
     <!-- Decodes the embedded avatar.jpg into pixel data for AboutDialog's ImageView - Terminal.Gui
          deliberately has no image-decoding dependency of its own, so the caller supplies one.
          Windows-only, matching this app's existing platform assumption (see ViceEmulator, the

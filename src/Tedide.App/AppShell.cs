@@ -1,3 +1,4 @@
+using Serilog;
 using Tedide.Theming;
 using Tedide.App.Views;
 using Tedide.Build;
@@ -53,6 +54,7 @@ public sealed class AppShell : Window
     private DbgFile? _dbgFile;
     private bool _isDebugging;
     private bool _isStopped;
+    private bool _isStepping;
     private Tabs _outputTabs = null!;
     private View _outputTab = null!;
     private View _debugTab = null!;
@@ -261,6 +263,18 @@ public sealed class AppShell : Window
     private EditorMenuBar BuildMenuBar()
     {
         var menuBar = new EditorMenuBar(_editorPane.Editor);
+        // MenuBar's own default "activate the menu bar" key is F10 (confirmed in Terminal.Gui's
+        // own source, MenuBar.cs), which silently wins over Debug > Step's F10 - this isn't a
+        // hotkey-binding-priority conflict, it's the MenuBar's constructor directly registering
+        // `HotKeyBindings.Add(Key, Command.HotKey)` for whatever DefaultKey was at construction
+        // time. Setting the instance Key property afterward doesn't re-sync that binding (tried
+        // it - no effect, the setter only raises an event), and setting the *static* DefaultKey to
+        // Key.Empty beforehand instead makes the constructor itself throw ("Invalid newEventArgs" -
+        // HotKeyBindings.Add rejects an empty key outright, confirmed via a real crash caught in
+        // the log). Removing the already-registered binding directly is the only approach that
+        // actually works. Every menu is already reachable via Alt+<mnemonic> (confirmed throughout
+        // this app's own testing), so freeing F10 here costs no discoverability.
+        menuBar.HotKeyBindings.Remove(Key.F10);
 
         _recentProjectsMenuItem = new MenuItem("_Recent Projects and Solutions", "", new Menu(BuildRecentProjectsMenuItems()));
         // BindKeyToApplication = true is what actually makes a MenuItem's Key fire while its
@@ -351,6 +365,12 @@ public sealed class AppShell : Window
         // until it was reported and fixed here alongside F9/Ctrl+G.
         statusBar.Add(new Shortcut(Key.F6, "~F6~ Run", () => _ = RunActiveProjectAsync()));
         statusBar.Add(new Shortcut(Key.F9, "~F9~ Breakpoint", ToggleBreakpointAtCursor));
+        // Debug > Step's own MenuItem key (BindKeyToApplication = true) never actually fired in a
+        // live test even after removing MenuBar's competing F10 HotKeyBinding above - unclear why
+        // (possibly the same App-not-yet-set-at-construction-time risk noted elsewhere for that
+        // mechanism), but a status-bar Shortcut is proven to work for every other debugging hotkey
+        // here, so use it rather than keep chasing the object-initializer path for this one key.
+        statusBar.Add(new Shortcut(Key.F10, "~F10~ Step", () => _ = StepDebuggingAsync()));
         statusBar.Add(new Shortcut(Key.S.WithCtrl, "~^S~ Save", SaveAll));
         statusBar.Add(new Shortcut(Key.G.WithCtrl, "~^G~ Go To Line", ShowGoToLine));
         statusBar.Add(new Shortcut(Key.Q.WithCtrl, "~^Q~ Quit", () => Application.RequestStop(this)));
@@ -864,6 +884,43 @@ public sealed class AppShell : Window
         _editorPane.Editor.SetFocus();
     }
 
+    /// <summary>
+    /// Scrolls the editor's viewport so the given 1-based line sits vertically centered, rather
+    /// than just barely visible (the default behavior of CaretOffset's own EnsureCaretVisible,
+    /// which merely clamps to the nearest edge) - used only for the currently-executing line
+    /// during a debug session (checkpoint hit, step, or the initial jump to main()), so nearby
+    /// code above and below stays visible without the user needing to scroll manually. Not used
+    /// for other navigation (Find in Files, Go To Line, Symbol panel) - minimal-scroll there is
+    /// the expected, less disruptive behavior.
+    /// </summary>
+    /// <remarks>
+    /// Ignores folding: the fold-aware visible-row mapping (<c>Editor.GetVisibleLineNumbers</c>)
+    /// is internal to Terminal.Gui.Editor, not accessible from here - centering by raw line number
+    /// is a reasonable simplification since debug sessions don't typically have folds active.
+    /// </remarks>
+    /// <param name="filePath">The absolute path <see cref="OpenSymbol"/> was just asked to show -
+    /// checked against <see cref="EditorPane.OpenPath"/> before centering, since OpenSymbol is a
+    /// no-op when that file doesn't exist locally (e.g. stepping into cc65's own runtime library,
+    /// whose original build-machine source path isn't present on disk) - without this check,
+    /// centering would jump whatever file *is* still open to this unrelated line number instead.</param>
+    private void CenterEditorOnLine(string filePath, int lineNumber)
+    {
+        if (!string.Equals(_editorPane.OpenPath, filePath, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        var editor = _editorPane.Editor;
+        if (editor.Document is not { } document)
+            return;
+
+        var viewport = editor.Viewport;
+        if (viewport.Height <= 0)
+            return;
+
+        var maxY = Math.Max(0, document.LineCount - viewport.Height);
+        var targetY = Math.Clamp(lineNumber - 1 - viewport.Height / 2, 0, maxY);
+        editor.Viewport = viewport with { Y = targetY };
+    }
+
     /// <summary>Reloads <see cref="_breakpoints"/> from the active project's breakpoints sidecar
     /// file (see <see cref="TedideProject.ResolvedBreakpointsFile"/>), or resets to an empty set if
     /// no project is loaded. Called everywhere the active project itself changes (open/new/close,
@@ -991,12 +1048,30 @@ public sealed class AppShell : Window
         }
         _dbgFile = DbgFile.Parse(File.ReadAllText(project.ResolvedDebugInfoFile));
 
-        _vice.Launch(project, AppendOutputLine, enableBinaryMonitor: true);
+        // Application.Invoke, not AppendOutputLine directly: Process.OutputDataReceived/
+        // ErrorDataReceived (what ViceEmulator.Launch's onOutputLine ultimately wraps) fire on a
+        // thread-pool thread, not the UI thread - confirmed via a real crash this line caused
+        // ("Collection was modified; enumeration operation may not execute" inside TextView's own
+        // draw, racing OutputView._lines against the UI thread's concurrent draw-time enumeration
+        // of it). RunActiveProjectAsync's own _vice.Launch call already gets this right.
+        _vice.Launch(project, line => Application.Invoke(() => AppendOutputLine(line)), enableBinaryMonitor: true);
 
         _debugClient = new ViceMonitorClient();
         _debugClient.CheckpointHit += OnCheckpointHit;
-        _debugClient.Resumed += _ => Application.Invoke(() =>
+        _debugClient.Resumed += pc => Application.Invoke(() =>
         {
+            Log.Debug("Resumed event: PC={PC:X4}, _isStepping={IsStepping}", pc, _isStepping);
+            // VICE's "Advance Instructions" (single-step) resumes and re-halts the CPU just like
+            // Continue does, so it raises this same unsolicited Resumed event - without this guard,
+            // its queued "Running..."/CurrentLineNumber=null update was landing *after*
+            // StepDebuggingAsync's own "Stopped at ..." update (this handler is queued via
+            // Application.Invoke from the background read-loop thread, so it can run on the UI
+            // thread after Step's own synchronous continuation already finished), clobbering the
+            // status text and un-highlighting the line it had just moved to, and leaving
+            // _isStopped incorrectly false so the *next* Step silently no-op'd on its own guard.
+            if (_isStepping)
+                return;
+
             _isStopped = false;
             _debugLineTransformer.CurrentLineNumber = null;
             _debugPanel.SetStatus("Running...");
@@ -1036,16 +1111,37 @@ public sealed class AppShell : Window
         // once this is set (the BuildActiveProjectAsync call above already saved everything).
         _editorPane.Editor.ReadOnly = true;
 
+        // Show the C source containing main() as the session comes up, before anything actually
+        // runs - the same _main label every C program has, resolved back to its source location
+        // the same way a checkpoint hit resolves the PC (see DbgFile.FindSourceLocationForAddress).
+        // Application.Invoke, not a direct call: by this point StartDebuggingAsync has been through
+        // several awaits (connecting to VICE), and unlike everything else in this method, OpenSymbol
+        // touches Editor.Document - TextDocument enforces single-thread ownership (VerifyAccess),
+        // and nothing guarantees this continuation resumed on the UI thread. A real crash, caught
+        // via Windows Event Log after this exact code path took the whole process down with
+        // "Call from invalid thread" during the next draw.
+        if (_dbgFile.Symbols.FirstOrDefault(s => s.Name == "_main" && s.Type == "lab") is { Value: { } mainAddress }
+            && _dbgFile.FindSourceLocationForAddress(mainAddress) is { } mainLocation)
+        {
+            Application.Invoke(() =>
+            {
+                var mainPath = Path.Combine(project.Directory, mainLocation.FilePath);
+                OpenSymbol((mainPath, mainLocation.Line));
+                CenterEditorOnLine(mainPath, mainLocation.Line);
+            });
+        }
+
         foreach (var breakpoint in _breakpoints.Breakpoints.Where(b => b.Enabled))
         {
             var address = _dbgFile.FindAddressForSourceLine(breakpoint.SourceFile, breakpoint.Line);
             if (address is { } addr)
                 await _debugClient.SetCheckpointAsync((ushort)addr);
             else
-                AppendOutputLine($"Could not resolve breakpoint {breakpoint.SourceFile}:{breakpoint.Line} to an address - it may be on a line with no compiled code.");
+                Application.Invoke(() => AppendOutputLine(
+                    $"Could not resolve breakpoint {breakpoint.SourceFile}:{breakpoint.Line} to an address - it may be on a line with no compiled code."));
         }
 
-        _debugPanel.SetStatus("Running...");
+        Application.Invoke(() => _debugPanel.SetStatus("Running..."));
         await _debugClient.ContinueAsync();
     }
 
@@ -1060,6 +1156,7 @@ public sealed class AppShell : Window
     /// </summary>
     private void OnCheckpointHit(CheckpointHitEventArgs args)
     {
+        Log.Debug("CheckpointHit event: checkpoint #{Number}", args.Checkpoint.Number);
         Application.Invoke(async () =>
         {
             try
@@ -1069,30 +1166,49 @@ public sealed class AppShell : Window
                     return;
 
                 var registers = await _debugClient.GetRegistersAsync();
-                _debugPanel.SetRegisters(registers);
 
-                // "PC" is VICE's register name for the 6502 program counter on the main memspace -
-                // confirmed for real against a live VICE 3.9 instance during implementation (its
-                // ids are assigned dynamically per the binary monitor protocol docs, but this name
-                // was stable), not just inferred from community tooling.
-                var project = _workspace.ActiveProject;
-                var pc = registers["PC"];
-                if (project is not null && pc is { } pcValue && _dbgFile?.FindSourceLocationForAddress(pcValue) is { } location)
+                // Everything below touches Editor/TextDocument state, which enforces single-thread
+                // ownership (TextDocument.VerifyAccess). Application.Invoke only guarantees the UI
+                // thread for this lambda's synchronous prefix - the await just above means this
+                // continuation is NOT guaranteed to still be on the UI thread, and Terminal.Gui
+                // doesn't restore it. Confirmed via a real crash here ("Call from invalid thread"
+                // inside OpenSymbol) - re-marshal explicitly with a nested Invoke rather than
+                // assuming the outer one's thread-affinity survives an internal await.
+                Application.Invoke(() =>
                 {
-                    OpenSymbol((Path.Combine(project.Directory, location.FilePath), location.Line));
-                    _debugLineTransformer.CurrentLineNumber = location.Line;
-                    _debugPanel.SetStatus($"Stopped at {location.FilePath}:{location.Line} (checkpoint #{args.Checkpoint.Number})");
-                }
-                else
-                {
-                    _debugLineTransformer.CurrentLineNumber = null;
-                    _debugPanel.SetStatus(pc is { } pcv ? $"Stopped at ${pcv:X4} (checkpoint #{args.Checkpoint.Number})" : "Stopped.");
-                }
-                _editorPane.Editor.SetNeedsDraw();
+                    _debugPanel.SetRegisters(registers);
+
+                    // "PC" is VICE's register name for the 6502 program counter on the main
+                    // memspace - confirmed for real against a live VICE 3.9 instance during
+                    // implementation (its ids are assigned dynamically per the binary monitor
+                    // protocol docs, but this name was stable), not just inferred from community
+                    // tooling.
+                    var project = _workspace.ActiveProject;
+                    var pc = registers["PC"];
+                    var location = pc is { } pcForLookup ? _dbgFile?.FindSourceLocationForAddress(pcForLookup) : null;
+                    Log.Debug("CheckpointHit resolving: PC={PC:X4}, project={HasProject}, location={Location}",
+                        pc, project is not null, location is { } loc ? $"{loc.FilePath}:{loc.Line}" : "(unresolved)");
+                    if (project is not null && location is { } resolved)
+                    {
+                        var resolvedPath = Path.Combine(project.Directory, resolved.FilePath);
+                        OpenSymbol((resolvedPath, resolved.Line));
+                        CenterEditorOnLine(resolvedPath, resolved.Line);
+                        _debugLineTransformer.CurrentLineNumber = resolved.Line;
+                        _debugPanel.SetStatus($"Stopped at {resolved.FilePath}:{resolved.Line} (checkpoint #{args.Checkpoint.Number})");
+                    }
+                    else
+                    {
+                        _debugLineTransformer.CurrentLineNumber = null;
+                        _debugPanel.SetStatus(pc is { } pcv ? $"Stopped at ${pcv:X4} (checkpoint #{args.Checkpoint.Number})" : "Stopped.");
+                    }
+                    _editorPane.Editor.SetNeedsDraw();
+                    Log.Debug("CheckpointHit done: status is now {Status}", _debugPanel.StatusText);
+                });
             }
             catch (Exception ex)
             {
-                AppendOutputLine($"Error handling checkpoint hit: {ex.Message}");
+                Log.Error(ex, "Error handling checkpoint hit");
+                Application.Invoke(() => AppendOutputLine($"Error handling checkpoint hit: {ex.Message}"));
             }
         });
     }
@@ -1120,36 +1236,75 @@ public sealed class AppShell : Window
         if (_debugClient is null || _dbgFile is null || !_isDebugging || !_isStopped)
             return;
 
-        var startRegisters = await _debugClient.GetRegistersAsync();
-        var startLocation = startRegisters["PC"] is { } startPc ? _dbgFile.FindSourceLocationForAddress(startPc) : null;
-
-        for (var i = 0; i < 500; i++)
+        // See the Resumed handler's own comment in StartDebuggingAsync for why this guard exists -
+        // each single-step's own Resumed event must not touch UI state that this method (still
+        // mid-loop) owns for the whole duration of the step.
+        _isStepping = true;
+        try
         {
-            await _debugClient.StepAsync();
-            var registers = await _debugClient.GetRegistersAsync();
-            if (registers["PC"] is not { } pc)
-                break;
+            var startRegisters = await _debugClient.GetRegistersAsync();
+            var startLocation = startRegisters["PC"] is { } startPc ? _dbgFile.FindSourceLocationForAddress(startPc) : null;
+            // main.c has 6 line records in HelloCBM.dbg against main.s's 22 for the same code -
+            // cl65's generated .s intermediate is tracked at far finer granularity than the
+            // original C source. Single-stepping from a C line legitimately passes through
+            // addresses that only resolve to that intermediate (no surviving .c line record there -
+            // see DbgFile.FindSourceLocationForAddress's own doc comment) before reaching the next
+            // real C statement - those must be skipped, not reported as "the next line", or Step
+            // stops one instruction early and shows the generated .s file instead of the .c one.
+            var startedInAssembly = startLocation is null || IsAssemblySourceFile(startLocation.Value.FilePath);
 
-            var location = _dbgFile.FindSourceLocationForAddress(pc);
-            if (location is null || location != startLocation)
+            for (var i = 0; i < 500; i++)
             {
-                _debugPanel.SetRegisters(registers);
-                var project = _workspace.ActiveProject;
-                if (project is not null && location is { } loc)
+                await _debugClient.StepAsync();
+                var registers = await _debugClient.GetRegistersAsync();
+                if (registers["PC"] is not { } pc)
+                    break;
+
+                var location = _dbgFile.FindSourceLocationForAddress(pc);
+                if (!startedInAssembly && location is { } candidate && IsAssemblySourceFile(candidate.FilePath))
+                    continue;
+
+                if (location is null || location != startLocation)
                 {
-                    OpenSymbol((Path.Combine(project.Directory, loc.FilePath), loc.Line));
-                    _debugLineTransformer.CurrentLineNumber = loc.Line;
-                    _debugPanel.SetStatus($"Stopped at {loc.FilePath}:{loc.Line}");
+                    // Re-marshal onto the UI thread before touching Editor/TextDocument state -
+                    // see OnCheckpointHit's own comment on this same pattern. The awaits above
+                    // (StepAsync/GetRegistersAsync) don't guarantee this loop iteration is still
+                    // running on the UI thread even though StepDebuggingAsync itself was originally
+                    // invoked from one.
+                    Application.Invoke(() =>
+                    {
+                        _debugPanel.SetRegisters(registers);
+                        var project = _workspace.ActiveProject;
+                        if (project is not null && location is { } loc)
+                        {
+                            var locPath = Path.Combine(project.Directory, loc.FilePath);
+                            OpenSymbol((locPath, loc.Line));
+                            CenterEditorOnLine(locPath, loc.Line);
+                            _debugLineTransformer.CurrentLineNumber = loc.Line;
+                            _debugPanel.SetStatus($"Stopped at {loc.FilePath}:{loc.Line}");
+                        }
+                        else
+                        {
+                            _debugLineTransformer.CurrentLineNumber = null;
+                            _debugPanel.SetStatus($"Stopped at ${pc:X4}");
+                        }
+                        _editorPane.Editor.SetNeedsDraw();
+                    });
+                    return;
                 }
-                else
-                {
-                    _debugLineTransformer.CurrentLineNumber = null;
-                    _debugPanel.SetStatus($"Stopped at ${pc:X4}");
-                }
-                _editorPane.Editor.SetNeedsDraw();
-                return;
             }
         }
+        finally
+        {
+            _isStepping = false;
+        }
+    }
+
+    private static bool IsAssemblySourceFile(string filePath)
+    {
+        var extension = Path.GetExtension(filePath);
+        return string.Equals(extension, ".s", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(extension, ".asm", StringComparison.OrdinalIgnoreCase);
     }
 
     private async Task StopDebuggingAsync()
@@ -1165,14 +1320,19 @@ public sealed class AppShell : Window
         _dbgFile = null;
         _isDebugging = false;
         _isStopped = false;
-        _debugLineTransformer.CurrentLineNumber = null;
-        _debugPanel.SetStatus("Not debugging.");
-        _debugPanel.SetRegisters(null);
-        // Only if a file is actually open - EditorPane itself keeps ReadOnly true with nothing
-        // open (see its constructor), and this shouldn't override that.
-        if (_editorPane.OpenPath is not null)
-            _editorPane.Editor.ReadOnly = false;
-        _editorPane.Editor.SetNeedsDraw();
+        // Re-marshal onto the UI thread - see OnCheckpointHit's own comment on why the awaits
+        // above don't guarantee this continuation is still there.
+        Application.Invoke(() =>
+        {
+            _debugLineTransformer.CurrentLineNumber = null;
+            _debugPanel.SetStatus("Not debugging.");
+            _debugPanel.SetRegisters(null);
+            // Only if a file is actually open - EditorPane itself keeps ReadOnly true with nothing
+            // open (see its constructor), and this shouldn't override that.
+            if (_editorPane.OpenPath is not null)
+                _editorPane.Editor.ReadOnly = false;
+            _editorPane.Editor.SetNeedsDraw();
+        });
     }
 
     private void CloseActiveFile()

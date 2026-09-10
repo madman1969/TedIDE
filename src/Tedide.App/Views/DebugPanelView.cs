@@ -32,6 +32,8 @@ public sealed class DebugPanelView : View
 
     public void SetStatus(string text) => _statusLabel.Text = text;
 
+    public string StatusText => _statusLabel.Text;
+
     /// <summary>Replaces the displayed registers, or clears them (pass null) when not stopped/not debugging.</summary>
     public void SetRegisters(RegisterSnapshot? snapshot)
     {
