@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1">
+<title>The C Book &#8212; Sequence points</title>
+<meta property="og:title" content="The C Book &amp;#8212; Sequence points" />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://global.gbdirect.co.uk/Themes/logo-og.png" />
+
+<link rel="SHORTCUT ICON" href="https://global.gbdirect.co.uk/favicon.ico" />
+<link rel="stylesheet" type="text/css" href="https://global.gbdirect.co.uk/Themes/Quarters.css" />
+
+<link rel="prev" href="/c_book/chapter8/const_and_volatile.html" />
+<link rel="next" href="/c_book/chapter8/summary.html" />
+<link rel="contents" href="/c_book/chapter8/" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<!-- order 6-->
+<!-- lastmod 2005-11-10T16:42:05Z-->
+
+
+<link rel="canonical" href="https://publications.gbdirect.co.uk/c_book/chapter8/sequence_points.html"/><meta property="og:url" content="https://publications.gbdirect.co.uk/c_book/chapter8/sequence_points.html" />
+<script type="text/javascript"> var _gaq = _gaq || []; _gaq.push(['_setAccount', 'UA-3566842-1']); _gaq.push(['_setDomainName', '.gbdirect.co.uk']); _gaq.push(['_trackPageview']); (function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = 'https://www.google-analytics.com/ga.js'; var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s); })(); </script>
+</head>
+
+<body>
+  <header class="Banner">
+    <span id="Logo">
+      <a href="https://ebusiness.gbdirect.co.uk">
+        <img src="https://global.gbdirect.co.uk/Themes/gbdirect.gif"
+             alt="GBdirect Homepage"
+             title="GBdirect Homepage" /></a>
+    </span>
+<!-- Original homebrew search
+    <form action="https://global.gbdirect.co.uk/search.cgi"
+          method="get" id="Search">
+      <label for="search_textbox">Search</label>
+      <input type="text" name="query" size="12" id="search_textbox" value="" />
+      <input type="submit" name="Submit" value="Go" />
+    </form>
+-->
+<!-- Google search -->
+    <form class="Search" action="https://www.google.com/cse" id="cse-search-box">
+      <input type="hidden" name="cx" value="010270212093732037646:4pvgkishmkg" />
+      <input type="hidden" name="ie" value="UTF-8" />
+      <label for="search_textbox">Search</label>
+      <input type="text" name="q" id="search_textbox" size="12" />
+      <input type="submit" name="sa" value="Go" />
+    </form>
+    <script type="text/javascript" src="https://www.google.com/cse/brand?form=cse-search-box&amp;lang=en&amp;sitesearch=true"></script>
+<!-- End Google search -->
+  </header>
+  <nav class="Tabsbar"><span class="ThisTab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span> <span class="NoCSS2">| </span> <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/contact.html">Contact</a></span></nav>
+  <div id="container" itemscope itemtype="http://schema.org/WebPage">
+    <meta itemprop="isFamilyFriendly" content="1" />
+    <meta itemprop="inLanguage" content="en" />
+    <nav class="Tabsbar" id="tabsbar" style="position: absolute; width: 100%">
+  
+  
+    <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/">About Us</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://consulting.gbdirect.co.uk/">Consultancy</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://development.gbdirect.co.uk/">Software</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="ThisTab">Publications</span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-source.gbdirect.co.uk/">Open&nbsp;Source</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://software-support.gbdirect.co.uk/">Support</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-standards.gbdirect.co.uk/">Open&nbsp;Standards</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://faq.gbdirect.co.uk/">FAQ</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://jobs.gbdirect.co.uk/">Jobs</a></span>
+  
+
+</nav>
+    <main id="main" >
+	  
+		<nav id="breadcrumb" itemprop="breadcrumb">
+			
+			<a href="https://publications.gbdirect.co.uk/">Publications</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/">The C&nbsp;Book</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/chapter8/">Specialized areas</a>
+			
+			 &gt; Sequence points
+			
+		</nav>
+		<br />
+	  
+      <h1>8.5. Sequence points</h1>
+      
+      
+
+
+  
+
+  <p>Associated with, but distinct from, the problems of real-time
+   programming are <dfn>sequence points</dfn>. These are the Standard's
+   attempt to define when certain sorts of optimization may and may not be
+   permitted to be in effect. For example, look at this program:</p>
+
+  <div class="inset-example"><a name="example-6"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+int i_var;
+void func(void);
+
+main(){
+        while(i_var != 10000){
+                func();
+                i_var++;
+        }
+        exit(EXIT_SUCCESS);
+}
+
+void
+func(void){
+        printf(&quot;in func, i_var is %d\n&quot;, i_var);
+}</pre><cite>Example&#160;8.6</cite></div>
+
+  <p>The compiler might want to optimize the loop so that <code>i_var</code>
+   can be stored in a machine register for speed. However, the function
+   needs to have access to the correct value of <code>i_var</code> so that
+   it can print the right value. This means that the register must be stored
+   back into <code>i_var</code> at each function call (at least).  When and
+   where these conditions must occur are described by the Standard. At each
+   sequence point, the side effects of all previous expressions will be
+   completed. This is why you cannot rely on expressions such as:</p>
+
+  <pre>
+a[i] = i++;</pre>
+
+  <p>because there is no sequence point specified for the assignment,
+   increment or index operators, you don't know when the effect of the
+   increment on&#160;<code>i</code> occurs.</p>
+
+  <p>The sequence points laid down in the Standard are the following:</p>
+
+  <ul>
+   <li>The point of calling a function, after evaluating its arguments.</li>
+
+   <li>The end of the first operand of the&#160;<code>&amp;&amp;</code>
+    operator.</li>
+
+   <li>The end of the first operand of the&#160;<code>||</code> operator.</li>
+
+   <li>The end of the first operand of the&#160;<code>?:</code> conditional
+    operator.</li>
+
+   <li>The end of the each operand of the comma operator.</li>
+
+   <li>Completing the evaluation of a full expression. They are the
+    following:
+
+    <ul>
+     <li>Evaluating the initializer of an <code>auto</code> object.</li>
+
+     <li>The expression in an &#8216;ordinary&#8217; statement&#8212;an expression
+      followed by semicolon.</li>
+
+     <li>The controlling expressions in <code>do</code>, <code>while</code>,
+      <code>if</code>, <code>switch</code> or <code>for</code>
+      statements.</li>
+
+     <li>The other two expressions in a for statement.</li>
+
+     <li>The expression in a <code>return</code> statement.</li>
+    </ul>
+   </li>
+  </ul>
+
+ <div class="cbook_next_prev"><p><a href="const_and_volatile.html">Previous section</a> | <a href="../chapter8/">Chapter contents</a> | <a href="summary.html">Next section</a></p></div>
+
+    </main>
+    <nav id="menu" class="Left">
+      
+ 
+  
+  <div class="nav">
+
+	
+	
+			
+			  <div class="nav0">
+				
+				  <a href="/">Publications</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav1">
+				
+				  <a href="/c_book/">The C&nbsp;Book</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/preface/">Preface</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter1/">Introduction</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter2/">Variables &amp; arithmetic</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter3/">Control flow</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter4/">Functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter5/">Arrays &amp; pointers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter6/">Structures</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter7/">Preprocessor</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter8/">Specialized areas</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter8/health_warning.html">Health warning</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter8/declarations_and_definitions.html">Declarations &amp; definitions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter8/typedef.html">Typedef</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter8/const_and_volatile.html">Const &amp; volatile</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <strong>Sequence points</strong>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter8/summary.html">Summary</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter9/">Libraries</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter10/">Complete Programs</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/answers/">Answers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/copyright.html">Copyright</a>
+				
+				
+			</div>
+			
+	
+
+</div>
+
+ 
+
+      <div class="ColBtm">
+        <hr />
+<div class="h1"><a href="https://ebusiness.gbdirect.co.uk/contact.html">Contact Us</a></div>
+
+      </div>
+
+    </nav>
+    <aside id="sidebar" class="Right">
+      
+ <div class="box">
+  
+  
+<img src="https://global.gbdirect.co.uk/Themes/printer-friendly-12x12.png" alt="" title="Printer-friendly version of this page" />
+<a href="?format=pf" rel="nofollow">
+  Printer-friendly version
+</a>
+
+ </div>
+
+ <div class="box">
+  <h3>The C Book</h3>
+  
+<p>This book is published as a matter of historical interest.
+ Please read the
+ <a href="/c_book/copyright.html">copyright and disclaimer information</a>.</p>
+
+<p>GBdirect Ltd provides up-to-date training and consultancy in
+ <a href="http://training.gbdirect.co.uk/courses/c/">C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c/real_time_linux_embedded_c_training.html">Embedded C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c++/">C++</a>
+ and a wide range of
+ <a href="http://training.gbdirect.co.uk/courses/">other subjects based on
+ open standards</a> if you happen to be interested.</p>
+
+ </div>
+
+
+    </aside>
+  </div>
+  
+<script type="text/javascript">
+        var maxheight = 0;
+        var a =  Array('main', 'menu', 'sidebar');
+        for(index in a){
+                var name = a[index];
+                // alert(name);
+                var id = document.getElementById(name);
+                if(id){
+                        if(id.offsetHeight > maxheight){
+                                maxheight = id.offsetHeight;
+                        }
+                }
+        }
+        var tabbar = document.getElementById('tabsbar');
+        if(tabbar){
+                if(tabbar.style) tabbar=tabbar.style;
+                tabbar.left = 0+'px';
+                tabbar.top = maxheight+'px';
+        }
+        
+</script>
+</body>
+</html>

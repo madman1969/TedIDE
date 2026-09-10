@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1">
+<title>The C Book &#8212; The type of functions</title>
+<meta property="og:title" content="The C Book &amp;#8212; The type of functions" />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://global.gbdirect.co.uk/Themes/logo-og.png" />
+
+<link rel="SHORTCUT ICON" href="https://global.gbdirect.co.uk/favicon.ico" />
+<link rel="stylesheet" type="text/css" href="https://global.gbdirect.co.uk/Themes/Quarters.css" />
+
+<link rel="prev" href="/c_book/chapter4/changes.html" />
+<link rel="next" href="/c_book/chapter4/recursion_and_argument_passing.html" />
+<link rel="contents" href="/c_book/chapter4/" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<!-- order 3-->
+<!-- lastmod 2005-11-10T16:42:04Z-->
+
+
+<link rel="canonical" href="https://publications.gbdirect.co.uk/c_book/chapter4/function_types.html"/><meta property="og:url" content="https://publications.gbdirect.co.uk/c_book/chapter4/function_types.html" />
+<script type="text/javascript"> var _gaq = _gaq || []; _gaq.push(['_setAccount', 'UA-3566842-1']); _gaq.push(['_setDomainName', '.gbdirect.co.uk']); _gaq.push(['_trackPageview']); (function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = 'https://www.google-analytics.com/ga.js'; var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s); })(); </script>
+</head>
+
+<body>
+  <header class="Banner">
+    <span id="Logo">
+      <a href="https://ebusiness.gbdirect.co.uk">
+        <img src="https://global.gbdirect.co.uk/Themes/gbdirect.gif"
+             alt="GBdirect Homepage"
+             title="GBdirect Homepage" /></a>
+    </span>
+<!-- Original homebrew search
+    <form action="https://global.gbdirect.co.uk/search.cgi"
+          method="get" id="Search">
+      <label for="search_textbox">Search</label>
+      <input type="text" name="query" size="12" id="search_textbox" value="" />
+      <input type="submit" name="Submit" value="Go" />
+    </form>
+-->
+<!-- Google search -->
+    <form class="Search" action="https://www.google.com/cse" id="cse-search-box">
+      <input type="hidden" name="cx" value="010270212093732037646:4pvgkishmkg" />
+      <input type="hidden" name="ie" value="UTF-8" />
+      <label for="search_textbox">Search</label>
+      <input type="text" name="q" id="search_textbox" size="12" />
+      <input type="submit" name="sa" value="Go" />
+    </form>
+    <script type="text/javascript" src="https://www.google.com/cse/brand?form=cse-search-box&amp;lang=en&amp;sitesearch=true"></script>
+<!-- End Google search -->
+  </header>
+  <nav class="Tabsbar"><span class="ThisTab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span> <span class="NoCSS2">| </span> <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/contact.html">Contact</a></span></nav>
+  <div id="container" itemscope itemtype="http://schema.org/WebPage">
+    <meta itemprop="isFamilyFriendly" content="1" />
+    <meta itemprop="inLanguage" content="en" />
+    <nav class="Tabsbar" id="tabsbar" style="position: absolute; width: 100%">
+  
+  
+    <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/">About Us</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://consulting.gbdirect.co.uk/">Consultancy</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://development.gbdirect.co.uk/">Software</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="ThisTab">Publications</span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-source.gbdirect.co.uk/">Open&nbsp;Source</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://software-support.gbdirect.co.uk/">Support</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-standards.gbdirect.co.uk/">Open&nbsp;Standards</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://faq.gbdirect.co.uk/">FAQ</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://jobs.gbdirect.co.uk/">Jobs</a></span>
+  
+
+</nav>
+    <main id="main" >
+	  
+		<nav id="breadcrumb" itemprop="breadcrumb">
+			
+			<a href="https://publications.gbdirect.co.uk/">Publications</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/">The C&nbsp;Book</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/chapter4/">Functions</a>
+			
+			 &gt; Function types
+			
+		</nav>
+		<br />
+	  
+      <h1>4.2. The type of functions</h1>
+      
+      
+
+
+  
+
+  <p>All functions have a type: they return a value of that type whenever
+   they are used. The reason that C doesn't have &#8216;procedures&#8217;, which
+   in most other languages are simply functions without a value, is that in
+   C it is permissible (in fact well-nigh mandatory) to discard the eventual
+   value of most expressions. If that surprises you, think of an
+   assignment</p>
+<pre>
+  a = 1;</pre>
+  <p>That's a perfectly valid assignment, but don't forget that it has a
+   value too. The value is discarded. If you want a bigger surprise, try
+   this one:</p>
+<pre>
+  1;</pre>
+  <p>That is an expression followed by a semicolon. It is a well formed
+   statement according to the rules of the language; nothing wrong with it,
+   it is just useless. A function used as a procedure is used in the same
+   way&#8212;a value is <em>always</em> returned, but you don't use it:</p>
+<pre>
+  f(argument);</pre>
+  <p>is also an expression with a discarded value.</p>
+
+  <p>It's all very well saying that the value returned by a function can be
+   ignored, but the fact remains that if the function really <em>does</em>
+   return a value then it's probably a programming error not to do something
+   with it. Conversely, if no useful value is returned then it's a good idea
+   to be able to spot anywhere that it is used by mistake. For both of those
+   reasons, functions that don't return a useful value should be declared to
+   be <code>void</code>.</p>
+
+  <p>Functions can return any type supported by C (except for arrays and
+   functions), including the pointers, structures and unions which are
+   described in later chapters. For the types that can't be returned from
+   functions, the restrictions can often be sidestepped by using pointers
+   instead.</p>
+
+  <p>All functions can be called recursively.</p>
+
+  <h2><a name="section-1"></a>4.2.1.&#160;Declaring functions</h2>
+   
+
+   <p>Unfortunately, we are going to have to use some jargon now. This is
+    one of the times that the use of an appropriate technical term really
+    does reduce the amount of repetitive descriptive text that would be
+    needed. With a bit of luck, the result is a shorter, more accurate and
+    less confusing explanation. Here are the terms.</p>
+   <dl>
+    <dt><dfn>declaration</dfn></dt>
+    <dd>The point at which a name has a type associated with it.</dd>
+
+    <dt><dfn>definition</dfn></dt>
+    <dd>Also a declaration, but at this point some storage is reserved for
+     the named object. The rules for what makes a declaration into a
+     definition can be complicated, but are easy for functions: You turn a
+     function declaration into a definition by providing a body for the
+     function in the form of a compound statement.</dd>
+
+    <dt><dfn>formal parameters</dfn></dt>
+    <dt><dfn>parameters</dfn></dt>
+    <dd>These are the names used inside a function to refer to its
+     arguments.</dd>
+
+    <dt><dfn>actual arguments</dfn></dt>
+    <dt><dfn>arguments</dfn></dt>
+    <dd>These are the values used as arguments when the function is actually
+     called. In other words, the values that the <dfn>formal parameters</dfn>
+     will have on entry to the function.</dd>
+   </dl>
+   <p>The terms &#8216;parameter&#8217; and &#8216;argument&#8217; do tend to get used
+    as if they were interchangeable, so don't read too much into it if you
+    see one or the other in the text below.</p>
+
+   <p>If you use a function before you declare it, it is implicitly declared
+    to be &#8216;function returning <code>int</code>&#8217;. Although this will
+    work, and was widely used in Old C, in Standard C it is bad
+    practice&#8212;the use of undeclared functions leads to nasty problems to
+    do with the number and type of arguments that are expected for them. All
+    functions should be fully declared before they are used. For example,
+    you might be intending to use a function in a private library called,
+    say, <code>aax1</code>. You know that it takes no arguments and returns
+    a <code>double</code>. Here is how it should be declared:</p>
+<pre>
+  double aax1(void);</pre>
+   <p>and here is how it might be used:</p>
+
+<div class="inset-example"><a name="example-1"></a><pre>
+main(){
+      double return_v, aax1(void);
+      return_v = aax1();
+      exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;4.1</cite></div>
+
+   <p>The declaration was an interesting one. It defined
+    <code>return_v</code>, actually causing a variable to come into
+    existence. It also declared <code>aax1</code> without defining it; as we
+    know, functions only become <em>defined</em> when a body is provided for
+    them. Without a declaration in force, the default rules mean that
+    <code>aax1</code> would have been assumed to be <code>int</code>, even
+    though it really does return a <code>double</code>&#8212;which means that
+    your program will have undefined behaviour. Undefined behaviour is
+    disastrous!</p>
+
+   <p>The presence of <code>void</code> in the argument list in the
+    declaration shows that the function really takes no arguments. If it had
+    been missing, the declaration would have been taken to give no
+    information about the function's arguments. That way, compatibility with
+    Old C is maintained at the price of the ability of the compiler to
+    check.</p>
+
+   <p>To <dfn>define</dfn> a function you also have to provide a body for
+    it, in the form of a compound statement. Since no function can itself
+    contain the definition of a function, functions are all separate from
+    each other and are only found at the outermost level of the program's
+    structure. Here is a possible definition for the function
+    <code>aax1</code>.</p>
+<pre>
+  double
+  aax1(void) {
+        /* code for function body */
+        return (1.0);
+  }</pre>
+
+   <p>It is unusual for a block-structured language to prohibit you from
+    defining functions inside other functions, but this is one of the
+    characteristics of C. Although it isn't obvious, this helps to improve
+    the run-time performance of C by reducing the housekeeping associated
+    with function calls.</p>
+
+  
+
+  <h2><a name="section-2"></a>4.2.2.&#160;The return statement</h2>
+   
+
+   <p>The <code>return</code> statement is very important. Every function
+    except those returning <code>void</code> should have at least one, each
+    <code>return</code> showing what value is supposed to be returned at
+    that point. Although it is possible to return from a function by falling
+    through the last <code>}</code>, unless the function returns
+    <code>void</code> an unknown value will be returned, resulting in
+    undefined behaviour.</p>
+
+   <p>Here is another example function. It uses <code>getchar</code> to read
+    characters from the program input and returns whatever it sees except
+    for space, tab or newline, which it throws away.</p>
+
+<pre>
+#include &lt;stdio.h&gt;
+
+int
+non_space(void){
+      int c;
+      while ( (c=getchar ())=='\t' || c== '\n' || c==' ')
+              ; /* empty statement */
+      return (c);
+}</pre>
+
+   <p>Look at the way that all of the work is done by the test in the
+    <code>while</code> statement, whose body was an empty statement. It is
+    not an uncommon sight to see the semicolon of the empty statement
+    sitting there alone and forlorn, with only a piece of comment for
+    company and readability. Please, please, never write it like this:</p>
+<pre>
+  while (something);</pre>
+   <p>with the semicolon hidden away at the end like that. It's too easy to
+    miss it when you read the code, and to assume that the following
+    statement is under the control of the <code>while</code>.</p>
+
+   <p>The type of expression returned must match the type of the function,
+    or be capable of being converted to it as if an assignment statement
+    were in use. For example, a function declared to return
+    <code>double</code> could contain</p>
+<pre>
+  return (1);</pre>
+   <p>and the integral value will be converted to <code>double</code>. It is
+    also possible to have just <code>return</code> without any
+    expression&#8212;but this is probably a programming error unless the
+    function returns <code>void</code>. Following the <code>return</code>
+    with an expression is <em>not</em> permitted if the function returns
+    <code>void</code>.</p>
+
+  
+
+  <h2><a name="section-3"></a>4.2.3.&#160;Arguments to functions</h2>
+   
+
+   <p>Before the Standard, it was not possible to give any information about
+    a function's arguments except in the definition of the function itself.
+    The information was only used in the body of the function and was
+    forgotten at the end. In those bad old days, it was quite possible to
+    define a function that had three <code>double</code> arguments and only
+    to pass it one <code>int,</code> when it was called. The program would
+    compile normally, but simply not work properly. It was considered to be
+    the programmer's job to check that the number and the type of arguments
+    to a function matched correctly. As you would expect, this turned out to
+    be a first-rate source of bugs and portability problems. Here is an
+    example of the definition and use of a function with arguments, but
+    omitting for the moment to declare the function fully.</p>
+
+<div class="inset-example"><a name="example-2"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+main(){
+      void pmax();                    /* declaration */
+      int i,j;
+      for(i = -10; i &lt;= 10; i++){
+              for(j = -10; j &lt;= 10; j++){
+                      pmax(i,j);
+              }
+      }
+      exit(EXIT_SUCCESS);
+}
+/*
+* Function pmax.
+* Returns:      void
+* Prints larger of its two arguments.
+*/
+void
+pmax(int a1, int a2){                   /* definition */
+      int biggest;
+
+      if(a1 &gt; a2){
+              biggest = a1;
+      }else{
+              biggest = a2;
+      }
+
+      printf(&quot;larger of %d and %d is %d\n&quot;,
+              a1, a2, biggest);
+}</pre><cite>Example&#160;4.2</cite></div>
+   <p>What can we learn from this? To start with, notice the careful
+    declaration that <code>pmax</code> returns <code>void</code>. In the
+    function definition, the matching <code>void</code> occurs on the line
+    before the function name. The reason for writing it like that is purely
+    one of style; it makes it easier to find function definitions if their
+    names are always at the beginning of a line.</p>
+
+   <p>The function declaration (in <code>main</code>) gave no indication of
+    any arguments to the function, yet the use of the function a couple of
+    lines later involved two arguments. That is permitted by both the old
+    and Standard versions of C, but <em>must nowadays be considered to be
+     bad practice</em>. It is much better to include information about the
+    arguments in the declaration too, as we will see. The old style is now
+    an &#8216;obsolescent feature&#8217; and may disappear in a later version of
+    the Standard.</p>
+
+   <p>Now on to the function definition, where the body is supplied. The
+    definition shows that the function takes two arguments, which will be
+    known as <code>a1</code> and <code>a2</code> throughout the body of the
+    function. The types of the arguments are specified too, as can be
+    seen.</p>
+
+   <p>In the function definition you don't <em>have</em> to specify the type
+    of each argument because they will default to <code>int</code>, but this
+    is bad style. If you adopt the practice of always declaring arguments,
+    even if they do happen to be <code>int</code>, it adds to a reader's
+    confidence. It indicates that you meant to use that type, instead of
+    getting it by accident: it wasn't simply forgotten. The definition of
+    <code>pmax</code> <em>could</em> have been this:</p>
+<pre>
+  /* BAD STYLE OF FUNCTION DEFINITION */
+
+  void
+  pmax(a1, a2){
+        /* and so on */</pre>
+   <p>The proper way to declare and define functions is through the use of
+    <dfn>prototypes</dfn>.</p>
+
+  
+
+  <h2><a name="section-4"></a>4.2.4.&#160;Function prototypes</h2>
+   
+
+   <p>The introduction of <dfn>function prototypes</dfn> is the biggest
+    change of all in the Standard.</p>
+
+   <p>A function prototype is a function declaration or definition which
+    includes information about the number and types of the arguments that
+    the function takes.</p>
+
+   <p>Although you are allowed not to specify any information about a
+    function's arguments in a declaration, it is purely because of backwards
+    compatibility with Old C and should be avoided.</p>
+
+   <p>A declaration without any information about the arguments is
+    <em>not</em> a prototype.</p>
+
+   <p>Here's the previous example &#8216;done right&#8217;.</p>
+
+<div class="inset-example"><a name="example-3"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+main(){
+      void pmax(int first, int second);       /*declaration*/
+      int i,j;
+      for(i = -10; i &lt;= 10; i++){
+              for(j = -10; j &lt;= 10; j++){
+                      pmax(i,j);
+              }
+      }
+      exit(EXIT_SUCCESS);
+}
+
+void
+pmax(int a1, int a2){                           /*definition*/
+      int biggest;
+
+      if(a1 &gt; a2){
+              biggest = a1;
+      }
+      else{
+              biggest = a2;
+      }
+
+      printf(&quot;largest of %d and %d is %d\n&quot;,
+              a1, a2, biggest);
+}</pre><cite>Example&#160;4.3</cite></div>
+   <p>This time, the declaration provides information about the function
+    arguments, so it's a prototype. The names <code>first</code> and
+    <code>second</code> are not an essential part of the declaration, but
+    they are allowed to be there because it makes it easier to refer to
+    named arguments when you're documenting the use of the function. Using
+    them, we can describe the function simply by giving its declaration</p>
+<pre>
+  void pmax (int xx, int yy );</pre>
+   <p>and then say that <code>pmax</code> prints whichever of the arguments
+    <code>xx</code> or <code>yy</code> is the larger. Referring to arguments
+    by their position, which is the alternative (e.g. the fifth argument),
+    is tedious and prone to miscounting.</p>
+
+   <p>All the same, you can miss out the names if you want to. This
+    declaration is entirely equivalent to the one above.</p>
+<pre>
+  void pmax (int,int);</pre>
+   <p>All that is needed is the type names.</p>
+
+   <p>For a function that has no arguments the declaration is</p>
+<pre>
+  void f_name (void);</pre>
+   <p>and a function that has one <code>int</code>, one <code>double</code>
+    and an unspecified number of other arguments is declared this way:</p>
+<pre>
+  void f_name (int,double,...);</pre>
+   <p>The ellipsis (...) shows that other arguments follow. That's useful
+    because it allows functions like <code>printf</code> to be written. Its
+    declaration is this:</p>
+<pre>
+  int printf (const char *format_string,...)</pre>
+   <p>where the type of the first argument is &#8216;pointer to <code>const
+     char</code>&#8217;; we'll discuss what that means later.</p>
+
+   <p>Once the compiler knows the types of a function's arguments, having
+    seen them in a prototype, it's able to check that the use of the
+    function conforms to the declaration.</p>
+
+   <p>If a function is called with arguments of the wrong type, the presence
+    of a prototype means that the actual argument is converted to the type
+    of the formal argument &#8216;as if by assignment&#8217;. Here's an example: a
+    function is used to evaluate a square root using Newton's method of
+    successive approximations.</p>
+
+<div class="inset-example"><a name="example-4"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#define DELTA 0.0001
+main(){
+      double sq_root(double); /* prototype */
+      int i;
+
+      for(i = 1; i &lt; 100; i++){
+              printf(&quot;root of %d is %f\n&quot;, i, sq_root(i));
+      }
+      exit(EXIT_SUCCESS);
+}
+
+double
+sq_root(double x){      /* definition */
+      double curr_appx, last_appx, diff;
+
+      last_appx = x;
+      diff = DELTA+1;
+
+      while(diff &gt; DELTA){
+              curr_appx = 0.5*(last_appx
+                      + x/last_appx);
+              diff = curr_appx - last_appx;
+              if(diff &lt; 0)
+                      diff = -diff;
+              last_appx = curr_appx;
+      }
+      return(curr_appx);
+}</pre><cite>Example&#160;4.4</cite></div>
+
+   <p>The prototype tells everyone that <code>sq_root</code> takes a single
+    argument of type <code>double</code>. The argument actually passed in
+    the main function is an <code>int</code>, so it has to be converted to
+    <code>double</code> first. The critical point is that if no prototype
+    had been seen, C would assume that the programmer had meant to pass an
+    <code>int</code> and an <code>int</code> is what would be passed. The
+    Standard simply notes that this results in undefined behaviour, which is
+    as understated as saying that catching rabies is unfortunate. This is a
+    <em>very serious error</em> and has led to many, many problems in Old C
+    programs.</p>
+
+   <p>The conversion of <code>int</code> to <code>double</code> could be
+    done because the compiler had seen a protoytpe for the function and knew
+    what to do about it. As you would expect, there are various rules used
+    to decide which conversions are appropriate, so we need to look at them
+    next.</p>
+
+
+
+  <h2><a name="section-5"></a>4.2.5.&#160;Argument Conversions</h2>
+   
+
+   <p>When a function is called, there are a number of possible conversions
+    that will be applied to the values supplied as arguments depending on
+    the presence or absence of a prototype. Let's get one thing clear:
+    although you <em>can</em> use these rules to work out what to do if you
+    haven't used prototypes, it is a recipe for pain and misery in the long
+    run. It's so easy to use prototypes that there really is no excuse for
+    not having them, so the only time you will need to use these rules is if
+    you are being adventurous and using functions with a variable number of
+    arguments, using the ellipsis notation in the prototype that is
+    explained in <a href="../chapter9/">Chapter&#160;9</a>.</p>
+
+   <p>The rules mention the <dfn>default argument promotions and compatible
+     type</dfn>. Where they are used, the default argument promotions
+    are:</p>
+   <ul>
+    <li>Apply the integral promotions (see <a href="../chapter2/">Chapter&#160;2</a>) to the
+     value of each argument</li>
+    <li>If the type of the argument is <code>float</code> it is converted to
+     <code>double</code></li>
+   </ul>
+   <p>The introduction of prototypes (amongst other things) has increased
+    the need for precision about &#8216;compatible types&#8217;, which was not
+    much of an issue in Old C. The full list of rules for type compatibility
+    is deferred until <a href="../chapter8/">Chapter&#160;8</a>, because we suspect that most C
+    programmers will never need to learn them. For the moment, we will
+    simply work on the basis that if two types are the same, they are
+    indisputably compatible.</p>
+
+   <p>The conversions are applied according to these rules (which are
+    intended to be guidance on how to apply the Standard, not a direct
+    quote):</p>
+
+   <ol>
+    <li>At the point of calling a function, if no prototype is in scope,
+     the arguments all undergo the default argument promotions.
+     Furthermore:
+     <ul>
+      <li>If the number of arguments does not agree with the number of
+       formal parameters to the function, the behaviour is undefined.</li>
+      <li>If the function definition was not a definition containing a
+       prototype, then the type of the actual arguments after promotion must
+       be <dfn>compatible</dfn> with the types of the formal parameters in
+       the definition after they too have had the promotions applied.
+       Otherwise the behaviour is undefined.</li>
+      <li>If the function definition was a definition containing a
+       prototype, and the types of the actual arguments after promotion are
+       not compatible with the formal parameters in the prototype, then the
+       behaviour is undefined. The behaviour is also undefined it the
+       prototype included ellipsis (<code>,&#160;...</code>).</li>
+     </ul>
+    </li>
+    <li>
+     <p>At the point of calling a function, if a prototype <em>is</em> in
+      scope, the arguments are converted, as if by assignment, to the types
+      specified in the prototype. Any arguments which fall under the
+      variable argument list category (specified by
+      the&#160;<code>...</code> in the prototype) still undergo the default
+      argument conversions.</p>
+     <p>It <em>is</em> possible to write a program so badly that you have a
+      prototype in scope when you call the function, but for the function
+      definition itself not to have a prototype. Why anyone should do this
+      is a mystery, but in this case, the function that is called must have
+      a type that is <dfn>compatible</dfn> with the apparent type at the
+      point of the call.</p>
+    </li>
+   </ol>
+
+   <p>The order of evaluation of the arguments in the function call is
+    explicitly not defined by the Standard.</p>
+
+  
+
+  <h2><a name="section-6"></a>4.2.6.&#160;Function definitions</h2>
+   
+
+   <p>Function prototypes allow the same text to be used for both the
+    declaration and definition of a function. To turn a declaration:</p>
+<pre>
+double
+some_func(int a1, float a2, long double a3);</pre>
+   <p>into a definition, we provide a body for the function:</p>
+<pre>
+double
+some_func(int a1, float a2, long double a3){
+      /* body of function */
+      return(1.0);
+}</pre>
+   <p>by replacing the semicolon at the end of the declaration with a
+    compound statement.</p>
+
+   <p>In either a definition or a declaration of a function, it serves as a
+    prototype if the parameter types are specified; both of the examples
+    above are prototypes.</p>
+
+   <p>The Old C syntax for the declaration of a function's formal arguments
+    is still supported by the Standard, although it should not be used by
+    new programs. It looks like this, for the example above:</p>
+<pre>
+double
+some_func(a1, a2, a3)
+      int a1;
+      float a2;
+      long double a3;
+{
+
+      /* body of function */
+      return(1.0);
+}</pre>
+   <p>Because no type information is provided for the parameters at the
+    point where they are named, this form of definition does <em>not</em>
+    act as a prototype. It declares only the return type of the function;
+    nothing is remembered by the compiler about the types of the arguments
+    at the end of the definition.</p>
+
+   <p>The Standard warns that support for this syntax may disappear in a
+    later version. It will not be discussed further.</p>
+
+  <h3><a name="section-6.1"></a>Summary</h3>
+    <ol>
+     <li>Functions can be called recursively.</li>
+     <li>Functions can return any type that you can declare, except for
+      arrays and functions (you can get around that restriction to some
+      extent by using pointers). Functions returning no value should return
+      <code>void</code>.</li>
+     <li>Always use function prototypes.</li>
+     <li>Undefined behaviour results if you call or define a function
+      anywhere in a program unless either
+      <ul>
+       <li>a prototype is <em>always</em> in scope for <em>every call</em>
+        or definition, or</li>
+       <li>you are very, very careful.</li>
+      </ul>
+     </li>
+     <li>Assuming that you <em>are</em> using prototypes, the values of the
+      arguments to a function call are converted to the types of the formal
+      parameters exactly as if they had been assigned using
+      the&#160;<code>=</code> operator.</li>
+     <li>Functions taking no arguments should have a prototype with
+      (<code>void</code>) as the argument specification.</li>
+     <li>
+      <p>Functions taking a variable number of arguments must take at least
+       one named argument; the variable arguments are indicated
+       by&#160;<code>...</code> as shown:</p>
+<pre>
+int
+vfunc(int x, float y, ...);</pre>
+      <p><a href="../chapter9/">Chapter&#160;9</a> describes how to write this sort of
+       function.</p>
+     </li>
+    </ol>
+  
+
+ 
+
+  <h2><a name="section-7"></a>4.2.7.&#160;Compound statements and declarations</h2>
+   
+
+   <p>As we have seen, functions always have a compound statement as their
+    body. It is possible to declare new variables inside any compound
+    statement; if any variables of the same name already exist, then the old
+    ones are hidden by the new ones within the new compound statement. This
+    is the same as in every other block-structured language. C restricts the
+    declarations to the head of the compound statement (or &#8216;block&#8217;);
+    once any other kind of statement has been seen in the block,
+    declarations are no longer permitted within that block.</p>
+
+   <p>How can it be possible for names to be hidden? The following example
+    shows it happening:</p>
+<div class="inset-example"><a name="example-5"></a><pre>
+int a;                  /* visible from here onwards */
+
+void func(void){
+      float a;        /* a different 'a' */
+      {
+              char a; /* yet another 'a' */
+      }
+                      /* the float 'a' reappears */
+}
+                      /* the int 'a' reappears */</pre><cite>Example&#160;4.5</cite></div>
+   <p>A name declared inside a block hides any outer versions of the same
+    name until the end of the block where it is declared. Inner blocks can
+    also re-declare that name&#8212;you can do this for ever.</p>
+
+   <p>The <dfn>scope</dfn> of a name is the range in which it has meaning.
+    Scope starts from the point at which the name is mentioned and continues
+    from there onwards to the end of the block in which it is declared. If
+    it is external (outside of any function) then it continues to the end of
+    the file. If it is internal (inside a function), then it disappears at
+    the end of the block containing it. The scope of any name can be
+    suspended by redeclaring the name inside a block.</p>
+
+   <p>Using knowledge of the scope rules, you can play silly tricks like
+    this one:</p>
+<pre>
+main () {}
+int i;
+f () {}
+f2 () {}</pre>
+   <p>Now <code>f</code> and <code>f2</code> can use <code>i</code>, but
+    <code>main</code> can't, because the declaration of the variable comes
+    later than that of <code>main</code>. This is not an aspect that is used
+    very much, but it is implicit in the way that C processes declarations.
+    It is a source of confusion for anyone reading the file (external
+    declarations are generally expected to precede any function definitions
+    in a file) and should be avoided.</p>
+
+   <p>The Standard has changed things slightly with respect to a function's
+    formal parameters. They are now considered to have been declared inside
+    the first compound statement, even though textually they aren't: this
+    goes for both the new and old ways of function definition. So, if a
+    function has a formal parameter with the same name as something declared
+    in the outermost compound statement, this causes an error which will be
+    detected by the compiler.</p>
+
+   <p>In Old C, accidental redefinition of a function's formal parameter was
+    a horrible and particularly difficult mistake to track down. Here is
+    what it would look like:</p>
+<pre>
+/* erroneous redeclaration of arguments */
+
+func(a, b, c){
+      int a;  /* AAAAgh! */
+}</pre>
+   <p>The pernicious bit is the new declaration of a in the body of the
+    function, which hides the parameter called <code>a</code>. Since the
+    problem has now been eliminated we won't investigate it any further.</p>
+
+  
+ <h2>Footnotes</h2><p class="footnote-text">1.<a name="foot1"> </a>Stroustrup
+     B.&#160;(1991). <cite>The C++ Programming Language</cite> 2nd edn.
+     Reading, MA: Addison-Wesley</p><div class="cbook_next_prev"><p><a href="changes.html">Previous section</a> | <a href="../chapter4/">Chapter contents</a> | <a href="recursion_and_argument_passing.html">Next section</a></p></div>
+
+    </main>
+    <nav id="menu" class="Left">
+      
+ 
+  
+  <div class="nav">
+
+	
+	
+			
+			  <div class="nav0">
+				
+				  <a href="/">Publications</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav1">
+				
+				  <a href="/c_book/">The C&nbsp;Book</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/preface/">Preface</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter1/">Introduction</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter2/">Variables &amp; arithmetic</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter3/">Control flow</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter4/">Functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter4/changes.html">Changes</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <strong>Function types</strong>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter4/recursion_and_argument_passing.html">Recursion &amp; argument passing</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter4/linkage.html">Linkage</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter4/summary.html">Summary</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter4/exercises.html">Exercises</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter5/">Arrays &amp; pointers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter6/">Structures</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter7/">Preprocessor</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter8/">Specialized areas</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter9/">Libraries</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter10/">Complete Programs</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/answers/">Answers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/copyright.html">Copyright</a>
+				
+				
+			</div>
+			
+	
+
+</div>
+
+ 
+
+      <div class="ColBtm">
+        <hr />
+<div class="h1"><a href="https://ebusiness.gbdirect.co.uk/contact.html">Contact Us</a></div>
+
+      </div>
+
+    </nav>
+    <aside id="sidebar" class="Right">
+      
+ <div class="box">
+  
+  
+<img src="https://global.gbdirect.co.uk/Themes/printer-friendly-12x12.png" alt="" title="Printer-friendly version of this page" />
+<a href="?format=pf" rel="nofollow">
+  Printer-friendly version
+</a>
+
+ </div>
+
+ <div class="box">
+  <h3>The C Book</h3>
+  
+<p>This book is published as a matter of historical interest.
+ Please read the
+ <a href="/c_book/copyright.html">copyright and disclaimer information</a>.</p>
+
+<p>GBdirect Ltd provides up-to-date training and consultancy in
+ <a href="http://training.gbdirect.co.uk/courses/c/">C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c/real_time_linux_embedded_c_training.html">Embedded C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c++/">C++</a>
+ and a wide range of
+ <a href="http://training.gbdirect.co.uk/courses/">other subjects based on
+ open standards</a> if you happen to be interested.</p>
+
+ </div>
+
+
+    </aside>
+  </div>
+  
+<script type="text/javascript">
+        var maxheight = 0;
+        var a =  Array('main', 'menu', 'sidebar');
+        for(index in a){
+                var name = a[index];
+                // alert(name);
+                var id = document.getElementById(name);
+                if(id){
+                        if(id.offsetHeight > maxheight){
+                                maxheight = id.offsetHeight;
+                        }
+                }
+        }
+        var tabbar = document.getElementById('tabsbar');
+        if(tabbar){
+                if(tabbar.style) tabbar=tabbar.style;
+                tabbar.left = 0+'px';
+                tabbar.top = maxheight+'px';
+        }
+        
+</script>
+</body>
+</html>

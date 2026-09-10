@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1">
+<title>The C Book &#8212; How the preprocessor works</title>
+<meta property="og:title" content="The C Book &amp;#8212; How the preprocessor works" />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://global.gbdirect.co.uk/Themes/logo-og.png" />
+
+<link rel="SHORTCUT ICON" href="https://global.gbdirect.co.uk/favicon.ico" />
+<link rel="stylesheet" type="text/css" href="https://global.gbdirect.co.uk/Themes/Quarters.css" />
+
+<link rel="prev" href="/c_book/chapter7/effect_of_the_standard.html" />
+<link rel="next" href="/c_book/chapter7/directives.html" />
+<link rel="contents" href="/c_book/chapter7/" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<!-- order 3-->
+<!-- lastmod 2005-11-10T16:42:05Z-->
+
+
+<link rel="canonical" href="https://publications.gbdirect.co.uk/c_book/chapter7/how_the_preprocessor_works.html"/><meta property="og:url" content="https://publications.gbdirect.co.uk/c_book/chapter7/how_the_preprocessor_works.html" />
+<script type="text/javascript"> var _gaq = _gaq || []; _gaq.push(['_setAccount', 'UA-3566842-1']); _gaq.push(['_setDomainName', '.gbdirect.co.uk']); _gaq.push(['_trackPageview']); (function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = 'https://www.google-analytics.com/ga.js'; var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s); })(); </script>
+</head>
+
+<body>
+  <header class="Banner">
+    <span id="Logo">
+      <a href="https://ebusiness.gbdirect.co.uk">
+        <img src="https://global.gbdirect.co.uk/Themes/gbdirect.gif"
+             alt="GBdirect Homepage"
+             title="GBdirect Homepage" /></a>
+    </span>
+<!-- Original homebrew search
+    <form action="https://global.gbdirect.co.uk/search.cgi"
+          method="get" id="Search">
+      <label for="search_textbox">Search</label>
+      <input type="text" name="query" size="12" id="search_textbox" value="" />
+      <input type="submit" name="Submit" value="Go" />
+    </form>
+-->
+<!-- Google search -->
+    <form class="Search" action="https://www.google.com/cse" id="cse-search-box">
+      <input type="hidden" name="cx" value="010270212093732037646:4pvgkishmkg" />
+      <input type="hidden" name="ie" value="UTF-8" />
+      <label for="search_textbox">Search</label>
+      <input type="text" name="q" id="search_textbox" size="12" />
+      <input type="submit" name="sa" value="Go" />
+    </form>
+    <script type="text/javascript" src="https://www.google.com/cse/brand?form=cse-search-box&amp;lang=en&amp;sitesearch=true"></script>
+<!-- End Google search -->
+  </header>
+  <nav class="Tabsbar"><span class="ThisTab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span> <span class="NoCSS2">| </span> <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/contact.html">Contact</a></span></nav>
+  <div id="container" itemscope itemtype="http://schema.org/WebPage">
+    <meta itemprop="isFamilyFriendly" content="1" />
+    <meta itemprop="inLanguage" content="en" />
+    <nav class="Tabsbar" id="tabsbar" style="position: absolute; width: 100%">
+  
+  
+    <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/">About Us</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://consulting.gbdirect.co.uk/">Consultancy</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://development.gbdirect.co.uk/">Software</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="ThisTab">Publications</span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-source.gbdirect.co.uk/">Open&nbsp;Source</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://software-support.gbdirect.co.uk/">Support</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-standards.gbdirect.co.uk/">Open&nbsp;Standards</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://faq.gbdirect.co.uk/">FAQ</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://jobs.gbdirect.co.uk/">Jobs</a></span>
+  
+
+</nav>
+    <main id="main" >
+	  
+		<nav id="breadcrumb" itemprop="breadcrumb">
+			
+			<a href="https://publications.gbdirect.co.uk/">Publications</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/">The C&nbsp;Book</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/chapter7/">Preprocessor</a>
+			
+			 &gt; How the preprocessor works
+			
+		</nav>
+		<br />
+	  
+      <h1>7.2. How the preprocessor works</h1>
+      
+      
+
+
+  
+
+  <p>Although the preprocessor (Figure&#160;7.1) is probably going
+   to be implemented as an integral part of an Standard C compiler, it can
+   equally well be though of as a separate program which transforms C source
+   code containing preprocessor directives into source code with the
+   directives removed.</p>
+
+  <div class="inset-figure"><a name="figure-1"><img width="400" alt="Diagram showing source code passing through a preprocessor to become           &#39;preprocessed source&#39;, which is then fed into the rest of the           compiler." src="../figures/7.1.png" height="39" /></a><br /><cite>Figure&#160;7.1.&#160;The preprocessor</cite></div>
+
+  <p>It's important to remember that the preprocessor is not working to the
+   same rules as the rest of C. It works on a line-by-line basis, so the end
+   of a line means something special to it. The rest of C thinks that
+   end-of-line is little different from a space or tab character.</p>
+
+  <p>The preprocessor doesn't know about the scope rules of C. Preprocessor
+   directives like <code>#define</code> take effect as soon as they are seen
+   and remain in effect until the end of the file that contains them; the
+   program's block structure is irrelevant. This is one of the reasons why
+   it's a good idea to make sparing use of these directives. The less you
+   have in your program that doesn't obey the &#8216;normal&#8217; scope rules,
+   the less likely you are to make mistakes. This is mainly what gives rise
+   to our comments about the poor level of integration between the
+   preprocessor and the rest of C.</p>
+
+  <p>The Standard gives some complicated rules for the syntax of the
+   preprocessor, especially with respect to <dfn>tokens</dfn>. To understand
+   the operation of the preprocessor you need to know a little about them.
+   The text that is being processed is not considered to be a uniform stream
+   of characters, but is separated into tokens then processed piecemeal.</p>
+
+  <p>For a full definition of the process, it is best to refer to the
+   Standard, but an informal description follows. Each of the terms used to
+   head the list below is used later in descriptions of the rules.</p>
+
+  <ol>
+   <li><cite>header-name</cite>
+    <ul>
+     <li>&#8216;<code>&lt;</code>&#8217; <cite>almost any character</cite>
+      &#8216;<code>&gt;</code>&#8217;</li>
+    </ul>
+   </li>
+   <li><cite>preprocessing-token</cite>
+    <ul>
+     <li>a <cite>header-name</cite> as above but only when the subject of
+      <code>#include</code>,</li>
+     <li>or an <cite>identifier</cite> which is any C identifier or
+      keyword,</li>
+     <li>or a <cite>constant</cite> which is any integral or floating
+      constant,</li>
+     <li>or a <cite>string-literal</cite> which is a normal C string,</li>
+     <li>or an <cite>operator</cite> which is one of the C operators,</li>
+     <li>or one of <cite>[ ] ( ) { } * , : = ; ... #</cite> (punctuators)</li>
+     <li>or any non-white-space character not covered by the list above.</li>
+    </ul>
+   </li>
+  </ol>
+
+  <p>The &#8216;<cite>almost any character</cite>&#8217; above means any character
+   except &#8216;<code>&gt;</code>&#8217; or newline.</p>
+
+ <div class="cbook_next_prev"><p><a href="effect_of_the_standard.html">Previous section</a> | <a href="../chapter7/">Chapter contents</a> | <a href="directives.html">Next section</a></p></div>
+
+    </main>
+    <nav id="menu" class="Left">
+      
+ 
+  
+  <div class="nav">
+
+	
+	
+			
+			  <div class="nav0">
+				
+				  <a href="/">Publications</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav1">
+				
+				  <a href="/c_book/">The C&nbsp;Book</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/preface/">Preface</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter1/">Introduction</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter2/">Variables &amp; arithmetic</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter3/">Control flow</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter4/">Functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter5/">Arrays &amp; pointers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter6/">Structures</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter7/">Preprocessor</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter7/effect_of_the_standard.html">Effect of the Standard</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <strong>How the preprocessor works</strong>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter7/directives.html">Directives</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter7/summary.html">Summary</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter7/exercises.html">Exercises</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter8/">Specialized areas</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter9/">Libraries</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter10/">Complete Programs</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/answers/">Answers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/copyright.html">Copyright</a>
+				
+				
+			</div>
+			
+	
+
+</div>
+
+ 
+
+      <div class="ColBtm">
+        <hr />
+<div class="h1"><a href="https://ebusiness.gbdirect.co.uk/contact.html">Contact Us</a></div>
+
+      </div>
+
+    </nav>
+    <aside id="sidebar" class="Right">
+      
+ <div class="box">
+  
+  
+<img src="https://global.gbdirect.co.uk/Themes/printer-friendly-12x12.png" alt="" title="Printer-friendly version of this page" />
+<a href="?format=pf" rel="nofollow">
+  Printer-friendly version
+</a>
+
+ </div>
+
+ <div class="box">
+  <h3>The C Book</h3>
+  
+<p>This book is published as a matter of historical interest.
+ Please read the
+ <a href="/c_book/copyright.html">copyright and disclaimer information</a>.</p>
+
+<p>GBdirect Ltd provides up-to-date training and consultancy in
+ <a href="http://training.gbdirect.co.uk/courses/c/">C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c/real_time_linux_embedded_c_training.html">Embedded C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c++/">C++</a>
+ and a wide range of
+ <a href="http://training.gbdirect.co.uk/courses/">other subjects based on
+ open standards</a> if you happen to be interested.</p>
+
+ </div>
+
+
+    </aside>
+  </div>
+  
+<script type="text/javascript">
+        var maxheight = 0;
+        var a =  Array('main', 'menu', 'sidebar');
+        for(index in a){
+                var name = a[index];
+                // alert(name);
+                var id = document.getElementById(name);
+                if(id){
+                        if(id.offsetHeight > maxheight){
+                                maxheight = id.offsetHeight;
+                        }
+                }
+        }
+        var tabbar = document.getElementById('tabsbar');
+        if(tabbar){
+                if(tabbar.style) tabbar=tabbar.style;
+                tabbar.left = 0+'px';
+                tabbar.top = maxheight+'px';
+        }
+        
+</script>
+</body>
+</html>

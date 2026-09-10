@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1">
+<title>The C Book &#8212; Mathematical functions</title>
+<meta property="og:title" content="The C Book &amp;#8212; Mathematical functions" />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://global.gbdirect.co.uk/Themes/logo-og.png" />
+
+<link rel="SHORTCUT ICON" href="https://global.gbdirect.co.uk/favicon.ico" />
+<link rel="stylesheet" type="text/css" href="https://global.gbdirect.co.uk/Themes/Quarters.css" />
+
+<link rel="prev" href="/c_book/chapter9/limits.html" />
+<link rel="next" href="/c_book/chapter9/nonlocal_jumps.html" />
+<link rel="contents" href="/c_book/chapter9/" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<!-- order 7-->
+<!-- lastmod 2005-11-10T16:42:02Z-->
+
+
+<link rel="canonical" href="https://publications.gbdirect.co.uk/c_book/chapter9/maths_functions.html"/><meta property="og:url" content="https://publications.gbdirect.co.uk/c_book/chapter9/maths_functions.html" />
+<script type="text/javascript"> var _gaq = _gaq || []; _gaq.push(['_setAccount', 'UA-3566842-1']); _gaq.push(['_setDomainName', '.gbdirect.co.uk']); _gaq.push(['_trackPageview']); (function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = 'https://www.google-analytics.com/ga.js'; var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s); })(); </script>
+</head>
+
+<body>
+  <header class="Banner">
+    <span id="Logo">
+      <a href="https://ebusiness.gbdirect.co.uk">
+        <img src="https://global.gbdirect.co.uk/Themes/gbdirect.gif"
+             alt="GBdirect Homepage"
+             title="GBdirect Homepage" /></a>
+    </span>
+<!-- Original homebrew search
+    <form action="https://global.gbdirect.co.uk/search.cgi"
+          method="get" id="Search">
+      <label for="search_textbox">Search</label>
+      <input type="text" name="query" size="12" id="search_textbox" value="" />
+      <input type="submit" name="Submit" value="Go" />
+    </form>
+-->
+<!-- Google search -->
+    <form class="Search" action="https://www.google.com/cse" id="cse-search-box">
+      <input type="hidden" name="cx" value="010270212093732037646:4pvgkishmkg" />
+      <input type="hidden" name="ie" value="UTF-8" />
+      <label for="search_textbox">Search</label>
+      <input type="text" name="q" id="search_textbox" size="12" />
+      <input type="submit" name="sa" value="Go" />
+    </form>
+    <script type="text/javascript" src="https://www.google.com/cse/brand?form=cse-search-box&amp;lang=en&amp;sitesearch=true"></script>
+<!-- End Google search -->
+  </header>
+  <nav class="Tabsbar"><span class="ThisTab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span> <span class="NoCSS2">| </span> <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/contact.html">Contact</a></span></nav>
+  <div id="container" itemscope itemtype="http://schema.org/WebPage">
+    <meta itemprop="isFamilyFriendly" content="1" />
+    <meta itemprop="inLanguage" content="en" />
+    <nav class="Tabsbar" id="tabsbar" style="position: absolute; width: 100%">
+  
+  
+    <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/">About Us</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://consulting.gbdirect.co.uk/">Consultancy</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://development.gbdirect.co.uk/">Software</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="ThisTab">Publications</span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-source.gbdirect.co.uk/">Open&nbsp;Source</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://software-support.gbdirect.co.uk/">Support</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-standards.gbdirect.co.uk/">Open&nbsp;Standards</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://faq.gbdirect.co.uk/">FAQ</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://jobs.gbdirect.co.uk/">Jobs</a></span>
+  
+
+</nav>
+    <main id="main" >
+	  
+		<nav id="breadcrumb" itemprop="breadcrumb">
+			
+			<a href="https://publications.gbdirect.co.uk/">Publications</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/">The C&nbsp;Book</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/chapter9/">Libraries</a>
+			
+			 &gt; Maths functions
+			
+		</nav>
+		<br />
+	  
+      <h1>9.6. Mathematical functions</h1>
+      
+      
+
+
+  
+
+  <p>If you are writing mathematical programs, involving floating
+   point calculations and so on, then you will undoubtedly
+   require access to the mathematics library.  This set of
+   functions all take <code>double</code> arguments, and return a double
+   result.  The functions and associated macros are defined in
+   the include file <code>&lt;math.h&gt;</code>.</p>
+
+  <p>The macro <code>HUGE_VAL</code> is defined, which expands to a positive
+   double expression, which is not necessarily representable as
+   a <code>float</code>.</p>
+
+  <p>For all the functions, a <dfn>domain error</dfn> occurs if an input
+   argument is outside the domain over which the function is
+   defined. An example might be attempting to take the square
+   root of a negative number. If this occurs, <code>errno</code> is set to
+   the constant <code>EDOM</code>, and the function returns an
+   implementation defined value.</p>
+
+  <p>If the result of the function cannot be represented as a double value then
+   a <dfn>range error</dfn> occurs.  If the magnitude of the result is too
+   large, the functions return <code>&#177;HUGE_VAL</code> (the sign will be
+   correct) and <code>errno</code> is set to <code>ERANGE</code>.  If the
+   result is too small, <code>0.0</code> is returned and the value of
+   <code>errno</code> is implementation defined.</p>
+
+  <p>The following list briefly describes each of the functions
+   available:</p>
+
+  
+  <dl>
+   <dt><code>double acos(double x);</code></dt>
+   <dd>Principal value of the arc cosine of <var>x</var> in the range
+    0&#8211;&#960; radians.<br />
+    Errors: <code>EDOM</code> if <var>x</var> is not in the range
+    &#8722;1&#8211;1.</dd>
+
+   <dt><code>double asin(double x);</code></dt>
+   <dd>Principal value of the arc sine of <var>x</var> in the range
+    -&#960;/2&#8211;+&#960;/2 radians.<br />
+    Errors: <code>EDOM</code> if <var>x</var> is not in the range
+    <code>&#8722;1&#8211;1</code>.</dd>
+
+   <dt><code>double atan(double x);</code></dt>
+   <dd>Principal value of the arc tangent of <var>x</var> in the range
+    -&#960;/2&#8211;+&#960;/2 radians.</dd>
+
+   <dt><code>double atan2(double y, double x);</code></dt>
+   <dd>Principal value of the arc tangent of <var>y/x</var> in the range
+    -&#960;&#8211;+&#960; radians, using the signs of both arguments to
+    determine the quadrant of the return value.<br />
+    Errors: <code>EDOM</code> may occur if both <var>x</var> and <var>y</var>
+    are zero.</dd>
+
+   <dt><code>double cos(double x);</code></dt>
+   <dd>Cosine of <var>x</var> (<var>x</var> measured in radians).</dd>
+
+   <dt><code>double sin(double x);</code></dt>
+   <dd>Sine of <var>x</var> (<var>x</var> measured in radians).</dd>
+
+   <dt><code>double tan(double x);</code></dt>
+   <dd>Tangent of <var>x</var> (<var>x</var> measured in radians).  When a
+    range error occurs, the sign of the resulting <code>HUGE_VAL</code> is not
+    guaranteed to be correct.</dd>
+
+   <dt><code>double cosh(double x);</code></dt>
+   <dd>Hyperbolic cosine of <var>x</var>.<br />
+    Errors: <code>ERANGE</code> occurs if the magnitude of <var>x</var> is
+    too large.</dd>
+
+   <dt><code>double sinh(double x);</code></dt>
+   <dd>Hyperbolic sine of <var>x</var>.<br />
+    Errors: <code>ERANGE</code> occurs if the magnitude of x is too large.</dd>
+
+   <dt><code>double tanh(double x);</code></dt>
+   <dd>Hyperbolic tangent of <code>x</code>.</dd>
+
+   <dt><code>double exp(double x);</code></dt>
+   <dd>Exponential function of <var>x</var>.
+    Errors: <code>ERANGE</code> occurs if the magnitude of <var>x</var> is
+    too large.</dd>
+
+   <dt><code>double frexp(double value, int *exp);</code></dt>
+   <dd>Break a floating point number into a normalized fraction
+    and an integral power of two. This integer is stored in
+    the object pointed to by <var>exp</var>.</dd>
+
+   <dt><code>double ldexp(double x, int exp);</code></dt>
+   <dd>Multiply <var>x</var> by 2 to the power <var>exp</var><br />
+    Errors: <code>ERANGE</code> may occur.</dd>
+
+   <dt><code>double log(double x);</code></dt>
+   <dd>Natural logarithm of <var>x</var>.<br />
+    Errors: <code>EDOM</code> occurs if <var>x</var> is negative.
+    <code>ERANGE</code> may occur if <var>x</var> is zero.</dd>
+
+   <dt><code>double log10(double x);</code></dt>
+   <dd>Base-ten logarithm of <var>x</var>.<br />
+    Errors: <code>EDOM</code> occurs if <var>x</var> is negative.
+    <code>ERANGE</code> may occur if <var>x</var> is zero.</dd>
+
+   <dt><code>double modf(double value, double *iptr);</code></dt>
+   <dd>Break the argument value into integral and fractional
+    parts, each of which has the same sign as the argument.
+    It stores the integrbal part as a <code>double</code> in the object
+    pointed to by <var>iptr</var>, and returns the fractional part.</dd>
+
+   <dt><code>double pow(double x, double y);</code></dt>
+   <dd>Compute <var>x</var> to the power <var>y</var>.<br />
+    Errors: <code>EDOM</code> occurs if <var>x</var>&#160;&lt;&#160;0 and
+    <var>y</var> not integral, or if the result cannot be represented if
+    <var>x</var> is&#160;0, and <var>y</var>&#160;&#8804;&#160;0.
+    <code>ERANGE</code> may also occur.</dd>
+
+   <dt><code>double sqrt(double x);</code></dt>
+   <dd>Compute the square root of <var>x</var>.<br />
+    Errors: <code>EDOM</code> occurs if <var>x</var> is negative.</dd>
+
+   <dt><code>double ceil(double x);</code></dt>
+   <dd>Smallest integer not less than <var>x</var>.</dd>
+
+   <dt><code>double fabs(double x);</code></dt>
+   <dd>Absolute value of <var>x</var>.</dd>
+
+   <dt><code>double floor(double x);</code></dt>
+   <dd>Largest integer not greater than <var>x</var>.</dd>
+
+   <dt><code>double fmod(double x, double y);</code></dt>
+   <dd>Floating point remainder of <var>x/y</var>.<br />
+    Errors: If <var>y</var> is zero, it is implementation defined
+    whether <code>fmod</code> returns zero or a domain error occurs.</dd>
+  </dl>
+
+ <div class="cbook_next_prev"><p><a href="limits.html">Previous section</a> | <a href="../chapter9/">Chapter contents</a> | <a href="nonlocal_jumps.html">Next section</a></p></div>
+
+    </main>
+    <nav id="menu" class="Left">
+      
+ 
+  
+  <div class="nav">
+
+	
+	
+			
+			  <div class="nav0">
+				
+				  <a href="/">Publications</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav1">
+				
+				  <a href="/c_book/">The C&nbsp;Book</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/preface/">Preface</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter1/">Introduction</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter2/">Variables &amp; arithmetic</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter3/">Control flow</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter4/">Functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter5/">Arrays &amp; pointers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter6/">Structures</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter7/">Preprocessor</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter8/">Specialized areas</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter9/">Libraries</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/introduction.html">Introduction</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/diagnostics.html">Diagnostics</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/character_handling.html">Character handling</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/localization.html">Localization</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/limits.html">Limits</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <strong>Maths functions</strong>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/nonlocal_jumps.html">Non-local jumps</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/signal_handling.html">Signal handling</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/stdarg.html">Stdarg</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/input_and_output.html">Input &amp; output</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/formatted_io.html">Formatted I/O</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/character_io.html">Character I/O</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/unformatted_io.html">Unformatted I/O</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/random_access_io.html">Random access I/O</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/general_utilities.html">General Utilities</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/string_handling.html">String handling</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/date_and_time.html">Date and time</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/summary.html">Summary</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter10/">Complete Programs</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/answers/">Answers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/copyright.html">Copyright</a>
+				
+				
+			</div>
+			
+	
+
+</div>
+
+ 
+
+      <div class="ColBtm">
+        <hr />
+<div class="h1"><a href="https://ebusiness.gbdirect.co.uk/contact.html">Contact Us</a></div>
+
+      </div>
+
+    </nav>
+    <aside id="sidebar" class="Right">
+      
+ <div class="box">
+  
+  
+<img src="https://global.gbdirect.co.uk/Themes/printer-friendly-12x12.png" alt="" title="Printer-friendly version of this page" />
+<a href="?format=pf" rel="nofollow">
+  Printer-friendly version
+</a>
+
+ </div>
+
+ <div class="box">
+  <h3>The C Book</h3>
+  
+<p>This book is published as a matter of historical interest.
+ Please read the
+ <a href="/c_book/copyright.html">copyright and disclaimer information</a>.</p>
+
+<p>GBdirect Ltd provides up-to-date training and consultancy in
+ <a href="http://training.gbdirect.co.uk/courses/c/">C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c/real_time_linux_embedded_c_training.html">Embedded C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c++/">C++</a>
+ and a wide range of
+ <a href="http://training.gbdirect.co.uk/courses/">other subjects based on
+ open standards</a> if you happen to be interested.</p>
+
+ </div>
+
+
+    </aside>
+  </div>
+  
+<script type="text/javascript">
+        var maxheight = 0;
+        var a =  Array('main', 'menu', 'sidebar');
+        for(index in a){
+                var name = a[index];
+                // alert(name);
+                var id = document.getElementById(name);
+                if(id){
+                        if(id.offsetHeight > maxheight){
+                                maxheight = id.offsetHeight;
+                        }
+                }
+        }
+        var tabbar = document.getElementById('tabsbar');
+        if(tabbar){
+                if(tabbar.style) tabbar=tabbar.style;
+                tabbar.left = 0+'px';
+                tabbar.top = maxheight+'px';
+        }
+        
+</script>
+</body>
+</html>

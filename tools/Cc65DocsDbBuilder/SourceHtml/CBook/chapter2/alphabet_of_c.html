@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1">
+<title>The C Book &#8212; The alphabet of&#160;C</title>
+<meta property="og:title" content="The C Book &amp;#8212; The alphabet of&amp;#160;C" />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://global.gbdirect.co.uk/Themes/logo-og.png" />
+
+<link rel="SHORTCUT ICON" href="https://global.gbdirect.co.uk/favicon.ico" />
+<link rel="stylesheet" type="text/css" href="https://global.gbdirect.co.uk/Themes/Quarters.css" />
+
+<link rel="prev" href="/c_book/chapter2/fundamentals.html" />
+<link rel="next" href="/c_book/chapter2/textual_program_structure.html" />
+<link rel="contents" href="/c_book/chapter2/" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<!-- order 3-->
+<!-- lastmod 2016-07-13T17:30:01Z-->
+
+
+<link rel="canonical" href="https://publications.gbdirect.co.uk/c_book/chapter2/alphabet_of_c.html"/><meta property="og:url" content="https://publications.gbdirect.co.uk/c_book/chapter2/alphabet_of_c.html" />
+<script type="text/javascript"> var _gaq = _gaq || []; _gaq.push(['_setAccount', 'UA-3566842-1']); _gaq.push(['_setDomainName', '.gbdirect.co.uk']); _gaq.push(['_trackPageview']); (function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = 'https://www.google-analytics.com/ga.js'; var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s); })(); </script>
+</head>
+
+<body>
+  <header class="Banner">
+    <span id="Logo">
+      <a href="https://ebusiness.gbdirect.co.uk">
+        <img src="https://global.gbdirect.co.uk/Themes/gbdirect.gif"
+             alt="GBdirect Homepage"
+             title="GBdirect Homepage" /></a>
+    </span>
+<!-- Original homebrew search
+    <form action="https://global.gbdirect.co.uk/search.cgi"
+          method="get" id="Search">
+      <label for="search_textbox">Search</label>
+      <input type="text" name="query" size="12" id="search_textbox" value="" />
+      <input type="submit" name="Submit" value="Go" />
+    </form>
+-->
+<!-- Google search -->
+    <form class="Search" action="https://www.google.com/cse" id="cse-search-box">
+      <input type="hidden" name="cx" value="010270212093732037646:4pvgkishmkg" />
+      <input type="hidden" name="ie" value="UTF-8" />
+      <label for="search_textbox">Search</label>
+      <input type="text" name="q" id="search_textbox" size="12" />
+      <input type="submit" name="sa" value="Go" />
+    </form>
+    <script type="text/javascript" src="https://www.google.com/cse/brand?form=cse-search-box&amp;lang=en&amp;sitesearch=true"></script>
+<!-- End Google search -->
+  </header>
+  <nav class="Tabsbar"><span class="ThisTab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span> <span class="NoCSS2">| </span> <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/contact.html">Contact</a></span></nav>
+  <div id="container" itemscope itemtype="http://schema.org/WebPage">
+    <meta itemprop="isFamilyFriendly" content="1" />
+    <meta itemprop="inLanguage" content="en" />
+    <nav class="Tabsbar" id="tabsbar" style="position: absolute; width: 100%">
+  
+  
+    <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/">About Us</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://consulting.gbdirect.co.uk/">Consultancy</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://development.gbdirect.co.uk/">Software</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="ThisTab">Publications</span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-source.gbdirect.co.uk/">Open&nbsp;Source</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://software-support.gbdirect.co.uk/">Support</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-standards.gbdirect.co.uk/">Open&nbsp;Standards</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://faq.gbdirect.co.uk/">FAQ</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://jobs.gbdirect.co.uk/">Jobs</a></span>
+  
+
+</nav>
+    <main id="main" >
+	  
+		<nav id="breadcrumb" itemprop="breadcrumb">
+			
+			<a href="https://publications.gbdirect.co.uk/">Publications</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/">The C&nbsp;Book</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/chapter2/">Variables &amp; arithmetic</a>
+			
+			 &gt; The C&#160;alphabet
+			
+		</nav>
+		<br />
+	  
+      <h1>2.2. The alphabet of&#160;C</h1>
+      
+      
+
+
+  
+
+  <p>This is an interesting area; alphabets are important. All the same, this
+   is the one part of this chapter that you can read superficially first time
+   round without missing too much. Read it to make sure that you've seen the
+   contents once, and make a mental note to come back to it later on.</p>
+
+  <h2><a name="section-1"></a>2.2.1.&#160;Basic Alphabet</h2>
+   
+
+   <p>Few computer languages bother to define their alphabet rigorously.
+    There's usually an assumption that the English alphabet augmented by a
+    sprinkling of more or less arbitrary punctuation symbols will be available
+    in every environment that is trying to support the language. The
+    assumption is not always borne out by experience. Older languages suffer
+    less from this sort of problem, but try sending C&#160;programs by Telex
+    or restrictive e-mail links and you'll understand the difficulty.</p>
+
+   <p>The Standard talks about two different character sets: the one that
+    programs are written in and the one that programs execute with. This is
+    basically to allow for different systems for compiling and execution,
+    which might use different ways of encoding their characters. It doesn't
+    actually matter a lot except when you are using character constants in the
+    preprocessor, where they may not have the same value as they do at
+    execution time. This behaviour is implementation-defined, so it must be
+    documented. Don't worry about it yet.</p>
+
+   <p>The Standard requires that an alphabet of 96&#160;symbols is available
+    for C as follows:</p>
+
+   <div class="inset-table"><a name="table-1"></a><table><tbody><tr class="cbook-table-first-row">
+     <td><code>a b c d e f g h i j k l m n o p q r s t u v w x y z</code></td>
+    </tr><tr class="cbook-table-row">
+     <td><code>A B C D E F G H I J K L M N O P Q R S T U V W X Y Z</code></td>
+    </tr><tr class="cbook-table-row">
+     <td><code>0 1 2 3 4 5 6 7 8 9</code></td>
+    </tr><tr class="cbook-table-row">
+     <td><code>! &quot; # % &amp; ' ( ) * + , - . /</code></td>
+    </tr><tr class="cbook-table-row">
+     <td><code>: ; &lt; = &gt; ? [ \ ] ^ _ { | } ~</code></td>
+    </tr><tr class="cbook-table-row">
+     <td>space, horizontal and vertical tab</td>
+    </tr><tr class="cbook-table-last-row">
+     <td>form feed, newline</td>
+    </tr></tbody></table><cite>Table&#160;2.1.&#160;The Alphabet of&#160;C</cite></div>
+
+   <p>It turns out that most of the commonly used computer alphabets contain
+    all the symbols that are needed for C with a few notorious exceptions. The
+    C alphabetic characters shown below are missing from the International
+    Standards Organization ISO&#160;646 standard 7-bit character set, which is
+    as a subset of all the widely used computer alphabets.</p>
+
+   <pre>
+# [ \ ] ^ { | } ~</pre>
+
+   <p>To cater for systems that can't provide the full&#160;96 characters
+    needed by&#160;C, the Standard specifies a method of using the
+    ISO&#160;646 characters to represent the missing few; the technique is the
+    use of <dfn>trigraphs</dfn>.</p>
+
+  
+
+  <h2><a name="section-2"></a>2.2.2.&#160;Trigraphs</h2>
+   
+
+   <p>Trigraphs are a sequence of three ISO&#160;646 characters that get
+    treated as if they were one character in the C&#160;alphabet; all of the
+    trigraphs start with two question marks&#160;<code>??</code> which helps
+    to indicate that &#8216;something funny&#8217; is going on. Table&#160;2.1 below shows the trigraphs defined in the Standard.</p>
+
+   <div class="inset-table"><a name="table-2"></a><table><thead><tr class="cbook-table-heading">
+     <th>C character</th>
+     <th>Trigraph</th>
+    </tr></thead><tbody><tr class="cbook-table-first-row">
+     <td><code>#</code></td>
+     <td><code>??=</code></td>
+    </tr><tr class="cbook-table-row">
+     <td><code>[</code></td>
+     <td><code>??(</code></td>
+    </tr><tr class="cbook-table-row">
+     <td><code>]</code></td>
+     <td><code>??)</code></td>
+    </tr><tr class="cbook-table-row">
+     <td><code>{</code></td>
+     <td><code>??&lt;</code></td>
+    </tr><tr class="cbook-table-row">
+     <td><code>}</code></td>
+     <td><code>??&gt;</code></td>
+    </tr><tr class="cbook-table-row">
+     <td><code>\</code></td>
+     <td><code>??/</code></td>
+    </tr><tr class="cbook-table-row">
+     <td><code>|</code></td>
+     <td><code>??!</code></td>
+    </tr><tr class="cbook-table-row">
+     <td><code>~</code></td>
+     <td><code>??-</code></td>
+    </tr><tr class="cbook-table-last-row">
+     <td><code>^</code></td>
+     <td><code>??'</code></td>
+    </tr></tbody></table><cite>Table&#160;2.2.&#160;Trigraphs</cite></div>
+
+   <p>As an example, let's assume that your terminal doesn't have the
+    <code>#</code> symbol. To write the preprocessor line</p>
+
+   <pre>
+#define MAX     32767</pre>
+
+   <p>isn't possible; you must use trigraph notation instead:</p>
+
+   <pre>
+??=define MAX   32767</pre>
+
+   <p>Of course trigraphs will work even if you do have a
+    <code>#</code>&#160;symbol; they are there to help in difficult
+    circumstances more than to be used for routine programming.</p>
+
+   <p>The <code>?</code> &#8216;binds to the right&#8217;, so in any sequence of
+    repeated <code>?</code>s, only the two at the right could possibly be part
+    of a trigraph, depending on what comes next&#8212;this disposes of any
+    ambiguity.</p>
+
+   <p>It would be a mistake to assume that programs written to be highly
+    portable would use trigraphs &#8216;in case they had to be moved to systems
+    that only support ISO&#160;646&#8217;. If your system can handle all 96
+    characters in the C&#160;alphabet, then that is what you should be using.
+    Trigraphs will only be seen in restricted environments, and it is
+    extremely simple to write a character-by-character translator between the
+    two representations. However, all compilers that conform to the Standard
+    will recognize trigraphs when they are seen.</p>
+
+   <p>Trigraph substitution is the very first operation that a compiler
+    performs on its input text.</p>
+
+  
+
+  <h2><a name="section-3"></a>2.2.3.&#160;Multibyte Characters</h2>
+   
+
+   <p>Support for multibyte characters is new in the Standard. Why?</p>
+
+   <p>A very large proportion of day-to-day computing involves data that
+    represents text of one form or another. Until recently, the rather
+    chauvinist computing industry has assumed that it is adequate to provide
+    support for about a hundred or so printable characters (hence the
+    96&#160;character alphabet of&#160;C), based on the requirements of the
+    English language&#8212;not surprising, since the bulk of the development
+    of commercial computing has been in the US market. This alphabet
+    (technically called the <dfn>repertoire</dfn>) fits conveniently into 7 or
+    8&#160;bits of storage, which is why the US-ASCII character set standard
+    and the architecture of mini and microcomputers both give very heavy
+    emphasis to the use of 8-bit bytes as the basic unit of storage.</p>
+
+   <p>C also has a byte-oriented approach to data storage. The smallest
+    individual item of storage that can be directly used in C is the byte,
+    which is defined to be at least 8 bits in size. Older systems or
+    architectures that are not designed explicitly to support this may incur a
+    performance penalty when running C as a result, although there are not
+    many that find this a big problem.</p>
+
+   <p>Perhaps there was a time when the English alphabet was acceptable for
+    data processing applications worldwide&#8212;when computers were used in
+    environments where the users could be expected to adapt&#8212;but those
+    days are gone. Nowadays it is absolutely essential to provide for the
+    storage and processing of textual material in the native alphabet of
+    whoever wants to use the system. Most of the US and Western European
+    language requirements can be squeezed together into a character set that
+    still fits in 8&#160;bits per character, but Asian and other languages
+    simply cannot.</p>
+
+   <p>There are two general ways of extending character sets. One is to use a
+    fixed number of bytes (often two) for every character. This is what the
+    wide character support in C is designed to do. The other method is to use
+    a shift-in shift-out coding scheme; this is popular over 8-bit
+    communication links. Imagine a stream of characters that looks like:</p>
+
+   <pre>
+a b c &lt;SI&gt; a b g &lt;SO&gt; x y</pre>
+
+   <p>where <code>&lt;SI&gt;</code> and <code>&lt;SO&gt;</code> mean
+    &#8216;switch to Greek&#8217; and &#8216;switch back to English&#8217;
+    respectively. A display device that agreed to use that method might well
+    then display a, b, c, alpha, beta, gamma, x and y. This is roughly the
+    scheme used by the shift-JIS Japanese standard, except that once the
+    shift-in has been seen, <em>pairs</em> of characters together are used as
+    the code for a single Japanese character. Alternative schemes exist which
+    use more than one shift-in character, but they are less common.</p>
+
+   <p>The Standard now allows explicitly for the use of extended character
+    sets. Only the 96&#160;characters defined earlier are used for the C part
+    of a program, but in comments, strings, character constants and header
+    names (these are really data, not part of the program as such) extended
+    characters are permitted if your environment supports them. The Standard
+    lays down a number of pretty obvious rules about how you are allowed to
+    use them which we will not repeat here. The most significant one is that a
+    byte whose value is zero is interpreted as a <dfn>null character</dfn>
+    irrespective of any shift state. That is important, because C uses a null
+    character to indicate the end of strings and many library functions rely
+    on it. An additional requirement is that multibyte sequences must start
+    and end in the initial shift state.</p>
+
+   <p>The <code>char</code> type is specified by the Standard as suitable to
+    hold the value of all of the characters in the &#8216;execution character
+    set&#8217;, which will be defined in your system's documentation. This means
+    that (in the example above) it could hold the value of
+    &#8216;<code>a</code>&#8217; or &#8216;<code>b</code>&#8217; or even the &quot;switch to
+    Greek&quot; character itself. Because of the shift-in shift-out mechanism,
+    there would be no difference between the value stored in a char that was
+    intended to represent &#8216;<code>a</code>&#8217; or the Greek &#8216;alpha&#8217;
+    character. To do that would mean using a different representation -
+    probably needing more than 8 bits, which on many systems would be too big
+    for a <code>char</code>. That is why the Standard introduces the
+    <code>wchar_t</code>type. To use this, you must include the
+    &lt;stddef.h&gt; header, because <code>wchar_t</code> is simply defined as
+    an alternative name for one of C's other types. We discuss it further in
+    <a href="../chapter2/expressions_and_arithmetic.html">Section&#160;2.8</a>.</p>
+
+  
+
+  <h2><a name="section-4"></a>Summary</h2>
+
+   <ul>
+    <li>C requires at least 96&#160;characters in the source program character
+     set.</li>
+    <li>Not all character sets in common use can stretch to 96&#160;characters,
+     trigraphs allow the basic ISO&#160;646 character set to be used (at a
+     pinch).</li>
+    <li>Multibyte character support has been added by the Standard, with
+     support for
+     <ul>
+      <li>Shift-encoded multibyte characters, which can be squeezed into
+       &#8216;ordinary&#8217; character arrays, so still have <code>char</code>
+       type.</li>
+      <li>Wide characters, each of which may use more storage than a regular
+       character. These usually have a different type from
+       <code>char</code>.</li>
+     </ul>
+    </li>
+   </ul>
+
+  
+
+ <div class="cbook_next_prev"><p><a href="fundamentals.html">Previous section</a> | <a href="../chapter2/">Chapter contents</a> | <a href="textual_program_structure.html">Next section</a></p></div>
+
+    </main>
+    <nav id="menu" class="Left">
+      
+ 
+  
+  <div class="nav">
+
+	
+	
+			
+			  <div class="nav0">
+				
+				  <a href="/">Publications</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav1">
+				
+				  <a href="/c_book/">The C&nbsp;Book</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/preface/">Preface</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter1/">Introduction</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter2/">Variables &amp; arithmetic</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/fundamentals.html">Fundamentals</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <strong>The C&#160;alphabet</strong>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/textual_program_structure.html">Textual program structure</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/keywords_and_identifiers.html">Keywords &amp; identifiers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/variable_declaration.html">Declaring variables</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/real_types.html">Reals</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/integral_types.html">Integers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/expressions_and_arithmetic.html">Expressions &amp; arithmetic</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/constants.html">Constants</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/summary.html">Summary</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/exercises.html">Exercises</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter3/">Control flow</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter4/">Functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter5/">Arrays &amp; pointers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter6/">Structures</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter7/">Preprocessor</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter8/">Specialized areas</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter9/">Libraries</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter10/">Complete Programs</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/answers/">Answers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/copyright.html">Copyright</a>
+				
+				
+			</div>
+			
+	
+
+</div>
+
+ 
+
+      <div class="ColBtm">
+        <hr />
+<div class="h1"><a href="https://ebusiness.gbdirect.co.uk/contact.html">Contact Us</a></div>
+
+      </div>
+
+    </nav>
+    <aside id="sidebar" class="Right">
+      
+ <div class="box">
+  
+  
+<img src="https://global.gbdirect.co.uk/Themes/printer-friendly-12x12.png" alt="" title="Printer-friendly version of this page" />
+<a href="?format=pf" rel="nofollow">
+  Printer-friendly version
+</a>
+
+ </div>
+
+ <div class="box">
+  <h3>The C Book</h3>
+  
+<p>This book is published as a matter of historical interest.
+ Please read the
+ <a href="/c_book/copyright.html">copyright and disclaimer information</a>.</p>
+
+<p>GBdirect Ltd provides up-to-date training and consultancy in
+ <a href="http://training.gbdirect.co.uk/courses/c/">C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c/real_time_linux_embedded_c_training.html">Embedded C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c++/">C++</a>
+ and a wide range of
+ <a href="http://training.gbdirect.co.uk/courses/">other subjects based on
+ open standards</a> if you happen to be interested.</p>
+
+ </div>
+
+
+    </aside>
+  </div>
+  
+<script type="text/javascript">
+        var maxheight = 0;
+        var a =  Array('main', 'menu', 'sidebar');
+        for(index in a){
+                var name = a[index];
+                // alert(name);
+                var id = document.getElementById(name);
+                if(id){
+                        if(id.offsetHeight > maxheight){
+                                maxheight = id.offsetHeight;
+                        }
+                }
+        }
+        var tabbar = document.getElementById('tabsbar');
+        if(tabbar){
+                if(tabbar.style) tabbar=tabbar.style;
+                tabbar.left = 0+'px';
+                tabbar.top = maxheight+'px';
+        }
+        
+</script>
+</body>
+</html>

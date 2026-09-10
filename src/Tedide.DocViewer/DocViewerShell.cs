@@ -54,7 +54,7 @@ public sealed class DocViewerShell : Window
     {
         _database = database;
 
-        Title = "CC65 Documentation Viewer";
+        Title = "Tedide Documentation Viewer";
         Width = Dim.Fill();
         Height = Dim.Fill();
 
@@ -84,17 +84,22 @@ public sealed class DocViewerShell : Window
         };
         _tree.Width = Dim.Fill();
         _tree.Height = Dim.Fill();
-        foreach (var category in _database.LoadCatalog())
+        foreach (var book in _database.LoadCatalog())
         {
-            var categoryNode = new TreeNode { Text = category.Name };
-            foreach (var entry in category.Entries)
+            var bookNode = new TreeNode { Text = book.Name };
+            foreach (var category in book.Categories)
             {
-                var entryNode = new TreeNode { Text = entry.FileName, Tag = entry };
-                categoryNode.Children.Add(entryNode);
-                _nodesByFileName[entry.FileName] = entryNode;
-                _entriesByFileName[entry.FileName] = entry;
+                var categoryNode = new TreeNode { Text = category.Name };
+                foreach (var entry in category.Entries)
+                {
+                    var entryNode = new TreeNode { Text = entry.FileName, Tag = entry };
+                    categoryNode.Children.Add(entryNode);
+                    _nodesByFileName[entry.FileName] = entryNode;
+                    _entriesByFileName[entry.FileName] = entry;
+                }
+                bookNode.Children.Add(categoryNode);
             }
-            _tree.AddObject(categoryNode);
+            _tree.AddObject(bookNode);
         }
         _tree.ExpandAll();
         _tree.SelectionChanged += (_, _) =>
@@ -118,7 +123,7 @@ public sealed class DocViewerShell : Window
 
         _contentFrame = new FrameView
         {
-            Title = "cc65 Documentation",
+            Title = "Documentation",
             X = Pos.Right(treeFrame),
             Y = Pos.Bottom(menuBar),
             Width = Dim.Fill(),
@@ -149,7 +154,14 @@ public sealed class DocViewerShell : Window
             var hashIndex = e.Url.IndexOf('#');
             var filePart = hashIndex >= 0 ? e.Url[..hashIndex] : e.Url;
             var anchor = hashIndex >= 0 ? e.Url[(hashIndex + 1)..] : null;
-            var fileName = Path.GetFileNameWithoutExtension(filePart);
+            // Strips only the ".html" suffix (not Path.GetFileNameWithoutExtension, which would
+            // also drop a leading directory) - a cc65 manual link is always a bare "file.html" so
+            // this is unchanged for it, but The C Book's own FileName ids are chapter-qualified
+            // relative paths (e.g. "chapter5/pointers"), and its links carry that same directory
+            // ("chapter5/pointers.html") to stay unique - see CBookHtmlToMarkdownConverter.
+            var fileName = filePart.EndsWith(".html", StringComparison.OrdinalIgnoreCase)
+                ? filePart[..^".html".Length]
+                : filePart;
 
             e.Handled = true;
             NavigateTo(fileName, anchor, pushHistory: true);

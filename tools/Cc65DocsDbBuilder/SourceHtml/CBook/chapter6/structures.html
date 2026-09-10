@@ -1,0 +1,1275 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1">
+<title>The C Book &#8212; Structures</title>
+<meta property="og:title" content="The C Book &amp;#8212; Structures" />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://global.gbdirect.co.uk/Themes/logo-og.png" />
+
+<link rel="SHORTCUT ICON" href="https://global.gbdirect.co.uk/favicon.ico" />
+<link rel="stylesheet" type="text/css" href="https://global.gbdirect.co.uk/Themes/Quarters.css" />
+
+<link rel="prev" href="/c_book/chapter6/history.html" />
+<link rel="next" href="/c_book/chapter6/unions.html" />
+<link rel="contents" href="/c_book/chapter6/" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<!-- order 3-->
+<!-- lastmod 2022-03-24T16:38:34Z-->
+
+
+<link rel="canonical" href="https://publications.gbdirect.co.uk/c_book/chapter6/structures.html"/><meta property="og:url" content="https://publications.gbdirect.co.uk/c_book/chapter6/structures.html" />
+<script type="text/javascript"> var _gaq = _gaq || []; _gaq.push(['_setAccount', 'UA-3566842-1']); _gaq.push(['_setDomainName', '.gbdirect.co.uk']); _gaq.push(['_trackPageview']); (function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = 'https://www.google-analytics.com/ga.js'; var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s); })(); </script>
+</head>
+
+<body>
+  <header class="Banner">
+    <span id="Logo">
+      <a href="https://ebusiness.gbdirect.co.uk">
+        <img src="https://global.gbdirect.co.uk/Themes/gbdirect.gif"
+             alt="GBdirect Homepage"
+             title="GBdirect Homepage" /></a>
+    </span>
+<!-- Original homebrew search
+    <form action="https://global.gbdirect.co.uk/search.cgi"
+          method="get" id="Search">
+      <label for="search_textbox">Search</label>
+      <input type="text" name="query" size="12" id="search_textbox" value="" />
+      <input type="submit" name="Submit" value="Go" />
+    </form>
+-->
+<!-- Google search -->
+    <form class="Search" action="https://www.google.com/cse" id="cse-search-box">
+      <input type="hidden" name="cx" value="010270212093732037646:4pvgkishmkg" />
+      <input type="hidden" name="ie" value="UTF-8" />
+      <label for="search_textbox">Search</label>
+      <input type="text" name="q" id="search_textbox" size="12" />
+      <input type="submit" name="sa" value="Go" />
+    </form>
+    <script type="text/javascript" src="https://www.google.com/cse/brand?form=cse-search-box&amp;lang=en&amp;sitesearch=true"></script>
+<!-- End Google search -->
+  </header>
+  <nav class="Tabsbar"><span class="ThisTab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span> <span class="NoCSS2">| </span> <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/contact.html">Contact</a></span></nav>
+  <div id="container" itemscope itemtype="http://schema.org/WebPage">
+    <meta itemprop="isFamilyFriendly" content="1" />
+    <meta itemprop="inLanguage" content="en" />
+    <nav class="Tabsbar" id="tabsbar" style="position: absolute; width: 100%">
+  
+  
+    <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/">About Us</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://consulting.gbdirect.co.uk/">Consultancy</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://development.gbdirect.co.uk/">Software</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="ThisTab">Publications</span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-source.gbdirect.co.uk/">Open&nbsp;Source</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://software-support.gbdirect.co.uk/">Support</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-standards.gbdirect.co.uk/">Open&nbsp;Standards</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://faq.gbdirect.co.uk/">FAQ</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://jobs.gbdirect.co.uk/">Jobs</a></span>
+  
+
+</nav>
+    <main id="main" >
+	  
+		<nav id="breadcrumb" itemprop="breadcrumb">
+			
+			<a href="https://publications.gbdirect.co.uk/">Publications</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/">The C&nbsp;Book</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/chapter6/">Structures</a>
+			
+			 &gt; Structures
+			
+		</nav>
+		<br />
+	  
+      <h1>6.2. Structures</h1>
+      
+      
+
+
+  
+
+  <p>Arrays allow for a named collection of identical objects. This is suitable
+   for a number of tasks, but isn't really very flexible. Most real data
+   objects are complicated things with an inherent structure that does not fit
+   well on to array style storage. Let's use a concrete example.</p>
+
+  <p>Imagine that the job is something to do with a typesetting package. In
+    this system, the individual characters have not only their character values
+    but also some additional attributes like font and point size. The font
+    doesn't affect the character as such, but only the way that it is
+    displayed: this is the normal font, <em>this is in bold font</em> and this is
+    <dfn>in italics</dfn>. Point size is similar. It describes the size of
+    the characters when they are printed. For example, the point size of this
+    text increases  <span class="bigger">now. It goes back again</span> now.  If
+    our characters have three independent attributes, how can they be
+    represented in a single object?</p>
+
+  <p>With C it's easy. First work out how to represent the individual
+   attributes in the basic types. Let's assume that we can still store the
+   character itself in a char, that the font can be encoded into
+   a <code>short</code> (1 for regular, 2 italic, 3 bold etc.) and that the
+   point size will also fit a short. These are all quite reasonable
+   assumptions.  Most systems only support a few tens of fonts even if they are
+   very sophisticated, and point sizes are normally in the range 6 to the small
+   hundreds. Below 6 is almost invisible, above 50 is bigger than the biggest
+   newspaper banner headlines. So we have a char and two shorts that are to be
+   treated as a single entity. Here's how to declare it in C.</p>
+
+  <pre>
+struct wp_char{
+      char wp_cval;
+      short wp_font;
+      short wp_psize;
+};</pre>
+
+  <p>That effectively declares a new type of object which can be used in your
+   program. The whole thing is introduced by the <code>struct</code> keyword,
+   which is followed by an optional identifier known as the <code>tag</code>,
+   <code>wp_char</code> in this case. The tag only serves the purpose of giving
+   a name to this type of structure and allows us to refer to the type later
+   on.  After a declaration like the one just seen, the tag can be used like
+   this:</p>
+
+  <pre>
+struct wp_char x, y;</pre>
+
+  <p>That defines two variables called <code>x</code> and <code>y</code> just
+   as it would have done if the definition had been</p>
+
+  <pre>
+int x, y;</pre>
+
+  <p>but of course in the first example the variables are of type <code>struct
+   wp_char</code>, and in the second their type is <code>int</code>. The tag is
+   a name for the new type that we have introduced.</p>
+
+  <p>It's worth remembering that structure tags can safely be used as ordinary
+   identifiers as well. They only mean something special when they are preceded
+   by the keyword <code>struct</code>. It is quite common to see a structured
+   object being defined with the same name as its structure tag.</p>
+
+  <pre>
+struct wp_char wp_char;</pre>
+
+  <p>That defines a variable called <code>wp_char</code> of type <code>struct
+   wp_char</code>. This is described by saying that structure tags have their
+   own &#8216;name space&#8217; and cannot collide with other names. We'll
+   investigate tags some more in the discussion of &#8216;incomplete
+   types&#8217;.</p>
+
+  <p>Variables can also be defined immediately following a structure
+   declaration.</p>
+
+  <pre>
+struct wp_char{
+      char wp_cval;
+      short wp_font;
+      short wp_psize;
+}v1;
+
+struct wp_char v2;</pre>
+
+  <p>We now have two variables, <code>v1</code> and <code>v2</code>. If all the
+   necessary objects are defined at the end of the structure declaration, the
+   way that <code>v1</code> was, then the tag becomes unneccessary (except if
+   it is needed later for use with <code>sizeof</code> and in casts) and is
+   often not present.</p>
+
+  <p>The two variables are structured objects, each containing three separate
+   <dfn>members</dfn> called <code>wp_cval</code>, <code>wp_font</code> and
+   <code>wp_psize</code>. To access the individual members of the structures,
+   the &#8216;dot&#8217; operator is used:</p>
+
+  <pre>
+v1.wp_cval = 'x';
+v1.wp_font = 1;
+v1.wp_psize = 10;
+
+v2 = v1;</pre>
+
+  <p>The individual members of <code>v1</code> are initialized to suitable
+   values, then the whole of <code>v1</code> is copied into <code>v2</code> in
+   an assignment.</p>
+
+  <p>In fact the only operation permitted on whole structures is assignment:
+   they can be assigned to each other, passed as arguments to functions and
+   returned by functions. However, it is not a very efficient operation to copy
+   structures and most programs avoid structure copying by manipulating
+   pointers to structures instead. It is generally quicker to copy pointers
+   around than structures. A surprising omission from the language is the
+   facility to compare structures for equality, but there is a good reason for
+   this which will be mentioned shortly.</p>
+
+  <p>Here is an example using an array of structures like the one before.
+   A function is used to read characters from the program's standard input and
+   return an appropriately initialized structure. When a newline has been read
+   or the array is full, the structures are sorted into order depending on the
+   character value, and then printed out.</p>
+
+  <div class="inset-example"><a name="example-1"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+#define ARSIZE 10
+
+struct wp_char{
+      char wp_cval;
+      short wp_font;
+      short wp_psize;
+}ar[ARSIZE];
+
+/*
+* type of the input function -
+* could equally have been declared above;
+* it returns a structure and takes no arguments.
+*/
+struct wp_char infun(void);
+
+main(){
+      int icount, lo_indx, hi_indx;
+
+      for(icount = 0; icount &lt; ARSIZE; icount++){
+              ar[icount] = infun();
+              if(ar[icount].wp_cval == '\n'){
+                      /*
+                       * Leave the loop.
+                       * not incrementing icount means that the
+                       * '\n' is ignored in the sort
+                       */
+                      break;
+              }
+      }
+
+      /* now a simple exchange sort */
+
+      for(lo_indx = 0; lo_indx &lt;= icount-2; lo_indx++)
+              for(hi_indx = lo_indx+1; hi_indx &lt;= icount-1; hi_indx++){
+                      if(ar[lo_indx].wp_cval &gt; ar[hi_indx].wp_cval){
+                              /*
+                               * Swap the two structures.
+                               */
+                              struct wp_char wp_tmp = ar[lo_indx];
+                              ar[lo_indx] = ar[hi_indx];
+                              ar[hi_indx] = wp_tmp;
+                      }
+              }
+
+      /* now print */
+      for(lo_indx = 0; lo_indx &lt; icount; lo_indx++){
+              printf(&quot;%c %d %d\n&quot;, ar[lo_indx].wp_cval,
+                              ar[lo_indx].wp_font,
+                              ar[lo_indx].wp_psize);
+      }
+      exit(EXIT_SUCCESS);
+}
+
+struct wp_char
+infun(void){
+      struct wp_char wp_char;
+
+      wp_char.wp_cval = getchar();
+      wp_char.wp_font = 2;
+      wp_char.wp_psize = 10;
+
+      return(wp_char);
+}</pre><cite>Example&#160;6.1</cite></div>
+
+  <p>Once it is possible to declare structures it seems pretty natural to
+   declare arrays of them, use them as members of other structures and so on.
+   In fact the only restriction is that a structure cannot contain an example
+   of itself as a member&#8212;in which case its size would be an interesting
+   concept for philosophers to debate, but hardly useful to a C programmer.</p>
+
+  <h2><a name="section-1"></a>6.2.1.&#160;Pointers and structures</h2>
+   
+
+   <p>If what the last paragraph says is true&#8212;that it is more common to
+    use pointers to structures than to use the structures directly&#8212;we need
+    to know how to do it. Declaring pointers is easy of course:</p>
+
+   <pre>
+struct wp_char *wp_p;</pre>
+
+   <p>gives us one straight away. But how do we access the members of the
+    structure? One way might be to look through the pointer to get the whole
+    structure, then select the member:</p>
+
+   <pre>
+/* get the structure, then select a member */
+(*wp_p).wp_cval</pre>
+
+   <p>that would certainly work (the parentheses are there because . has
+    a higher precedence than <code>*</code>). It's not an easy notation to work
+    with though, so C introduces a new operator to clean things up; it is
+    usually known as the &#8216;pointing-to&#8217; operator. Here it is being
+    used:</p>
+
+   <pre>
+/* the wp_cval in the structure wp_p points to */
+wp_p-&gt;wp_cval = 'x';</pre>
+
+   <p>and although it might not look a lot easier than its alternative, it pays
+    off when the structure contains pointers, as in a linked list. The
+    pointing-to syntax is much easier if you want to follow two or three stages
+    down the links of a linked list. If you haven't come across linked lists
+    before, you're going to learn a lot more than just the use of structures
+    before this chapter finishes!</p>
+
+   <p>If the thing on the left of the <code>.</code> or <code>-&gt;</code>
+    operator is qualified (with <code>const</code> or <code>volatile</code>)
+    then the result is also has those qualifiers associated with it. Here it
+    is, illustrated with pointers; when the pointer points to a qualified type
+    the result that you get is also qualified:</p>
+
+   <pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+struct somestruct{
+      int i;
+};
+
+main(){
+      struct somestruct *ssp, s_item;
+      const struct somestruct *cssp;
+
+      s_item.i = 1;   /* fine */
+      ssp = &amp;s_item;
+      ssp-&gt;i += 2;    /* fine */
+      cssp = &amp;s_item;
+      cssp-&gt;i = 0;    /* not permitted - cssp points to const objects */
+
+      exit(EXIT_SUCCESS);
+}</pre>
+
+   <p>Not all compiler writers seem to have noticed that requirement&#8212;the
+    compiler that we used to test the last example failed to warn that the
+    final assignment violated a constraint.</p>
+
+   <p>Here is the Example&#160;6.1 rewritten using pointers, and with
+    the input function infun changed to accept a pointer to a structure rather
+    than returning one. This is much more likely to be what would be seen in
+    practice.</p>
+
+   <p>(It is fair to say that, for a really efficient implementation, even the
+    copying of structures would probably be dropped, especially if they were
+    large. Instead, an array of pointers would be used, and the pointers
+    exchanged until the sorted data could be found by traversing the pointer
+    array in index order. That would complicate things too much for a simple
+    example.)</p>
+
+   <div class="inset-example"><a name="example-2"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+#define ARSIZE 10
+
+struct wp_char{
+      char wp_cval;
+      short wp_font;
+      short wp_psize;
+}ar[ARSIZE];
+
+void infun(struct wp_char *);
+
+main(){
+      struct wp_char wp_tmp, *lo_indx, *hi_indx, *in_p;
+
+      for(in_p = ar; in_p &lt; &amp;ar[ARSIZE]; in_p++){
+              infun(in_p);
+              if(in_p-&gt;wp_cval == '\n'){
+                      /*
+                       * Leave the loop.
+                       * not incrementing in_p means that the
+                       * '\n' is ignored in the sort
+                       */
+                      break;
+              }
+      }
+
+      /*
+       * Now a simple exchange sort.
+       * We must be careful to avoid the danger of pointer underflow,
+       * so check that there are at least two entries to sort.
+       */
+
+      if(in_p-ar &gt; 1) for(lo_indx = ar; lo_indx &lt;= in_p-2; lo_indx++){
+              for(hi_indx = lo_indx+1; hi_indx &lt;= in_p-1; hi_indx++){
+                      if(lo_indx-&gt;wp_cval &gt; hi_indx-&gt;wp_cval){
+                              /*
+                               * Swap the structures.
+                               */
+                              struct wp_char wp_tmp = *lo_indx;
+                              *lo_indx = *hi_indx;
+                              *hi_indx = wp_tmp;
+                      }
+              }
+      }
+
+      /* now print */
+      for(lo_indx = ar; lo_indx &lt; in_p; lo_indx++){
+              printf(&quot;%c %d %d\n&quot;, lo_indx-&gt;wp_cval,
+                              lo_indx-&gt;wp_font,
+                              lo_indx-&gt;wp_psize);
+      }
+      exit(EXIT_SUCCESS);
+}
+
+void
+infun( struct wp_char *inp){
+
+      inp-&gt;wp_cval = getchar();
+      inp-&gt;wp_font = 2;
+      inp-&gt;wp_psize = 10;
+
+      return;
+}</pre><cite>Example&#160;6.2</cite></div>
+
+   <p>The next issue is to consider what a structure looks like in terms of
+    storage layout. It's best not to worry about this too much, but it is
+    sometimes useful if you have to use C to access record-structured data
+    written by other programs. The <code>wp_char</code> structure will be
+    allocated storage as shown in Figure&#160;6.1.</p>
+
+   <div class="inset-figure"><a name="figure-1"><img width="400" alt="Diagram showing the layout of the values in &#39;struct wp_char&#39;,            with boxes containing &#39;wp_cval&#39;, an empty space of padding,            &#39;wp_font&#39; and &#39;wp_psize&#39;." src="../figures/6.1.png" height="37" /></a><br /><cite>Figure&#160;6.1.&#160;Storage Layout of a Structure</cite></div>
+
+   <p>The diagram assumes a number of things: that a <code>char</code> takes
+    1&#160;byte of storage; that a <code>short</code> needs 2 bytes; and that
+    <code>short</code>s must be aligned on even byte addresses in this
+    architecture. As a result the structure contains an unnamed 1-byte member
+    inserted by the compiler for architectural reasons. Such addressing
+    restrictions are quite common and can often result in structures containing
+    &#8216;holes&#8217;.</p>
+
+   <p>The Standard makes some guarantees about the layout of structures and
+    unions:</p>
+
+   <ul>
+    <li>Members of a structure are allocated within the structure in the
+     order of their appearance in the declaration and have ascending
+     addresses.</li>
+
+    <li>There must not be any padding in front of the first member.</li>
+
+    <li>The address of a structure is the same as the address of its first
+     member, provided that the appropriate cast is used. Given the
+     previous declaration of <code>struct wp_char</code>, if item is of type
+     <code>struct wp_char</code>, then
+     <code>(char *)item == &amp;item.wp_cval</code>.</li>
+
+    <li>Bit fields (see <a href="../chapter6/bitfields.html">Section&#160;6.4</a>) don't actually have
+     addresses, but are conceptually packed into <dfn>units</dfn> which obey
+     the rules above.</li>
+   </ul>
+
+  
+
+  <h2><a name="section-2"></a>6.2.2.&#160;Linked lists and other structures</h2>
+   
+
+   <p>The combination of structures and pointers opens up a lot of interesting
+    possibilities. This is not a textbook on complex linked data structures,
+    but it will go on to describe two very common examples of the breed: linked
+    lists and trees. Both have a feature in common: they consist of structures
+    containing pointers to other structures, all the structures typically being
+    of the same type. Figure&#160;6.2 shows a picture of a linked
+    list.</p>
+
+   <div class="inset-figure"><a name="figure-2"><img width="400" alt="Diagram showing a linked list of three items, with a pointer            labelled &#39;list head&#39; pointing to the first item, and each item            containing a &#39;data&#39; value and a &#39;pointer&#39; value which points to            the next item (the last pointer is null)." src="../figures/6.2.png" height="118" /></a><br /><cite>Figure&#160;6.2.&#160;List linked by pointers</cite></div>
+
+   <p>The sort of declaration needed for that is this:</p>
+
+   <pre>
+struct list_ele{
+      int data;       /* or whatever you like here */
+      struct list_ele *ele_p;
+};</pre>
+
+   <p>Now, at first glance, it seems to contain itself&#8212;which is
+    forbidden&#8212;but in fact it only contains a <em>pointer</em> to itself.
+    How come the pointer declaration is allowed? Well, by the time the compiler
+    reaches the pointer declaration it already knows that there is such a thing
+    as a <code>struct list_ele</code> so the declaration is permitted. In fact,
+    it is possible to make a incomplete declaration of a structure by
+    saying</p>
+
+   <pre>
+struct list_ele;</pre>
+
+   <p>at some point before the full declaration. A declaration like that
+    declares an <dfn>incomplete type</dfn>. This will allow the declaration of
+    pointers before the full declaration is seen. It is also important in the
+    case of cross-referencing structures where each must contain a pointer to
+    the other, as shown in the following example.</p>
+
+   <div class="inset-example"><a name="example-3"></a><pre>
+struct s_1;     /* incomplete type */
+
+struct s_2{
+      int something;
+      struct s_1 *sp;
+};
+
+struct s_1{     /* now the full declaration */
+      float something;
+      struct s_2 *sp;
+};</pre><cite>Example&#160;6.3</cite></div>
+
+   <p>This illustrates the need for incomplete types. It also illustrates an
+    important thing about the names of structure members: they inhabit
+    a name-space per structure, so element names can be the same in different
+    structures without causing any problems.</p>
+
+   <p>Incomplete types may only be used where the size of the structure isn't
+    needed yet. A full declaration must have been given by the time that the
+    size is used. The later full declaration mustn't be in an inner block
+    because then it becomes a new declaration of a different structure.</p>
+
+   <div class="inset-example"><a name="example-4"></a><pre>
+struct x;       /* incomplete type */
+
+/* valid uses of the tag */
+struct x *p, func(void);
+
+void f1(void){
+      struct x{int i;};       /* redeclaration! */
+}
+
+/* full declaration now */
+struct x{
+      float f;
+}s_x;
+
+void f2(void){
+      /* valid statements */
+      p = &amp;s_x;
+      *p = func();
+      s_x = func();
+}
+
+struct x
+func(void){
+      struct x tmp;
+      tmp.f = 0;
+      return (tmp);
+}</pre><cite>Example&#160;6.4</cite></div>
+
+   <p>There's one thing to watch out for: you get a incomplete type of
+    a structure <em>simply by mentioning its name!</em> That means that this
+    works:</p>
+
+   <pre>
+struct abc{ struct xyz *p;};
+      /* the incomplete type 'struct xyz' now declared */
+struct xyz{ struct abc *p;};
+      /* the incomplete type is now completed */</pre>
+
+   <p>There's a horrible danger in the last example, though, as this shows:</p>
+
+   <pre>
+struct xyz{float x;} var1;
+
+main(){
+      struct abc{ struct xyz *p;} var2;
+
+      /* AAAGH - struct xyz REDECLARED */
+      struct xyz{ struct abc *p;} var3;
+}</pre>
+
+   <p>The result is that <code>var2.p</code> can hold the address of
+    <code>var1</code>, but emphatically not the address of <code>var3</code>
+    which is of a different type! It can be fixed (assuming that it's not what
+    you wanted) like this:</p>
+
+   <pre>
+struct xyz{float x;} var1;
+
+main(){
+      struct xyz;     /* new incomplete type 'struct xyz' */
+      struct abc{ struct xyz *p;} var2;
+      struct xyz{ struct abc *p;} var3;
+}</pre>
+
+   <p>The type of a structure or union is completed when the closing } of its
+    declaration is seen; it must contain at least one member or the behaviour
+    is undefined.</p>
+
+   <p>The other principal way to get incomplete types is to declare arrays
+    without specifying their size&#8212;their type is incomplete until a later
+    declaration provides the missing information:</p>
+
+   <pre>
+int ar[];       /* incomplete type */
+int ar[5];      /* completes the type */</pre>
+
+   <p>If you try that out, it will only work if the declarations are outside
+    any blocks (external declarations), but that's for other reasons.</p>
+
+   <p>Back to the linked list. There were three elements linked into the list,
+    which could have been built like this:</p>
+
+   <div class="inset-example"><a name="example-5"></a><pre>
+struct list_ele{
+      int data;
+      struct list_ele *pointer;
+}ar[3];
+
+main(){
+
+      ar[0].data = 5;
+      ar[0].pointer = &amp;ar[1];
+      ar[1].data = 99;
+      ar[1].pointer = &amp;ar[2];
+      ar[2].data = -7;
+      ar[2].pointer = 0;      /* mark end of list */
+      return(0);
+}</pre><cite>Example&#160;6.5</cite></div>
+
+   <p>and the contents of the list can be printed in two ways. The array can be
+    traversed in order of index, or the pointers can be used as in the
+    following example.</p>
+
+   <div class="inset-example"><a name="example-6"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+struct list_ele{
+      int data;
+      struct list_ele *pointer;
+}ar[3];
+
+main(){
+
+      struct list_ele *lp;
+
+      ar[0].data = 5;
+      ar[0].pointer = &amp;ar[1];
+      ar[1].data = 99;
+      ar[1].pointer = &amp;ar[2];
+      ar[2].data = -7;
+      ar[2].pointer = 0;      /* mark end of list */
+
+      /* follow pointers */
+      lp = ar;
+      while(lp){
+              printf(&quot;contents %d\n&quot;, lp-&gt;data);
+              lp = lp-&gt;pointer;
+      }
+      exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;6.6</cite></div>
+
+   <p>It's the way that the pointers are followed which makes the example
+    interesting. Notice how the pointer in each element is used to refer to the
+    next one, until the pointer whose value is <code>0</code> is found. That
+    value causes the <code>while</code> loop to stop. Of course the pointers
+    can be arranged in any order at all, which is what makes the list such
+    a flexible structure. Here is a function which could be included as part of
+    the last program to sort the linked list into numeric order of its data
+    fields. It rearranges the pointers so that the list, when traversed in
+    pointer sequence, is found to be in order. It is important to note that the
+    data itself is not copied. The function must return a pointer to the head
+    of the list, because that is not necessarily at <code>ar[0]</code> any
+    more.</p>
+
+   <div class="inset-example"><a name="example-7"></a><pre>
+struct list_ele *
+sortfun( struct list_ele *list )
+{
+
+      int exchange;
+      struct list_ele *nextp, *thisp, dummy;
+
+      /*
+       * Algorithm is this:
+       * Repeatedly scan list.
+       * If two list items are out of order,
+       * link them in the other way round.
+       * Stop if a full pass is made and no
+       * exchanges are required.
+       * The whole business is confused by
+       * working one element behind the
+       * first one of interest.
+       * This is because of the simple mechanics of
+       * linking and unlinking elements.
+       */
+
+      dummy.pointer = list;
+      do{
+              exchange = 0;
+              thisp = &amp;dummy;
+              while( (nextp = thisp-&gt;pointer)
+                      &amp;&amp; nextp-&gt;pointer){
+                      if(nextp-&gt;data &lt; nextp-&gt;pointer-&gt;data){
+                              /* exchange */
+                              exchange = 1;
+                              thisp-&gt;pointer = nextp-&gt;pointer;
+                              nextp-&gt;pointer =
+                                      thisp-&gt;pointer-&gt;pointer;
+                              thisp-&gt;pointer-&gt;pointer = nextp;
+                      }
+                      thisp = thisp-&gt;pointer;
+              }
+      }while(exchange);
+
+      return(dummy.pointer);
+}</pre><cite>Example&#160;6.7</cite></div>
+
+   <p>Expressions such as <code>thisp-&gt;pointer-&gt;pointer</code> are
+    commonplace in list processing. It's worth making sure that you understand
+    it; the notation emphasizes the way that links are followed.</p>
+
+  
+
+  <h2><a name="section-3"></a>6.2.3.&#160;Trees</h2>
+   
+
+   <p>Another very popular data structure is the tree. It's actually a linked
+    list with branches; a common type is the <dfn>binary tree</dfn> which has
+    elements (<code>nodes</code>) looking like this:</p>
+
+   <pre>
+struct tree_node{
+      int data;
+      struct tree_node *left_p, *right_p;
+};</pre>
+
+   <p>For historical and essentially irrelevant reasons, trees in computer
+    science work upside down. They have their <dfn>root</dfn> node at the top
+    and their <dfn>branches</dfn> spread out downwards. In Figure&#160;6.3, the &#8216;data&#8217; members of the nodes are replaced by values
+    which will be used in the discussion that follows.</p>
+
+   <div class="inset-figure"><a name="figure-3"><img width="400" alt="A tree structure, made up of 7 items, each of which is labelled            with a different number.  Each item has two pointer values,            labelled &#39;left_p&#39; and &#39;right_p&#39;, which point to child items.            One item is labelled &#39;root&#39; and isn&#39;t a child of any of the other            items." src="../figures/6.3.png" height="290" /></a><br /><cite>Figure&#160;6.3.&#160;A tree</cite></div>
+
+   <p>Trees may not seem very exciting if your main interest lies in routine
+    character handling and processing, but they are extremely important to the
+    designers of databases, compilers and other complex tools.</p>
+
+   <p>The advantage of a tree is that, if it is properly arranged, the layout
+    of the data can support binary searching very simply. It is always possible
+    to add new nodes to a tree at the appropriate place and a tree is basically
+    a flexible and useful data structure.</p>
+
+   <p>Look at Figure&#160;6.3. The tree is carefully constructed so
+    that it can be searched to find whether a given value can be found in the
+    data portions of the nodes. Let's say we want to find if a value
+    <var>x</var> is already present in the tree. The algorithm is this:</p>
+
+   <pre>
+Start at the root of the tree:
+if the tree is empty (no nodes)
+        then return &#8216;failure&#8217;.
+else if the data in the current node is equal
+        to the value being searched for
+        then return &#8216;success&#8217;.
+else if the data in the current node is greater than the
+        value being searched for
+        then search the tree indicated by the left pointer
+else search the tree indicated by the right pointer.</pre>
+
+   <p>Here it is in C:</p>
+
+   <div class="inset-example"><a name="example-8"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+struct tree_node{
+      int data;
+      struct tree_node *left_p, *right_p;
+}tree[7];
+/*
+* Tree search algorithm.
+* Searches for value 'v' in tree,
+* returns pointer to first node found containing
+* the value otherwise 0.
+*/
+struct tree_node *
+t_search(struct tree_node *root, int v){
+
+      while(root){
+              if(root-&gt;data == v)
+                      return(root);
+              if(root-&gt;data &gt; v)
+                      root = root-&gt;left_p;
+              else
+                      root = root-&gt;right_p;
+      }
+      /* value not found, no tree left */
+      return(0);
+}
+
+main(){
+      /* construct tree by hand */
+      struct tree_node *tp, *root_p;
+      int i;
+      for(i = 0; i &lt; 7; i++){
+              int j;
+              j = i+1;
+
+              tree[i].data = j;
+              if(j == 2 || j == 6){
+                      tree[i].left_p = &amp;tree[i-1];
+                      tree[i].right_p = &amp;tree[i+1];
+              }
+      }
+      /* root */
+      root_p = &amp;tree[3];
+      root_p-&gt;left_p = &amp;tree[1];
+      root_p-&gt;right_p = &amp;tree[5];
+
+      /* try the search */
+      tp = t_search(root_p, 9);
+      if(tp)
+              printf(&quot;found at position %d\n&quot;, tp-tree);
+      else
+              printf(&quot;value not found\n&quot;);
+      exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;6.8</cite></div>
+
+   <p>So that works fine. It is also interesting to note that, given a value,
+    it can always be inserted at the appropriate point in the tree. The same
+    search algorithm is used, but, instead of giving up when it finds that the
+    value is not already in the tree, a new node is allocated by
+    <code>malloc</code>, and is hung on the tree at the very place where the
+    first null pointer was found. This is a mite more complicated to do because
+    of the problem of handling the root pointer itself, and so a pointer to
+    a pointer is used. Read the example carefully; it is not likely that you
+    ever find anything more complicated than this in practice. If you can
+    understand it, there is not much that should worry you about the vast
+    majority of C language programs.</p>
+
+   <div class="inset-example"><a name="example-9"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+struct tree_node{
+      int data;
+      struct tree_node *left_p, *right_p;
+};
+
+/*
+* Tree search algorithm.
+* Searches for value 'v' in tree,
+* returns pointer to first node found containing
+* the value otherwise 0.
+*/
+struct tree_node *
+t_search(struct tree_node *root, int v){
+
+      while(root){
+              printf(&quot;looking for %d, looking at %d\n&quot;,
+                      v, root-&gt;data);
+              if(root-&gt;data == v)
+                      return(root);
+              if(root-&gt;data &gt; v)
+                      root = root-&gt;left_p;
+              else
+                      root = root-&gt;right_p;
+      }
+      /* value not found, no tree left */
+      return(0);
+}
+/*
+* Insert node into tree.
+* Return 0 for success,
+* 1 for value already in tree,
+* 2 for malloc error
+*/
+int
+t_insert(struct tree_node **root, int v){
+
+      while(*root){
+              if((*root)-&gt;data == v)
+                      return(1);
+              if((*root)-&gt;data &gt; v)
+                      root = &amp;((*root)-&gt;left_p);
+              else
+                      root = &amp;((*root)-&gt;right_p);
+      }
+      /* value not found, no tree left */
+      if((*root = (struct tree_node *)
+              malloc(sizeof (struct tree_node)))
+                      == 0)
+              return(2);
+      (*root)-&gt;data = v;
+      (*root)-&gt;left_p = 0;
+      (*root)-&gt;right_p = 0;
+      return(0);
+}
+
+main(){
+      /* construct tree by hand */
+      struct tree_node *tp, *root_p = 0;
+      int i;
+
+      /* we ingore the return value of t_insert */
+      t_insert(&amp;root_p, 4);
+      t_insert(&amp;root_p, 2);
+      t_insert(&amp;root_p, 6);
+      t_insert(&amp;root_p, 1);
+      t_insert(&amp;root_p, 3);
+      t_insert(&amp;root_p, 5);
+      t_insert(&amp;root_p, 7);
+
+      /* try the search */
+      for(i = 1; i &lt; 9; i++){
+              tp = t_search(root_p, i);
+              if(tp)
+                      printf(&quot;%d found\n&quot;, i);
+              else
+                      printf(&quot;%d not found\n&quot;, i);
+      }
+      exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;6.9</cite></div>
+
+   <p>Finally, the algorithm that allows you to walk along the tree visiting
+    all the nodes in order is beautiful. It is the cleanest example of
+    recursion that you are likely to see. Look at it and work out what it
+    does.</p>
+
+   <div class="inset-example"><a name="example-10"></a><pre>
+void
+t_walk(struct tree_node *root_p){
+
+      if(root_p == 0)
+              return;
+      t_walk(root_p-&gt;left_p);
+      printf(&quot;%d\n&quot;, root_p-&gt;data);
+      t_walk(root_p-&gt;right_p);
+}</pre><cite>Example&#160;6.10</cite></div>
+
+  
+
+ <div class="cbook_next_prev"><p><a href="history.html">Previous section</a> | <a href="../chapter6/">Chapter contents</a> | <a href="unions.html">Next section</a></p></div>
+
+    </main>
+    <nav id="menu" class="Left">
+      
+ 
+  
+  <div class="nav">
+
+	
+	
+			
+			  <div class="nav0">
+				
+				  <a href="/">Publications</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav1">
+				
+				  <a href="/c_book/">The C&nbsp;Book</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/preface/">Preface</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter1/">Introduction</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter2/">Variables &amp; arithmetic</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter3/">Control flow</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter4/">Functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter5/">Arrays &amp; pointers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter6/">Structures</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter6/history.html">History</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <strong>Structures</strong>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter6/unions.html">Unions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter6/bitfields.html">Bitfields</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter6/enums.html">Enums</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter6/qualifiers_and_derived_types.html">Qualifiers &amp; derived types</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter6/initialization.html">Initialization</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter6/summary.html">Summary</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter6/exercises.html">Exercises</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter7/">Preprocessor</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter8/">Specialized areas</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter9/">Libraries</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter10/">Complete Programs</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/answers/">Answers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/copyright.html">Copyright</a>
+				
+				
+			</div>
+			
+	
+
+</div>
+
+ 
+
+      <div class="ColBtm">
+        <hr />
+<div class="h1"><a href="https://ebusiness.gbdirect.co.uk/contact.html">Contact Us</a></div>
+
+      </div>
+
+    </nav>
+    <aside id="sidebar" class="Right">
+      
+ <div class="box">
+  
+  
+<img src="https://global.gbdirect.co.uk/Themes/printer-friendly-12x12.png" alt="" title="Printer-friendly version of this page" />
+<a href="?format=pf" rel="nofollow">
+  Printer-friendly version
+</a>
+
+ </div>
+
+ <div class="box">
+  <h3>The C Book</h3>
+  
+<p>This book is published as a matter of historical interest.
+ Please read the
+ <a href="/c_book/copyright.html">copyright and disclaimer information</a>.</p>
+
+<p>GBdirect Ltd provides up-to-date training and consultancy in
+ <a href="http://training.gbdirect.co.uk/courses/c/">C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c/real_time_linux_embedded_c_training.html">Embedded C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c++/">C++</a>
+ and a wide range of
+ <a href="http://training.gbdirect.co.uk/courses/">other subjects based on
+ open standards</a> if you happen to be interested.</p>
+
+ </div>
+
+
+    </aside>
+  </div>
+  
+<script type="text/javascript">
+        var maxheight = 0;
+        var a =  Array('main', 'menu', 'sidebar');
+        for(index in a){
+                var name = a[index];
+                // alert(name);
+                var id = document.getElementById(name);
+                if(id){
+                        if(id.offsetHeight > maxheight){
+                                maxheight = id.offsetHeight;
+                        }
+                }
+        }
+        var tabbar = document.getElementById('tabsbar');
+        if(tabbar){
+                if(tabbar.style) tabbar=tabbar.style;
+                tabbar.left = 0+'px';
+                tabbar.top = maxheight+'px';
+        }
+        
+</script>
+</body>
+</html>

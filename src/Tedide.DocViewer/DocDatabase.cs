@@ -8,9 +8,13 @@ public sealed record PageEntry(string FileName, string Description);
 /// <summary>A group of <see cref="PageEntry"/> shown together in <see cref="DocViewerShell"/>'s tree.</summary>
 public sealed record PageCategory(string Name, IReadOnlyList<PageEntry> Entries);
 
+/// <summary>One bundled book (the cc65 manual, The C Book, ...) and its categories, shown as its
+/// own root node in <see cref="DocViewerShell"/>'s tree.</summary>
+public sealed record BookNode(string Name, IReadOnlyList<PageCategory> Categories);
+
 /// <summary>One full-text search hit - <see cref="Snippet"/> is a short excerpt with the matched
 /// term(s) bracketed (see <see cref="DocDatabase.Search"/>).</summary>
-public sealed record SearchResult(string FileName, string Description, string Snippet);
+public sealed record SearchResult(string FileName, string Book, string Description, string Snippet);
 
 /// <summary>
 /// Read-only access to Docs.db (built by tools/Cc65DocsDbBuilder - see that project for how the
@@ -29,30 +33,44 @@ public sealed class DocDatabase : IDisposable
         _connection.Open();
     }
 
-    /// <summary>Every category and its pages, in the order <c>tools/Cc65DocsDbBuilder</c> wrote them.</summary>
-    public IReadOnlyList<PageCategory> LoadCatalog()
+    /// <summary>Every book, its categories and their pages, in the order
+    /// <c>tools/Cc65DocsDbBuilder</c> wrote them.</summary>
+    public IReadOnlyList<BookNode> LoadCatalog()
     {
         using var command = _connection.CreateCommand();
         command.CommandText =
-            "SELECT Category, FileName, Description FROM Pages ORDER BY CategorySortOrder, PageSortOrder;";
+            """
+            SELECT Book, Category, FileName, Description FROM Pages
+            ORDER BY BookSortOrder, CategorySortOrder, PageSortOrder;
+            """;
 
-        var categories = new List<PageCategory>();
+        var books = new List<BookNode>();
+        List<PageCategory>? currentCategories = null;
         List<PageEntry>? currentEntries = null;
+        string? currentBook = null;
         string? currentCategory = null;
 
         using var reader = command.ExecuteReader();
         while (reader.Read())
         {
-            var category = reader.GetString(0);
+            var book = reader.GetString(0);
+            var category = reader.GetString(1);
+            if (book != currentBook)
+            {
+                currentCategories = [];
+                books.Add(new BookNode(book, currentCategories));
+                currentBook = book;
+                currentCategory = null; // a new book always starts a new category too, even if the name repeats.
+            }
             if (category != currentCategory)
             {
                 currentEntries = [];
-                categories.Add(new PageCategory(category, currentEntries));
+                currentCategories!.Add(new PageCategory(category, currentEntries));
                 currentCategory = category;
             }
-            currentEntries!.Add(new PageEntry(reader.GetString(1), reader.GetString(2)));
+            currentEntries!.Add(new PageEntry(reader.GetString(2), reader.GetString(3)));
         }
-        return categories;
+        return books;
     }
 
     /// <summary>A page's Markdown, cached after the first read - Docs.db is read-only and never
@@ -89,7 +107,7 @@ public sealed class DocDatabase : IDisposable
         using var command = _connection.CreateCommand();
         command.CommandText =
             """
-            SELECT p.FileName, p.Description, snippet(PagesFts, 2, '[', ']', ' ... ', 12)
+            SELECT p.FileName, p.Book, p.Description, snippet(PagesFts, 2, '[', ']', ' ... ', 12)
             FROM PagesFts
             JOIN Pages p ON p.FileName = PagesFts.FileName
             WHERE PagesFts MATCH $query
@@ -102,7 +120,7 @@ public sealed class DocDatabase : IDisposable
         var results = new List<SearchResult>();
         using var reader = command.ExecuteReader();
         while (reader.Read())
-            results.Add(new SearchResult(reader.GetString(0), reader.GetString(1), reader.GetString(2)));
+            results.Add(new SearchResult(reader.GetString(0), reader.GetString(1), reader.GetString(2), reader.GetString(3)));
         return results;
     }
 

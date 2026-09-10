@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1">
+<title>The C Book &#8212; More logical expressions</title>
+<meta property="og:title" content="The C Book &amp;#8212; More logical expressions" />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://global.gbdirect.co.uk/Themes/logo-og.png" />
+
+<link rel="SHORTCUT ICON" href="https://global.gbdirect.co.uk/favicon.ico" />
+<link rel="stylesheet" type="text/css" href="https://global.gbdirect.co.uk/Themes/Quarters.css" />
+
+<link rel="prev" href="/c_book/chapter3/flow_control.html" />
+<link rel="next" href="/c_book/chapter3/strange_operators.html" />
+<link rel="contents" href="/c_book/chapter3/" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<!-- order 4-->
+<!-- lastmod 2005-11-10T16:42:04Z-->
+
+
+<link rel="canonical" href="https://publications.gbdirect.co.uk/c_book/chapter3/logical_expressions.html"/><meta property="og:url" content="https://publications.gbdirect.co.uk/c_book/chapter3/logical_expressions.html" />
+<script type="text/javascript"> var _gaq = _gaq || []; _gaq.push(['_setAccount', 'UA-3566842-1']); _gaq.push(['_setDomainName', '.gbdirect.co.uk']); _gaq.push(['_trackPageview']); (function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = 'https://www.google-analytics.com/ga.js'; var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s); })(); </script>
+</head>
+
+<body>
+  <header class="Banner">
+    <span id="Logo">
+      <a href="https://ebusiness.gbdirect.co.uk">
+        <img src="https://global.gbdirect.co.uk/Themes/gbdirect.gif"
+             alt="GBdirect Homepage"
+             title="GBdirect Homepage" /></a>
+    </span>
+<!-- Original homebrew search
+    <form action="https://global.gbdirect.co.uk/search.cgi"
+          method="get" id="Search">
+      <label for="search_textbox">Search</label>
+      <input type="text" name="query" size="12" id="search_textbox" value="" />
+      <input type="submit" name="Submit" value="Go" />
+    </form>
+-->
+<!-- Google search -->
+    <form class="Search" action="https://www.google.com/cse" id="cse-search-box">
+      <input type="hidden" name="cx" value="010270212093732037646:4pvgkishmkg" />
+      <input type="hidden" name="ie" value="UTF-8" />
+      <label for="search_textbox">Search</label>
+      <input type="text" name="q" id="search_textbox" size="12" />
+      <input type="submit" name="sa" value="Go" />
+    </form>
+    <script type="text/javascript" src="https://www.google.com/cse/brand?form=cse-search-box&amp;lang=en&amp;sitesearch=true"></script>
+<!-- End Google search -->
+  </header>
+  <nav class="Tabsbar"><span class="ThisTab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span> <span class="NoCSS2">| </span> <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/contact.html">Contact</a></span></nav>
+  <div id="container" itemscope itemtype="http://schema.org/WebPage">
+    <meta itemprop="isFamilyFriendly" content="1" />
+    <meta itemprop="inLanguage" content="en" />
+    <nav class="Tabsbar" id="tabsbar" style="position: absolute; width: 100%">
+  
+  
+    <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/">About Us</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://consulting.gbdirect.co.uk/">Consultancy</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://development.gbdirect.co.uk/">Software</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="ThisTab">Publications</span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-source.gbdirect.co.uk/">Open&nbsp;Source</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://software-support.gbdirect.co.uk/">Support</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-standards.gbdirect.co.uk/">Open&nbsp;Standards</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://faq.gbdirect.co.uk/">FAQ</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://jobs.gbdirect.co.uk/">Jobs</a></span>
+  
+
+</nav>
+    <main id="main" >
+	  
+		<nav id="breadcrumb" itemprop="breadcrumb">
+			
+			<a href="https://publications.gbdirect.co.uk/">Publications</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/">The C&nbsp;Book</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/chapter3/">Control flow</a>
+			
+			 &gt; Logical expressions
+			
+		</nav>
+		<br />
+	  
+      <h1>3.3. More logical expressions</h1>
+      
+      
+
+
+  
+
+  <p>This chapter has already shown how C makes no distinction between
+   &#8216;logical&#8217; and other values. The relational operators all give a
+   result of&#160;<code>0</code> or&#160;<code>1</code> for false and true,
+   respectively. Whenever the control of flow statements demand it, an
+   expression is evaluated to determine what to do next. A&#160;<code>0</code>
+   means &#8216;don't do it&#8217;; anything else means &#8216;do&#8217;. It means that
+   the fragments below are all quite reasonable.</p>
+
+  <pre>
+while (a&lt;b)...
+while (a)....
+if ( (c=getchar()) != EOF )...</pre>
+
+  <p>No experienced C programmer would be surprised by any of them. The second
+   of them, <code>while&#160;(a)</code>, is a common abbreviation for
+   <code>while&#160;(a&#160;!=&#160;0)</code>, as you should be able to work
+   out.</p>
+
+  <p>What we need now is a way of writing more complicated expressions
+   involving these logical true and false values. So far, it has to be done
+   like this, when we wanted to say
+   <code>if(a&lt;b&#160;AND&#160;c&lt;d)</code></p>
+
+  <pre>
+if (a &lt; b){
+      if (c &lt; d)...
+}</pre>
+
+  <p>It will not be a source of great amazement to find that there is a way of
+   expressing such a statement.</p>
+
+  <p>There are three operators involved in this sort of operation: the logical
+   <code>AND&#160;&amp;&amp;</code>, the logical <code>OR&#160;||</code> and
+   the <code>NOT&#160;!</code>. The last is unary, the other two are binary.
+   All of them take expressions as their operands and give as results
+   either&#160;<code>1</code> or&#160;<code>0</code>.
+   The&#160;<code>&amp;&amp;</code> gives&#160;<code>1</code> only when both
+   of its operands are non-zero. The&#160;<code>||</code>
+   gives&#160;<code>0</code> only when both operands are zero.
+   The&#160;<code>!</code> gives&#160;<code>0</code> if its operand is
+   non-zero and vice versa. Easy really. The results are of type
+   <code>int</code> for all three.</p>
+
+  <p>Do not confuse <code>&amp;</code> and <code>|</code> (the bitwise
+   operators) with their logical counterparts. They are not the same.</p>
+
+  <p>One special feature of the logical operators, found in very few of the
+   other operators, is their effect on the sequence of evaluation of an
+   expression. They evaluate left to right (after precedence is taken into
+   account) and every logical expression ceases evaluation as soon as the
+   overall result can be determined. For example, a sequence of
+   <code>||</code>s can stop as soon as one operand is found to be non-zero.
+   This next fragment guarantees never to divide by zero.</p>
+
+  <pre>
+if (a!=0 &amp;&amp; b/a &gt; 5)...
+/* alternative */
+if (a &amp;&amp; b/a &gt; 5)</pre>
+
+  <p>In either version <code>b/a</code> will only be evaluated if a is
+   non-zero. If a were zero, the overall result would already have been
+   decided, so the evaluation must stop to conform with C's rules for the
+   logical operators.</p>
+
+  <p>The unary NOT is simple. It isn't all that common to see it in use
+   largely because most expresssions can be rearranged to do without it. The
+   examples show how.</p>
+
+  <pre>
+if (!a)...
+/* alternative */
+if (a==0)...
+
+if(!(a&gt;b))
+/* alternative */
+if(a &lt;= b)
+
+if (!(a&gt;b &amp;&amp; c&lt;d))...
+/* alternative */
+if (a&lt;=b || c&gt;=d)...</pre>
+
+  <p>Each of the examples and the alternatives serve to show ways of avoiding
+   (or at least doing without) the <code>!</code> operator. In fact, it's most
+   useful as an aid to readability. If the problem that you are solving has a
+   natural logical relationship inherent in it&#8212;say the <code>(b*b-4*a*c)
+   &gt; 0</code> found in quadratic equation solving&#8212;then it probably
+   reads better if you write <code>if( !((b*b-4*a*c) &gt; 0))</code> than
+   <code>if( (b*b-4*a*c) &lt;= 0)</code>&#8212;but it's up to you. Pick the one
+   that feels right.</p>
+
+  <p>Most expressions using these logical operators work out just about right
+   in terms of the precedence rules, but you can get a few nasty surprises. If
+   you look back to the precedence tables, you will find that there are some
+   operators with lower precedence than the logical ones. In particular, this
+   is a very common mistake:</p>
+
+  <pre>
+if(a&amp;b == c){...</pre>
+
+  <p>What happens is that <code>b</code> is compared for equality with
+   <code>c</code>, then the <code>1</code> or <code>0</code> result is anded
+   with <code>a!</code> Some distinctly unexpected behaviour has been caused
+   by that sort of error.</p>
+
+ <div class="cbook_next_prev"><p><a href="flow_control.html">Previous section</a> | <a href="../chapter3/">Chapter contents</a> | <a href="strange_operators.html">Next section</a></p></div>
+
+    </main>
+    <nav id="menu" class="Left">
+      
+ 
+  
+  <div class="nav">
+
+	
+	
+			
+			  <div class="nav0">
+				
+				  <a href="/">Publications</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav1">
+				
+				  <a href="/c_book/">The C&nbsp;Book</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/preface/">Preface</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter1/">Introduction</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter2/">Variables &amp; arithmetic</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter3/">Control flow</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter3/task_ahead.html">The Task ahead</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter3/flow_control.html">Flow control</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <strong>Logical expressions</strong>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter3/strange_operators.html">Strange operators</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter3/summary.html">Summary</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter3/exercises.html">Exercises</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter4/">Functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter5/">Arrays &amp; pointers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter6/">Structures</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter7/">Preprocessor</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter8/">Specialized areas</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter9/">Libraries</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter10/">Complete Programs</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/answers/">Answers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/copyright.html">Copyright</a>
+				
+				
+			</div>
+			
+	
+
+</div>
+
+ 
+
+      <div class="ColBtm">
+        <hr />
+<div class="h1"><a href="https://ebusiness.gbdirect.co.uk/contact.html">Contact Us</a></div>
+
+      </div>
+
+    </nav>
+    <aside id="sidebar" class="Right">
+      
+ <div class="box">
+  
+  
+<img src="https://global.gbdirect.co.uk/Themes/printer-friendly-12x12.png" alt="" title="Printer-friendly version of this page" />
+<a href="?format=pf" rel="nofollow">
+  Printer-friendly version
+</a>
+
+ </div>
+
+ <div class="box">
+  <h3>The C Book</h3>
+  
+<p>This book is published as a matter of historical interest.
+ Please read the
+ <a href="/c_book/copyright.html">copyright and disclaimer information</a>.</p>
+
+<p>GBdirect Ltd provides up-to-date training and consultancy in
+ <a href="http://training.gbdirect.co.uk/courses/c/">C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c/real_time_linux_embedded_c_training.html">Embedded C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c++/">C++</a>
+ and a wide range of
+ <a href="http://training.gbdirect.co.uk/courses/">other subjects based on
+ open standards</a> if you happen to be interested.</p>
+
+ </div>
+
+
+    </aside>
+  </div>
+  
+<script type="text/javascript">
+        var maxheight = 0;
+        var a =  Array('main', 'menu', 'sidebar');
+        for(index in a){
+                var name = a[index];
+                // alert(name);
+                var id = document.getElementById(name);
+                if(id){
+                        if(id.offsetHeight > maxheight){
+                                maxheight = id.offsetHeight;
+                        }
+                }
+        }
+        var tabbar = document.getElementById('tabsbar');
+        if(tabbar){
+                if(tabbar.style) tabbar=tabbar.style;
+                tabbar.left = 0+'px';
+                tabbar.top = maxheight+'px';
+        }
+        
+</script>
+</body>
+</html>

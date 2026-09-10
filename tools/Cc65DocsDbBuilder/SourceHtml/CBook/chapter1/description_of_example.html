@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1">
+<title>The C Book &#8212; A description of Example&#160;1.1</title>
+<meta property="og:title" content="The C Book &amp;#8212; A description of Example&amp;#160;1.1" />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://global.gbdirect.co.uk/Themes/logo-og.png" />
+
+<link rel="SHORTCUT ICON" href="https://global.gbdirect.co.uk/favicon.ico" />
+<link rel="stylesheet" type="text/css" href="https://global.gbdirect.co.uk/Themes/Quarters.css" />
+
+<link rel="prev" href="/c_book/chapter1/functions.html" />
+<link rel="next" href="/c_book/chapter1/some_more_programs.html" />
+<link rel="contents" href="/c_book/chapter1/" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<!-- order 4-->
+<!-- lastmod 2005-11-10T16:42:03Z-->
+
+
+<link rel="canonical" href="https://publications.gbdirect.co.uk/c_book/chapter1/description_of_example.html"/><meta property="og:url" content="https://publications.gbdirect.co.uk/c_book/chapter1/description_of_example.html" />
+<script type="text/javascript"> var _gaq = _gaq || []; _gaq.push(['_setAccount', 'UA-3566842-1']); _gaq.push(['_setDomainName', '.gbdirect.co.uk']); _gaq.push(['_trackPageview']); (function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = 'https://www.google-analytics.com/ga.js'; var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s); })(); </script>
+</head>
+
+<body>
+  <header class="Banner">
+    <span id="Logo">
+      <a href="https://ebusiness.gbdirect.co.uk">
+        <img src="https://global.gbdirect.co.uk/Themes/gbdirect.gif"
+             alt="GBdirect Homepage"
+             title="GBdirect Homepage" /></a>
+    </span>
+<!-- Original homebrew search
+    <form action="https://global.gbdirect.co.uk/search.cgi"
+          method="get" id="Search">
+      <label for="search_textbox">Search</label>
+      <input type="text" name="query" size="12" id="search_textbox" value="" />
+      <input type="submit" name="Submit" value="Go" />
+    </form>
+-->
+<!-- Google search -->
+    <form class="Search" action="https://www.google.com/cse" id="cse-search-box">
+      <input type="hidden" name="cx" value="010270212093732037646:4pvgkishmkg" />
+      <input type="hidden" name="ie" value="UTF-8" />
+      <label for="search_textbox">Search</label>
+      <input type="text" name="q" id="search_textbox" size="12" />
+      <input type="submit" name="sa" value="Go" />
+    </form>
+    <script type="text/javascript" src="https://www.google.com/cse/brand?form=cse-search-box&amp;lang=en&amp;sitesearch=true"></script>
+<!-- End Google search -->
+  </header>
+  <nav class="Tabsbar"><span class="ThisTab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span> <span class="NoCSS2">| </span> <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/contact.html">Contact</a></span></nav>
+  <div id="container" itemscope itemtype="http://schema.org/WebPage">
+    <meta itemprop="isFamilyFriendly" content="1" />
+    <meta itemprop="inLanguage" content="en" />
+    <nav class="Tabsbar" id="tabsbar" style="position: absolute; width: 100%">
+  
+  
+    <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/">About Us</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://consulting.gbdirect.co.uk/">Consultancy</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://development.gbdirect.co.uk/">Software</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="ThisTab">Publications</span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-source.gbdirect.co.uk/">Open&nbsp;Source</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://software-support.gbdirect.co.uk/">Support</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-standards.gbdirect.co.uk/">Open&nbsp;Standards</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://faq.gbdirect.co.uk/">FAQ</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://jobs.gbdirect.co.uk/">Jobs</a></span>
+  
+
+</nav>
+    <main id="main" >
+	  
+		<nav id="breadcrumb" itemprop="breadcrumb">
+			
+			<a href="https://publications.gbdirect.co.uk/">Publications</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/">The C&nbsp;Book</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/chapter1/">Introduction</a>
+			
+			 &gt; About example&#160;1.1
+			
+		</nav>
+		<br />
+	  
+      <h1>1.3. A description of Example&#160;1.1</h1>
+      
+      
+
+
+  
+
+  <h2><a name="section-1"></a>1.3.1.&#160;What was in it</h2>
+   
+
+   <p>Even such a small example has introduced a lot of&#160;C. Among other
+    things, it contained two functions, a <code>#include</code>
+    &#8216;statement&#8217;, and some <dfn>comment</dfn>. Since comment is the
+    easiest bit to handle, let's look at that first.</p>
+
+  
+
+  <h2><a name="section-2"></a>1.3.2.&#160;Layout and comment</h2>
+   
+
+   <p>The layout of a C program is not very important to the compiler, although
+    for readability it is important to use this freedom to carry extra
+    information for the human reader. C allows you to put space, tab or newline
+    characters practically anywhere in the program without any special effect
+    on the meaning of the program. All of those three characters are the same
+    as far as the compiler is concerned and are called collectively <dfn>white
+    space</dfn>, because they just move the printing position without causing
+    any &#8216;visible&#8217; printing on an output device. White space can occur
+    practically anywhere in a program except in the middle of
+    <dfn>identifiers</dfn>, <dfn>strings</dfn>, or <dfn>character
+    constants</dfn>. An identifier is simply the name of a function or some
+    other object; strings and character constants will be discussed
+    later&#8212;don't worry about them for the moment.</p>
+
+   <p>Apart from the special cases, the only place that white space must be
+    used is to separate things that would otherwise run together and become
+    confused. In the example above, the fragment <code>void show_message</code>
+    needs space to separate the two words, whereas <code>show_message(</code>
+    could have space in front of the <code>(</code> or not, it would be purely
+    a matter of taste.</p>
+
+   <p>Comment is introduced to a C program by the pair of characters
+    <code>/*</code>, which must not have a space between them. From then on,
+    everything found up to and including the pair of characters <code>*/</code>
+    is gobbled up and the whole lot is replaced by a single space. In Old C,
+    this was not the case. The rule used to be that comment could occur
+    anywhere that space could occur: the rule is now that comment is space. The
+    significance of the change is minor and eventually becomes apparent in
+    <a href="../chapter7/">Chapter&#160;7</a> where we discuss the <dfn>preprocessor</dfn>. A
+    consequence of the rule for the end of comment is that you can't put a
+    piece of comment inside another piece, because the <em>first</em>
+    <code>*/</code> pair will finish all of it. This is a minor nuisance, but
+    you learn to live with it.</p>
+
+   <p>It is common practice to make a comment stand out by making each line of
+    multi-line comment always start with a&#160;<code>*</code>, as the example
+    illustrates.</p>
+
+  
+
+  <h2><a name="section-3"></a>1.3.3.&#160;Preprocessor statements</h2>
+   
+
+   <p>The first statement in the example is a <dfn>preprocessor
+    directive</dfn>. In days gone by, the C compiler used to have two phases:
+    the <dfn>preprocessor</dfn>, followed by the real compiler. The
+    preprocessor was a <dfn>macro processor</dfn>, whose job was to perform
+    simple textual manipulation of the program before passing the modified text
+    on to be compiled.  The preprocessor rapidly became seen as an essential
+    aspect of the compiler and so has now been defined as part of the language
+    and cannot be bypassed.</p>
+
+   <p>The preprocessor only knows about <em>lines</em> of text; unlike the rest
+    of the language it is sensitive to the end of a line and though it is
+    possible to write multi-line preprocessor directives, they are uncommon and
+    a source of some wonder when they are found. Any line whose first visible
+    character is a&#160;<code>#</code> is a preprocessor directive.</p>
+
+   <p>In Example&#160;1.1 the preprocessor directive
+    <code>#include</code> causes the line containing it to be replaced
+    completely by the contents of another file. In this case the filename is
+    found between the <code>&lt;</code> and <code>&gt;</code> brackets. This is
+    a widely used technique to incorporate the text of standard <dfn>header
+    files</dfn> into your program without having to go through the effort of
+    typing it all yourself. The <code>&lt;stdio.h&gt;</code> file is an
+    important one, containing the necessary information that allows you to use
+    the standard library for input and output.  If you want to use the I/O
+    library you <em>must</em> include <code>&lt;stdio.h&gt;</code>. Old C was
+    more relaxed on this point.</p>
+
+   <h3><a name="section-3.1"></a>1.3.3.1.&#160;Define statements</h3>
+    
+
+    <p>Another of the preprocessor's talents which is widely exploited is the
+     <code>#define</code> statement. It is used like this:</p>
+
+    <pre>
+#define IDENTIFIER      replacement</pre>
+
+    <p>which says that the name represented by <code>IDENTIFIER</code> will be
+     replaced by the text of replacement whenever <code>IDENTIFIER</code>
+     occurs in the program text. Invariably, the identifier is a name in
+     upper-case; this is a stylistic convention that helps the reader to
+     understand what is going on.  The replacement part can be any text at
+     all&#8212;remember the preprocessor doesn't know&#160;C, it just works on
+     text. The most common use of the statement is to declare names for
+     constant numbers:</p>
+
+    <pre>
+#define PI             3.141592
+#define SECS_PER_MIN   60
+#define MINS_PER_HOUR  60
+#define HOURS_PER_DAY  24</pre>
+
+    <p>and to use them like this</p>
+
+    <pre>
+circumf = 2*PI*radius;
+if(timer &gt;= SECS_PER_MIN){
+mins = mins+1;
+        timer = timer - SECS_PER_MIN;
+}</pre>
+
+    <p>the output from the preprocessor will be as if you had written this:</p>
+
+    <pre>
+circumf = 2*3.141592*radius;
+if(timer &gt;= 60){
+        mins = mins+1;
+       timer = timer - 60;
+}</pre>
+
+   
+
+   <h3><a name="section-3.2"></a>Summary</h3>
+    <p>Preprocessor statements work on a line-by-line basis, the rest of C does
+     not.</p>
+    <p><code>#include</code> statements are used to read the contents of a
+     specified file, typically to facilitate the use of library functions.</p>
+    <p><code>#define</code> statements are typically used to give names for
+     constants. By convention, the names are in upper case (capitalized).</p>
+   
+
+  
+
+  <h2><a name="section-4"></a>1.3.4.&#160;Function declaration and definition</h2>
+   
+
+   <h3><a name="section-4.1"></a>1.3.4.1.&#160;Declaration</h3>
+    
+
+    <p>After the <code>&lt;stdio.h&gt;</code> file is included comes a
+     <dfn>function declaration</dfn>; it tells the compiler that
+     <code>show_message</code> is a function which takes no arguments and
+     returns no values. This demonstrates one of the changes made by the
+     Standard: it is an example of a <dfn>function prototype</dfn>, a subject
+     which <a href="../chapter4/">Chapter&#160;4</a> discusses in detail. It isn't always
+     necessary to declare functions in advance&#8212;C will use some (old)
+     default rules in such cases&#8212;but it is now strongly recommended that
+     you <em>do</em> declare them in advance. The distinction between a
+     <dfn>declaration</dfn> and a <dfn>definition</dfn> is that the former
+     simply describes the type of the function and any arguments that it might
+     take, the latter is where the body of a function is provided. These terms
+     become more important later.</p>
+
+    <p>By declaring <code>show_message</code> before it is used, the compiler
+     is able to check that it is used correctly. The declaration describes
+     three important things about the function: its name, its type, and the
+     number and type of its arguments. The <code>void show_message(</code> part
+     indicates that it is a function and that it returns a value of type
+     <code>void</code>, which is discussed in a moment. The second use of
+     <code>void</code> is in the declaration of the function's argument list,
+     <code>(void)</code>, which indicates that there are <em>no</em> arguments
+     to this function.</p>
+
+   
+
+   <h3><a name="section-4.2"></a>1.3.4.2.&#160;Definition</h3>
+    
+
+    <p>Right at the end of the program is the function definition itself;
+     although it is only three lines long, it usefully illustrates a complete
+     function.</p>
+
+    <p>In C, functions perform the tasks that some other languages split into
+     two parts. Most languages use a function to return a value of some sort,
+     typical examples being perhaps trigonometric functions like sin, cos, or
+     maybe a square root function; C is the same in this respect. Other similar
+     jobs are done by what look very much like functions but which don't return
+     a value: FORTRAN uses <dfn>subroutines</dfn>, Pascal and Algol call them
+     <dfn>procedures</dfn>. C simply uses functions for all of those jobs, with
+     the <em>type</em> of the function's return value specified when the
+     function is defined. In the example, the function
+     <code>show_message</code> doesn't return a value so we specify that its
+     type is <code>void</code>.</p>
+
+    <p>The use of <code>void</code> in that way is either crashingly obvious or
+     enormously subtle, depending on your viewpoint. We could easily get
+     involved here in an entertaining (though fruitless) philosophical
+     side-track on whether <code>void</code> really is a value or not, but we
+     won't. Whichever side of the question you favour, it's clear that you
+     can't do anything with a <code>void</code> and that's what it means
+     here&#8212;&#8220;I don't want to do anything with any value this function
+     might or might not return&#8221;.</p>
+
+    <p>The type of the function is <code>void</code>, its name is
+     <code>show_message</code>. The parentheses&#160;<code>()</code> following
+     the function name are needed to let the compiler know that at this point
+     we are talking about a function and not something else. If the function
+     did take any arguments, then their names would be put between the
+     parentheses. This one doesn't take any, which is made explicit by putting
+     <code>void</code> between the parentheses.</p>
+
+    <p>For something whose essence is emptiness, abnegation and rejection,
+     <code>void</code> turns out to be pretty useful.</p>
+
+    <p>The body of the function is a <dfn>compound statement</dfn>, which is a
+     sequence of other statements surrounded by curly
+     brackets&#160;<code>{}</code>. There is only one statement in there, but
+     the brackets are still needed. In general, C allows you to put a compound
+     statement anywhere that the language allows the use of a single simple
+     statement; the job of the brackets being to turn several statements in a
+     row into what is effectively a single statement.</p>
+
+    <p>It is reasonable to ask whether or not the brackets are strictly needed,
+     if their only job is to bind multiple statements into one, yet all that we
+     have in the example is a single statement. Oddly, the answer is
+     yes&#8212;they <em>are</em> strictly needed. The only place in C where you
+     can't put a single statement but <em>must</em> have a compound statement
+     is when you are defining a function. The simplest function of all is
+     therefore the empty function, which does nothing at all:</p>
+
+    <pre>
+void do_nothing(void){}</pre>
+
+    <p>The statement inside show_message is a call of the library function
+     <code>printf</code>. <code>printf</code> is used to format and print
+     things, this example being one of the simplest of its
+     uses. <code>printf</code> takes one or more arguments, whose values are
+     passed forward from the point of the call into the function itself. In
+     this case the argument is a <dfn>string</dfn>. The contents of the string
+     are interpreted by <code>printf</code> and used to control the way the
+     values of the other arguments are printed. It bears a little resemblance
+     to the FORMAT statement in FORTRAN; but not enough to predict how to use
+     it.</p>
+
+   
+
+   <h3><a name="section-4.3"></a>Summary</h3>
+    <p><dfn>Declarations</dfn> are used to introduce the name of a function,
+     its return type and the type (if any) of its arguments.</p>
+    <p>A function <dfn>definition</dfn> is a declaration with the body of the
+     function given too.</p>
+    <p>A function returning no value should have its type declared as
+     <code>void</code>. For example,
+     <code>void&#160;func(/*&#160;list&#160;of&#160;arguments&#160;*/);</code>
+    </p>
+    <p>A function taking no arguments should be declared with <code>void</code>
+     as its argument list. For example, <code>void func(void);</code></p>
+   
+
+  
+
+  <h2><a name="section-5"></a>1.3.5.&#160;Strings</h2>
+   
+
+   <p>In C, strings are a sequence of characters surrounded by quote marks:</p>
+
+   <pre>
+&quot;like this&quot;</pre>
+
+   <p>Because a string is a single element, a bit like an identifier, it is not
+    allowed to continue across a line&#8212;although space or tab characters
+    are permitted inside a string.</p>
+
+   <pre>
+&quot;This is a valid string&quot;
+&quot;This has a newline in it
+and is NOT a valid string&quot;</pre>
+
+   <p>To get a very long string there are two things that you can do. You could
+    take advantage of the fact that absolutely everywhere in a C program, the
+    sequence &#8216;backslash end-of-line&#8217; disappears totally.</p>
+
+   <pre>
+&quot;This would not be valid but doesn't have \
+a newline in it as far as the compiler is concerned&quot;</pre>
+
+   <p>The other thing you could do is to to use the string joining feature,
+    which says that two adjacent strings are considered to be just one.</p>
+
+   <pre>
+&quot;All this &quot; &quot;comes out as &quot;
+&quot;just one string&quot;</pre>
+
+   <p>Back to the example. The sequence &#8216;<code>\n</code>&#8217; in the
+    string is an example of an <dfn>escape</dfn> sequence which in this case
+    represents &#8216;newline&#8217;. <code>Printf</code> simply prints the
+    contents of the string on the program's output file, so the output will
+    read &#8216;hello&#8217;, followed by a new line.</p>
+
+   <p>To support people working in environments that use character sets which
+    are &#8216;wider&#8217; than U.S. ASCII, such as the shift-JIS representation
+    used in Japan, the Standard now allows <dfn>multibyte characters</dfn> to
+    be present in strings and comments. The Standard defines the
+    96&#160;characters that are the alphabet of C (see <a href="../chapter2/">Chapter&#160;2</a>). If your system supports an extended character set, the only
+    place that you may use these extended characters is in strings, character
+    constants, comment and the names of <dfn>header files</dfn>. Support for
+    extended character sets is an implementation defined feature, so you will
+    have to look it up in your system's documentation.</p>
+
+  
+
+  <h2><a name="section-6"></a>1.3.6.&#160;The main function</h2>
+   
+
+   <p>In Example&#160;1.1 there are actually two functions,
+    <code>show_message</code> and <code>main</code>. Although main is a bit
+    longer than <code>show_message</code> it is obviously built in the same
+    shape: it has a name, the parentheses () are there, followed by the opening
+    bracket <code>{</code> of the compound statement that must follow in a
+    function definition. True, there's a lot more stuff too, but right at the
+    end of the example you'll find the matching closing bracket <code>}</code>
+    that goes with the first one to balance the numbers.</p>
+
+   <p>This is a much more realistic function now, because there are several
+    statements inside the function body, not just one. You might also have
+    noticed that the function is <em>not</em> declared to be
+    <code>void</code>. There is a good reason for this: it returns a proper
+    value. Don't worry about its arguments yet; they are discussed in
+    <a href="../chapter10/">Chapter&#160;10</a>.</p>
+
+   <p>The most important thing about <code>main</code> is that it is the first
+    function to be called. In a hosted environment your C language system
+    arranges, magically, for a call on the <code>main</code> function (hence
+    its name) when the program is first started. When the function is over, so
+    is the program. It's obviously an important function. Equally important is
+    the stuff <em>inside</em> <code>main</code>'s compound statement. As
+    mentioned before, there can be several statements inside a compound
+    statement, so let's look at them in turn.</p>
+
+  
+
+  <h2><a name="section-7"></a>1.3.7.&#160;Declarations</h2>
+   
+
+   <p>The first statement is this:</p>
+
+   <pre>
+int count;</pre>
+
+   <p>which is not an instruction to do anything, but simply introduces a
+    variable to the program. It declares something whose name is
+    <code>count</code>, and whose type is &#8216;integer&#8217;; in C the
+    keyword that declares integers is unaccountably shortened to
+    <code>int</code>. C has an idiosyncratic approach to these keywords with
+    some having their names spelled in full and some being shortened like
+    <code>int</code>. At least <code>int</code> has a meaning that is more or
+    less intuitive; just wait until we get on to <code>static</code>.</p>
+
+   <p>As a result of that declaration the compiler now knows that there is
+    something that will be used to store integral quantities, and that its name
+    is <code>count</code>. In C, all variables must be declared before they are
+    used; there is none of FORTRAN's implicit declarations. In a compound
+    statement, all the declarations must come first; they must precede any
+    &#8216;ordinary&#8217; statements and are therefore somewhat special.</p>
+
+   <p>(Note for pedants: unless you specifically ask, the declaration of a
+    variable like <code>count</code> is also a <dfn>definition</dfn>. The
+    distinction will later be seen to matter.)</p>
+
+  
+
+  <h2><a name="section-8"></a>1.3.8.&#160;Assignment statement</h2>
+   
+
+   <p>Moving down the example we find a familiar thing, an <dfn>assignment
+     statement</dfn>. This is where the first value is assigned to the variable
+     <code>count</code>, in this case the value assigned is a constant whose
+     value is zero. Prior to the assignment, the value of <code>count</code>
+     was undefined and unsafe to use. You might be a little surprised to find
+     that the assignment symbol (strictly speaking an <dfn>assignment
+     operator</dfn>) is a single <code>=</code> sign. This is not fashionable
+     in modern languages, but hardly a major blemish.</p>
+
+   <p>So far then, we have declared a variable and assigned the value of zero
+    to it. What next?</p>
+
+  
+
+  <h2><a name="section-9"></a>1.3.9.&#160;The while statement</h2>
+   
+
+   <p>Next is one of C's loop control statements, the while statement. Look
+    carefully at its form. The formal description of the <code>while</code>
+    statement is this:</p>
+
+   <pre>
+while(<var>expression</var>)
+        <var>statement</var></pre>
+
+   <p>Is that what we have got? Yes it is. The bit that reads</p>
+
+   <pre>
+count &lt; 10</pre>
+
+   <p>is a <dfn>relational expression</dfn>, which is an example of a valid
+    expression, and the expression is followed by a compound statement, which
+    is a form of valid statement. As a result, it fits the rules for a properly
+    constructed <code>while</code> statement.</p>
+
+   <p>What it does must be obvious to anyone who has written programs
+    before. For as long as the relationship <code>count &lt; 10</code> holds
+    true, the body of the loop is executed and the comparison repeated. If the
+    program is ever to end, then the body of the loop must do something that
+    will eventually cause the comparison to be false: of course it does.</p>
+
+   <p>There are just two statements in the body of the loop. The first one is a
+    function call, where the function <code>show_message</code> is invoked. A
+    function call is indicated by the name of the function followed by the
+    parentheses&#160;<code>()</code> which contain its argument list&#8212;if it
+    takes no arguments, then you provide none. If there were any arguments,
+    they would be put between the parentheses like this:</p>
+
+   <pre>
+/* call a function with several arguments */
+function_name(first_arg, second_arg, third_arg);</pre>
+
+   <p>and so on. The call of <code>printf</code> is another example. More is
+    explained in <a href="../chapter4/">Chapter&#160;4</a>.</p>
+
+   <p>The last statement in the loop is another assignment statement. It adds
+    one to the variable <code>count</code>, so that the requirement for program
+    to stop will eventually be met.</p>
+
+  
+
+  <h2><a name="section-10"></a>1.3.10.&#160;The return statement</h2>
+   
+
+   <p>The last statement that is left to discuss is the <code>return</code>
+    statement. As it is written, it looks like another function call, but in
+    fact the rule is that the statement is written</p>
+
+   <pre>
+return <var>expression</var>;</pre>
+
+   <p>where the <em>expression</em> is optional. The example uses a common
+    stylistic convention and puts the <em>expression</em> into parentheses,
+    which has no effect whatsoever.</p>
+
+   <p>The return causes a value to be returned from the current function to its
+    caller. If the expression is missing, then an unknown value is passed back
+    to the caller&#8212;this is almost certainly a mistake unless the function
+    returns <code>void</code>. <code>Main</code> wasn't declared with any type
+    at all, unlike <code>show_message</code>, so what type of value does it
+    return? The answer is <code>int</code>. There are a number of places where
+    the language allows you to declare things by default: the default type of
+    functions is <code>int</code>, so it is common to see them used in this
+    way. An equivalent declaration for <code>main</code> would have been</p>
+
+   <pre>
+int main(){</pre>
+
+   <p>and exactly the same results would have occurred.</p>
+
+   <p>You can't use the same feature to get a default type for variables
+    because their types must be provided explicitly.</p>
+
+   <p>What does the value returned from <code>main</code> mean, and where does
+    it go? In Old C, the value was passed back to the operating system or
+    whatever else was used to start the program running. In a UNIX-like
+    environment, the value of <code>0</code> meant &#8216;success&#8217; in some way,
+    any other value (often <code>-1</code>) meant &#8216;failure&#8217;. The Standard
+    has enshrined this, stating that <code>0</code> stands for correct
+    termination of the program. This <em>does not</em> mean that 0 is to be
+    passed back to the host environment, but whatever is the appropriate
+    &#8216;success&#8217; value for that system. Because there is sometimes confusion
+    around this, you may prefer to use the defined values
+    <code>EXIT_SUCCESS</code> and <code>EXIT_FAILURE</code> instead, which are
+    defined in the header file <code>&lt;stdlib.h&gt;</code>. Returning from
+    the <code>main</code> function is the same as calling the library function
+    <code>exit</code> with the return value as an argument. The difference is
+    that exit may be called from <em>anywhere</em> in the program, and
+    terminates it at that point, after doing some tidying up activities. If you
+    intend to use <code>exit</code>, you <em>must</em> include the header file
+    <code>&lt;stdlib.h&gt;</code>. From now on, we shall use <code>exit</code>
+    rather than returning from <code>main</code>.</p>
+
+   <h3><a name="section-10.1"></a>Summary</h3>
+    <p>The <code>main</code> function returns an <code>int</code> value.</p>
+    <p>Returning from <code>main</code> is the same as calling the
+     <code>exit</code> function, but <code>exit</code> can be called from
+     anywhere in a program.</p>
+    <p>Returning <code>0</code> or <code>EXIT_SUCCESS</code> is the way of
+     indicating success, anything else indicates failure.</p>
+   
+
+  
+
+  <h2><a name="section-11"></a>1.3.11.&#160;Progress so far</h2>
+   
+
+   <p>This example program, although short, has allowed us to introduce several
+    important language features, amongst them:</p>
+
+   <ul>
+    <li>Program structure</li>
+    <li>Comment</li>
+    <li>File inclusion</li>
+    <li>Function definition</li>
+    <li>Compound statements</li>
+    <li>Function calling</li>
+    <li>Variable declaration</li>
+    <li>Arithmetic</li>
+    <li>Looping</li>
+   </ul>
+
+   <p>although of course none of this has been covered rigorously.</p>
+
+  
+
+ <div class="cbook_next_prev"><p><a href="functions.html">Previous section</a> | <a href="../chapter1/">Chapter contents</a> | <a href="some_more_programs.html">Next section</a></p></div>
+
+    </main>
+    <nav id="menu" class="Left">
+      
+ 
+  
+  <div class="nav">
+
+	
+	
+			
+			  <div class="nav0">
+				
+				  <a href="/">Publications</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav1">
+				
+				  <a href="/c_book/">The C&nbsp;Book</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/preface/">Preface</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter1/">Introduction</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter1/form_of_a_c_program.html">Form of C&#160;programs</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter1/functions.html">Functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <strong>About example&#160;1.1</strong>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter1/some_more_programs.html">Some more programs</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter1/terminology.html">Terminology</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter1/summary.html">Summary</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter1/exercises.html">Exercises</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter2/">Variables &amp; arithmetic</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter3/">Control flow</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter4/">Functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter5/">Arrays &amp; pointers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter6/">Structures</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter7/">Preprocessor</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter8/">Specialized areas</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter9/">Libraries</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter10/">Complete Programs</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/answers/">Answers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/copyright.html">Copyright</a>
+				
+				
+			</div>
+			
+	
+
+</div>
+
+ 
+
+      <div class="ColBtm">
+        <hr />
+<div class="h1"><a href="https://ebusiness.gbdirect.co.uk/contact.html">Contact Us</a></div>
+
+      </div>
+
+    </nav>
+    <aside id="sidebar" class="Right">
+      
+ <div class="box">
+  
+  
+<img src="https://global.gbdirect.co.uk/Themes/printer-friendly-12x12.png" alt="" title="Printer-friendly version of this page" />
+<a href="?format=pf" rel="nofollow">
+  Printer-friendly version
+</a>
+
+ </div>
+
+ <div class="box">
+  <h3>The C Book</h3>
+  
+<p>This book is published as a matter of historical interest.
+ Please read the
+ <a href="/c_book/copyright.html">copyright and disclaimer information</a>.</p>
+
+<p>GBdirect Ltd provides up-to-date training and consultancy in
+ <a href="http://training.gbdirect.co.uk/courses/c/">C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c/real_time_linux_embedded_c_training.html">Embedded C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c++/">C++</a>
+ and a wide range of
+ <a href="http://training.gbdirect.co.uk/courses/">other subjects based on
+ open standards</a> if you happen to be interested.</p>
+
+ </div>
+
+
+    </aside>
+  </div>
+  
+<script type="text/javascript">
+        var maxheight = 0;
+        var a =  Array('main', 'menu', 'sidebar');
+        for(index in a){
+                var name = a[index];
+                // alert(name);
+                var id = document.getElementById(name);
+                if(id){
+                        if(id.offsetHeight > maxheight){
+                                maxheight = id.offsetHeight;
+                        }
+                }
+        }
+        var tabbar = document.getElementById('tabsbar');
+        if(tabbar){
+                if(tabbar.style) tabbar=tabbar.style;
+                tabbar.left = 0+'px';
+                tabbar.top = maxheight+'px';
+        }
+        
+</script>
+</body>
+</html>

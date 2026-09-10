@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1">
+<title>The C Book &#8212; Directives</title>
+<meta property="og:title" content="The C Book &amp;#8212; Directives" />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://global.gbdirect.co.uk/Themes/logo-og.png" />
+
+<link rel="SHORTCUT ICON" href="https://global.gbdirect.co.uk/favicon.ico" />
+<link rel="stylesheet" type="text/css" href="https://global.gbdirect.co.uk/Themes/Quarters.css" />
+
+<link rel="prev" href="/c_book/chapter7/how_the_preprocessor_works.html" />
+<link rel="next" href="/c_book/chapter7/summary.html" />
+<link rel="contents" href="/c_book/chapter7/" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<!-- order 4-->
+<!-- lastmod 2005-11-10T16:42:05Z-->
+
+
+<link rel="canonical" href="https://publications.gbdirect.co.uk/c_book/chapter7/directives.html"/><meta property="og:url" content="https://publications.gbdirect.co.uk/c_book/chapter7/directives.html" />
+<script type="text/javascript"> var _gaq = _gaq || []; _gaq.push(['_setAccount', 'UA-3566842-1']); _gaq.push(['_setDomainName', '.gbdirect.co.uk']); _gaq.push(['_trackPageview']); (function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = 'https://www.google-analytics.com/ga.js'; var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s); })(); </script>
+</head>
+
+<body>
+  <header class="Banner">
+    <span id="Logo">
+      <a href="https://ebusiness.gbdirect.co.uk">
+        <img src="https://global.gbdirect.co.uk/Themes/gbdirect.gif"
+             alt="GBdirect Homepage"
+             title="GBdirect Homepage" /></a>
+    </span>
+<!-- Original homebrew search
+    <form action="https://global.gbdirect.co.uk/search.cgi"
+          method="get" id="Search">
+      <label for="search_textbox">Search</label>
+      <input type="text" name="query" size="12" id="search_textbox" value="" />
+      <input type="submit" name="Submit" value="Go" />
+    </form>
+-->
+<!-- Google search -->
+    <form class="Search" action="https://www.google.com/cse" id="cse-search-box">
+      <input type="hidden" name="cx" value="010270212093732037646:4pvgkishmkg" />
+      <input type="hidden" name="ie" value="UTF-8" />
+      <label for="search_textbox">Search</label>
+      <input type="text" name="q" id="search_textbox" size="12" />
+      <input type="submit" name="sa" value="Go" />
+    </form>
+    <script type="text/javascript" src="https://www.google.com/cse/brand?form=cse-search-box&amp;lang=en&amp;sitesearch=true"></script>
+<!-- End Google search -->
+  </header>
+  <nav class="Tabsbar"><span class="ThisTab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span> <span class="NoCSS2">| </span> <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/contact.html">Contact</a></span></nav>
+  <div id="container" itemscope itemtype="http://schema.org/WebPage">
+    <meta itemprop="isFamilyFriendly" content="1" />
+    <meta itemprop="inLanguage" content="en" />
+    <nav class="Tabsbar" id="tabsbar" style="position: absolute; width: 100%">
+  
+  
+    <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/">About Us</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://consulting.gbdirect.co.uk/">Consultancy</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://development.gbdirect.co.uk/">Software</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="ThisTab">Publications</span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-source.gbdirect.co.uk/">Open&nbsp;Source</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://software-support.gbdirect.co.uk/">Support</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-standards.gbdirect.co.uk/">Open&nbsp;Standards</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://faq.gbdirect.co.uk/">FAQ</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://jobs.gbdirect.co.uk/">Jobs</a></span>
+  
+
+</nav>
+    <main id="main" >
+	  
+		<nav id="breadcrumb" itemprop="breadcrumb">
+			
+			<a href="https://publications.gbdirect.co.uk/">Publications</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/">The C&nbsp;Book</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/chapter7/">Preprocessor</a>
+			
+			 &gt; Directives
+			
+		</nav>
+		<br />
+	  
+      <h1>7.3. Directives</h1>
+      
+      
+
+
+  
+
+  <p>Directives are always introduced by a line that starts with
+   a <code>#</code> character, optionally preceded by white space characters
+   (although it isn't common practice to indent the <code>#</code>).
+   Table&#160;7.1 below is a list of the directives defined in the
+   Standard.</p>
+
+  <div class="inset-table"><a name="table-1"></a><table><thead><tr class="cbook-table-heading">
+    <th>Directive</th>
+    <th>Meaning</th>
+   </tr></thead><tbody><tr class="cbook-table-first-row">
+    <td><code># include</code></td>
+    <td>include a source file</td>
+   </tr><tr class="cbook-table-row">
+    <td><code># define</code></td>
+    <td>define a macro</td>
+   </tr><tr class="cbook-table-row">
+    <td><code># undef</code></td>
+    <td>undefine a macro</td>
+   </tr><tr class="cbook-table-row">
+    <td><code># if</code></td>
+    <td>conditional compilation</td>
+   </tr><tr class="cbook-table-row">
+    <td><code># ifdef</code></td>
+    <td>conditional compilation</td>
+   </tr><tr class="cbook-table-row">
+    <td><code># ifndef</code></td>
+    <td>conditional compilation</td>
+   </tr><tr class="cbook-table-row">
+    <td><code># elif</code></td>
+    <td>conditional compilation</td>
+   </tr><tr class="cbook-table-row">
+    <td><code># else</code></td>
+    <td>conditional compilation</td>
+   </tr><tr class="cbook-table-row">
+    <td><code># endif</code></td>
+    <td>conditional compilation</td>
+   </tr><tr class="cbook-table-row">
+    <td><code># line</code></td>
+    <td>control error reporting</td>
+   </tr><tr class="cbook-table-row">
+    <td><code># error</code></td>
+    <td>force an error message</td>
+   </tr><tr class="cbook-table-row">
+    <td><code># pragma</code></td>
+    <td>used for implementation-dependent control</td>
+   </tr><tr class="cbook-table-last-row">
+    <td><code>#</code></td>
+    <td>null directive; no effect</td>
+   </tr></tbody></table><cite>Table&#160;7.1.&#160;Preprocessor directives</cite></div>
+
+  <p>The meanings and use of these features are described in the following
+   sections. Make a note that the <code>#</code> and the following keyword,
+   if any, are individual items. They may be separated by white space.</p>
+
+  <h2><a name="section-1"></a>7.3.1.&#160;The null directive</h2>
+   
+
+   <p>This is simple: a plain&#160;<code>#</code> on a line by itself does
+    nothing!</p>
+
+  
+
+  <h2><a name="section-2"></a>7.3.2.&#160;# define</h2>
+   
+
+   <p>There are two ways of defining <dfn>macros</dfn>, one of which looks
+    like a function and one which does not. Here is an example of each:</p>
+
+   <pre>
+#define FMAC(a,b) a here, then b
+
+#define NONFMAC some text here</pre>
+
+   <p>Both definitions define a macro and some <dfn>replacement text</dfn>,
+    which will be used to replace later occurrences of the macro name in the
+    rest of the program. After those definitions, they can be used as
+    follows, with the effect of the macro replacement shown in comments:</p>
+
+   <pre>
+NONFMAC
+/* some text here */
+
+FMAC(first text, some more)
+/* first text here, then some more */</pre>
+
+   <p>For the non-function macro, its name is simply replaced by its
+    replacement text. The function macro is also replaced by its replacement
+    text; wherever the replacement text contains an identifier which is the
+    name of one of the macro's &#8216;formal parameters&#8217;, the actual text
+    given as the argument is used in place of the identifier in the
+    replacement text. The scope of the names of the formal parameters is
+    limited to the body of the <code>#define</code> directive.</p>
+
+   <p>For both forms of macro, leading or trailing white space around the
+    replacement text is discarded.</p>
+
+   <p>A curious ambiguity arises with macros: how do you define
+    a non-function macro whose replacement text happens to start with the
+    opening parenthesis character (? The answer is simple. If the definition
+    of the macro has a space in front of the (, then it isn't the definition
+    of a function macro, but a simple replacement macro instead. When you
+    <em>use</em> function-like macros, there's no equivalent
+    restriction.</p>
+
+   <p>The Standard allows either type of macro to be redefined at any time,
+    using another <code>#&#160;define</code>, provided that there isn't any
+    attempt to change the type of the macro and that the tokens making up
+    both the original definition and the redefinition are identical in
+    number, ordering, spelling and use of white space. In this context all
+    white space is considered equal, so this would be correct:</p>
+
+   <pre>
+# define XXX abc/*comment*/def hij
+# define XXX abc def hij</pre>
+
+   <p>because comment is a form of white space. The token sequence for both
+    cases (<cite>w-s</cite> stands for a white-space token) is:</p>
+
+   <pre>
+# <var>w-s</var> define <var>w-s</var> XXX <var>w-s</var> abc <var>w-s</var> def <var>w-s</var> hij <var>w-s</var></pre>
+
+   <h3><a name="section-2.1"></a>7.3.2.1.&#160;Macro substitution</h3>
+    
+
+    <p>Where will occurrences of the macro name cause the replacement text
+     to be substituted in its place? Practically anywhere in a program that
+     the identifier is recognized as a separate token, except as the
+     identifier following the <code>#</code> of a preprocessor directive.
+     You can't do this:</p>
+
+    <pre>
+#define define XXX
+
+#define YYY ZZZ</pre>
+
+    <p>and expect the second <code>#define</code> to be replaced by
+     <code>#XXX</code>, causing an error.</p>
+
+    <p>When the identifier associated with a non-function macro is seen, it
+     is replaced by the macro replacement tokens, then <dfn>rescanned</dfn>
+     (see later) for further replacements to make.</p>
+
+    <p>Function macros can be used like real functions; white space around
+     the macro name, the argument list and so on, may include the newline
+     character:</p>
+
+    <pre>
+#define FMAC(a, b) printf(&quot;%s %s\n&quot;, a, b)
+
+FMAC (&quot;hello&quot;,
+      &quot;sailor&quot;
+      );
+/* results in */
+printf(&quot;%s %s\n&quot;, &quot;hello&quot;, &quot;sailor&quot;)</pre>
+
+    <p>The &#8216;arguments&#8217; of a function macro can be almost any arbitrary
+     token sequence. Commas are used to separate the arguments from each
+     other but can be hidden by enclosing them within parentheses,
+     <code>(</code> and <code>)</code>. Matched pairs of <code>(</code> and
+     <code>)</code> inside the argument list balance each other out, so
+     a <code>)</code> only ends the invocation of the macro if the
+     corresponding ( is the one that started the macro invocation.</p>
+
+    <pre>
+#define CALL(a, b) a b
+
+CALL(printf, (&quot;%d %d %s\n&quot;,1, 24, &quot;urgh&quot;));
+/* results in */
+printf (&quot;%d %d %s\n&quot;,1, 24, &quot;urgh&quot;);</pre>
+
+    <p>Note very carefully that the parentheses around the second argument
+     to CALL were preserved in the replacement: they were not stripped from
+     the text.</p>
+
+    <p>If you want to use macros like <code>printt</code>, taking a variable
+     number of arguments, the Standard is no help to you. They are not
+     supported.</p>
+
+    <p>If any argument contains no preprocessor tokens then the behaviour is
+     undefined. The same is true if the sequence of preprocessor tokens that
+     forms the argument would otherwise have been another preprocessor
+     directive:</p>
+
+    <pre>
+#define CALL(a, b) a b
+
+/* undefined behaviour in each case.... */
+CALL(,hello)
+CALL(xyz,
+#define abc def)</pre>
+
+    <p>In our opinion, the second of the erroneous uses of <code>CALL</code>
+     <em>should</em> result in defined behaviour&#8212;anyone capable of
+     writing that would clearly benefit from the attentions of a champion
+     weightlifter wielding a heavy leather bullwhip.</p>
+
+    <p>When a function macro is being processed, the steps are as
+     follows:</p>
+
+    <ol>
+     <li>All of its arguments are identified.</li>
+
+     <li>Except in the cases listed in item 3 below, if any of the tokens in
+      an argument are themselves candidates for macro replacement, the
+      replacement is done until no further replacement is possible. If
+      this introduces commas into the argument list, there is no danger
+      of the macro suddenly seeming to have a different number of
+      arguments; the arguments are <em>only</em> determined in the step
+      above.</li>
+
+     <li>In the macro replacement text, identifiers naming one of the macro
+      formal arguments are replaced by the (by now expanded) token
+      sequence supplied as the actual argument. The replacement is
+      suppressed only if the identifier is preceded by one
+      of&#160;<code>#</code> or&#160;<code>##</code>, or followed
+      by&#160;<code>##</code>.</li>
+    </ol>
+
+   
+
+   <h3><a name="section-2.2"></a>7.3.2.2.&#160;Stringizing</h3>
+    
+
+    <p>There is special treatment for places in the macro replacement text
+     where one of the macro formal parameters is found preceded by
+     <code>#</code>. The token list for the actual argument has any leading
+     or trailing white space discarded, then the <code>#</code> and the
+     token list are turned into a single string literal. Spaces between the
+     tokens are treated as space characters in the string. To prevent
+     &#8216;unexpected&#8217; results, any&#160;<code>&quot;</code>
+     or&#160;<code>\</code> characters within the new string literal are
+     preceded by&#160;<code>\</code>.</p>
+
+    <p>This example demonstrates the feature:</p>
+
+    <pre>
+#define MESSAGE(x) printf(&quot;Message: %s\n&quot;, #x)
+
+MESSAGE (Text with &quot;quotes&quot;);
+/*
+* Result is
+* printf(&quot;Message: %s\n&quot;, &quot;Text with \&quot;quotes\&quot;&quot;);
+*/</pre>
+
+   
+
+   <h3><a name="section-2.3"></a>7.3.2.3.&#160;Token pasting</h3>
+    
+
+    <p>A <code>##</code> operator may occur anywhere in the replacement text
+     for a macro except at the beginning or end. If a parameter name of
+     a function macro occurs in the replacement text preceded or followed by
+     one of these operators, the actual token sequence for the corresponding
+     macro argument is used to replace it. Then, for both function and
+     non-function macros, the tokens surrounding the <code>##</code>
+     operator are joined together. If they don't form a valid token, the
+     behaviour is undefined. Then rescanning occurs.</p>
+
+    <p>As an example of token pasting, here is a multi-stage operation,
+     involving rescanning (which is described next).</p>
+
+    <pre>
+#define REPLACE some replacement text
+#define JOIN(a, b) a ## b
+
+JOIN(REP, LACE)
+<var>becomes, after token pasting,</var>
+REPLACE
+<var>becomes, after rescanning</var>
+some replacement text</pre>
+
+   
+
+   <h3><a name="section-2.4"></a>7.3.2.4.&#160;Rescanning</h3>
+    
+
+    <p>Once the processing described above has occurred, the replacement
+     text plus the following tokens of the source file is rescanned, looking
+     for more macro names to replace. The one exception is that, within
+     a macro's replacement text, the name of the macro itself is not
+     expanded. Because macro replacement can be nested, it is possible for
+     several macros to be in the process of being replaced at any one point:
+     none of their names is a candidate for further replacement in the
+     &#8216;inner&#8217; levels of this process. This allows redefinition of
+     existing functions as macros:</p>
+
+    <pre>
+#define exit(x) exit((x)+1)</pre>
+
+    <p>These macro names which were not replaced now become tokens which are
+     immune from future replacement, even if later processing might have
+     meant that they had become available for replacement. This prevents the
+     danger of infinite recursion occurring in the preprocessor. The
+     suppression of replacement is only if the macro name results directly
+     from <em>replacement</em> text, not the other source text of the
+     program. Here is what we mean:</p>
+
+    <pre>
+#define m(x) m((x)+1)
+/* so */
+m(abc);
+/* expands to */
+m((abc)+1);
+/*
+* even though the m((abc)+1) above looks like a macro,
+* the rules say it is not to be re-replaced
+*/
+
+m(m(abc));
+/*
+* the outer m( starts a macro invocation,
+* but the inner one is replaced first (as above)
+* with m((abc)+1), which becomes the argument to the outer call,
+* giving us effectively
+*/
+m(m((abc+1));
+/*
+* which expands to
+*/
+m((m((abc+1))+1);</pre>
+
+    <p>If that doesn't make your brain hurt, then go and read what the
+     Standard says about it, which will.</p>
+
+   
+
+   <h3><a name="section-2.5"></a>7.3.2.5.&#160;Notes</h3>
+    
+
+    <p>There is a subtle problem when using arguments to function
+     macros.</p>
+
+    <pre>
+/* warning - subtle problem in this example */
+#define SQR(x)  ( x * x )
+/*
+* Wherever the formal parameters occur in
+* the replacement text, they are replaced
+* by the actual parameters to the macro.
+*/
+printf(&quot;sqr of %d is %d\n&quot;, 2, SQR(2));</pre>
+
+    <p>The formal parameter of <code>SQR</code> is <code>x</code>; the
+     actual argument is <code>2</code>. The replacement text results in</p>
+
+    <pre>
+printf(&quot;sqr of %d is %d\n&quot;, 2, ( 2 * 2 ));</pre>
+
+    <p>The use of the parentheses should be noticed. The following example
+     is likely to give trouble:</p>
+
+    <pre>
+/* bad example */
+#define DOUBLE(y) y+y
+
+printf(&quot;twice %d is %d\n&quot;, 2, DOUBLE(2));
+printf(&quot;six times %d is %d\n&quot;, 2, 3*DOUBLE(2));</pre>
+
+    <p>The problem is that the last expression in the second printf is
+     replaced by</p>
+
+    <pre>
+3*2+2</pre>
+
+    <p>which results in <code>8</code>, not <code>12</code>! The rule is
+     that when using macros to build expressions, careful parenthesizing is
+     necessary. Here's another example:</p>
+
+    <pre>
+SQR(3+4)
+
+/* expands to */
+
+( 3+4 * 3+4 )
+/* oh dear, still wrong! */</pre>
+
+    <p>so, when formal parameters occur in the replacement text, you should
+     look carefully at them too. Correct versions of <code>SQR</code> and
+     <code>DOUBLE</code> are these:</p>
+
+    <pre>
+#define SQR(x) ((x)*(x))
+#define DOUBLE(x) ((x)+(x))</pre>
+
+    <p>Macros have a last little trick to surprise you with, as this
+     shows.</p>
+
+    <div class="inset-example"><a name="example-1"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#define DOUBLE(x) ((x)+(x))
+
+main(){
+      int a[20], *ip;
+
+      ip = a;
+      a[0] = 1;
+      a[1] = 2;
+      printf(&quot;%d\n&quot;, DOUBLE(*ip++));
+      exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;7.1</cite></div>
+
+    <p>Why is this going to cause problems? Because the replacement text of
+     the macro refers to <code>*ip++</code> twice, so <code>ip</code> gets
+     incremented twice. Macros should never be used with expressions that
+     involve side effects, unless you check very carefully that they are
+     safe.</p>
+
+    <p>Despite these warnings, they provide a very useful feature, and one
+     which will be used a lot from now on.</p>
+
+   
+
+  
+
+  <h2><a name="section-3"></a>7.3.3.&#160;# undef</h2>
+   
+
+   <p>The name of any <code>#define</code>d identifier can be forcibly
+    forgotten by saying</p>
+
+   <pre>
+#undef  NAME</pre>
+
+   <p>It isn't an error to <code>#undef</code> a name which isn't currently
+    defined.</p>
+
+   <p>This occasionally comes in handy. <a href="../chapter9/">Chapter&#160;9</a> points out
+    that some library functions may actually be macros, not functions, but
+    by undefing their names you are guaranteed access to a real
+    function.</p>
+
+  
+
+  <h2><a name="section-4"></a>7.3.4.&#160;# include</h2>
+   
+
+   <p>This comes in two flavours:</p>
+
+   <pre>
+#include &lt;filename&gt;
+#include &quot;filename&quot;</pre>
+
+   <p>both of which cause a new file to be read at the point where they
+    occur. It's as if the single line containing the directive is replaced
+    by the contents of the specified file. If that file contains erroneous
+    statements, you can reasonably expect that the errors will be reported
+    with a correct file name and line number. It's the compiler writer's job
+    to get that right. The Standard specifies that at least eight nested
+    levels of <code># include</code> must be supported.</p>
+
+   <p>The effect of using brackets <code>&lt;&gt;</code> or quotes
+    <code>&quot;&#160;&quot;</code> around the filename is to change the places
+    searched to find the specified file. The brackets cause a search of
+    a number of implementation defined places, the quotes cause a search of
+    somewhere associated with the original source file. Your implementation
+    notes must tell you the specific details of what is meant by
+    &#8216;place&#8217;. If the form using quotes can't find the file, it tries
+    again as if you had used brackets.</p>
+
+   <p>In general, brackets are used when you specify standard library header
+    files, quotes are used for private header files&#8212;often specific to
+    one program only.</p>
+
+   <p>Although the Standard doesn't define what constitutes a valid file
+    name, it does specify that there must be an implementation-defined
+    unique way of translating file names of the form <code>xxx.x</code>
+    (where <code>x</code> represents a &#8216;letter&#8217;), into source file
+    names.  Distinctions of upper and lower case may be ignored and the
+    implementation may choose only to use six significant characters before
+    the &#8216;<code>.</code>&#8217; character.</p>
+
+   <p>You can also write this:</p>
+
+   <pre>
+# define NAME &lt;stdio.h&gt;
+# include NAME</pre>
+
+   <p>to get the same effect as</p>
+
+   <pre>
+# include &lt;stdio.h&gt;</pre>
+
+   <p>but it's a rather roundabout way of doing it, and unfortunately it's
+    subject to implementation defined rules about how the text
+    between&#160;<code>&lt;</code> and&#160;<code>&gt;</code> is
+    treated.</p>
+
+   <p>It's simpler if the replacement text for <code>NAME</code> comes out
+    to be a string, for example</p>
+
+   <pre>
+#define NAME &quot;stdio.h&quot;
+
+#include NAME</pre>
+
+   <p>There is no problem with implementation defined behaviour here, but
+    the paths searched are different, as explained above.</p>
+
+   <p>For the first case, what happens is that the token sequence which
+    replaces NAME is (by the rules already given)</p>
+
+   <pre>
+&lt;
+stdio
+.
+h
+&gt;</pre>
+
+   <p>and for the second case</p>
+
+   <pre>
+&quot;stdio.h&quot;</pre>
+
+   <p>The second case is easy, since it's just a <cite>string-literal</cite>
+    which is a legal token for a <code># include</code> directive. It is
+    implementation defined how the first case is treated, and whether or not
+    the sequence of tokens forms a legal <cite>header-name</cite>.</p>
+
+   <p>Finally, the last character of a file which is being
+    <code>include</code>d must be a plain newline. Failure to include a file
+    successfully is treated as an error.</p>
+
+  
+
+  <h2><a name="section-5"></a>7.3.5.&#160;Predefined names</h2>
+   
+
+   <p>The following names are predefined within the preprocessor:</p>
+
+   <dl>
+    <dt><code>__LINE__</code></dt>
+    <dd>The current source file line number, a decimal integer constant.</dd>
+
+    <dt><code>__FILE__</code></dt>
+    <dd>The &#8216;name&#8217; of the current source code file, a string
+     literal.</dd>
+
+    <dt><code>__DATE__</code></dt>
+    <dd>
+     <p>The current date, a string literal. The form is</p>
+     <pre>Apr 21 1990</pre>
+     <p>where the month name is as defined in the library function
+      <code>asctime</code> and the first digit of the date is a space if
+      the date is less than&#160;10.</p>
+    </dd>
+
+    <dt><code>__TIME__</code></dt>
+    <dd>The time of the translation; again a string literal in the form
+     produced by asctime, which has the form <code>&quot;hh:mm:ss&quot;</code>.</dd>
+
+    <dt><code>__STDC__</code></dt>
+    <dd>
+     <p>The integer constant&#160;1. This is used to test if the compiler is
+      Standard-conforming, the intention being that it will have different
+      values for different releases of the Standard.</p>
+     <p>A common way of using these predefined names is the following:</p>
+
+     <div class="inset-example"><a name="example-2"></a><pre>
+#define TEST(x) if(!(x))\
+      printf(&quot;test failed, line %d file %s\n&quot;,\
+              __LINE__, __FILE__)
+
+/**/
+
+TEST(a != 23);
+
+/**/</pre><cite>Example&#160;7.2</cite></div>
+
+    </dd>
+   </dl>
+
+   <p>If the argument to <code>TEST</code> gives a false result, the message
+    is printed, including the filename and line number in the message.</p>
+
+   <p>There's only one minor caveat: the use of the <code>if</code>
+    statement can cause confusion in a case like this:</p>
+
+   <pre>
+if(expression)
+      TEST(expr2);
+else
+      statement_n;</pre>
+
+   <p>The else will get associated with the hidden if generated by expanding
+    the <code>TEST</code> macro. This is most unlikely to happen in
+    practice, but will be a thorough pain to track down if it ever does
+    sneak up on you. It's good style to make the bodies of every control of
+    flow statement compound anyway; then the problem goes away.</p>
+
+   <p>None of the names <code>__LINE__</code>, <code>__FILE__</code>,
+    <code>__DATE__</code>, <code>__TIME__</code>, <code>__STDC__</code> or
+    defined may be used in <code>#define</code> or <code>#undef</code>
+    directives.</p>
+
+   <p>The Standard specifies that any other reserved names will either start
+    with an underscore followed by an upper case letter or another
+    underscore, so you know that you are free to use any other names for
+    your own purposes (but watch out for additional names reserved in
+    Library header files that you may have included).</p>
+
+  
+
+  <h2><a name="section-6"></a>7.3.6.&#160;#line</h2>
+   
+
+   <p>This is used to set the value of the built in names
+    <code>__LINE__</code> and <code>__FILE__</code>. Why do this? Because
+    a lot of tools nowadays actually generate C as their output. This
+    directive allows them to control the current line number. It is of very
+    limited interest to the &#8216;ordinary&#8217; C programmer.</p>
+
+   <p>Its form is</p>
+
+   <pre>
+# line number optional-string-literal newline</pre>
+
+   <p>The number sets the value of <code>__LINE__</code>, the string
+    literal, if present, sets the value of <code>__FILE__</code>.</p>
+
+   <p>In fact, the sequence of tokens following <code>#line</code> will be
+    macro expanded. After expansion, they are expected to provide a valid
+    directive of the right form.</p>
+
+  
+
+  <h2><a name="section-7"></a>7.3.7.&#160;Conditional compilation</h2>
+   
+
+   <p>A number of the directives control conditional compilation, which
+    allows certain portions of a program to be selectively compiled or
+    ignored depending upon specified conditions. The directives concerned
+    are: <code>#if</code>, <code>#ifdef</code>, <code>#ifndef</code>,
+    <code>#elif</code>, <code>#else</code>, <code>#endif</code> together
+    with the preprocessor unary operator defined.</p>
+
+   <p>The way that they are used is like this:</p>
+
+   <pre>
+#ifdef  NAME
+/* compile these lines if NAME is defined */
+#endif
+#ifndef NAME
+/* compile these lines if NAME is not defined */
+#else
+/* compile these lines if NAME is defined */
+#endif</pre>
+
+   <p>So, <code>#ifdef</code> and <code>#endif</code> can be used to test
+    the definition or otherwise of a given macro name. Of course the
+    <code>#else</code> can be used with <code>#ifdef</code> (and
+    <code>#if</code> or <code>#elif</code>) too. There is no ambiguity about
+    what a given <code>#else</code> binds to, because the use of
+    <code>#endif</code> to delimit the scope of these directives eliminates
+    any possible ambiguity. The Standard specifies that at least eight
+    levels of nesting of conditional directives must be supported, but in
+    practice there is not likely to be any real limit.</p>
+
+   <p>These directives are most commonly used to select small fragments of
+    C that are machine specific (when it is not possible to make the whole
+    program completely machine independent), or sometimes to select
+    different algorithms depending on the need to make trade-offs.</p>
+
+   <p>The <code>#if</code> and <code>#elif</code> constructs take a single
+    integral constant expression as their arguments. Preprocessor integral
+    constant expressions are the same as other integral constant expressions
+    except that they must not contain cast operators. The token sequence
+    that makes up the constant expression undergoes macro replacement,
+    except that names prefixed by defined are not expanded. In this context,
+    the expression <code>defined NAME</code> or <code>defined ( NAME
+    )</code> evaluates to <code>1</code> if <code>NAME</code> is currently
+    defined, <code>0</code> if it is not. Any other identifiers in the
+    expression <em>including those that are C keywords</em> are replaced
+    with the value <code>0</code>. Then the expression is evaluated. The
+    replacement even of keywords means that <code>sizeof</code> can't be
+    used in these expressions to get the result that you would normally
+    expect.</p>
+
+   <p>As with the other conditional statements in C, a resulting value of
+    zero is used to represent &#8216;false&#8217;, anything else is
+    &#8216;true&#8217;.</p>
+
+   <p>The preprocessor always must use arithmetic with at least the ranges
+    defined in the <code>&lt;limits.h&gt;</code> file and treats int
+    expressions as long int and unsigned int as unsigned long int. Character
+    constants do not necessarily have the same values as they do at
+    execution time, so for highly portable programs, it's best to avoid
+    using them in preprocessor expressions. Overall, the rules mean that it
+    is possible to get arithmetic results from the preprocessor which are
+    different from the results at run time; although presumably only if the
+    translation and execution are done on different machines. Here's an
+    example.</p>
+
+   <div class="inset-example"><a name="example-3"></a><pre>
+#include &lt;limits.h&gt;
+
+#if ULONG_MAX+1 != 0
+      printf(&quot;Preprocessor: ULONG_MAX+1 != 0\n&quot;);
+#endif
+
+      if(ULONG_MAX+1 != 0)
+              printf(&quot;Runtime: ULONG_MAX+1 != 0\n&quot;);</pre><cite>Example&#160;7.3</cite></div>
+
+   <p>It is conceivable that the preprocessor might perform arithmetic with
+    a greater range than that used in the target environment. In that case,
+    the preprocessor expression <code>ULONG_MAX+1</code> might not
+    &#8216;overflow&#8217; to give the result of <code>0</code>, whereas in the
+    execution environment, it <em>must</em>.</p>
+
+   <p>The following skeleton example illustrates the use of such constants
+    and also the &#8216;conditional else&#8217;, <code>#elif</code>.</p>
+
+   <pre>
+#define NAME    100
+
+#if     ((NAME &gt; 50) &amp;&amp; (defined __STDC__))
+/* do something */
+#elif   NAME &gt; 25
+/* do something else*/
+#elif   NAME &gt; 10
+/* do something else */
+#else
+/* last possibility */
+#endif</pre>
+
+   <p>A word of warning. These conditional compilation directives do not
+    obey the same scope rules as the rest of C. They should be used
+    sparingly, unless your program is rapidly to become unreadable. It is
+    impossible to read C when it is laced with these things every few lines.
+    The urge to maim the author of a piece of code becomes very strong when
+    you suddenly come across</p>
+
+   <pre>
+#else
+      }
+#endif</pre>
+
+   <p>with no <code>#if</code> or whatever immediately visible above. They
+    should be treated like chilli sauce; essential at times, but more than
+    a tiny sprinkle is too much.</p>
+
+  
+
+  <h2><a name="section-8"></a>7.3.8.&#160;#pragma</h2>
+   
+
+   <p>This was the Standard Committee's way of &#8216;opening the back
+    door&#8217;. It allows implementation-defined things to take place. If the
+    implementation was not expecting what you wrote (i.e. doesn't recognize
+    it), it is ignored. Here is a possible example:</p>
+
+   <pre>
+#pragma byte_align</pre>
+
+   <p>which could be used to tell the implementation that all structure
+    members should be aligned on byte addresses - some processor
+    architectures are able to cope with word-sized structure members aligned
+    on byte addresses, but with a penalty in access speed being
+    incurred.</p>
+
+   <p>It could, of course, mean anything else that the implementation
+    chooses it to mean.</p>
+
+   <p>If your implementation doesn't have any special meaning for this, then
+    it will have no effect. It will <em>not</em> count as an error.</p>
+
+   <p>It will be interesting to see the sort of things that this gets used
+    for.</p>
+
+  
+
+  <h2><a name="section-9"></a>7.3.9.&#160;#error</h2>
+   
+
+   <p>This directive is followed by one or more tokens at the end of the
+    line. A diagnostic message is produced by the compiler, which includes
+    those tokens, but no further detail is given in the Standard. It might
+    be used like this to abort a compilation on unsuitable hardware:</p>
+
+   <pre>
+#include &lt;limits.h&gt;
+#if CHAR_MIN &gt; -128
+#error character range smaller than required
+#endif</pre>
+
+   <p>which would be expected to produce some sort of meaningful compilation
+    error and message.</p>
+
+  
+
+ <div class="cbook_next_prev"><p><a href="how_the_preprocessor_works.html">Previous section</a> | <a href="../chapter7/">Chapter contents</a> | <a href="summary.html">Next section</a></p></div>
+
+    </main>
+    <nav id="menu" class="Left">
+      
+ 
+  
+  <div class="nav">
+
+	
+	
+			
+			  <div class="nav0">
+				
+				  <a href="/">Publications</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav1">
+				
+				  <a href="/c_book/">The C&nbsp;Book</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/preface/">Preface</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter1/">Introduction</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter2/">Variables &amp; arithmetic</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter3/">Control flow</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter4/">Functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter5/">Arrays &amp; pointers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter6/">Structures</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter7/">Preprocessor</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter7/effect_of_the_standard.html">Effect of the Standard</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter7/how_the_preprocessor_works.html">How the preprocessor works</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <strong>Directives</strong>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter7/summary.html">Summary</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter7/exercises.html">Exercises</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter8/">Specialized areas</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter9/">Libraries</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter10/">Complete Programs</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/answers/">Answers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/copyright.html">Copyright</a>
+				
+				
+			</div>
+			
+	
+
+</div>
+
+ 
+
+      <div class="ColBtm">
+        <hr />
+<div class="h1"><a href="https://ebusiness.gbdirect.co.uk/contact.html">Contact Us</a></div>
+
+      </div>
+
+    </nav>
+    <aside id="sidebar" class="Right">
+      
+ <div class="box">
+  
+  
+<img src="https://global.gbdirect.co.uk/Themes/printer-friendly-12x12.png" alt="" title="Printer-friendly version of this page" />
+<a href="?format=pf" rel="nofollow">
+  Printer-friendly version
+</a>
+
+ </div>
+
+ <div class="box">
+  <h3>The C Book</h3>
+  
+<p>This book is published as a matter of historical interest.
+ Please read the
+ <a href="/c_book/copyright.html">copyright and disclaimer information</a>.</p>
+
+<p>GBdirect Ltd provides up-to-date training and consultancy in
+ <a href="http://training.gbdirect.co.uk/courses/c/">C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c/real_time_linux_embedded_c_training.html">Embedded C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c++/">C++</a>
+ and a wide range of
+ <a href="http://training.gbdirect.co.uk/courses/">other subjects based on
+ open standards</a> if you happen to be interested.</p>
+
+ </div>
+
+
+    </aside>
+  </div>
+  
+<script type="text/javascript">
+        var maxheight = 0;
+        var a =  Array('main', 'menu', 'sidebar');
+        for(index in a){
+                var name = a[index];
+                // alert(name);
+                var id = document.getElementById(name);
+                if(id){
+                        if(id.offsetHeight > maxheight){
+                                maxheight = id.offsetHeight;
+                        }
+                }
+        }
+        var tabbar = document.getElementById('tabsbar');
+        if(tabbar){
+                if(tabbar.style) tabbar=tabbar.style;
+                tabbar.left = 0+'px';
+                tabbar.top = maxheight+'px';
+        }
+        
+</script>
+</body>
+</html>

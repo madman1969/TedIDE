@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1">
+<title>The C Book &#8212; Constants</title>
+<meta property="og:title" content="The C Book &amp;#8212; Constants" />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://global.gbdirect.co.uk/Themes/logo-og.png" />
+
+<link rel="SHORTCUT ICON" href="https://global.gbdirect.co.uk/favicon.ico" />
+<link rel="stylesheet" type="text/css" href="https://global.gbdirect.co.uk/Themes/Quarters.css" />
+
+<link rel="prev" href="/c_book/chapter2/expressions_and_arithmetic.html" />
+<link rel="next" href="/c_book/chapter2/summary.html" />
+<link rel="contents" href="/c_book/chapter2/" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<!-- order 10-->
+<!-- lastmod 2005-11-10T16:42:03Z-->
+
+
+<link rel="canonical" href="https://publications.gbdirect.co.uk/c_book/chapter2/constants.html"/><meta property="og:url" content="https://publications.gbdirect.co.uk/c_book/chapter2/constants.html" />
+<script type="text/javascript"> var _gaq = _gaq || []; _gaq.push(['_setAccount', 'UA-3566842-1']); _gaq.push(['_setDomainName', '.gbdirect.co.uk']); _gaq.push(['_trackPageview']); (function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = 'https://www.google-analytics.com/ga.js'; var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s); })(); </script>
+</head>
+
+<body>
+  <header class="Banner">
+    <span id="Logo">
+      <a href="https://ebusiness.gbdirect.co.uk">
+        <img src="https://global.gbdirect.co.uk/Themes/gbdirect.gif"
+             alt="GBdirect Homepage"
+             title="GBdirect Homepage" /></a>
+    </span>
+<!-- Original homebrew search
+    <form action="https://global.gbdirect.co.uk/search.cgi"
+          method="get" id="Search">
+      <label for="search_textbox">Search</label>
+      <input type="text" name="query" size="12" id="search_textbox" value="" />
+      <input type="submit" name="Submit" value="Go" />
+    </form>
+-->
+<!-- Google search -->
+    <form class="Search" action="https://www.google.com/cse" id="cse-search-box">
+      <input type="hidden" name="cx" value="010270212093732037646:4pvgkishmkg" />
+      <input type="hidden" name="ie" value="UTF-8" />
+      <label for="search_textbox">Search</label>
+      <input type="text" name="q" id="search_textbox" size="12" />
+      <input type="submit" name="sa" value="Go" />
+    </form>
+    <script type="text/javascript" src="https://www.google.com/cse/brand?form=cse-search-box&amp;lang=en&amp;sitesearch=true"></script>
+<!-- End Google search -->
+  </header>
+  <nav class="Tabsbar"><span class="ThisTab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span> <span class="NoCSS2">| </span> <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/contact.html">Contact</a></span></nav>
+  <div id="container" itemscope itemtype="http://schema.org/WebPage">
+    <meta itemprop="isFamilyFriendly" content="1" />
+    <meta itemprop="inLanguage" content="en" />
+    <nav class="Tabsbar" id="tabsbar" style="position: absolute; width: 100%">
+  
+  
+    <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/">About Us</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://consulting.gbdirect.co.uk/">Consultancy</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://development.gbdirect.co.uk/">Software</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="ThisTab">Publications</span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-source.gbdirect.co.uk/">Open&nbsp;Source</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://software-support.gbdirect.co.uk/">Support</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-standards.gbdirect.co.uk/">Open&nbsp;Standards</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://faq.gbdirect.co.uk/">FAQ</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://jobs.gbdirect.co.uk/">Jobs</a></span>
+  
+
+</nav>
+    <main id="main" >
+	  
+		<nav id="breadcrumb" itemprop="breadcrumb">
+			
+			<a href="https://publications.gbdirect.co.uk/">Publications</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/">The C&nbsp;Book</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/chapter2/">Variables &amp; arithmetic</a>
+			
+			 &gt; Constants
+			
+		</nav>
+		<br />
+	  
+      <h1>2.9. Constants</h1>
+      
+      
+
+
+  
+
+  <h2><a name="section-1"></a>2.9.1.&#160;Integer constants</h2>
+   
+
+   <p>The normal integral constants are obvious: things
+    like&#160;<code>1</code>, <code>1034</code> and so on. You can
+    put&#160;<code>l</code> or&#160;<code>L</code> at the end of an integer
+    constant to force it to be long. To make the constant
+    <code>unsigned</code>, one of&#160;<code>u</code> or&#160;<code>U</code>
+    can be used to do the job.</p>
+
+   <p>Integer constants can be written in hexadecimal by preceding the
+    constant with&#160;<code>0x</code> or&#160;<code>0X</code> and using the
+    upper or lower case letters&#160;<code>a</code>, <code>b</code>,
+    <code>c</code>, <code>d</code>, <code>e</code>, <code>f</code> in the
+    usual way.</p>
+
+   <p>Be careful about octal constants. They are indicated by starting the
+    number with&#160;<code>0</code> and only using the
+    digits&#160;<code>0</code>, <code>1</code>, <code>2</code>,
+    <code>3</code>, <code>4</code>, <code>5</code>, <code>6</code>,
+    <code>7</code>. It is easy to write&#160;<code>015</code> by accident, or
+    out of habit, and not to realize that it is not in decimal. The mistake is
+    most common with beginners, because experienced C&#160;programmers already
+    carry the scars.</p>
+
+   <p>The Standard has now invented a new way of working out what type an
+    integer constant is. In the old days, if the constant was too big for an
+    <code>int</code>, it got promoted to a <code>long</code> (without
+    warning). Now, the rule is that a plain decimal constant will be fitted
+    into the first in this list</p>
+
+   <pre>
+int   long   unsigned long</pre>
+
+   <p>that can hold the value.</p>
+
+   <p>Plain octal or hexadecimal constants will use this list</p>
+
+   <pre>
+int   unsigned int   long   unsigned long</pre>
+
+   <p>If the constant is suffixed by&#160;<code>u</code>
+    or&#160;<code>U</code>:</p>
+
+   <pre>
+unsigned int   unsigned long</pre>
+
+   <p>If it is suffixed by&#160;<code>l</code> or&#160;<code>L</code>:</p>
+
+   <pre>
+long   unsigned long</pre>
+
+   <p>and finally, if it suffixed by both&#160;<code>u</code>
+    or&#160;<code>U</code> and&#160;<code>l</code> or&#160;<code>L</code>, it
+    can only be an <code>unsigned long</code>.</p>
+
+   <p>All that was done to try to give you &#8216;what you meant&#8217;; what it
+    does mean is that it is hard to work out exactly what the type of a
+    constant expression is if you don't know something about the hardware.
+    Hopefully, good compilers will warn when a constant is promoted up to
+    another length and the&#160;<code>U</code> or&#160;<code>L</code> etc. is
+    not specified.</p>
+
+   <p>A nasty bug hides here:</p>
+
+   <pre>
+printf(&quot;value of 32768 is %d\n&quot;, 32768);</pre>
+
+   <p>On a 16-bit two's complement machine, <code>32768</code> will be a
+    <code>long</code> by the rules given above. But <code>printf</code> is
+    only expecting an <code>int</code> as an argument
+    (the&#160;<code>%d</code> indicates that). The type of the argument is
+    just wrong. For the ultimate in safety-conscious programming, you should
+    cast such cases to the right type:</p>
+
+   <pre>
+printf(&quot;value of 32768 is %d\n&quot;, (int)32768);</pre>
+
+   <p>It might interest you to note that there are no negative constants;
+    writing&#160;<code>-23</code> is an expression involving a positive
+    constant and an operator.</p>
+
+   <p>Character constants actually have type <code>int</code> (for historical
+    reasons) and are written by placing a sequence of characters between
+    single quote marks:</p>
+
+   <pre>
+'a'
+'b'
+'like this'</pre>
+
+   <p>Wide character constants are written just as above, but prefixed
+    with&#160;<code>L</code>:</p>
+
+   <pre>
+L'a'
+L'b'
+L'like this'</pre>
+
+   <p>Regrettably it <em>is</em> valid to have more than one character in the
+    sequence, giving a machine-dependent result. Single characters are the
+    best from the portability point of view, resulting in an ordinary integer
+    constant whose value is the machine representation of the single
+    character. The introduction of extended characters may cause you to
+    stumble over this by accident; if&#160;<code>'&lt;a&gt;'</code> is a
+    multibyte character (encoded with a shift-in shift-out around it) then
+    <code>'&lt;a&gt;'</code> will be a plain character constant, but
+    containing several characters, just like the more obvious
+    <code>'abcde'</code>. This is bound to lead to trouble in the future;
+    let's hope that compilers will warn about it.</p>
+
+   <p>To ease the way of representing some special characters that would
+    otherwise be hard to get into a character constant (or hard to read; does
+    <code>'&#160;'</code> contain a space or a tab?), there is what is called
+    an escape sequence which can be used instead. Table&#160;2.10
+    shows the <dfn>escape sequences</dfn> defined in the Standard.</p>
+
+   <div class="inset-table"><a name="table-10"></a><table><thead><tr class="cbook-table-heading">
+     <th>Sequence</th>
+     <th>Represents</th>
+    </tr></thead><tbody><tr class="cbook-table-first-row">
+     <td><code>\a</code></td>
+     <td>audible alarm</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>\b</code></td>
+     <td>backspace</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>\f</code></td>
+     <td>form feed</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>\n</code></td>
+     <td>newline</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>\r</code></td>
+     <td>carriage return</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>\t</code></td>
+     <td>tab</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>\v</code></td>
+     <td>vertical tab</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>\\</code></td>
+     <td>backslash</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>\'</code></td>
+     <td>quote</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>\&quot;</code></td>
+     <td>double quote</td>
+    </tr><tr class="cbook-table-last-row">
+     <td><code>\?</code></td>
+     <td>question mark</td>
+    </tr></tbody></table><cite>Table&#160;2.10.&#160;C&#160;escape sequences</cite></div>
+
+   <p>It is also possible to use numeric escape sequences to specify a
+    character in terms of the internal value used to represent it. A sequence
+    of either&#160;<code>\ooo</code> or&#160;<code>\xhhhh</code>, where
+    the&#160;<code>ooo</code> is up to three octal digits
+    and&#160;<code>hhhh</code> is any number of hexadecimal digits
+    respectively. A common version of it is <code>'\033'</code>, which is used
+    by those who know that on an ASCII based machine,
+    octal&#160;<code>33</code> is the ESC (escape) code. Beware that the
+    hexadecimal version will absorb any number of valid following hexadecimal
+    digits; if you want a string containing the character whose value is
+    hexadecimal&#160;<code>ff</code> followed by a
+    <em>letter</em>&#160;<code>f</code>, then the safe way to do it is to use
+    the string joining feature:</p>
+
+   <pre>
+&quot;\xff&quot; &quot;f&quot;</pre>
+
+   <p>The string</p>
+
+   <pre>
+&quot;\xfff&quot;</pre>
+
+   <p>only contains one character, with all three of the&#160;<code>f</code>s
+    eaten up in the hexadecimal sequence.</p>
+
+   <p>Some of the escape sequences aren't too obvious, so a brief explanation
+    is needed. To get a single quote as a character constant you
+    type&#160;<code>'\''</code>, to get a question mark you may have to
+    use&#160;<code>'\?'</code>; not that it matters in that example, but to
+    get two of them in there you can't use&#160;<code>'??'</code>, because the
+    sequence&#160;<code>??'</code> is a trigraph! You would have to
+    use&#160;<code>'\?\?'</code>. The escape&#160;<code>\&quot;</code> is only
+    necessary in strings, which will come later.</p>
+
+   <p>There are two distinct purposes behind the escape sequences. It's
+    obviously necessary to be able to represent characters such as single
+    quote and backslash unambiguously: that is one purpose. The second purpose
+    applies to the following sequences which control the motions of a printing
+    device when they are sent to it, as follows:</p>
+
+   <dl>
+    <dt><code>\a</code></dt>
+    <dd>Ring the bell if there is one. Do not move.</dd>
+    <dt><code>\b</code></dt>
+    <dd>Backspace.</dd>
+    <dt><code>\f</code></dt>
+    <dd>Go to the first position on the &#8216;next page&#8217;, whatever that may
+     mean for the output device.</dd>
+    <dt><code>\n</code></dt>
+    <dd>Go to the start of the next line.</dd>
+    <dt><code>\r</code></dt>
+    <dd>Go back to the start of the current line.</dd>
+    <dt><code>\t</code></dt>
+    <dd>Go to the next horizontal tab position.</dd>
+    <dt><code>\v</code></dt>
+    <dd>Go to the start of the line at the next vertical tab position.</dd>
+   </dl>
+
+   <p>For&#160;<code>\b</code>, <code>\t</code>, <code>\v</code>, if there is
+    no such position, the behaviour is unspecified. The Standard carefully
+    avoids mentioning the physical directions of movement of the output device
+    which are not necessarily the top to bottom, left to right movements
+    common in Western cultural environments.</p>
+
+   <p>It is guaranteed that each escape sequence has a unique integral value
+    which can be stored in a <code>char</code>.</p>
+
+  
+
+  <h2><a name="section-2"></a>2.9.2.&#160;Real constants</h2>
+   
+
+   <p>These follow the usual format:</p>
+
+   <pre>
+1.0
+2.
+.1
+2.634
+.125
+2.e5
+2.e+5
+.125e-3
+2.5e5
+3.1E-6</pre>
+
+   <p>and so on. For readability, even if part of the number is zero, it is a
+    good idea to show it:</p>
+
+   <pre>
+1.0
+0.1</pre>
+
+   <p>The exponent part shows the number of powers of ten that the rest of the
+    number should be raised to, so</p>
+
+   <pre>
+3.0e3</pre>
+
+   <p>is equivalent in value to the integer constant</p>
+
+   <pre>
+3000</pre>
+
+   <p>As you can see, the&#160;<code>e</code> can also be&#160;<code>E</code>.
+    These constants all have type <code>double</code> unless they are suffixed
+    with&#160;<code>f</code> or&#160;<code>F</code> to mean <code>float</code>
+    or&#160;<code>l</code> or&#160;<code>L</code> to mean long double.</p>
+
+   <p>For completeness, here is the formal description of a real constant:</p>
+
+   <p>A real constant is one of:</p>
+
+   <ul>
+    <li>A <dfn>fractional constant</dfn> followed by an optional
+     <dfn>exponent</dfn>.</li>
+    <li>A <dfn>digit sequence</dfn> followed by an <dfn>exponent</dfn>.</li>
+   </ul>
+
+   <p>In either case followed by an optional one of&#160;<code>f</code>,
+    <code>l</code>, <code>F</code>, <code>L</code>, where:</p>
+
+   <ul>
+    <li>A <dfn>fractional constant</dfn> is one of:
+     <ul>
+      <li>An optional <dfn>digit sequence</dfn> followed by a decimal point
+       followed by a <dfn>digit sequence</dfn>.</li>
+      <li>A <dfn>digit sequence</dfn> followed by a decimal point.</li>
+     </ul>
+    </li>
+
+    <li>An exponent is one of
+     <ul>
+      <li><code>e</code> or&#160;<code>E</code> followed by an
+       optional&#160;<code>+</code> or&#160;<code>-</code> followed by a
+       <dfn>digit sequence</dfn>.</li>
+     </ul>
+    </li>
+
+    <li>A <dfn>digit sequence</dfn> is an arbitrary combination of one or more
+     digits.</li>
+   </ul>
+
+  
+
+ <div class="cbook_next_prev"><p><a href="expressions_and_arithmetic.html">Previous section</a> | <a href="../chapter2/">Chapter contents</a> | <a href="summary.html">Next section</a></p></div>
+
+    </main>
+    <nav id="menu" class="Left">
+      
+ 
+  
+  <div class="nav">
+
+	
+	
+			
+			  <div class="nav0">
+				
+				  <a href="/">Publications</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav1">
+				
+				  <a href="/c_book/">The C&nbsp;Book</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/preface/">Preface</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter1/">Introduction</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter2/">Variables &amp; arithmetic</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/fundamentals.html">Fundamentals</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/alphabet_of_c.html">The C&#160;alphabet</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/textual_program_structure.html">Textual program structure</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/keywords_and_identifiers.html">Keywords &amp; identifiers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/variable_declaration.html">Declaring variables</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/real_types.html">Reals</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/integral_types.html">Integers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/expressions_and_arithmetic.html">Expressions &amp; arithmetic</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <strong>Constants</strong>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/summary.html">Summary</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/exercises.html">Exercises</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter3/">Control flow</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter4/">Functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter5/">Arrays &amp; pointers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter6/">Structures</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter7/">Preprocessor</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter8/">Specialized areas</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter9/">Libraries</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter10/">Complete Programs</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/answers/">Answers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/copyright.html">Copyright</a>
+				
+				
+			</div>
+			
+	
+
+</div>
+
+ 
+
+      <div class="ColBtm">
+        <hr />
+<div class="h1"><a href="https://ebusiness.gbdirect.co.uk/contact.html">Contact Us</a></div>
+
+      </div>
+
+    </nav>
+    <aside id="sidebar" class="Right">
+      
+ <div class="box">
+  
+  
+<img src="https://global.gbdirect.co.uk/Themes/printer-friendly-12x12.png" alt="" title="Printer-friendly version of this page" />
+<a href="?format=pf" rel="nofollow">
+  Printer-friendly version
+</a>
+
+ </div>
+
+ <div class="box">
+  <h3>The C Book</h3>
+  
+<p>This book is published as a matter of historical interest.
+ Please read the
+ <a href="/c_book/copyright.html">copyright and disclaimer information</a>.</p>
+
+<p>GBdirect Ltd provides up-to-date training and consultancy in
+ <a href="http://training.gbdirect.co.uk/courses/c/">C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c/real_time_linux_embedded_c_training.html">Embedded C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c++/">C++</a>
+ and a wide range of
+ <a href="http://training.gbdirect.co.uk/courses/">other subjects based on
+ open standards</a> if you happen to be interested.</p>
+
+ </div>
+
+
+    </aside>
+  </div>
+  
+<script type="text/javascript">
+        var maxheight = 0;
+        var a =  Array('main', 'menu', 'sidebar');
+        for(index in a){
+                var name = a[index];
+                // alert(name);
+                var id = document.getElementById(name);
+                if(id){
+                        if(id.offsetHeight > maxheight){
+                                maxheight = id.offsetHeight;
+                        }
+                }
+        }
+        var tabbar = document.getElementById('tabsbar');
+        if(tabbar){
+                if(tabbar.style) tabbar=tabbar.style;
+                tabbar.left = 0+'px';
+                tabbar.top = maxheight+'px';
+        }
+        
+</script>
+</body>
+</html>

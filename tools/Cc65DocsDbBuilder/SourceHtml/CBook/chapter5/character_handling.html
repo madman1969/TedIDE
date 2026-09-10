@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1">
+<title>The C Book &#8212; Character handling</title>
+<meta property="og:title" content="The C Book &amp;#8212; Character handling" />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://global.gbdirect.co.uk/Themes/logo-og.png" />
+
+<link rel="SHORTCUT ICON" href="https://global.gbdirect.co.uk/favicon.ico" />
+<link rel="stylesheet" type="text/css" href="https://global.gbdirect.co.uk/Themes/Quarters.css" />
+
+<link rel="prev" href="/c_book/chapter5/pointers.html" />
+<link rel="next" href="/c_book/chapter5/sizeof_and_malloc.html" />
+<link rel="contents" href="/c_book/chapter5/" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<!-- order 5-->
+<!-- lastmod 2011-02-28T10:49:15Z-->
+
+
+<link rel="canonical" href="https://publications.gbdirect.co.uk/c_book/chapter5/character_handling.html"/><meta property="og:url" content="https://publications.gbdirect.co.uk/c_book/chapter5/character_handling.html" />
+<script type="text/javascript"> var _gaq = _gaq || []; _gaq.push(['_setAccount', 'UA-3566842-1']); _gaq.push(['_setDomainName', '.gbdirect.co.uk']); _gaq.push(['_trackPageview']); (function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = 'https://www.google-analytics.com/ga.js'; var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s); })(); </script>
+</head>
+
+<body>
+  <header class="Banner">
+    <span id="Logo">
+      <a href="https://ebusiness.gbdirect.co.uk">
+        <img src="https://global.gbdirect.co.uk/Themes/gbdirect.gif"
+             alt="GBdirect Homepage"
+             title="GBdirect Homepage" /></a>
+    </span>
+<!-- Original homebrew search
+    <form action="https://global.gbdirect.co.uk/search.cgi"
+          method="get" id="Search">
+      <label for="search_textbox">Search</label>
+      <input type="text" name="query" size="12" id="search_textbox" value="" />
+      <input type="submit" name="Submit" value="Go" />
+    </form>
+-->
+<!-- Google search -->
+    <form class="Search" action="https://www.google.com/cse" id="cse-search-box">
+      <input type="hidden" name="cx" value="010270212093732037646:4pvgkishmkg" />
+      <input type="hidden" name="ie" value="UTF-8" />
+      <label for="search_textbox">Search</label>
+      <input type="text" name="q" id="search_textbox" size="12" />
+      <input type="submit" name="sa" value="Go" />
+    </form>
+    <script type="text/javascript" src="https://www.google.com/cse/brand?form=cse-search-box&amp;lang=en&amp;sitesearch=true"></script>
+<!-- End Google search -->
+  </header>
+  <nav class="Tabsbar"><span class="ThisTab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span> <span class="NoCSS2">| </span> <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/contact.html">Contact</a></span></nav>
+  <div id="container" itemscope itemtype="http://schema.org/WebPage">
+    <meta itemprop="isFamilyFriendly" content="1" />
+    <meta itemprop="inLanguage" content="en" />
+    <nav class="Tabsbar" id="tabsbar" style="position: absolute; width: 100%">
+  
+  
+    <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/">About Us</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://consulting.gbdirect.co.uk/">Consultancy</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://development.gbdirect.co.uk/">Software</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="ThisTab">Publications</span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-source.gbdirect.co.uk/">Open&nbsp;Source</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://software-support.gbdirect.co.uk/">Support</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-standards.gbdirect.co.uk/">Open&nbsp;Standards</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://faq.gbdirect.co.uk/">FAQ</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://jobs.gbdirect.co.uk/">Jobs</a></span>
+  
+
+</nav>
+    <main id="main" >
+	  
+		<nav id="breadcrumb" itemprop="breadcrumb">
+			
+			<a href="https://publications.gbdirect.co.uk/">Publications</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/">The C&nbsp;Book</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/chapter5/">Arrays &amp; pointers</a>
+			
+			 &gt; Character handling
+			
+		</nav>
+		<br />
+	  
+      <h1>5.4. Character handling</h1>
+      
+      
+
+
+  
+
+  <p>C is widely used for character and string handling applications. This
+   is odd, in some ways, because the language doesn't really have any
+   built-in string handling features. If you're used to languages that know
+   about string handling, you will almost certainly find C tedious to begin
+   with.</p>
+
+  <p>The standard library contains lots of functions to help with string
+   processing but the fact remains that it still feels like hard work. To
+   compare two strings you have to call a function instead of using an
+   equality operator. There is a bright side to this, though. It means that
+   the language isn't burdened by having to support string processing
+   directly, which helps to keep it small and less cluttered. What's more,
+   once you get your string handling programs working in C, they do tend to
+   run very quickly.</p>
+
+  <p>Character handling in C is done by declaring arrays (or allocating them
+   dynamically) and moving characters in and out of them &#8216;by hand&#8217;.
+   Here is an example of a program which reads text a line at a time from
+   its standard input. If the line consists of the string of characters
+   <code>stop</code>, it stops; otherwise it prints the length of the line.
+   It uses a technique which is invariably used in C programs; it reads the
+   characters into an array and indicates the end of them with an extra
+   character whose value is explicitly 0 (zero). It uses the library
+   <code>strcmp</code> function to compare two strings.</p>
+
+  <div class="inset-example"><a name="example-6"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+
+#define LINELNG 100     /* max. length of input line */
+
+main(){
+      char in_line[LINELNG];
+      char *cp;
+      int c;
+
+      cp = in_line;
+      while((c = getc(stdin)) != EOF){
+              if(cp == &amp;in_line[LINELNG-1] || c == '\n'){
+                      /*
+                       * Insert end-of-line marker
+                       */
+                      *cp = 0;
+                      if(strcmp(in_line, &quot;stop&quot;) == 0 )
+                              exit(EXIT_SUCCESS);
+                      else
+                              printf(&quot;line was %d characters long\n&quot;,
+                                      (int)(cp-in_line));
+                      cp = in_line;
+              }
+              else
+                      *cp++ = c;
+      }
+      exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;5.6</cite></div>
+
+  <p>Once more, the example illustrates some interesting methods used widely
+   in C programs. By far the most important is the way that strings are
+   represented and manipulated.</p>
+
+  <p>Here is a possible implementation of <code>strcmp</code>, which
+   compares two strings for equality and returns zero if they are the same.
+   The library function actually does a bit more than that, but the added
+   complication can be ignored for the moment. Notice the use of
+   <code>const</code> in the argument declarations. This shows that the
+   function will not modify the contents of the strings, but just inspects
+   them. The definitions of the standard library functions make extensive
+   use of this technique.</p>
+
+  <div class="inset-example"><a name="example-7"></a><pre>
+/*
+* Compare two strings for equality.
+* Return 'false' if they are.
+*/
+int
+str_eq(const char *s1, const char *s2){
+      while(*s1 == *s2){
+              /*
+               * At end of string return 0.
+               */
+              if(*s1 == 0)
+                      return(0);
+              s1++; s2++;
+      }
+      /* Difference detected! */
+      return(1);
+}</pre><cite>Example&#160;5.7</cite></div>
+
+  <h2><a name="section-1"></a>5.4.1.&#160;Strings</h2>
+   
+
+   <p>Every C programmer &#8216;knows&#8217; what a string is. It is an array of
+    <code>char</code> variables, with the last character in the string
+    followed by a null. &#8216;But I thought a string was something in double
+    quote marks&#8217;, you cry. You are right, too. In C, a sequence like
+    this</p>
+
+   <pre>
+&quot;a string&quot;</pre>
+
+   <p>is really a character array. It's the only example in C where you can
+    declare something at the point of its use.</p>
+
+   <p><em>Be warned</em>: in Old C, strings were stored just like any other
+    character array, and were modifiable. Now, the Standard states that
+    although they are are arrays of <code>char</code>, (not <code>const
+    char</code>), attempting to modify them results in undefined
+    behaviour.</p>
+
+   <p>Whenever a string in quotes is seen, it has two effects: it provides
+    a declaration and a substitute for a name. It makes a hidden declaration
+    of a char array, whose contents are initialized to the character values
+    in the string, followed by a character whose integer value is zero. The
+    array has no name. So, apart from the name being present, we have
+    a situation like this:</p>
+
+   <pre>
+char secret[9];
+secret[0] = 'a';
+secret[1] = ' ';
+secret[2] = 's';
+secret[3] = 't';
+secret[4] = 'r';
+secret[5] = 'i';
+secret[6] = 'n';
+secret[7] = 'g';
+secret[8] = 0;</pre>
+
+   <p>an array of characters, terminated by zero, with character values in
+    it. But when it's declared using the string notation, it hasn't got
+    a name. How can we use it?</p>
+
+   <p>Whenever C sees a quoted string, the presence of the string itself
+    serves as the name of the hidden array&#8212;not only is the string an
+    implicit sort of declaration, it is as if an array name had been given.
+    Now, we all remember that the name of an array is equivalent to giving
+    the address of its first element, so what is the type of this?</p>
+
+   <pre>
+&quot;a string&quot;</pre>
+
+   <p>It's a pointer of course: a pointer to the first element of the hidden
+    unnamed array, which is of type <code>char</code>, so the pointer is of
+    type &#8216;pointer to <code>char</code>&#8217;. The situation is shown in
+    Figure&#160;5.7.</p>
+
+   <div class="inset-figure"><a name="figure-7"><img width="400" alt="Diagram showing an unnamed array of &#39;const char&#39; values, where the            last item has the value &#39;0&#39;, and showing that a &#39;const char *&#39;            value that points to the first of them can be used as a string." src="../figures/5.7.png" height="158" /></a><br /><cite>Figure&#160;5.7.&#160;Effect of using a string</cite></div>
+
+   <p>For proof of that, look at the following program:</p>
+
+   <div class="inset-example"><a name="example-8"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+main(){
+      int i;
+      char *cp;
+
+      cp = &quot;a string&quot;;
+      while(*cp != 0){
+              putchar(*cp);
+              cp++;
+      }
+      putchar('\n');
+
+      for(i = 0; i &lt; 8; i++)
+              putchar(&quot;a string&quot;[i]);
+      putchar('\n');
+      exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;5.8</cite></div>
+
+   <p>The first loop sets a pointer to the start of the array, then walks
+    along until it finds the zero at the end. The second one &#8216;knows&#8217;
+    about the length of the string and is less useful as a result. Notice
+    how the first one is independent of the length&#8212;that is a most
+    important point to remember. It's the way that strings are handled in
+    C almost without exception; it's certainly the format that all of the
+    library string manipulation functions expect. The zero at the end allows
+    string processing routines to find out that they have reached the end of
+    the string&#8212;look back now to the example function
+    <code>str_eq</code>.  The function takes two character pointers as
+    arguments (so a string would be acceptable as one or both arguments). It
+    compares them for equality by checking that the strings are
+    character-for-character the same. If they are the same at any point,
+    then it checks to make sure it hasn't reached the end of them both with
+    <code>if(*s1 == 0)</code>: if it has, then it returns 0 to show that
+    they were equal. The test could just as easily have been on
+    <code>*s2</code>, it wouldn't have made any difference.  Otherwise
+    a difference has been detected, so it returns 1 to indicate failure.</p>
+
+   <p>In the example, <code>strcmp</code> is called with two arguments which
+    look quite different. One is a character array, the other is a string.
+    In fact they're the same thing&#8212;a character array terminated by zero
+    (the program is careful to put a zero in the first &#8216;empty&#8217; element
+    of <code>in_line</code>), and a string in quotes&#8212;which is
+    a character array terminated by a zero. Their use as arguments to strcmp
+    results in character pointers being passed, for the reasons explained to
+    the point of tedium above.</p>
+
+  
+
+  <h2><a name="section-2"></a>5.4.2.&#160;Pointers and increment operators</h2>
+   
+
+   <p>We said that we'd eventually revisit expressions like</p>
+
+   <pre>
+(*p)++;</pre>
+
+   <p>and now it's time. Pointers are used so often to walk down arrays that
+    it just seems natural to use the <code>++</code> and <code>--</code>
+    operators on them. Here we write zeros into an array:</p>
+
+   <div class="inset-example"><a name="example-9"></a><pre>
+#define ARLEN 10
+
+int ar[ARLEN], *ip;
+
+ip = ar;
+while(ip &lt; &amp;ar[ARLEN])
+      *(ip++) = 0;</pre><cite>Example&#160;5.9</cite></div>
+
+   <p>The pointer <code>ip</code> is set to the start of the array. While it
+    remains inside the array, the place that it points to has zero written
+    into it, then the increment takes effect and the pointer is stepped one
+    element along the array. The postfix form of <code>++</code> is
+    particularly useful here.</p>
+
+   <p>This is very common stuff indeed. In most programs you'll find
+    pointers and increment operators used together like that, not just once
+    or twice, but on almost every line (or so it seems while you find them
+    difficult). What is happening, and what combinations can we get? Well,
+    the <code>*</code> means indirection, and <code>++</code> or
+    <code>--</code> mean increment; either pre- or post-increment. The
+    combinations can be pre- or post-increment of either the pointer or the
+    thing it points to, depending on where the brackets are put. Table&#160;5.1 gives a list.</p>
+
+   <div class="inset-table"><a name="table-1"></a><table><tbody><tr class="cbook-table-first-row">
+     <td><code>++(*p)</code></td>
+     <td>pre-increment thing pointed to</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>(*p)++</code></td>
+     <td>post-increment thing pointed to</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>*(p++)</code></td>
+     <td>access via pointer, post-increment pointer</td>
+    </tr><tr class="cbook-table-last-row">
+     <td><code>*(++p)</code></td>
+     <td>access via pointer which has already been incremented</td>
+    </tr></tbody></table><cite>Table&#160;5.1.&#160;Pointer notation</cite></div>
+
+   <p>Read it carefully; make sure that you understand the combinations.</p>
+
+   <p>The expressions in the list above can usually be understood after
+    a bit of head-scratching. Now, given that the precedence of
+    <code>*</code>, <code>++</code> and <code>--</code> is the same in all
+    three cases and that they associate right to left, can you work out what
+    happens if the brackets are removed? Nasty, isn't it? Table&#160;5.2 shows that there's only one case where the brackets have to
+    be there.</p>
+
+   <div class="inset-table"><a name="table-2"></a><table><thead><tr class="cbook-table-heading">
+     <th>With parentheses</th>
+     <th>Without, if possible</th>
+    </tr></thead><tbody><tr class="cbook-table-first-row">
+     <td><code>++(*p)</code></td>
+     <td><code>++*p</code></td>
+    </tr><tr class="cbook-table-row">
+     <td><code>(*p)++</code></td>
+     <td><code>(*p)++</code></td>
+    </tr><tr class="cbook-table-row">
+     <td><code>*(p++)</code></td>
+     <td><code>*p++</code></td>
+    </tr><tr class="cbook-table-last-row">
+     <td><code>*(++p)</code></td>
+     <td><code>*++p</code></td>
+    </tr></tbody></table><cite>Table&#160;5.2.&#160;More pointer notation</cite></div>
+
+   <p>The usual reaction to that horrible sight is to decide that you don't
+    care that the parentheses can be removed; you will <em>always</em> use
+    them in your code. That's all very well but the problem is that most
+    C programmers have learnt the important precedence rules (or at least
+    learnt the table above) and <em>they</em> very rarely put the
+    parentheses in. Like them, we don't&#8212;so if you want to be able to
+    read the rest of the examples, you had better learn to read those
+    expressions with or without parentheses. It'll be worth the effort in
+    the end.</p>
+
+  
+
+  <h2><a name="section-3"></a>5.4.3.&#160;Untyped pointers</h2>
+   
+
+   <p>In certain cases it's essential to be able to convert pointers from
+    one type to another. This is always done with the aid of casts, in
+    expressions like the one below:</p>
+
+   <pre>
+(<var>type</var> *) <var>expression</var></pre>
+
+   <p>The <var>expression</var> is converted into &#8216;pointer to
+    <var>type</var>&#8217;, regardless of the expression's previous type. This
+    is only supposed to be done if you're sure that you know what you're
+    trying to do. It is not a good idea to do much of it until you have got
+    plenty of experience. Furthermore, do <em>not</em> assume that the cast
+    simply suppresses diagnostics of the &#8216;mismatched pointer&#8217; sort
+    from your compiler. On several architectures it is necessary to
+    calculate new values when pointer types are changed.</p>
+
+   <p>There are also some occasions when you will want to use
+    a &#8216;generic&#8217; pointer. The most common example is the
+    <code>malloc</code> library function, which is used to allocate storage
+    for objects that haven't been declared. It is used by telling it how
+    much storage is wanted&#8212;enough for a <code>float</code>, or an array
+    of <code>int</code>, or whatever. It passes back a pointer to enough
+    storage, which it allocates in its own mysterious way from a pool of
+    free storage (the way that it does this is its own business). That
+    pointer is then cast into the right type&#8212;for example if
+    a <code>float</code> needs 4 bytes of free store, this is the flavour of
+    what you would write:</p>
+
+   <pre>
+float *fp;
+
+fp = (float *)malloc(4);</pre>
+
+   <p><code>Malloc</code> finds 4 bytes of store, then the address of that
+    piece of storage is cast into pointer-to-float and assigned to the
+    pointer.</p>
+
+   <p>What type should <code>malloc</code> be declared to have? The type
+    must be able to represent every known value of every type of pointer;
+    there is no guarantee that any of the basic types in C can hold such
+    a value.</p>
+
+   <p>The solution is to use the <code>void *</code> type that we've already
+    talked about. Here is the last example with a declaration of
+    <code>malloc</code>:</p>
+
+   <pre>
+void *malloc();
+float *fp;
+
+fp = (float *)malloc(4);</pre>
+
+   <p>The rules for assignment of pointers show that there is no need to use
+    a cast on the return value from <code>malloc</code>, but it is often
+    done in practice.</p>
+
+   <p>Obviously there needs to be a way to find out what value the argument
+    to <code>malloc</code> should be: it will be different on different
+    machines, so you can't just use a constant like 4. That is what the
+    <code>sizeof</code> operator is for.</p>
+
+  
+
+ <div class="cbook_next_prev"><p><a href="pointers.html">Previous section</a> | <a href="../chapter5/">Chapter contents</a> | <a href="sizeof_and_malloc.html">Next section</a></p></div>
+
+    </main>
+    <nav id="menu" class="Left">
+      
+ 
+  
+  <div class="nav">
+
+	
+	
+			
+			  <div class="nav0">
+				
+				  <a href="/">Publications</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav1">
+				
+				  <a href="/c_book/">The C&nbsp;Book</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/preface/">Preface</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter1/">Introduction</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter2/">Variables &amp; arithmetic</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter3/">Control flow</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter4/">Functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter5/">Arrays &amp; pointers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter5/opening_shots.html">Opening shots</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter5/arrays.html">Arrays</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter5/pointers.html">Pointers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <strong>Character handling</strong>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter5/sizeof_and_malloc.html">Sizeof &amp; malloc</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter5/function_pointers.html">Function pointers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter5/pointer_expressions.html">Pointer expressions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter5/arrays_and_address_of.html">Arrays &amp; address-of</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter5/summary.html">Summary</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter5/exercises.html">Exercises</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter6/">Structures</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter7/">Preprocessor</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter8/">Specialized areas</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter9/">Libraries</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter10/">Complete Programs</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/answers/">Answers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/copyright.html">Copyright</a>
+				
+				
+			</div>
+			
+	
+
+</div>
+
+ 
+
+      <div class="ColBtm">
+        <hr />
+<div class="h1"><a href="https://ebusiness.gbdirect.co.uk/contact.html">Contact Us</a></div>
+
+      </div>
+
+    </nav>
+    <aside id="sidebar" class="Right">
+      
+ <div class="box">
+  
+  
+<img src="https://global.gbdirect.co.uk/Themes/printer-friendly-12x12.png" alt="" title="Printer-friendly version of this page" />
+<a href="?format=pf" rel="nofollow">
+  Printer-friendly version
+</a>
+
+ </div>
+
+ <div class="box">
+  <h3>The C Book</h3>
+  
+<p>This book is published as a matter of historical interest.
+ Please read the
+ <a href="/c_book/copyright.html">copyright and disclaimer information</a>.</p>
+
+<p>GBdirect Ltd provides up-to-date training and consultancy in
+ <a href="http://training.gbdirect.co.uk/courses/c/">C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c/real_time_linux_embedded_c_training.html">Embedded C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c++/">C++</a>
+ and a wide range of
+ <a href="http://training.gbdirect.co.uk/courses/">other subjects based on
+ open standards</a> if you happen to be interested.</p>
+
+ </div>
+
+
+    </aside>
+  </div>
+  
+<script type="text/javascript">
+        var maxheight = 0;
+        var a =  Array('main', 'menu', 'sidebar');
+        for(index in a){
+                var name = a[index];
+                // alert(name);
+                var id = document.getElementById(name);
+                if(id){
+                        if(id.offsetHeight > maxheight){
+                                maxheight = id.offsetHeight;
+                        }
+                }
+        }
+        var tabbar = document.getElementById('tabsbar');
+        if(tabbar){
+                if(tabbar.style) tabbar=tabbar.style;
+                tabbar.left = 0+'px';
+                tabbar.top = maxheight+'px';
+        }
+        
+</script>
+</body>
+</html>

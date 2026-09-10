@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1">
+<title>The C Book &#8212; Arguments to main</title>
+<meta property="og:title" content="The C Book &amp;#8212; Arguments to main" />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://global.gbdirect.co.uk/Themes/logo-og.png" />
+
+<link rel="SHORTCUT ICON" href="https://global.gbdirect.co.uk/favicon.ico" />
+<link rel="stylesheet" type="text/css" href="https://global.gbdirect.co.uk/Themes/Quarters.css" />
+
+<link rel="prev" href="/c_book/chapter10/putting_it_together.html" />
+<link rel="next" href="/c_book/chapter10/interpreting_program_arguments.html" />
+<link rel="contents" href="/c_book/chapter10/" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<!-- order 3-->
+<!-- lastmod 2005-11-10T16:42:02Z-->
+
+
+<link rel="canonical" href="https://publications.gbdirect.co.uk/c_book/chapter10/arguments_to_main.html"/><meta property="og:url" content="https://publications.gbdirect.co.uk/c_book/chapter10/arguments_to_main.html" />
+<script type="text/javascript"> var _gaq = _gaq || []; _gaq.push(['_setAccount', 'UA-3566842-1']); _gaq.push(['_setDomainName', '.gbdirect.co.uk']); _gaq.push(['_trackPageview']); (function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = 'https://www.google-analytics.com/ga.js'; var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s); })(); </script>
+</head>
+
+<body>
+  <header class="Banner">
+    <span id="Logo">
+      <a href="https://ebusiness.gbdirect.co.uk">
+        <img src="https://global.gbdirect.co.uk/Themes/gbdirect.gif"
+             alt="GBdirect Homepage"
+             title="GBdirect Homepage" /></a>
+    </span>
+<!-- Original homebrew search
+    <form action="https://global.gbdirect.co.uk/search.cgi"
+          method="get" id="Search">
+      <label for="search_textbox">Search</label>
+      <input type="text" name="query" size="12" id="search_textbox" value="" />
+      <input type="submit" name="Submit" value="Go" />
+    </form>
+-->
+<!-- Google search -->
+    <form class="Search" action="https://www.google.com/cse" id="cse-search-box">
+      <input type="hidden" name="cx" value="010270212093732037646:4pvgkishmkg" />
+      <input type="hidden" name="ie" value="UTF-8" />
+      <label for="search_textbox">Search</label>
+      <input type="text" name="q" id="search_textbox" size="12" />
+      <input type="submit" name="sa" value="Go" />
+    </form>
+    <script type="text/javascript" src="https://www.google.com/cse/brand?form=cse-search-box&amp;lang=en&amp;sitesearch=true"></script>
+<!-- End Google search -->
+  </header>
+  <nav class="Tabsbar"><span class="ThisTab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span> <span class="NoCSS2">| </span> <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/contact.html">Contact</a></span></nav>
+  <div id="container" itemscope itemtype="http://schema.org/WebPage">
+    <meta itemprop="isFamilyFriendly" content="1" />
+    <meta itemprop="inLanguage" content="en" />
+    <nav class="Tabsbar" id="tabsbar" style="position: absolute; width: 100%">
+  
+  
+    <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/">About Us</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://consulting.gbdirect.co.uk/">Consultancy</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://development.gbdirect.co.uk/">Software</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="ThisTab">Publications</span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-source.gbdirect.co.uk/">Open&nbsp;Source</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://software-support.gbdirect.co.uk/">Support</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-standards.gbdirect.co.uk/">Open&nbsp;Standards</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://faq.gbdirect.co.uk/">FAQ</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://jobs.gbdirect.co.uk/">Jobs</a></span>
+  
+
+</nav>
+    <main id="main" >
+	  
+		<nav id="breadcrumb" itemprop="breadcrumb">
+			
+			<a href="https://publications.gbdirect.co.uk/">Publications</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/">The C&nbsp;Book</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/chapter10/">Complete Programs</a>
+			
+			 &gt; Arguments to main()
+			
+		</nav>
+		<br />
+	  
+      <h1>10.2. Arguments to main</h1>
+      
+      
+
+
+  
+
+  <p>For those writing programs which will run in a hosted environment,
+   arguments to main provide a useful opportunity to give parameters to
+   programs. Typically, this facility is used to direct the way the program
+   goes about its task. It's particularly common to provide file names to a
+   program through its arguments.</p>
+
+  <p>The declaration of main looks like this:</p>
+
+  <pre>
+int main(int argc, char *argv[]);</pre>
+
+  <p>This indicates that <code>main</code> is a function returning an
+   integer. In hosted environments such as DOS or UNIX, this value or
+   <dfn>exit status</dfn> is passed back to the command line interpreter. Under
+   UNIX, for example, the exit status is used to indicate that a program
+   completed successfully (a zero value) or some error occurred (a non-zero
+   value). The Standard has adopted this convention; <code>exit(0)</code> is
+   used to return &#8216;success&#8217; to its host environment, any other value is
+   used to indicate failure. If the host environment itself uses a different
+   numbering convention, <code>exit</code> will do the necessary
+   translation. Since the translation is implementation-defined, it is now
+   considered better practice to use the values defined in
+   <code>&lt;stdlib.h&gt;: EXIT_SUCCESS</code> and
+   <code>EXIT_FAILURE</code>.</p>
+
+  <p>There are at least two arguments to <code>main</code>:
+   <code>argc</code> and <code>argv</code>.  The first of these is a count
+   of the arguments supplied to the program and the second is an array of
+   pointers to the strings which are those arguments&#8212;its type is
+   (almost) &#8216;array of pointer to <code>char</code>&#8217;. These arguments
+   are passed to the program by the host system's command line interpreter
+   or job control language.</p>
+
+  <p>The declaration of the <code>argv</code> argument is often a novice
+   programmer's first encounter with pointers to arrays of pointers and can
+   prove intimidating. However, it is really quite simple to understand.
+   Since <code>argv</code> is used to refer to an array of strings, its
+   declaration will look like this:</p>
+
+  <pre>
+char *argv[]</pre>
+
+  <p>Remember too that when it is passed to a function, the name of an array
+   is converted to the address of its first element. This means that we can
+   also declare <code>argv</code> as <code>char **argv;</code> the two
+   declarations are equivalent in this context.</p>
+
+  <p>Indeed, you will often see the declaration of <code>main</code>
+   expressed in these terms. This declaration is exactly equivalent to that
+   shown above:</p>
+
+  <pre>
+int main(int argc, char **argv);</pre>
+
+  <p>When a program starts, the arguments to main will have been initialized
+   to meet the following conditions:</p>
+
+  <ul>
+   <li><code>argc</code> is greater than zero.</li>
+
+   <li><code>argv[argc]</code> is a null pointer.</li>
+
+   <li><code>argv[0]</code> through to <code>argv[argc-1]</code> are
+    pointers to strings whose meaning will be determined by the
+    program.</li>
+
+   <li><code>argv[0]</code> will be a string containing the program's name
+    or a null string if that is not available. Remaining elements of
+    <code>argv</code> represent the arguments supplied to the program. In
+    cases where there is only support for single-case characters, the
+    contents of these strings will be supplied to the program in
+    lower-case.</li>
+  </ul>
+
+  <p>To illustrate these points, here is a simple program which writes the
+   arguments supplied to <code>main</code> on the program's standard
+   output.</p>
+
+  <div class="inset-example"><a name="example-1"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+int main(int argc, char **argv)
+{
+        while(argc--)
+                printf(&quot;%s\n&quot;, *argv++);
+        exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;10.1</cite></div>
+
+  <p>If the program name is <code>show_args</code> and it has arguments
+   <code>abcde</code>, <code>text</code>, and <code>hello</code> when it is
+   run, the state of the arguments and the value of <code>argv</code> can be
+   illustrated like this:</p>
+
+  <div class="inset-figure"><a name="figure-1"><img width="400" alt="Diagram showing the relationship between &#39;argc&#39; and &#39;argv&#39;                and the strings that elements of &#39;argv&#39; point to" src="../figures/10.1.png" height="188" /></a><br /><cite>Figure&#160;10.1.&#160;Arguments to a program</cite></div>
+
+  
+  <p>Each time that <code>argv</code> is incremented, it is stepped one item
+   further along the array of arguments. Thus after the first iteration of
+   the loop, <code>argv</code> will point to the pointer which in turn
+   points to the <code>abcde</code> argument.  This is shown in
+   Figure&#160;10.2.</p>
+
+  <div class="inset-figure"><a name="figure-2"><img width="400" alt="Diagram showing the changes to the arrangement in Figure 10.1                after incrementing &#39;argv&#39; so that it points to the next                element in the array of pointers" src="../figures/10.2.png" height="188" /></a><br /><cite>Figure&#160;10.2.&#160;Arguments to a program after incrementing
+    <code>argv</code></cite></div>
+
+  <p>On the system where this program was tested, a program is run by typing
+   its name and then the arguments, separated by spaces. This is what
+   happened (the <code>$</code> is a prompt):</p>
+
+  <pre>
+$ show_args abcde text hello
+show_args
+abcde
+text
+hello
+$</pre>
+
+ <div class="cbook_next_prev"><p><a href="putting_it_together.html">Previous section</a> | <a href="../chapter10/">Chapter contents</a> | <a href="interpreting_program_arguments.html">Next section</a></p></div>
+
+    </main>
+    <nav id="menu" class="Left">
+      
+ 
+  
+  <div class="nav">
+
+	
+	
+			
+			  <div class="nav0">
+				
+				  <a href="/">Publications</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav1">
+				
+				  <a href="/c_book/">The C&nbsp;Book</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/preface/">Preface</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter1/">Introduction</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter2/">Variables &amp; arithmetic</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter3/">Control flow</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter4/">Functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter5/">Arrays &amp; pointers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter6/">Structures</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter7/">Preprocessor</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter8/">Specialized areas</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter9/">Libraries</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter10/">Complete Programs</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter10/putting_it_together.html">Putting it together</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <strong>Arguments to main()</strong>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter10/interpreting_program_arguments.html">Interpreting program arguments</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter10/pattern_matching_example.html">Pattern matching example</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter10/ambitious_example.html">Ambitious example</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter10/afterword.html">Afterword</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/answers/">Answers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/copyright.html">Copyright</a>
+				
+				
+			</div>
+			
+	
+
+</div>
+
+ 
+
+      <div class="ColBtm">
+        <hr />
+<div class="h1"><a href="https://ebusiness.gbdirect.co.uk/contact.html">Contact Us</a></div>
+
+      </div>
+
+    </nav>
+    <aside id="sidebar" class="Right">
+      
+ <div class="box">
+  
+  
+<img src="https://global.gbdirect.co.uk/Themes/printer-friendly-12x12.png" alt="" title="Printer-friendly version of this page" />
+<a href="?format=pf" rel="nofollow">
+  Printer-friendly version
+</a>
+
+ </div>
+
+ <div class="box">
+  <h3>The C Book</h3>
+  
+<p>This book is published as a matter of historical interest.
+ Please read the
+ <a href="/c_book/copyright.html">copyright and disclaimer information</a>.</p>
+
+<p>GBdirect Ltd provides up-to-date training and consultancy in
+ <a href="http://training.gbdirect.co.uk/courses/c/">C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c/real_time_linux_embedded_c_training.html">Embedded C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c++/">C++</a>
+ and a wide range of
+ <a href="http://training.gbdirect.co.uk/courses/">other subjects based on
+ open standards</a> if you happen to be interested.</p>
+
+ </div>
+
+
+    </aside>
+  </div>
+  
+<script type="text/javascript">
+        var maxheight = 0;
+        var a =  Array('main', 'menu', 'sidebar');
+        for(index in a){
+                var name = a[index];
+                // alert(name);
+                var id = document.getElementById(name);
+                if(id){
+                        if(id.offsetHeight > maxheight){
+                                maxheight = id.offsetHeight;
+                        }
+                }
+        }
+        var tabbar = document.getElementById('tabsbar');
+        if(tabbar){
+                if(tabbar.style) tabbar=tabbar.style;
+                tabbar.left = 0+'px';
+                tabbar.top = maxheight+'px';
+        }
+        
+</script>
+</body>
+</html>

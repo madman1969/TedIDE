@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1">
+<title>The C Book &#8212; General Utilities</title>
+<meta property="og:title" content="The C Book &amp;#8212; General Utilities" />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://global.gbdirect.co.uk/Themes/logo-og.png" />
+
+<link rel="SHORTCUT ICON" href="https://global.gbdirect.co.uk/favicon.ico" />
+<link rel="stylesheet" type="text/css" href="https://global.gbdirect.co.uk/Themes/Quarters.css" />
+
+<link rel="prev" href="/c_book/chapter9/random_access_io.html" />
+<link rel="next" href="/c_book/chapter9/string_handling.html" />
+<link rel="contents" href="/c_book/chapter9/" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<!-- order 16-->
+<!-- lastmod 2005-11-10T16:42:02Z-->
+
+
+<link rel="canonical" href="https://publications.gbdirect.co.uk/c_book/chapter9/general_utilities.html"/><meta property="og:url" content="https://publications.gbdirect.co.uk/c_book/chapter9/general_utilities.html" />
+<script type="text/javascript"> var _gaq = _gaq || []; _gaq.push(['_setAccount', 'UA-3566842-1']); _gaq.push(['_setDomainName', '.gbdirect.co.uk']); _gaq.push(['_trackPageview']); (function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = 'https://www.google-analytics.com/ga.js'; var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s); })(); </script>
+</head>
+
+<body>
+  <header class="Banner">
+    <span id="Logo">
+      <a href="https://ebusiness.gbdirect.co.uk">
+        <img src="https://global.gbdirect.co.uk/Themes/gbdirect.gif"
+             alt="GBdirect Homepage"
+             title="GBdirect Homepage" /></a>
+    </span>
+<!-- Original homebrew search
+    <form action="https://global.gbdirect.co.uk/search.cgi"
+          method="get" id="Search">
+      <label for="search_textbox">Search</label>
+      <input type="text" name="query" size="12" id="search_textbox" value="" />
+      <input type="submit" name="Submit" value="Go" />
+    </form>
+-->
+<!-- Google search -->
+    <form class="Search" action="https://www.google.com/cse" id="cse-search-box">
+      <input type="hidden" name="cx" value="010270212093732037646:4pvgkishmkg" />
+      <input type="hidden" name="ie" value="UTF-8" />
+      <label for="search_textbox">Search</label>
+      <input type="text" name="q" id="search_textbox" size="12" />
+      <input type="submit" name="sa" value="Go" />
+    </form>
+    <script type="text/javascript" src="https://www.google.com/cse/brand?form=cse-search-box&amp;lang=en&amp;sitesearch=true"></script>
+<!-- End Google search -->
+  </header>
+  <nav class="Tabsbar"><span class="ThisTab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span> <span class="NoCSS2">| </span> <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/contact.html">Contact</a></span></nav>
+  <div id="container" itemscope itemtype="http://schema.org/WebPage">
+    <meta itemprop="isFamilyFriendly" content="1" />
+    <meta itemprop="inLanguage" content="en" />
+    <nav class="Tabsbar" id="tabsbar" style="position: absolute; width: 100%">
+  
+  
+    <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/">About Us</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://consulting.gbdirect.co.uk/">Consultancy</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://development.gbdirect.co.uk/">Software</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="ThisTab">Publications</span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-source.gbdirect.co.uk/">Open&nbsp;Source</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://software-support.gbdirect.co.uk/">Support</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-standards.gbdirect.co.uk/">Open&nbsp;Standards</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://faq.gbdirect.co.uk/">FAQ</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://jobs.gbdirect.co.uk/">Jobs</a></span>
+  
+
+</nav>
+    <main id="main" >
+	  
+		<nav id="breadcrumb" itemprop="breadcrumb">
+			
+			<a href="https://publications.gbdirect.co.uk/">Publications</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/">The C&nbsp;Book</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/chapter9/">Libraries</a>
+			
+			 &gt; General Utilities
+			
+		</nav>
+		<br />
+	  
+      <h1>9.15. General Utilities</h1>
+      
+      
+
+
+  
+
+  <p>These all involve the use of the header <code>&lt;stdlib.h&gt;</code>,
+   which declares a number of types and macros and several functions of general
+   use.  The types and macros are as follows:</p>
+
+  <dl>
+   <dt><code>size_t</code></dt>
+   <dd>Described at the start of this chapter.</dd>
+
+   <dt><code>div_t</code></dt>
+   <dd>This is the type of the structure returned by <code>div</code>.</dd>
+
+   <dt><code>ldiv_t</code></dt>
+   <dd>This is the type of the structure returned by <code>ldiv</code>.</dd>
+
+   <dt><code>NULL</code></dt>
+   <dd>Again, described at the start of this chapter.</dd>
+
+   <dt><code>EXIT_FAILURE</code></dt>
+   <dt><code>EXIT_SUCCESS</code></dt>
+   <dd>These may be used as arguments to <code>exit</code>.</dd>
+
+   <dt><code>MB_CUR_MAX</code></dt>
+   <dd>The maximum number of bytes in a multibyte character from
+    the extended character set specified by the current locale.</dd>
+
+   <dt><code>RAND_MAX</code></dt>
+   <dd>This is the maximum value returned by the <code>rand</code>
+    function.</dd>
+  </dl>
+
+  <h2><a name="section-1"></a>9.15.1.&#160;String conversion functions</h2>
+   
+
+   <p>Three functions take a string as an argument and convert it to a number
+    of the type shown below:</p>
+
+   <pre>
+#include &lt;stdlib.h&gt;
+
+double atof(const char *nptr);
+long atol(const char *nptr);
+int atoi(const char *nptr);</pre>
+
+   <p>For each of the functions, the number is converted  and  the result
+    returned.   None  of  them  guarantees  to set <code>errno</code> (although
+    they may do  in  some  implementations),  and  the results  of
+    a  conversion  which  overflows  or  cannot  be represented is
+    undefined.</p>
+
+   <p>More sophisticated functions are:</p>
+
+   <pre>
+#include &lt;stdlib.h&gt;
+
+double strtod(const char *nptr, char **endptr);
+long strtol(const char *nptr, char **endptr, int base);
+unsigned long strtoul(const char *nptr,char **endptr, int base);</pre>
+
+   <p>All three functions work in a similar  way.   Leading  white space  is
+    skipped,  then  a <code>subject sequence</code>, resembling an appropriate
+    constant, is found, followed by  a  sequence  of unrecognized  characters.
+    The trailing null at the end of a string is always unrecognized.  The
+    subject sequence can  be empty.  The subject sequences are determined as
+    follows:</p>
+
+   <dl>
+    <dt><code>strtod</code></dt>
+    <dd>Optional <code>+</code> or <code>-</code>, followed by a digit sequence
+     containing an  optional  decimal  point  character,  followed  by an
+     optional  exponent.    No   floating   suffix   will   be recognized.   If
+     there is no decimal point present, it is assumed to follow the digit
+     sequence.</dd>
+
+    <dt><code>strtol</code></dt>
+    <dd>Optional <code>+</code> or <code>-</code>,  followed  by  a  digit
+     sequence.   The digits  are  taken from the decimal digits or an upper or
+     lower case  letter  in  the  range  <code>a</code>&#8211;<code>z</code>
+     of  the  English alphabet;   the   letters  are  given  the  values
+     10&#8211;35 respectively.  The base argument determines which  values are
+     permitted, and may be zero, or otherwise 2&#8211;36.  Only &#8216;digits&#8217;
+     with  a  value  less  than  that  of  <code>base</code>  are recognized.
+     A base of&#160;16 permits the characters <code>0x</code> or
+     <code>0X</code> to follow the optional sign.  A <code>base</code> of
+     zero permits  the input  of characters in the form of a C integer
+     constant.  No integer suffix will be recognized.</dd>
+
+    <dt><code>strtoul</code></dt>
+    <dd>Identical to <code>strtol</code> but with no sign permitted.</dd>
+   </dl>
+
+   <p>If <code>endptr</code> is non-null, the address of the first unrecognized
+    character is stored in the object that it points to.  If the subject
+    sequence is empty or has the wrong form, this is the value of
+    <code>nptr</code>.</p>
+
+   <p>If a conversion can be performed, the functions convert  the number  and
+    return its value, taking into account a leading sign where  permitted.
+    Otherwise  they  return  zero.   On overflow or error the action is as
+    follows:</p>
+
+   <dl>
+    <dt><code>strtod</code></dt>
+    <dd>On overflow, returns &#177;<code>HUGE_VAL</code> according to the
+     sign  of the  result; on underflow, returns zero.  In either case,
+     <code>errno</code> is set to <code>ERANGE</code>.</dd>
+
+    <dt><code>strtol</code></dt>
+    <dd>On overflow, <code>LONG_MAX</code> or <code>LONG_MIN</code> is
+     returned  according to the sign of the result, <code>errno</code> is set
+     to <code>ERANGE</code>.</dd>
+
+    <dt><code>strtoul</code></dt>
+    <dd>On overflow, <code>ULONG_MAX</code>  is  returned,  <code>errno</code>
+     is  set  to <code>ERANGE</code>.</dd>
+   </dl>
+
+   <p>If the locale is not the &quot;C&quot;  locale,  there  may  be  other subject
+    sequences    recognised    depending    on    the implementation.</p>
+
+  
+
+  <h2><a name="section-2"></a>9.15.2.&#160;Random number generation</h2>
+   
+
+   <p>Provision for pseudo-random number generation is made by the
+    following functions.</p>
+
+   <pre>
+#include &lt;stdlib.h&gt;
+
+int rand(void);
+void srand(unsigned int seed);</pre>
+
+   <p><code>Rand</code> returns a  pseudo-random  number  in  the  range
+    <code>0</code>  to <code>RAND_MAX</code>, which has a value of at least
+    <code>32767</code>.</p>
+
+   <p><code>Srand</code> allows a given starting point in the  sequence  to  be
+    chosen  according  to  the  value  of <code>seed</code>.  If
+    <code>srand</code> is not called before <code>rand</code>, the value of the
+    <code>seed</code> is taken to be  <code>1</code>.  The  same  sequence  of
+    values will always be returned from <code>rand</code> for a given value of
+    seed.</p>
+
+   <p>The Standard describes an algorithm which  may  be  used  to implement
+    <code>rand</code> and <code>srand</code>.  In practice, most
+    implementations will probably use this algorithm.</p>
+
+  
+
+  <h2><a name="section-3"></a>9.15.3.&#160;Memory allocation</h2>
+   
+
+   <p>These functions are used to allocate and free storage.  The storage so
+    obtained is only guaranteed to be large enough to store an object of the
+    specified type and aligned appropriately so as not to cause addressing
+    exceptions.  No further assumptions can be made.</p>
+
+   <pre>
+#include &lt;stdlib.h&gt;
+
+void *malloc(size_t size);
+void *calloc(size_t nmemb, size_t size);
+void *realloc(void *ptr, size_t size);
+
+void *free(void *ptr);</pre>
+
+   <p>All of the memory allocation functions return a  pointer  to allocated
+    storage  of size <code>size</code> bytes.  If there is no free storage,
+    they  return  a  null  pointer.   The  differences between  them  are that
+    calloc takes an argument <code>nmemb</code> which specifies the number of
+    elements in an array, each of  whose members  is  <code>size</code>  bytes,
+    and so allocates a larger piece of store (in general) than
+    <code>malloc</code>.  Also, the  store  allocated by  <code>malloc</code>
+    is not initialized, whereas <code>calloc</code> sets all bits in the
+    storage  to  zero.   This  is  not  necessarily  the equivalent
+    representation  of  floating-point  zero, or the null pointer.</p>
+
+   <p><code>Realloc</code> is used to change the size of the thing  pointed  to
+    by  <code>ptr</code>,  which  may require some copying to be done and the
+    old storage freed.  The contents of the object pointed to by ptr  is
+    unchanged  up to the smaller of the old and the new sizes.  If
+    <code>ptr</code> is null, the behaviour is identical to <code>malloc</code>
+    with the appropriate size.</p>
+
+   <p><code>Free</code> is used to free space previously obtained with  one  of
+    the  allocation  routines.  It is permissible to give <code>free</code>
+    a null pointer as the argument, in which case nothing is done.</p>
+
+   <p>If an  attempt  is  made  to  free  store  which  was  never allocated,
+    or  has  already  been  freed,  the behaviour is undefined.  In many
+    environments this causes  an  addressing exception  which  aborts  the
+    program,  but  this  is not a reliable indicator.</p>
+
+  
+
+  <h2><a name="section-4"></a>9.15.4.&#160;Communication with the environment</h2>
+   
+
+   <p>A miscellany of functions is found here.</p>
+
+   <pre>
+#include &lt;stdlib.h&gt;
+
+void abort(void);
+int atexit(void (*func)(void));
+void exit(int status);
+char *getenv(const char *name);
+int system(const char *string);</pre>
+
+   <dl>
+    <dt><code>abort</code></dt>
+    <dd>Causes abnormal program termination to occur, by  raising
+     the   <code>SIGABRT</code>   signal.   Abnormal  termination  is  only
+     prevented if the signal is being caught, and  the  signal
+     handler  does not return.  Otherwise, output files may be
+     flushed and temporary files may be removed  according  to
+     implementation    definition,    and   an   &#8216;unsuccessful
+     termination&#8217; status returned  to  the  host  environment.
+     This function cannot return.</dd>
+
+    <dt><code>atexit</code></dt>
+    <dd>The argument  <code>func</code>  becomes  a  function  to  be  called,
+     without arguments, when the program terminates.  Up to at
+     least 32 such functions may be registered, and are called
+     on   program   termination  in  reverse  order  of  their
+     registration.  Zero is returned for success, non-zero for
+     failure.</dd>
+
+    <dt><code>exit</code></dt>
+    <dd>Normal program termination occurs when  this  is  called.
+     First,  all  of the functions registered using <code>atexit</code> are
+     called, but beware&#8212;by now, <code>main</code> is considered  to  have
+     returned  and  <em>no</em> objects with automatic storage duration
+     may safely be used.  Then, all the  open  output  streams
+     are flushed, then closed, and all temporary files created
+     by <code>tmpfile</code> are removed.   Finally,  the  program  returns
+     control   to   the   host   environment,   returning   an
+     implementation-defined form of successful or unsuccessful
+     termination status depending on whether the argument to <code>exit</code>
+     was <code>EXITSUCCESS</code> or <code>EXIT FAILURE</code> respectively.
+     For compatibility  with  Old&#160;C, zero can be used in place of
+     EXITSUCCESS,  but  other  values  have
+     implementation-defined effects.  Exit <em>cannot</em> return.</dd>
+
+    <dt><code>getenv</code></dt>
+    <dd>
+     <p>The implementation-defined <dfn>environment list</dfn>  is  searched
+      to  find  an item which corresponds to the string pointed
+      to by name.  A pointer to  the  item  is  returned&#8212;it
+      points  to  an  array  which  must not be modified by the
+      program, but may be overwritten by a subsequent  call  to
+      getenv.  A null pointer is returned if no item matches.</p>
+
+     <p>The purpose and implementation of  the  environment  list
+      depends on the host environment.</p>
+    </dd>
+
+    <dt><code>system</code></dt>
+    <dd>An implementation-defined command processor is passed the
+     string  string.   A  null  pointer will cause a return of
+     zero if no command processor exists, non-zero  otherwise.
+     A  non-null  pointer  causes the command to be processed.
+     The effect of the command  and  the  value  returned  are
+     implementation defined.</dd>
+   </dl>
+
+  
+
+  <h2><a name="section-5"></a>9.15.5.&#160;Searching and sorting</h2>
+   
+
+   <p>Two functions exist in this category: one for searching an already sorted
+    list, the other for sorting an unsorted list.  They are completely general,
+    handling arrays of arbitrary size with elements of arbitrary size.</p>
+
+   <p>To enable them to compare two elements, the user provides a comparison
+    function, which is called with pointers to two of the elements as its
+    arguments.  It returns a value less than, equal to or greater than zero
+    depending on whether the first pointer points to an element considered to
+    be less than, equal to or greater than the object pointed to by the second
+    pointer, respectively.</p>
+
+   <pre>
+#include &lt;stdlib.h&gt;
+
+void *bsearch(const void *key, const void *base,
+        size_t nmemb, size_t size,
+        int (*compar)(const void *, const void *));
+
+void *qsort(const void *base, size_t nmemb,
+        size_t size,
+        int (*compar)(const void *, const void *));</pre>
+
+   <p>For both functions, <code>nmemb</code> is the number of elements  in  the
+    array,  <code>size</code>  is  the  size in bytes of an array element and
+    <code>compar</code> is the function to be called to compare  them.
+    <code>Base</code> is a pointer to the base of the array.</p>
+
+   <p><code>Qsort</code> will sort the array into ascending order.</p>
+
+   <p><code>Bsearch</code> assumes that the array is already sorted and returns
+    a pointer to any element it finds that compares equal to the object pointed
+    to by <code>key</code>.  A null pointer is returned if  no match is
+    found.</p>
+
+  
+
+  <h2><a name="section-6"></a>9.15.6.&#160;Integer arithmetic functions</h2>
+   
+
+   <p>These provide ways of finding the absolute value of an integral argument
+    and the quotient and remainder of a division, for both <code>int</code> and
+    <code>long</code> types.</p>
+
+   <pre>
+#include &lt;stdlib.h&gt;
+
+int abs(int j);
+long labs(long j);
+
+div_t div(int numerator, int denominator);
+ldiv_t ldiv(long numerator, long denominator);</pre>
+
+   <dl>
+    <dt><code>abs</code></dt>
+    <dt><code>labs</code></dt>
+    <dd>These return the  absolute  value  of  their  argument&#8212;choose the
+     appropriate one for your needs.  The behaviour is undefined if the value
+     cannot be  represented&#8212;this can  happen  in  two's  complement
+     systems where the most negative number has no positive equivalent.</dd>
+
+    <dt><code>div</code></dt>
+    <dt><code>ldiv</code></dt>
+    <dd>These divide the <code>numerator</code> by the <code>denominator</code>
+     and  return a  structure  of  the  indicated  type.  In each case the
+     structure  will  contain  a  member  called <code>quot</code>   which
+     contains  the  quotient of the division truncated towards zero, and
+     a member called  rem  which  will  contain  the remainder.   The  type  of
+     each member is <code>int</code> for <code>div</code> and <code>long</code>
+     for  <code>ldiv</code>.   Provided  that  the  result  could  be
+     represented, <code>quot*denominator+rem == numerator</code>.</dd>
+   </dl>
+
+  
+
+  <h2><a name="section-7"></a>9.15.7.&#160;Functions using multibyte characters</h2>
+   
+
+   <p>The <code>LC_CTYPE</code> category of the current locale affects the
+    behaviour of these functions. For an encoding that is state-dependent, each
+    function is put in its initial state by a call in which its character
+    pointer argument, <code>s</code>, is a null pointer. The internal state of
+    the function is altered as necessary by subsequent calls when s is not
+    a null pointer.  If <code>s</code> is a null pointer, the functions return
+    a non-zero value if encodings are state-dependent, otherwise zero. If the
+    <code>LC_CTYPE</code> category is changed, the shift state of the functions
+    will become indeterminate.</p>
+
+   <p>The functions are:</p>
+
+   <pre>
+#include &lt;stdlib.h&gt;
+
+int mblen(const char *s, size_t n);
+int mbtowc(wchar_t *pwc, const char *s, size_t n);
+int wctomb(char *s, wchar_t wchar);
+size_t mbstowcs(wchar_t *pwcs, const char *s, size_t n);
+size_t wcstombs(char *s, const wchar_t *pwcs, size_t n);</pre>
+
+   <dl>
+    <dt><code>mblen</code></dt>
+    <dd>Returns the number of bytes that  are  contained  in  the multibyte
+     character pointed to by <code>s</code>, or &#8722;1 if the first
+     <code>n</code> bytes do not form a  valid  multibyte  character.   If
+     s points to the null character, zero is returned.</dd>
+
+    <dt><code>mbtowc</code></dt>
+    <dd>Converts the multibyte character pointed to by s  to  the corresponding
+     code of type <code>wchar_t</code> and stores the result in the object
+     pointed to by <code>pwc</code>, unless  <code>pwc</code>  is  a  null
+     pointer.    Returns  the  number  of  bytes  successfully converted, or
+     &#8722;1 if the first <code>n</code> bytes do not form a valid
+     multibye character.  No more than <code>n</code> bytes pointed to by
+     <code>s</code> are examined.  The value returned will not be more than
+     <code>n</code> or <code>MB_CUR_MAX</code>.</dd>
+
+    <dt><code>wctomb</code></dt> <dd>Converts the code whose value is in
+     <code>wchar</code> to  a  sequence of   bytes   representing   the
+     corresponding  multibyte character, and stores the result in the array
+     pointed  to by  s, if s is not a null pointer.  Returns the number of
+     bytes that are contained in the multibyte character, or &#8722;1 if the
+     value in wchar does not correspond to a valid multibyte  character.  At
+     most, MB_CUR_MAX  bytes  are processed.</dd>
+
+    <dt><code>mbstowcs</code></dt>
+    <dd>
+     <p>Converts the sequence of multibyte characters,  beginning in the
+      initial shift state, in the array pointed to by <code>s</code>, into
+      a sequence of corresponding  codes  which  are  then stored  in  the
+      array pointed to by <code>pwcs</code>. Not more than n values will be
+      placed in pwcs.  Returns &#8722;1 if an  invalid multibyte
+      character is encountered, otherwise returns the number  of  array
+      elements   modified,   excluding   the terminating null-code.</p>
+
+     <p>If the two objects overlap, the behaviour is undefined.</p>
+    </dd>
+
+    <dt><code>wcstombs</code></dt>
+    <dd>
+     <p>Converts the sequence of codes pointed to by  <code>pwcs</code>  to
+      a sequence   of  multibyte  characters,  beginning  in  the initial shift
+      state, which are then stored in  the  array pointed to by <code>s</code>.
+      Conversion stops when either a null-code is encountered  or
+      <code>n</code>  bytes  have  been  written  to  <code>s</code>.  Returns
+      &#8722;1  if  a  code  is  encountered  which does not correspond
+      to a valid multibyte character, otherwise  the number  of bytes written,
+      excluding the terminating null-code.</p>
+
+     <p>If the two objects overlap, the behaviour is undefined.</p>
+    </dd>
+   </dl>
+
+  
+
+ <div class="cbook_next_prev"><p><a href="random_access_io.html">Previous section</a> | <a href="../chapter9/">Chapter contents</a> | <a href="string_handling.html">Next section</a></p></div>
+
+    </main>
+    <nav id="menu" class="Left">
+      
+ 
+  
+  <div class="nav">
+
+	
+	
+			
+			  <div class="nav0">
+				
+				  <a href="/">Publications</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav1">
+				
+				  <a href="/c_book/">The C&nbsp;Book</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/preface/">Preface</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter1/">Introduction</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter2/">Variables &amp; arithmetic</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter3/">Control flow</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter4/">Functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter5/">Arrays &amp; pointers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter6/">Structures</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter7/">Preprocessor</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter8/">Specialized areas</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter9/">Libraries</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/introduction.html">Introduction</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/diagnostics.html">Diagnostics</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/character_handling.html">Character handling</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/localization.html">Localization</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/limits.html">Limits</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/maths_functions.html">Maths functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/nonlocal_jumps.html">Non-local jumps</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/signal_handling.html">Signal handling</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/stdarg.html">Stdarg</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/input_and_output.html">Input &amp; output</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/formatted_io.html">Formatted I/O</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/character_io.html">Character I/O</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/unformatted_io.html">Unformatted I/O</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/random_access_io.html">Random access I/O</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <strong>General Utilities</strong>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/string_handling.html">String handling</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/date_and_time.html">Date and time</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/summary.html">Summary</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter10/">Complete Programs</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/answers/">Answers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/copyright.html">Copyright</a>
+				
+				
+			</div>
+			
+	
+
+</div>
+
+ 
+
+      <div class="ColBtm">
+        <hr />
+<div class="h1"><a href="https://ebusiness.gbdirect.co.uk/contact.html">Contact Us</a></div>
+
+      </div>
+
+    </nav>
+    <aside id="sidebar" class="Right">
+      
+ <div class="box">
+  
+  
+<img src="https://global.gbdirect.co.uk/Themes/printer-friendly-12x12.png" alt="" title="Printer-friendly version of this page" />
+<a href="?format=pf" rel="nofollow">
+  Printer-friendly version
+</a>
+
+ </div>
+
+ <div class="box">
+  <h3>The C Book</h3>
+  
+<p>This book is published as a matter of historical interest.
+ Please read the
+ <a href="/c_book/copyright.html">copyright and disclaimer information</a>.</p>
+
+<p>GBdirect Ltd provides up-to-date training and consultancy in
+ <a href="http://training.gbdirect.co.uk/courses/c/">C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c/real_time_linux_embedded_c_training.html">Embedded C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c++/">C++</a>
+ and a wide range of
+ <a href="http://training.gbdirect.co.uk/courses/">other subjects based on
+ open standards</a> if you happen to be interested.</p>
+
+ </div>
+
+
+    </aside>
+  </div>
+  
+<script type="text/javascript">
+        var maxheight = 0;
+        var a =  Array('main', 'menu', 'sidebar');
+        for(index in a){
+                var name = a[index];
+                // alert(name);
+                var id = document.getElementById(name);
+                if(id){
+                        if(id.offsetHeight > maxheight){
+                                maxheight = id.offsetHeight;
+                        }
+                }
+        }
+        var tabbar = document.getElementById('tabsbar');
+        if(tabbar){
+                if(tabbar.style) tabbar=tabbar.style;
+                tabbar.left = 0+'px';
+                tabbar.top = maxheight+'px';
+        }
+        
+</script>
+</body>
+</html>

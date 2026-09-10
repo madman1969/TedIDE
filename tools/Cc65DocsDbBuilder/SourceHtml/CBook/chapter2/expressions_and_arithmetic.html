@@ -1,0 +1,1726 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1">
+<title>The C Book &#8212; Expressions and arithmetic</title>
+<meta property="og:title" content="The C Book &amp;#8212; Expressions and arithmetic" />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://global.gbdirect.co.uk/Themes/logo-og.png" />
+
+<link rel="SHORTCUT ICON" href="https://global.gbdirect.co.uk/favicon.ico" />
+<link rel="stylesheet" type="text/css" href="https://global.gbdirect.co.uk/Themes/Quarters.css" />
+
+<link rel="prev" href="/c_book/chapter2/integral_types.html" />
+<link rel="next" href="/c_book/chapter2/constants.html" />
+<link rel="contents" href="/c_book/chapter2/" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<!-- order 9-->
+<!-- lastmod 2005-11-10T16:42:03Z-->
+
+
+<link rel="canonical" href="https://publications.gbdirect.co.uk/c_book/chapter2/expressions_and_arithmetic.html"/><meta property="og:url" content="https://publications.gbdirect.co.uk/c_book/chapter2/expressions_and_arithmetic.html" />
+<script type="text/javascript"> var _gaq = _gaq || []; _gaq.push(['_setAccount', 'UA-3566842-1']); _gaq.push(['_setDomainName', '.gbdirect.co.uk']); _gaq.push(['_trackPageview']); (function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = 'https://www.google-analytics.com/ga.js'; var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s); })(); </script>
+</head>
+
+<body>
+  <header class="Banner">
+    <span id="Logo">
+      <a href="https://ebusiness.gbdirect.co.uk">
+        <img src="https://global.gbdirect.co.uk/Themes/gbdirect.gif"
+             alt="GBdirect Homepage"
+             title="GBdirect Homepage" /></a>
+    </span>
+<!-- Original homebrew search
+    <form action="https://global.gbdirect.co.uk/search.cgi"
+          method="get" id="Search">
+      <label for="search_textbox">Search</label>
+      <input type="text" name="query" size="12" id="search_textbox" value="" />
+      <input type="submit" name="Submit" value="Go" />
+    </form>
+-->
+<!-- Google search -->
+    <form class="Search" action="https://www.google.com/cse" id="cse-search-box">
+      <input type="hidden" name="cx" value="010270212093732037646:4pvgkishmkg" />
+      <input type="hidden" name="ie" value="UTF-8" />
+      <label for="search_textbox">Search</label>
+      <input type="text" name="q" id="search_textbox" size="12" />
+      <input type="submit" name="sa" value="Go" />
+    </form>
+    <script type="text/javascript" src="https://www.google.com/cse/brand?form=cse-search-box&amp;lang=en&amp;sitesearch=true"></script>
+<!-- End Google search -->
+  </header>
+  <nav class="Tabsbar"><span class="ThisTab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span> <span class="NoCSS2">| </span> <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/contact.html">Contact</a></span></nav>
+  <div id="container" itemscope itemtype="http://schema.org/WebPage">
+    <meta itemprop="isFamilyFriendly" content="1" />
+    <meta itemprop="inLanguage" content="en" />
+    <nav class="Tabsbar" id="tabsbar" style="position: absolute; width: 100%">
+  
+  
+    <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/">About Us</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://consulting.gbdirect.co.uk/">Consultancy</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://development.gbdirect.co.uk/">Software</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="ThisTab">Publications</span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-source.gbdirect.co.uk/">Open&nbsp;Source</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://software-support.gbdirect.co.uk/">Support</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-standards.gbdirect.co.uk/">Open&nbsp;Standards</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://faq.gbdirect.co.uk/">FAQ</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://jobs.gbdirect.co.uk/">Jobs</a></span>
+  
+
+</nav>
+    <main id="main" >
+	  
+		<nav id="breadcrumb" itemprop="breadcrumb">
+			
+			<a href="https://publications.gbdirect.co.uk/">Publications</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/">The C&nbsp;Book</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/chapter2/">Variables &amp; arithmetic</a>
+			
+			 &gt; Expressions &amp; arithmetic
+			
+		</nav>
+		<br />
+	  
+      <h1>2.8. Expressions and arithmetic</h1>
+      
+      
+
+
+  
+
+  <p>Expressions in C can get rather complicated because of the number of
+   different types and operators that can be mixed together. This section
+   explains what happens, but can get deep at times. You may need to re-read
+   it once or twice to make sure that you have understood all of the
+   points.</p>
+
+  <p>First, a bit of terminology. Expressions in&#160;C are built from
+   combinations of <dfn>operators</dfn> and <dfn>operands</dfn>, so for
+   example in this expression</p>
+
+  <pre>
+x = a+b*(-c)</pre>
+
+  <p>we have the operators&#160;<code>=</code>, <code>+</code> <code>*</code>
+   and&#160;<code>-</code>. The operands are the
+   variables&#160;<code>x</code>, <code>a</code>, <code>b</code>
+   and&#160;<code>c</code>. You will also have noticed that parentheses can be
+   used for grouping sub-expressions such as the&#160;<code>-c</code>. Most of
+   C's unusually rich set of operators are either <dfn>binary operators</dfn>,
+   which take two operands, or <dfn>unary operators</dfn>, which take only
+   one. In the example, the&#160;<code>-</code> was being used as a unary
+   operator, and is performing a different task from the binary subtraction
+   operator which uses the same&#160;<code>-</code> symbol. It may seem like
+   hair-splitting to argue that they are different operators when the job that
+   they do seems conceptually the same, or at least similar. It's worth doing
+   though, because, as you will find later, some of the operators have both a
+   binary and a unary form where the two meanings bear no relation to each
+   other; a good example would be the binary multiplication
+   operator&#160;<code>*</code>, which in its unary form means indirection via
+   a pointer variable!</p>
+
+  <p>A peculiarity of C is that operators may appear consecutively in
+   expressions without the need for parentheses to separate them. The previous
+   example could have been written as</p>
+
+  <pre>
+x = a+b*-c;</pre>
+
+  <p>and still have been a valid expression. Because of the number of
+   operators that C has, and because of the strange way that assignment works,
+   the <dfn>precedence</dfn> of the operators (and their
+   <dfn>associativity</dfn>) is of much greater importance to the
+   C&#160;programmer than in most other languages. It will be discussed fully
+   after the introduction of the important arithmetic operators.</p>
+
+  <p>Before that, we must investigate the type conversions that may occur.</p>
+
+  <h2><a name="section-1"></a>2.8.1.&#160;Conversions</h2>
+   
+
+   <p>C allows types to be mixed in expressions, and permits operations that
+    result in type conversions happening implicitly. This section describes
+    the way that the conversions must occur. Old C programmers should read
+    this carefully, because the rules have changed &#8212; in particular, the
+    promotion of <code>float</code> to <code>double</code>, the promotions of
+    short integral types and the introduction of <dfn>value preserving</dfn>
+    rules are genuinely different in Standard&#160;C.</p>
+
+   <p>Although it isn't directly relevant at the moment, we must note that the
+    integral and the floating types are jointly known as <dfn>arithmetic
+    types</dfn> and that C also supports other types (notably pointer types).
+    The rules that we discuss here are appropriate only in expressions that
+    have arithmetic types throughout - additional rules come into play when
+    expressions mix pointer types with arithmetic types and these are
+    discussed much later.</p>
+
+   <p>There are various types of conversion in arithmetic expressions:</p>
+
+   <ul>
+    <li>The <dfn>integral promotions</dfn></li>
+    <li>Conversions between integral types</li>
+    <li>Conversions between floating types</li>
+    <li>Conversions between floating and integral types</li>
+   </ul>
+
+   <p>Conversions between floating (real) types were discussed in <a href="../chapter2/expressions_and_arithmetic.html">Section&#160;2.8</a>; what we do next is to specify how the other conversions are
+    to be performed, then look at <em>when</em> they are required. You will
+    need to learn them by heart if you ever intend to program seriously
+    in&#160;C.</p>
+
+   <p>The Standard has, among some controversy, introduced what are known as
+    <dfn>value preserving</dfn> rules, where a knowledge of the target
+    computer is required to work out what the type of an expression will be.
+    Previously, whenever an unsigned type occurred in an expression, you knew
+    that the result had to be <code>unsigned</code> too. Now, the result will
+    only be <code>unsigned</code> if the conversions demand it; in many cases
+    the result will be an ordinary <code>signed</code> type.</p>
+
+   <p>The reason for the change was to reduce some of the surprises possible
+    when you mix signed and unsigned quantities together; it isn't always
+    obvious when this has happened and the intention is to produce the
+    &#8216;more commonly required&#8217; result.</p>
+
+   <h3><a name="section-1.1"></a>2.8.1.1.&#160;Integral promotions</h3>
+    
+
+    <p>No arithmetic is done by C at a precision shorter than
+     <code>int</code>, so these conversions are implied almost whenever you
+     use one of the objects listed below in an expression. The conversion is
+     defined as follows:</p>
+
+    <ul>
+     <li>Whenever a <code>short</code> or a <code>char</code> (or a
+      <dfn>bitfield</dfn> or <dfn>enumeration type</dfn> which we haven't met
+      yet) has the integral promotions applied
+      <ul>
+       <li>if an <code>int</code> can hold all of the values of the original
+        type then the value is converted to <code>int</code></li>
+       <li>otherwise, the conversion will be to <code>unsigned int</code></li>
+      </ul>
+     </li>
+    </ul>
+
+    <p>This preserves both the value and the sign of the original type. Note
+     that whether a plain <code>char</code> is treated as signed or unsigned
+     is implementation dependent.</p>
+
+    <p>These promotions are applied very often&#8212;they are applied as part
+     of the <dfn>usual arithmetic conversions</dfn>, and to the operands of
+     the shift, unary&#160;<code>+</code>, <code>-</code>, and <code>~</code>
+     operators. They are also applied when the expression in question is an
+     argument to a function but no type information has been provided as part
+     of a function prototype, as explained in <a href="../chapter4/">Chapter&#160;4</a>.</p>
+
+   
+
+   <h3><a name="section-1.2"></a>2.8.1.2.&#160;Signed and unsigned integers</h3>
+    
+
+    <p>A lot of conversions between different types of integers are caused by
+     mixing the various flavours of integers in expressions. Whenever these
+     happen, the integral promotions will already have been done. For all of
+     them, if the new type can hold all of the values of the old type, then
+     the value remains unchanged.</p>
+
+    <p>When converting from a signed integer to an unsigned integer whose
+     length is equal to or longer than the original type, then if the signed
+     value was nonnegative, its value is unchanged. If the value was negative,
+     then it is converted to the signed form of the longer type and then made
+     unsigned by conceptually adding it to one greater than the maximum that
+     can be held in the unsigned type. In a twos complement system, this
+     preserves the original bit-pattern for positive numbers and guarantees
+     &#8216;sign-extension&#8217; of negative numbers.</p>
+
+    <p>Whenever an integer is converted into a shorter unsigned type, there
+     can be no &#8216;overflow&#8217;, so the result is defined to be &#8216;the
+     non-negative remainder on division by the number one greater than the
+     largest unsigned number that can be represented in the shorter type&#8217;.
+     That simply means that in a two's complement environment the low-order
+     bits are copied into the destination and the high-order ones
+     discarded.</p>
+
+    <p>Converting an integer to a shorter signed type runs into trouble if
+     there is not enough room to hold the value. In that case, the result is
+     implementation defined (although most old-timers would expect that simply
+     the low-order bit pattern is copied).</p>
+
+    <p>That last item could be a bit worrying if you remember the integral
+     promotions, because you might interpret it as follows&#8212;if I assign
+     a <code>char</code> to another <code>char</code>, then the one on the
+     right is first promoted to one of the kinds of <code>int</code>; could
+     doing the assignment result in converting (say) an <code>int</code> to a
+     char and provoking the &#8216;implementation defined&#8217; clause? The answer
+     is no, because assignment is specified not to involve the integral
+     promotions, so you are safe.</p>
+
+   
+
+   <h3><a name="section-1.3"></a>2.8.1.3.&#160;Floating and integral</h3>
+    
+
+    <p>Converting a floating to an integral type simply throws away any
+     fractional part. If the integral type can't hold the value that is left,
+     then the behaviour is undefined&#8212;this is a sort of overflow.</p>
+
+    <p>As has already been said, going up the scale from <code>float</code> to
+     <code>double</code> to <code>long double</code>, there is no problem with
+     conversions&#8212;each higher one in the list can hold all the values of
+     the lower ones, so the conversion occurs with no loss of information.</p>
+
+    <p>Converting in the opposite direction, if the value is outside the range
+     that can be held, the behaviour is undefined. If the value <em>is</em> in
+     range, but can't be held exactly, then the result is one of the two
+     nearest values that <em>can</em> be held, chosen in a way that the
+     implementation defines. This means that there will be a loss of
+     precision.</p>
+
+   
+
+   <h3><a name="section-1.4"></a>2.8.1.4.&#160;The usual arithmetic conversions</h3>
+    
+
+    <p>A lot of expressions involve the use of subexpressions of mixed types
+     together with operators such as&#160;<code>+</code>, <code>*</code> and
+     so on. If the operands in an expression have different types, then there
+     will have to be a conversion applied so that a common resulting type can
+     be established; these are the conversions:</p>
+
+    <ul>
+     <li>If either operand is a <code>long double</code>, then the other one
+      is converted to <code>long double</code> and that is the type of the
+      result.</li>
+
+     <li>Otherwise, if either operand is a <code>double</code>, then the other
+      one is converted to <code>double</code>, and that is the type of the
+      result.</li>
+
+     <li>Otherwise, if either operand is a <code>float</code>, then the other
+      one is converted to <code>float</code>, and that is the type of the
+      result.</li>
+
+     <li>Otherwise the integral promotions are applied to both operands and
+      the following conversions are applied:
+
+      <ul>
+       <li>If either operand is an <code>unsigned long int</code>, then the
+        other one is converted to <code>unsigned long int</code>, and that is
+        the type of the result.</li>
+
+       <li>Otherwise, if either operand is a <code>long int</code>, then the
+        other one is converted to <code>long int</code>, and that is the type
+        of the result.</li>
+
+       <li>Otherwise, if either operand is an <code>unsigned int</code>, then
+        the other one is converted to <code>unsigned int</code>, and that is
+        the type of the result.</li>
+
+       <li>Otherwise, both operands must be of type <code>int</code>, so that
+        is the type of the result.</li>
+      </ul>
+     </li>
+    </ul>
+
+    <p>The Standard contains a strange sentence: &#8216;The values of floating
+     operands and of the results of floating expressions may be represented in
+     greater precision and range than that required by the type; the types are
+     not changed thereby&#8217;. This is in fact to allow the Old&#160;C
+     treatment of <code>floats</code>. In Old&#160;C, <code>float</code>
+     variables were automatically promoted to <code>double</code>, the way
+     that the integral promotions promote <code>char</code> to
+     <code>int</code>. So, an expression involving purely <code>float</code>
+     variables may be done as if they were <code>double</code>, but the type
+     of the result must appear to be <code>float</code>. The only effect is
+     likely to be on performance and is not particularly important to most
+     users.</p>
+
+    <p>Whether or not conversions need to be applied, and if so which ones, is
+     discussed at the point where each operator is introduced.</p>
+
+    <p>In general, the type conversions and type mixing rules don't cause a
+     lot of trouble, but there is one pitfall to watch out for. Mixing signed
+     and unsigned quantities is fine until the signed number is negative; then
+     its value can't be represented in an unsigned variable and something has
+     to happen. The standard says that to convert a negative number to
+     unsigned, the largest possible number that can be held in the unsigned
+     plus one is added to the negative number; that is the result. Because
+     there can be no overflow in an unsigned type, the result always has a
+     defined value. Taking a 16-bit <code>int</code> for an example, the
+     unsigned version has a range of 0&#8211;65535. Converting a signed value
+     of&#160;-7 to this type involves adding&#160;65536, resulting
+     in&#160;65529. What is happening is that the Standard is enshrining
+     previous practice, where the bit pattern in the signed number is simply
+     assigned to the unsigned number; the description in the standard is
+     exactly what would happen if you did perform the bit pattern assignment
+     on a two's complement computer. The one's complement implementations are
+     going to have to do some real work to get the same result.</p>
+
+    <p>Putting it plainly, a small magnitude negative number will result in a
+     large positive number when converted to unsigned. If you don't like it,
+     suggest a better solution&#8212;it is plainly a mistake to try to assign
+     a negative number to an unsigned variable, so it's your own fault.</p>
+
+    <p>Well, it's easy to say &#8216;don't do it&#8217;, but it can happen by
+     accident and the results can be <em>very</em> surprising. Look at this
+     example.</p>
+
+    <div class="inset-example"><a name="example-7"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+main(){
+      int i;
+      unsigned int stop_val;
+
+      stop_val = 0;
+      i = -10;
+
+      while(i &lt;= stop_val){
+              printf(&quot;%d\n&quot;, i);
+              i = i + 1;
+      }
+      exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;2.7</cite></div>
+
+    <p>You might expect that to print out the list of values
+     from&#160;<code>-10</code> to&#160;<code>0</code>, but it won't. The
+     problem is in the comparison. The variable&#160;<code>i</code>, with a
+     value of&#160;<code>-10</code>, is being compared against an
+     unsigned&#160;<code>0</code>. By the rules of arithmetic (check them) we
+     must convert both types to <code>unsigned int</code> first, then make the
+     comparison. The&#160;<code>-10</code> becomes at
+     least&#160;<code>65526</code> (see <code>&lt;limits.h&gt;</code>) when
+     it's converted, and is plainly somewhat larger than&#160;<code>0</code>,
+     so the loop is never executed. The moral is to steer clear of unsigned
+     numbers unless you really have to use them, and to be perpetually on
+     guard when they are mixed with signed numbers.</p>
+
+   
+
+   <h3><a name="section-1.5"></a>2.8.1.5.&#160;Wide characters</h3>
+    
+
+    <p>The Standard, as we've already said, now makes allowances for extended
+     character sets. You can either use the shift-in shift-out encoding method
+     which allows the multibyte charactes to be stored in ordinary C strings
+     (which are really arrays of <code>chars</code>, as we explore later), or
+     you can use a representation that uses more than one byte of storage per
+     character for every character. The use of shift sequences only works if
+     you process the characters in strict order; it is next to useless if you
+     want to create an array of characters and access them in non-sequential
+     order, since the actual index of each <code>char</code> in the array and
+     the logical index of each of the encoded characters are not easily
+     determined. Here's the illustration we used before, annotated with the
+     actual and the logical array indexes:</p>
+
+    <pre>
+0 1 2  3   4 5 6  7   8 9 (actual array index)
+a b c &lt;SI&gt; a b g &lt;SO&gt; x y
+0 1 2      3 4 5      6 7 (logical index)</pre>
+
+    <p>We're still in trouble even if we do manage to use the index
+     of&#160;<code>5</code> to access the &#8216;correct&#8217; array entry, since
+     the value retrieved is indistinguishable from the value that encodes the
+     letter&#160;&#8216;<code>g</code>&#8217; anyhow. Clearly, a better approach for
+     this sort of thing is to come up with a distinct value for all of the
+     characters in the character set we are using, which may involve more bits
+     than will fit into a char, and to be able to store each one as a separate
+     item without the use of shifts or other position-dependent techniques.
+     That is what the <code>wchar_t</code> type is for.</p>
+
+    <p>Although it is always a synonym for one of the other integral types,
+     <code>wchar_t</code> (whose definition is found in
+     <code>&lt;stddef.h&gt;</code>) is defined to be the
+     implementation-dependent type that should be used to hold extended
+     characters when you need an array of them. The Standard makes the
+     following guarantees about the values in a wide character:</p>
+
+    <ul>
+     <li>A <code>wchar_t</code> can hold distinct values for each member of
+      the largest character set supported by the implementation.</li>
+
+     <li>The null character has the value of zero.</li>
+
+     <li>Each member of the basic character set (see <a href="../chapter2/alphabet_of_c.html#section-1">Section&#160;2.2.1</a>) is encoded in a <code>wchar_t</code> with the same value
+      as it has in a <code>char</code>.</li>
+    </ul>
+
+    <p>There is further support for this method of encoding characters.
+     Strings, which we have already seen, are implemented as arrays of
+     <code>char</code>, even though they look like this:</p>
+
+    <pre>
+&quot;a string&quot;</pre>
+
+    <p>To get strings whose type is <code>wchar_t</code>, simply prefix a
+     string with the letter&#160;<code>L</code>. For example:</p>
+
+    <pre>
+L&quot;a string&quot;</pre>
+
+    <p>In the two examples, it is very important to understand the
+     differences. Strings are implemented as arrays and although it might look
+     odd, it is entirely permissible to use array indexing on them:</p>
+
+    <pre>
+&quot;a string&quot;[4]
+L&quot;a string&quot;[4]</pre>
+
+    <p>are both valid expressions. The first results in an expression whose
+     type is <code>char</code> and whose value is the internal representation
+     of the letter&#160;&#8216;<code>r</code>&#8217; (remember arrays index from
+     zero, not one). The second has the type <code>wchar_t</code> and also has
+     the value of the internal representation of the
+     letter&#160;&#8216;<code>r</code>&#8217;.</p>
+
+    <p>It gets more interesting if we are using extended characters. If we use
+     the notation&#160;<code>&lt;a&gt;</code>, <code>&lt;b&gt;</code>, and so
+     on to indicate &#8216;additional&#8217; characters beyond the normal character
+     set which are encoded using some form of shift technique, then these
+     examples show the problems.</p>
+
+    <pre>
+&quot;abc&lt;a&gt;&lt;b&gt;&quot;[3]
+L&quot;abc&lt;a&gt;&lt;b&gt;&quot;[3]</pre>
+
+    <p>The second one is easiest: it has a type of <code>wchar_t</code> and
+     the appropriate internal encoding for
+     whatever&#160;<code>&lt;a&gt;</code> is supposed to be&#8212;say the
+     Greek letter alpha. The first one is unpredictable. Its type is
+     unquestionably <code>char</code>, but its value is probably the value of
+     the &#8216;shift-in&#8217; marker.</p>
+
+    <p>As with strings, there are also wide character constants.</p>
+
+    <pre>
+'a'</pre>
+
+    <p>has type <code>char</code> and the value of the encoding for the
+     letter&#160;&#8216;<code>a</code>&#8217;.</p>
+
+    <pre>
+L'a'</pre>
+
+    <p>is a constant of type <code>wchar_t</code>. If you use a multibyte
+     character in the first one, then you have the same sort of thing as if
+     you had written</p>
+
+    <pre>
+'xy'</pre>
+
+    <p>&#8212;multiple characters in a character constant (actually, this is
+     valid but means something funny). A single multibyte character in the
+     second example will simply be converted into the appropriate
+     <code>wchar_t</code> value.</p>
+
+    <p>If you don't understand all the wide character stuff, then all we can
+     say is that we've done our best to explain it. Come back and read it
+     again later, when it might suddenly click. In practice it does manage to
+     address the support of extended character sets in&#160;C and once you're
+     used to it, it makes a lot of sense.</p>
+
+   
+
+   <div class="cbook-exercises">
+
+    <p><strong class="exercise">Exercise&#160;2.15.</strong>&#160;Assuming that <code>chars</code>, <code>ints</code> and
+      <code>longs</code> are respectively&#160;8, 16 and&#160;32&#160;bits
+      long, and that <code>char</code> defaults to <code>unsigned char</code>
+      on a given system, what is the resulting type of expressions involving
+      the following combinations of variables, after the usual arithmetic
+      conversions have been applied?</p><ol type="a">
+      <li>Simply <code>signed char</code>.</li>
+      <li>Simply <code>unsigned char</code>.</li>
+      <li><code>int</code>, <code>unsigned int</code>.</li>
+      <li><code>unsigned int</code>, <code>long</code>.</li>
+      <li><code>int</code>, <code>unsigned long</code>.</li>
+      <li><code>char</code>, <code>long</code>.</li>
+      <li><code>char</code>, <code>float</code>.</li>
+      <li><code>float</code>, <code>float</code>.</li>
+      <li><code>float</code>, <code>long double</code>.</li>
+     </ol>
+
+   </div>
+
+   <h3><a name="section-1.6"></a>2.8.1.6.&#160;Casts</h3>
+    
+
+    <p>From time to time you will find that an expression turns out not to
+     have the type that you wanted it to have and you would like to force it
+     to have a different type. That is what <dfn>casts</dfn> are for. By
+     putting a type name in parentheses, for example</p>
+
+    <pre>
+(int)</pre>
+
+    <p>you create a unary operator known as a <dfn>cast</dfn>. A cast turns
+     the value of the expression on its right into the indicated type. If, for
+     example, you were dividing two integers&#160;<code>a/b</code> then the
+     expression would use integer division and discard any remainder. To force
+     the fractional part to be retained, you could either use some
+     intermediate float variables, or a cast. This example does it both
+     ways.</p>
+
+    <div class="inset-example"><a name="example-8"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+/*
+* Illustrates casts.
+* For each of the numbers between 2 and 20,
+* print the percentage difference between it and the one
+* before
+*/
+main(){
+      int curr_val;
+      float temp, pcnt_diff;
+
+      curr_val = 2;
+      while(curr_val &lt;= 20){
+              /*
+               * % difference is
+               * 1/(curr_val)*100
+               */
+              temp = curr_val;
+              pcnt_diff = 100/temp;
+              printf(&quot;Percent difference at %d is %f\n&quot;,
+                      curr_val, pcnt_diff);
+              /*
+               * Or, using a cast:
+               */
+              pcnt_diff = 100/(float)curr_val;
+              printf(&quot;Percent difference at %d is %f\n&quot;,
+                      curr_val, pcnt_diff);
+              curr_val = curr_val + 1;
+      }
+      exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;2.8</cite></div>
+
+    <p>The easiest way to remember how to write a cast is to write down
+     exactly what you would use to declare a variable of the type that you
+     want. Put parentheses around the entire declaration, then delete the
+     variable name; that gives you the cast. Table&#160;2.6 shows a
+     few simple examples&#8212;some of the types shown will be new to you,
+     but it's the complicated ones that illustrate best how casts are written.
+     Ignore the ones that you don't understand yet, because you will be able
+     to use the table as a reference later.</p>
+
+    <div class="inset-table"><a name="table-6"></a><table><thead><tr class="cbook-table-heading">
+      <th>Declaration</th>
+      <th>Cast</th>
+      <th>Type</th>
+     </tr></thead><tbody><tr class="cbook-table-first-row">
+      <td><code>int x;</code></td>
+      <td><code>(int)</code></td>
+      <td><code>int</code></td>
+     </tr><tr class="cbook-table-row">
+      <td><code>float f;</code></td>
+      <td><code>(float)</code></td>
+      <td><code>float</code></td>
+     </tr><tr class="cbook-table-row">
+      <td><code>char x[30];</code></td>
+      <td><code>(char [30])</code></td>
+      <td>array of <code>char</code></td>
+     </tr><tr class="cbook-table-row">
+      <td><code>int *ip;</code></td>
+      <td><code>(int *)</code></td>
+      <td>pointer to <code>int</code></td>
+     </tr><tr class="cbook-table-last-row">
+      <td><code>int (*f)();</code></td>
+      <td><code>(int (*)())</code></td>
+      <td>pointer to function returning <code>int</code></td>
+     </tr></tbody></table><cite>Table&#160;2.6.&#160;Casts</cite></div>
+
+   
+
+  
+
+  <h2><a name="section-2"></a>2.8.2.&#160;Operators</h2>
+   
+
+   <h3><a name="section-2.1"></a>2.8.2.1.&#160;The multiplicative operators</h3>
+    
+
+    <p>Or, put another way, multiplication&#160;<code>*</code>,
+     division&#160;<code>/</code> and the remainder
+     operator&#160;<code>%</code>. Multiplication and division do what is
+     expected of them for both real and integral types, with integral division
+     producing a truncated result. The truncation is towards zero. The
+     remainder operator is only defined to work with integral types, because
+     the division of real numbers supposedly doesn't produce a remainder.</p>
+
+    <p>If the division is not exact and neither operand is negative, the
+     result of&#160;<code>/</code> is positive and rounded toward zero&#8212;to
+     get the remainder, use&#160;<code>%</code>. For example,</p>
+
+    <pre>
+9/2 == 4
+9%2 == 1</pre>
+
+    <p>If either operand is negative, the result of&#160;<code>/</code> may be
+     the nearest integer to the true result on either side, and the sign of
+     the result of&#160;<code>%</code> may be positive or negative. Both of
+     these features are implementation defined.</p>
+
+    <p>It is always true that the following expression is equal to zero:</p>
+
+    <pre>
+(a/b)*b + a%b - a</pre>
+
+    <p>unless <code>b</code> is zero.</p>
+
+    <p>The usual arithmetic conversions are applied to both of the
+     operands.</p>
+
+   
+
+   <h3><a name="section-2.2"></a>2.8.2.2.&#160;Additive operators</h3>
+    
+
+    <p>Addition&#160;<code>+</code> and subtraction&#160;<code>-</code> also
+     follow the rules that you expect. The binary operators and the unary
+     operators both have the same symbols, but rather different meanings. For
+     example, the expressions&#160;<code>a+b</code> and&#160;<code>a-b</code>
+     both use a binary operator (the&#160;<code>+</code>
+     or&#160;<code>-</code> operators), and result in addition or subtraction.
+     The unary operators with the same symbols would be
+     written&#160;<code>+b</code> or&#160;<code>-b</code>.</p>
+
+    <p>The unary minus has an obvious function&#8212;it takes the negative
+     value of its operand; what does the unary plus do? In fact the answer is
+     almost nothing. The unary plus is a new addition to the language, which
+     balances the presence of the unary minus, but doesn't have any effect on
+     the value of the expression. Very few Old&#160;C users even noticed that
+     it was missing.</p>
+
+    <p>The usual arithmetic conversions are applied to both of the operands of
+     the binary forms of the operators. Only the integral promotions are
+     performed on the operands of the unary forms of the operators.</p>
+
+   
+
+   <h3><a name="section-2.3"></a>2.8.2.3.&#160;The bitwise operators</h3>
+    
+
+    <p>One of the great strengths of C is the way that it allows systems
+     programmers to do what had, before the advent of&#160;C, always been
+     regarded as the province of the assembly code programmer. That sort of
+     code was by definition highly non-portable. As C demonstrates, there
+     isn't any magic about that sort of thing, and into the bargain it turns
+     out to be surprisingly portable. What is it? It's what is often referred
+     to as &#8216;bit-twiddling&#8217;&#8212;the manipulation of individual bits in
+     integer variables. None of the bitwise operators may be used on real
+     operands because they aren't considered to have individual or accessible
+     bits.</p>
+
+    <p>There are six bitwise operators, listed in Table&#160;2.7,
+     which also shows the arithmetic conversions that are applied.</p>
+
+    <div class="inset-table"><a name="table-7"></a><table><thead><tr class="cbook-table-heading">
+      <th>Operator</th>
+      <th>Effect</th>
+      <th>Conversions</th>
+     </tr></thead><tbody><tr class="cbook-table-first-row">
+      <td><code>&amp;</code></td>
+      <td>bitwise AND</td>
+      <td>usual arithmetic conversions</td>
+     </tr><tr class="cbook-table-row">
+      <td><code>|</code></td>
+      <td>bitwise OR</td>
+      <td>usual arithmetic conversions</td>
+     </tr><tr class="cbook-table-row">
+      <td><code>^</code></td>
+      <td>Bitwise XOR</td>
+      <td>usual arithmetic conversions</td>
+     </tr><tr class="cbook-table-row">
+      <td><code>&lt;&lt;</code></td>
+      <td>left shift</td>
+      <td>integral promotions</td>
+     </tr><tr class="cbook-table-row">
+      <td><code>&gt;&gt;</code></td>
+      <td>right shift</td>
+      <td>integral promotions</td>
+     </tr><tr class="cbook-table-last-row">
+      <td><code>~</code></td>
+      <td>one's complement</td>
+      <td>integral promotions</td>
+     </tr></tbody></table><cite>Table&#160;2.7.&#160;Bitwise operators</cite></div>
+
+    <p>Only the last, the one's complement, is a unary operator. It inverts
+     the state of every bit in its operand and has the same effect as the
+     unary minus on a one's complement computer. Most modern computers work
+     with two's complement, so it isn't a waste of time having it there.</p>
+
+    <p>Illustrating the use of these operators is easier if we can use
+     hexadecimal notation rather than decimal, so now is the time to see
+     hexadecimal constants. Any number written with&#160;<code>0x</code> at
+     its beginning is interpreted as hexadecimal; both&#160;<code>15</code>
+     and&#160;<code>0xf</code> (or&#160;<code>0XF</code>) mean the same thing.
+     Try running this or, better still, try to predict what it does first and
+     then try running it.</p>
+
+    <div class="inset-example"><a name="example-9"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+main(){
+      int x,y;
+      x = 0; y = ~0;
+
+      while(x != y){
+              printf(&quot;%x &amp; %x = %x\n&quot;, x, 0xff, x&amp;0xff);
+              printf(&quot;%x | %x = %x\n&quot;, x, 0x10f, x|0x10f);
+              printf(&quot;%x ^ %x = %x\n&quot;, x, 0xf00f, x^0xf00f);
+              printf(&quot;%x &gt;&gt; 2 = %x\n&quot;, x, x &gt;&gt; 2);
+              printf(&quot;%x &lt;&lt; 2 = %x\n&quot;, x, x &lt;&lt; 2);
+              x = (x &lt;&lt; 1) | 1;
+      }
+      exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;2.9</cite></div>
+
+    <p>The way that the loop works in that example is the first thing to
+     study. The controlling variable is&#160;<code>x</code>, which is
+     initialized to zero. Every time round the loop it is compared
+     against&#160;<code>y</code>, which has been set to a word-length
+     independent pattern of all&#160;<code>1</code>s by taking the one's
+     complement of zero. At the bottom of the loop, <code>x</code>&#160;is
+     shifted left once and has&#160;1 ORed into it, giving rise to a sequence
+     that starts&#160;<code>0</code>, <code>1</code>, <code>11</code>,
+     <code>111</code>, &#8230; in binary.</p>
+
+    <p>For each of the AND, OR, and XOR (exclusive OR) operators,
+     <code>x</code>&#160;is operated on by the operator and some other
+     interesting operand, then the result printed.</p>
+
+    <p>The left and right shift operators are in there too, giving a result
+     which has the type and value of their left-hand operand shifted in the
+     required direction a number of places specified by their right-hand
+     operand; the type of both of the operands must be integral. Bits shifted
+     off either end of the left operand simply disappear. Shifting by more
+     bits than there are in a word gives an implementation dependent
+     result.</p>
+
+    <p>Shifting left guarantees to shift zeros into the low-order bits.</p>
+
+    <p>Right shift is fussier. Your implementation is allowed to choose
+     whether, when shifting signed operands, it performs a logical or
+     arithmetic right shift. This means that a logical shift shifts zeros into
+     the most significant bit positions; an arithmetic shift copies the
+     current contents of the most significant bit back into itself. The
+     position is clearer if an unsigned operand is right shifted, because
+     there is no choice: it must be a logical shift. For that reason, whenever
+     right shift is being used, you would expect to find that the thing being
+     shifted had been declared to be unsigned, or cast to unsigned for the
+     shift, as in the example:</p>
+
+    <pre>
+int i,j;
+i = (unsigned)j &gt;&gt; 4;</pre>
+
+    <p>The second (right-hand) operand of a shift operator does not have to be
+     a constant; any integral expression is legal. Importantly, the rules
+     involving mixed types of operands do not apply to the shift operators.
+     The result of the shift has the same type as the thing that got shifted
+     (after the integral promotions), and depends on nothing else.</p>
+
+    <p>Now something different; one of those little tricks that
+     C&#160;programmers find helps to write better programs. If for any reason
+     you want to form a value that has&#160;<code>1</code>s in all but its
+     least significant so-many bits, which are to have some other pattern in
+     them, you don't have to know the word length of the machine. For example,
+     to set the low order bits of an <code>int</code>
+     to&#160;<code>0x0f0</code> and all the other bits to&#160;<code>1</code>,
+     this is the way to do it:</p>
+
+    <pre>
+int some_variable;
+some_variable = ~0xf0f;</pre>
+
+    <p>The one's complement of the desired low-order bit pattern has been
+     one's complemented. That gives exactly the required result and is
+     completely independent of word length; it is a very common sight in
+     C&#160;code.</p>
+
+    <p>There isn't a lot more to say about the bit-twiddling operators, and
+     our experience of teaching&#160;C has been that most people find them
+     easy to learn. Let's move on.</p>
+
+   
+
+   <h3><a name="section-2.4"></a>2.8.2.4.&#160;The assignment operators</h3>
+    
+
+    <p>No, that isn't a mistake, &#8216;operators&#8217; was meant to be plural.
+     C&#160;has several assignment operators, even though we have only seen
+     the plain&#160;<code>=</code> so far. An interesting thing about them is
+     that they are all like the other binary operators; they take two operands
+     and produce a result, the result being usable as part of an expression.
+     In this statement</p>
+
+    <pre>
+x = 4;</pre>
+
+    <p>the value&#160;<code>4</code> is assigned to&#160;<code>x</code>. The
+     result has the type of&#160;<code>x</code> and the value that was
+     assigned. It can be used like this</p>
+
+    <pre>
+a = (x = 4);</pre>
+
+    <p>where&#160;<code>a</code> will now have the value&#160;<code>4</code>
+     assigned to it, after&#160;<code>x</code> has been assigned to. All of
+     the simpler assignments that we have seen until now (except for one
+     example) have simply discarded the resulting value of the assignment,
+     even though it is produced.</p>
+
+    <p>It's because assignment has a result that an expression like</p>
+
+    <pre>
+a = b = c = d;</pre>
+
+    <p>works. The value of&#160;<code>d</code> is assigned
+     to&#160;<code>c</code>, the result of that is assigned
+     to&#160;<code>b</code> and so on. It makes use of the fact that
+     expressions involving only assignment operators are evaluated from right
+     to left, but is otherwise like any other expression. (The rules
+     explaining what groups right to left and vice versa are given in
+     Table&#160;2.9.)</p>
+
+    <p>If you look back to the section describing &#8216;conversions&#8217;, there
+     is a description of what happens if you convert longer types to shorter
+     types: that is what happens when the left-hand operand of an assignment
+     is shorter than the right-hand one. No conversions are applied to the
+     right-hand operand of the simple assignment operator.</p>
+
+    <p>The remaining assignment operators are the compound assignment
+     operators. They allow a useful shorthand, where an assignment containing
+     the same left- and right-hand sides can be compressed; for example</p>
+
+    <pre>
+x = x + 1;</pre>
+
+    <p>can be written as</p>
+
+    <pre>
+x += 1;</pre>
+
+    <p>using one of the compound assignment operators. The result is the same
+     in each case. It is a useful thing to do when the left-hand side of the
+     operator is a complicated expression, not just a variable; such things
+     occur when you start to use arrays and pointers. Most experienced C
+     programmers tend to use the form given in the second example because
+     somehow it &#8216;feels better&#8217;, a sentiment that no beginner has ever
+     been known to agree with. Table&#160;2.8 lists the compound
+     assignment operators; you will see them used a lot from now on.</p>
+
+    <div class="inset-table"><a name="table-8"></a><table><tbody><tr class="cbook-table-first-row">
+      <td><code>*=</code></td>
+      <td><code>/=</code></td>
+      <td><code>%=</code></td>
+     </tr><tr class="cbook-table-row">
+      <td><code>+=</code></td>
+      <td><code>-=</code></td>
+      <td></td>
+     </tr><tr class="cbook-table-row">
+      <td><code>&amp;=</code></td>
+      <td><code>|=</code></td>
+      <td><code>^=</code></td>
+     </tr><tr class="cbook-table-last-row">
+      <td><code>&gt;&gt;=</code></td>
+      <td><code>&lt;&lt;=</code></td>
+      <td></td>
+     </tr></tbody></table><cite>Table&#160;2.8.&#160;Compound assignment operators</cite></div>
+
+    <p>In each case, arithmetic conversions are applied as if the expression
+     had been written out in full, for example as if&#160;<code>a+=b</code>
+     had been written&#160;<code>a=a+b</code>.</p>
+
+    <p>Reiterating: the result of an assignment operator has both the value
+     and the type of the object that was assigned to.</p>
+
+   
+
+   <h3><a name="section-2.5"></a>2.8.2.5.&#160;Increment and decrement operators</h3>
+    
+
+    <p>It is so common to simply add or subtract 1 in an expression that C has
+     two special unary operators to do the job. The increment
+     operator&#160;<code>++</code> adds&#160;<code>1</code>, the
+     decrement&#160;<code>--</code> subtracts&#160;<code>1</code>. They are
+     used like this:</p>
+
+    <pre>
+x++;
+++x;
+x--;
+--x;</pre>
+
+    <p>where the operator can come either before or after its operand. In the
+     cases shown it doesn't matter where the operator comes, but in more
+     complicated cases the difference has a definite meaning and must be used
+     properly.</p>
+
+    <p>Here is the difference being used.</p>
+
+    <div class="inset-example"><a name="example-10"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+main(){
+      int a,b;
+      a = b = 5;
+      printf(&quot;%d\n&quot;, ++a+5);
+      printf(&quot;%d\n&quot;, a);
+      printf(&quot;%d\n&quot;, b++ +5);
+      printf(&quot;%d\n&quot;, b);
+      exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;2.10</cite></div>
+
+    <p>The results printed were</p>
+
+    <pre>
+11
+6
+10
+6</pre>
+
+    <p>The difference is caused by the different positions of the operators.
+     If the inc/decrement operator appears in front of the variable, then its
+     value is changed by one and the <em>new</em> value is used in the
+     expression. If the operator comes after the variable, then the
+     <em>old</em> value is used in the expression and the variable's value is
+     changed afterwards.</p>
+
+    <p>C programmers never add or subtract one with statements like this</p>
+
+    <pre>
+x += 1;</pre>
+
+    <p>they invariably use one of</p>
+
+    <pre>
+x++; /* or */ ++x;</pre>
+
+    <p>as a matter of course. A warning is in order though: it is not safe to
+     use a variable more than once in an expression if it has one of these
+     operators attached to it. There is no guarantee of when, within an
+     expression, the affected variable will actually change value. The
+     compiler might choose to &#8216;save up&#8217; all of the changes and apply
+     them at once, so an expression like this</p>
+
+    <pre>
+y = x++ + --x;</pre>
+
+    <p>does not guarantee to assign twice the original value
+     of&#160;<code>x</code> to&#160;<code>y</code>. It might be evaluated as
+     if it expanded to this instead:</p>
+
+    <pre>
+y = x + (x-1);</pre>
+
+    <p>because the compiler notices that the overall effect on the value
+     of&#160;<code>x</code> is zero.</p>
+
+    <p>The arithmetic is done exactly as if the full addition expression had
+     been used, for example&#160;<code>x=x+1</code>, and the usual arithmetic
+     conversions apply.</p>
+
+   
+
+   <div class="cbook-exercises">
+
+    <p><strong class="exercise">Exercise&#160;2.16.</strong>&#160;Given the following variable definitions</p><pre>
+int i1, i2;
+float f1, f2;</pre><ol type="a">
+      <li>How would you find the remainder when&#160;<code>i1</code> is
+       divided by&#160;<code>i2</code>?</li>
+      <li>How would you find the remainder when&#160;<code>i1</code> is
+       divided by the value of&#160;<code>f1</code>,
+       treating&#160;<code>f1</code> as an integer?</li>
+      <li>What can you predict about the sign of the remainders calculated in
+       the previous two questions?</li>
+      <li>What meanings can the&#160;<code>-</code> operator have?</li>
+      <li>How would you turn off all but the low-order four bits
+       in&#160;<code>i1</code>?</li>
+      <li>How would you turn on all the low-order four bits
+       in&#160;<code>i1</code>?</li>
+      <li>How would you turn off only the low-order four bits
+       in&#160;<code>i1</code>?</li>
+      <li>How would you put into&#160;<code>i1</code> the low-order
+       8&#160;bits in&#160;<code>i2</code>, but swapping the significance of
+       the lowest four with the next</li>
+      <li>What is wrong with the following expression?
+       <pre>
+f2 = ++f1 + ++f1;</pre>
+      </li>
+     </ol>
+
+   </div>
+
+  
+
+  <h2><a name="section-3"></a>2.8.3.&#160;Precedence and grouping</h2>
+   
+
+   <p>After looking at the operators we have to consider the way that they
+    work together. For things like addition it may not seem important; it
+    hardly matters whether</p>
+
+   <pre>
+a + b + c</pre>
+
+   <p>is done as</p>
+
+   <pre>
+(a + b) + c</pre>
+
+   <p>or</p>
+
+   <pre>
+a + (b + c)</pre>
+
+   <p>does it? Well, yes in fact it does. If&#160;<code>a+b</code> would
+    overflow and&#160;<code>c</code> held a value very close
+    to&#160;<code>-b</code>, then the second grouping might give the correct
+    answer where the first would cause undefined behaviour. The problem is
+    much more obvious with integer division:</p>
+
+   <pre>
+a/b/c</pre>
+
+   <p>gives very different results when grouped as</p>
+
+   <pre>
+a/(b/c)</pre>
+
+   <p>or</p>
+
+   <pre>
+(a/b)/c</pre>
+
+   <p>If you don't believe that, try it with&#160;<code>a=10</code>,
+    <code>b=2</code>, <code>c=3</code>. The first
+    gives&#160;<code>10/(2/3)</code>; <code>2/3</code>&#160;in integer
+    division gives&#160;<code>0</code>, so we get&#160;<code>10/0</code> which
+    immediately overflows. The second grouping gives&#160;<code>(10/2)</code>,
+    obviously&#160;<code>5</code>, which divided by&#160;<code>3</code>
+    gives&#160;<code>1</code>.</p>
+
+   <p>The grouping of operators like that is known as
+    <dfn>associativity</dfn>. The other question is one of
+    <dfn>precedence</dfn>, where some operators have a higher priority than
+    others and force evaluation of sub-expressions involving them to be
+    performed before those with lower precedence operators. This is almost
+    universal practice in high-level languages, so we &#8216;know&#8217; that</p>
+
+   <pre>
+a + b * c + d</pre>
+
+   <p>groups as</p>
+
+   <pre>
+a + (b * c) + d</pre>
+
+   <p>indicating that multiplication has higher precedence than addition.</p>
+
+   <p>The large set of operators in&#160;C gives rise to 15 levels of
+    precedence! Only very boring people bother to remember them all. The
+    complete list is given in Table&#160;2.9, which indicates both
+    precedence and associativity. Not all of the operators have been mentioned
+    yet. Beware of the use of the same symbol for both unary and binary
+    operators: the table indicates which are which.</p>
+
+   <div class="inset-table"><a name="table-9"></a><table><thead><tr class="cbook-table-heading">
+     <th>Operator</th>
+     <th>Direction</th>
+     <th>Notes</th>
+    </tr></thead><tbody><tr class="cbook-table-first-row">
+     <td><code>() [] -&gt; .</code></td>
+     <td>left to right</td>
+     <td>1</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>! ~ ++ -- - + (cast) * &amp; sizeof</code></td>
+     <td>right to left</td>
+     <td>all unary</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>* / %</code></td>
+     <td>left to right</td>
+     <td>binary</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>+ -</code></td>
+     <td>left to right</td>
+     <td>binary</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>&lt;&lt; &gt;&gt;</code></td>
+     <td>left to right</td>
+     <td>binary</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>&lt; &lt;= &gt; &gt;=</code></td>
+     <td>left to right</td>
+     <td>binary</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>== !=</code></td>
+     <td>left to right</td>
+     <td>binary</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>&amp;</code></td>
+     <td>left to right</td>
+     <td>binary</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>^</code></td>
+     <td>left to right</td>
+     <td>binary</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>|</code></td>
+     <td>left to right</td>
+     <td>binary</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>&amp;&amp;</code></td>
+     <td>left to right</td>
+     <td>binary</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>||</code></td>
+     <td>left to right</td>
+     <td>binary</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>?:</code></td>
+     <td>right to left</td>
+     <td>2</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>= +=</code> and all combined assignment</td>
+     <td>right to left</td>
+     <td>binary</td>
+    </tr><tr class="cbook-table-last-row">
+     <td><code>,</code></td>
+     <td>left to right</td>
+     <td>binary</td>
+    </tr><tr class="cbook-table-notes-row"><td colspan="3">1.&#160;Parentheses are for expression grouping, <em>not</em>
+     function call.</td></tr><tr class="cbook-table-notes-row"><td colspan="3">2.&#160;This is unusual. See <a href="../chapter3/strange_operators.html#section-1">Section&#160;3.4.1</a>.</td></tr></tbody></table><cite>Table&#160;2.9.&#160;Operator precedence and associativity</cite></div>
+
+   <p>The question is, what can you do with that information, now that it's
+    there? Obviously it's important to be able to work out both how to write
+    expressions that evaluate in the proper order, and also how to read other
+    people's. The technique is this: first, identify the unary operators and
+    the operands that they refer to. This isn't such a difficult task but it
+    takes some practice, especially when you discover that operators such as
+    unary&#160;<code>*</code> can be applied an arbitrary number of times to
+    their operands; this expression</p>
+
+   <pre>
+a*****b</pre>
+
+   <p>means&#160;<code>a</code> multiplied by <em>something</em>, where the
+    something is an expression involving&#160;<code>b</code> and several
+    unary&#160;<code>*</code> operators.</p>
+
+   <p>It's not too difficult to work out which are the unary operators; here
+    are the rules.</p>
+
+   <ol>
+    <li><code>++</code> and&#160;<code>-</code> are always unary
+     operators.</li>
+    <li>The operator immediately to the right of an operand is a binary
+     operator unless (1)&#160;applies, when the operator to its right is
+     binary.</li>
+    <li>All operators to the left of an operand are unary unless
+     (2)&#160;applies.</li>
+   </ol>
+
+   <p>Because the unary operators have very high precedence, you can work out
+    what they do before worrying about the other operators. One thing to watch
+    out for is the way that&#160;<code>++</code> and&#160;<code>--</code> can
+    be before or after their operands; the expression</p>
+
+   <pre>
+a + -b++ + c</pre>
+
+   <p>has two unary operators applied to&#160;<code>b</code>. The unary
+    operators all associate right to left, so although the&#160;<code>-</code>
+    comes first when you read the expression, it really parenthesizes (for
+    clarity) like this:</p>
+
+   <pre>
+a + -(b++) + c</pre>
+
+   <p>The case is a little clearer if the prefix, rather than the postfix,
+    form of the increment/decrement operators is being used. Again the order
+    is right to left, but at least the operators come all in a row.</p>
+
+   <p>After sorting out what to do with the unary operators, it's easy to read
+    the expression from left to right. Every time you see a binary operator,
+    remember it. Look to the right: if the next binary operator is of a lower
+    precedence, then the operator you just remembered is part of a
+    subexpression to evaluate before anything else is seen. If the next
+    operator is of the same precedence, keep repeating the procedure as long
+    as equal precedence operators are seen. When you eventually find a lower
+    precedence operator, evaluate the subexpression on the left according to
+    the associativity rules. If a higher precedence operator is found on the
+    right, forget the previous stuff: the operand to the left of the higher
+    precedence operator is part of a subexpression separate from anything on
+    the left so far. It belongs to the new operator instead.</p>
+
+   <p>If that lot isn't clear don't worry. A lot of C&#160;programmers have
+    trouble with this area and eventually learn to parenthesize these
+    expressions &#8216;by eye&#8217;, without ever using formal rules.</p>
+
+   <p>What <em>does</em> matter is what happens when you have fully
+    parenthesized these expressions. Remember the &#8216;usual arithmetic
+    conversions&#8217;? They explained how you could predict the type of an
+    expression from the operands involved. Now, even if you mix all sorts of
+    types in a complicated expression, the types of the subexpressions are
+    determined only from the the types of the operands in the subexpression.
+    Look at this.</p>
+
+   <div class="inset-example"><a name="example-11"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+main(){
+      int i,j;
+      float f;
+
+      i = 5; j = 2;
+      f = 3.0;
+
+      f = f + j / i;
+      printf(&quot;value of f is %f\n&quot;, f);
+      exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;2.11</cite></div>
+
+   <p>The value printed is&#160;<code>3.0000</code>,
+    not&#160;<code>5.0000</code>&#8212;which might surprise some, who thought
+    that because a <code>float</code> was involved the whole statement
+    involving the division would be done in that real type.</p>
+
+   <p>Of course, the division operator had only int types on either side, so
+    the arithmetic was done as integer division and resulted in zero. The
+    addition had a <code>float</code> and an <code>int</code> on either side,
+    so the conversions meant that the <code>int</code> was converted to
+    <code>float</code> for the arithmetic, and that was the correct type for
+    the assignment, so there were no further conversions.</p>
+
+   <p>The previous section on casts showed one way of changing the type of an
+    expression from its natural one to the one that you want. Be careful
+    though:</p>
+
+   <pre>
+(float)(j/i)</pre>
+
+   <p>would still use integer division, then convert the result to
+    <code>float</code>. To keep the remainder, you should use</p>
+
+   <pre>
+(float)j/i</pre>
+
+   <p>which would force real division to be used.</p>
+
+  
+
+  <h2><a name="section-4"></a>2.8.4.&#160;Parentheses</h2>
+   
+
+   <p>C allows you to override the normal effects of precedence and
+    associativity by the use of parentheses as the examples have illustrated.
+    In Old&#160;C, the parentheses had no further meaning, and in particular
+    did <em>not</em> guarantee anything about the order of evaluation in
+    expressions like these:</p>
+
+   <pre>
+int a, b, c;
+a+b+c;
+(a+b)+c;
+a+(b+c);</pre>
+
+   <p>You used to need to use explicit temporary variables to get a particular
+    order of evaluation&#8212;something that matters if you know that there
+    are risks of overflow in a particular expression, but by forcing the
+    evaluation to be in a certain order you can avoid it.</p>
+
+   <p>Standard&#160;C says that evaluation <em>must</em> be done in the order
+    indicated by the precedence and grouping of the expression, unless the
+    compiler can tell that the result will not be affected by any regrouping
+    it might do for optimization reasons.</p>
+
+   <p>So, the expression&#160;<code>a = 10+a+b+5</code>; cannot be rewritten
+    by the compiler as&#160;<code>a = 15+a+b</code>; unless it can be
+    guaranteed that the resulting value of a will be the same for all
+    combinations of initial values of&#160;<code>a</code>
+    and&#160;<code>b</code>. That would be true if the variables were both
+    unsigned integral types, or if they were signed integral types but in that
+    particular implementation overflow did not cause a run-time exception and
+    overflow was reversible.</p>
+
+  
+
+  <h2><a name="section-5"></a>2.8.5.&#160;Side Effects</h2>
+   
+
+   <p>To repeat and expand the warning given for the increment operators: it
+    is unsafe to use the same variable more than once in an expression if
+    evaluating the expression changes the variable and the new value could
+    affect the result of the expression. This is because the change(s) may be
+    &#8216;saved up&#8217; and only applied at the end of the statement.
+    So&#160;<code>f = f+1;</code> is safe even though&#160;<code>f</code>
+    appears twice in a value-changing expression,&#160;<code>f++;</code> is
+    also safe, but&#160;<code>f = f++;</code> is unsafe.</p>
+
+   <p>The problem can be caused by using an assignment, use of the increment
+    or decrement operators, or by calling a function that changes the value of
+    an external variable that is also used in the expression. These are
+    generally known as &#8216;side effects&#8217;. C&#160;makes almost no promise
+    that side effects will occur in a predictable order within a single
+    expression. (The discussion of &#8216;sequence points&#8217; in <a href="../chapter8/">Chapter&#160;8</a> will be of interest if you care about this.)</p>
+
+  
+
+ <div class="cbook_next_prev"><p><a href="integral_types.html">Previous section</a> | <a href="../chapter2/">Chapter contents</a> | <a href="constants.html">Next section</a></p></div>
+
+    </main>
+    <nav id="menu" class="Left">
+      
+ 
+  
+  <div class="nav">
+
+	
+	
+			
+			  <div class="nav0">
+				
+				  <a href="/">Publications</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav1">
+				
+				  <a href="/c_book/">The C&nbsp;Book</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/preface/">Preface</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter1/">Introduction</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter2/">Variables &amp; arithmetic</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/fundamentals.html">Fundamentals</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/alphabet_of_c.html">The C&#160;alphabet</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/textual_program_structure.html">Textual program structure</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/keywords_and_identifiers.html">Keywords &amp; identifiers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/variable_declaration.html">Declaring variables</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/real_types.html">Reals</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/integral_types.html">Integers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <strong>Expressions &amp; arithmetic</strong>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/constants.html">Constants</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/summary.html">Summary</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/exercises.html">Exercises</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter3/">Control flow</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter4/">Functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter5/">Arrays &amp; pointers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter6/">Structures</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter7/">Preprocessor</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter8/">Specialized areas</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter9/">Libraries</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter10/">Complete Programs</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/answers/">Answers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/copyright.html">Copyright</a>
+				
+				
+			</div>
+			
+	
+
+</div>
+
+ 
+
+      <div class="ColBtm">
+        <hr />
+<div class="h1"><a href="https://ebusiness.gbdirect.co.uk/contact.html">Contact Us</a></div>
+
+      </div>
+
+    </nav>
+    <aside id="sidebar" class="Right">
+      
+ <div class="box">
+  
+  
+<img src="https://global.gbdirect.co.uk/Themes/printer-friendly-12x12.png" alt="" title="Printer-friendly version of this page" />
+<a href="?format=pf" rel="nofollow">
+  Printer-friendly version
+</a>
+
+ </div>
+
+ <div class="box">
+  <h3>The C Book</h3>
+  
+<p>This book is published as a matter of historical interest.
+ Please read the
+ <a href="/c_book/copyright.html">copyright and disclaimer information</a>.</p>
+
+<p>GBdirect Ltd provides up-to-date training and consultancy in
+ <a href="http://training.gbdirect.co.uk/courses/c/">C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c/real_time_linux_embedded_c_training.html">Embedded C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c++/">C++</a>
+ and a wide range of
+ <a href="http://training.gbdirect.co.uk/courses/">other subjects based on
+ open standards</a> if you happen to be interested.</p>
+
+ </div>
+
+
+    </aside>
+  </div>
+  
+<script type="text/javascript">
+        var maxheight = 0;
+        var a =  Array('main', 'menu', 'sidebar');
+        for(index in a){
+                var name = a[index];
+                // alert(name);
+                var id = document.getElementById(name);
+                if(id){
+                        if(id.offsetHeight > maxheight){
+                                maxheight = id.offsetHeight;
+                        }
+                }
+        }
+        var tabbar = document.getElementById('tabsbar');
+        if(tabbar){
+                if(tabbar.style) tabbar=tabbar.style;
+                tabbar.left = 0+'px';
+                tabbar.top = maxheight+'px';
+        }
+        
+</script>
+</body>
+</html>

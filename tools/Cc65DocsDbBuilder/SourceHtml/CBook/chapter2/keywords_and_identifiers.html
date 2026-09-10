@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1">
+<title>The C Book &#8212; Keywords and identifiers</title>
+<meta property="og:title" content="The C Book &amp;#8212; Keywords and identifiers" />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://global.gbdirect.co.uk/Themes/logo-og.png" />
+
+<link rel="SHORTCUT ICON" href="https://global.gbdirect.co.uk/favicon.ico" />
+<link rel="stylesheet" type="text/css" href="https://global.gbdirect.co.uk/Themes/Quarters.css" />
+
+<link rel="prev" href="/c_book/chapter2/textual_program_structure.html" />
+<link rel="next" href="/c_book/chapter2/variable_declaration.html" />
+<link rel="contents" href="/c_book/chapter2/" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<!-- order 5-->
+<!-- lastmod 2005-11-10T16:42:03Z-->
+
+
+<link rel="canonical" href="https://publications.gbdirect.co.uk/c_book/chapter2/keywords_and_identifiers.html"/><meta property="og:url" content="https://publications.gbdirect.co.uk/c_book/chapter2/keywords_and_identifiers.html" />
+<script type="text/javascript"> var _gaq = _gaq || []; _gaq.push(['_setAccount', 'UA-3566842-1']); _gaq.push(['_setDomainName', '.gbdirect.co.uk']); _gaq.push(['_trackPageview']); (function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = 'https://www.google-analytics.com/ga.js'; var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s); })(); </script>
+</head>
+
+<body>
+  <header class="Banner">
+    <span id="Logo">
+      <a href="https://ebusiness.gbdirect.co.uk">
+        <img src="https://global.gbdirect.co.uk/Themes/gbdirect.gif"
+             alt="GBdirect Homepage"
+             title="GBdirect Homepage" /></a>
+    </span>
+<!-- Original homebrew search
+    <form action="https://global.gbdirect.co.uk/search.cgi"
+          method="get" id="Search">
+      <label for="search_textbox">Search</label>
+      <input type="text" name="query" size="12" id="search_textbox" value="" />
+      <input type="submit" name="Submit" value="Go" />
+    </form>
+-->
+<!-- Google search -->
+    <form class="Search" action="https://www.google.com/cse" id="cse-search-box">
+      <input type="hidden" name="cx" value="010270212093732037646:4pvgkishmkg" />
+      <input type="hidden" name="ie" value="UTF-8" />
+      <label for="search_textbox">Search</label>
+      <input type="text" name="q" id="search_textbox" size="12" />
+      <input type="submit" name="sa" value="Go" />
+    </form>
+    <script type="text/javascript" src="https://www.google.com/cse/brand?form=cse-search-box&amp;lang=en&amp;sitesearch=true"></script>
+<!-- End Google search -->
+  </header>
+  <nav class="Tabsbar"><span class="ThisTab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span> <span class="NoCSS2">| </span> <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/contact.html">Contact</a></span></nav>
+  <div id="container" itemscope itemtype="http://schema.org/WebPage">
+    <meta itemprop="isFamilyFriendly" content="1" />
+    <meta itemprop="inLanguage" content="en" />
+    <nav class="Tabsbar" id="tabsbar" style="position: absolute; width: 100%">
+  
+  
+    <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/">About Us</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://consulting.gbdirect.co.uk/">Consultancy</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://development.gbdirect.co.uk/">Software</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="ThisTab">Publications</span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-source.gbdirect.co.uk/">Open&nbsp;Source</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://software-support.gbdirect.co.uk/">Support</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-standards.gbdirect.co.uk/">Open&nbsp;Standards</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://faq.gbdirect.co.uk/">FAQ</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://jobs.gbdirect.co.uk/">Jobs</a></span>
+  
+
+</nav>
+    <main id="main" >
+	  
+		<nav id="breadcrumb" itemprop="breadcrumb">
+			
+			<a href="https://publications.gbdirect.co.uk/">Publications</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/">The C&nbsp;Book</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/chapter2/">Variables &amp; arithmetic</a>
+			
+			 &gt; Keywords &amp; identifiers
+			
+		</nav>
+		<br />
+	  
+      <h1>2.4. Keywords and identifiers</h1>
+      
+      
+
+
+  
+
+  <p>After covering the underlying alphabet, we can look at more interesting
+   elements of&#160;C. The most obvious of the language elements are
+   <dfn>keywords</dfn> and <dfn>identifiers</dfn>; their forms are identical
+   (although their meanings are different).</p>
+
+  <h2><a name="section-1"></a>2.4.1.&#160;Keywords</h2>
+   
+
+   <p>C keeps a small set of <dfn>keywords</dfn> for its own use. These
+    keywords cannot be used as identifiers in the program &#8212; a common
+    restriction with modern languages. Where users of Old C may be surprised
+    is in the introduction of some new keywords; if those names were used as
+    identifiers in previous programs, then the programs will have to be
+    changed. It will be easy to spot, because it will provoke your compiler
+    into telling you about invalid names for things. Here is the list of
+    keywords used in Standard&#160;C; you will notice that none of them use
+    upper-case letters.</p>
+
+   <div class="inset-table"><a name="table-3"></a><table><tbody><tr class="cbook-table-first-row">
+     <td><code>auto</code></td> <td><code>double</code></td>
+     <td><code>int</code></td> <td><code>struct</code></td>
+    </tr><tr class="cbook-table-row">
+     <td><code>break</code></td> <td><code>else</code></td>
+     <td><code>long</code></td> <td><code>switch</code></td>
+    </tr><tr class="cbook-table-row">
+     <td><code>case</code></td> <td><code>enum</code></td>
+     <td><code>register</code></td> <td><code>typedef</code></td>
+    </tr><tr class="cbook-table-row">
+     <td><code>char</code></td> <td><code>extern</code></td>
+     <td><code>return</code></td> <td><code>union</code></td>
+    </tr><tr class="cbook-table-row">
+     <td><code>const</code></td> <td><code>float</code></td>
+     <td><code>short</code></td> <td><code>unsigned</code></td>
+    </tr><tr class="cbook-table-row">
+     <td><code>continue</code></td> <td><code>for</code></td>
+     <td><code>signed</code></td> <td><code>void</code></td>
+    </tr><tr class="cbook-table-row">
+     <td><code>default</code></td> <td><code>goto</code></td>
+     <td><code>sizeof</code></td> <td><code>volatile</code></td>
+    </tr><tr class="cbook-table-last-row">
+     <td><code>do</code></td> <td><code>if</code></td>
+     <td><code>static</code></td> <td><code>while</code></td>
+    </tr></tbody></table><cite>Table&#160;2.3.&#160;Keywords</cite></div>
+
+   <p>The new keywords that are likely to surprise old programmers are:
+    <code>const</code>, <code>signed</code>, <code>void</code> and
+    <code>volatile</code> (although <code>void</code> has been around for a
+    while). Eagle eyed readers may have noticed that some implementations of
+    C used to use the keywords <code>entry</code>, <code>asm</code>, and
+    <code>fortran</code>. These are not part of the Standard, and few will
+    mourn them.</p>
+
+  
+
+  <h2><a name="section-2"></a>2.4.2.&#160;Identifiers</h2>
+   
+
+   <p><dfn>Identifier</dfn> is the fancy term used to mean &#8216;name&#8217;.
+    In&#160;C, identifiers are used to refer to a number of things: we've
+    already seen them used to name variables and functions. They are also
+    used to give names to some things we haven't seen yet, amongst which are
+    <dfn>labels</dfn> and the &#8216;tags&#8217; of <dfn>structures</dfn>,
+    <dfn>unions</dfn>, and <dfn>enums</dfn>.</p>
+
+   <p>The rules for the construction of identifiers are simple: you may use
+    the 52 upper and lower case alphabetic characters, the 10 digits and
+    finally the underscore &#8216;<code>_</code>&#8217;, which is considered to be
+    an alphabetic character for this purpose. The only restriction is the
+    usual one; identifiers <em>must</em> start with an alphabetic
+    character.</p>
+
+   <p>Although there is no restriction on the length of identifiers in the
+    Standard, this is a point that needs a bit of explanation. In Old&#160;C,
+    as in Standard&#160;C, there has <em>never</em> been any restriction on
+    the length of identifiers. The problem is that there was never any
+    guarantee that more than a certain number of characters would be checked
+    when names were compared for equality&#8212;in Old&#160;C this was eight
+    characters, in Standard&#160;C this has changed to&#160;31.</p>
+
+   <p>So, practically speaking, the new limit is
+    31&#160;characters&#8212;although identifiers <em>may</em> be longer, they
+    must differ in the first 31&#160;characters if you want to be sure that
+    your programs are portable. The Standard allows for implementations to
+    support longer names if they wish to, so if you do use longer names, make
+    sure that you don't rely on the checking stopping at&#160;31.</p>
+
+   <p>One of the most controversial parts of the Standard is the length of
+    <dfn>external identifiers</dfn>. External identifiers are the ones that
+    have to be visible outside the current source code file. Typical examples
+    of these would be library routines or functions which have to be called
+    from several different source files.</p>
+
+   <p>The Standard chose to stay with the old restrictions on these external
+    names: they are not guaranteed to be different unless they differ from
+    each other in the first six characters. Worse than that, upper and lower
+    case letters may be treated the same!</p>
+
+   <p>The reason for this is a pragmatic one: the way that most
+    C&#160;compilation systems work is to use operating system specific tools
+    to bind library functions into a C&#160;program. These tools are outside
+    the control of the C&#160;compiler writer, so the Standard has to impose
+    realistic limits that are likely to be possible to meet. There is nothing
+    to prevent any specific implementation from giving better limits than
+    these, but for maximum portability the six monocase characters must be
+    all that you expect. The Standard warns that it views both the use of
+    only one case and any restriction on the length of external names to less
+    than 31&#160;characters as obsolescent features. A later standard may
+    insist that the restrictions are lifted; let's hope that it is soon.</p>
+
+  
+
+ <div class="cbook_next_prev"><p><a href="textual_program_structure.html">Previous section</a> | <a href="../chapter2/">Chapter contents</a> | <a href="variable_declaration.html">Next section</a></p></div>
+
+    </main>
+    <nav id="menu" class="Left">
+      
+ 
+  
+  <div class="nav">
+
+	
+	
+			
+			  <div class="nav0">
+				
+				  <a href="/">Publications</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav1">
+				
+				  <a href="/c_book/">The C&nbsp;Book</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/preface/">Preface</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter1/">Introduction</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter2/">Variables &amp; arithmetic</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/fundamentals.html">Fundamentals</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/alphabet_of_c.html">The C&#160;alphabet</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/textual_program_structure.html">Textual program structure</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <strong>Keywords &amp; identifiers</strong>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/variable_declaration.html">Declaring variables</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/real_types.html">Reals</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/integral_types.html">Integers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/expressions_and_arithmetic.html">Expressions &amp; arithmetic</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/constants.html">Constants</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/summary.html">Summary</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/exercises.html">Exercises</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter3/">Control flow</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter4/">Functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter5/">Arrays &amp; pointers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter6/">Structures</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter7/">Preprocessor</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter8/">Specialized areas</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter9/">Libraries</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter10/">Complete Programs</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/answers/">Answers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/copyright.html">Copyright</a>
+				
+				
+			</div>
+			
+	
+
+</div>
+
+ 
+
+      <div class="ColBtm">
+        <hr />
+<div class="h1"><a href="https://ebusiness.gbdirect.co.uk/contact.html">Contact Us</a></div>
+
+      </div>
+
+    </nav>
+    <aside id="sidebar" class="Right">
+      
+ <div class="box">
+  
+  
+<img src="https://global.gbdirect.co.uk/Themes/printer-friendly-12x12.png" alt="" title="Printer-friendly version of this page" />
+<a href="?format=pf" rel="nofollow">
+  Printer-friendly version
+</a>
+
+ </div>
+
+ <div class="box">
+  <h3>The C Book</h3>
+  
+<p>This book is published as a matter of historical interest.
+ Please read the
+ <a href="/c_book/copyright.html">copyright and disclaimer information</a>.</p>
+
+<p>GBdirect Ltd provides up-to-date training and consultancy in
+ <a href="http://training.gbdirect.co.uk/courses/c/">C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c/real_time_linux_embedded_c_training.html">Embedded C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c++/">C++</a>
+ and a wide range of
+ <a href="http://training.gbdirect.co.uk/courses/">other subjects based on
+ open standards</a> if you happen to be interested.</p>
+
+ </div>
+
+
+    </aside>
+  </div>
+  
+<script type="text/javascript">
+        var maxheight = 0;
+        var a =  Array('main', 'menu', 'sidebar');
+        for(index in a){
+                var name = a[index];
+                // alert(name);
+                var id = document.getElementById(name);
+                if(id){
+                        if(id.offsetHeight > maxheight){
+                                maxheight = id.offsetHeight;
+                        }
+                }
+        }
+        var tabbar = document.getElementById('tabsbar');
+        if(tabbar){
+                if(tabbar.style) tabbar=tabbar.style;
+                tabbar.left = 0+'px';
+                tabbar.top = maxheight+'px';
+        }
+        
+</script>
+</body>
+</html>

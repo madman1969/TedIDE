@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1">
+<title>The C Book &#8212; Sizeof and storage allocation</title>
+<meta property="og:title" content="The C Book &amp;#8212; Sizeof and storage allocation" />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://global.gbdirect.co.uk/Themes/logo-og.png" />
+
+<link rel="SHORTCUT ICON" href="https://global.gbdirect.co.uk/favicon.ico" />
+<link rel="stylesheet" type="text/css" href="https://global.gbdirect.co.uk/Themes/Quarters.css" />
+
+<link rel="prev" href="/c_book/chapter5/character_handling.html" />
+<link rel="next" href="/c_book/chapter5/function_pointers.html" />
+<link rel="contents" href="/c_book/chapter5/" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<!-- order 6-->
+<!-- lastmod 2005-11-10T16:42:05Z-->
+
+
+<link rel="canonical" href="https://publications.gbdirect.co.uk/c_book/chapter5/sizeof_and_malloc.html"/><meta property="og:url" content="https://publications.gbdirect.co.uk/c_book/chapter5/sizeof_and_malloc.html" />
+<script type="text/javascript"> var _gaq = _gaq || []; _gaq.push(['_setAccount', 'UA-3566842-1']); _gaq.push(['_setDomainName', '.gbdirect.co.uk']); _gaq.push(['_trackPageview']); (function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = 'https://www.google-analytics.com/ga.js'; var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s); })(); </script>
+</head>
+
+<body>
+  <header class="Banner">
+    <span id="Logo">
+      <a href="https://ebusiness.gbdirect.co.uk">
+        <img src="https://global.gbdirect.co.uk/Themes/gbdirect.gif"
+             alt="GBdirect Homepage"
+             title="GBdirect Homepage" /></a>
+    </span>
+<!-- Original homebrew search
+    <form action="https://global.gbdirect.co.uk/search.cgi"
+          method="get" id="Search">
+      <label for="search_textbox">Search</label>
+      <input type="text" name="query" size="12" id="search_textbox" value="" />
+      <input type="submit" name="Submit" value="Go" />
+    </form>
+-->
+<!-- Google search -->
+    <form class="Search" action="https://www.google.com/cse" id="cse-search-box">
+      <input type="hidden" name="cx" value="010270212093732037646:4pvgkishmkg" />
+      <input type="hidden" name="ie" value="UTF-8" />
+      <label for="search_textbox">Search</label>
+      <input type="text" name="q" id="search_textbox" size="12" />
+      <input type="submit" name="sa" value="Go" />
+    </form>
+    <script type="text/javascript" src="https://www.google.com/cse/brand?form=cse-search-box&amp;lang=en&amp;sitesearch=true"></script>
+<!-- End Google search -->
+  </header>
+  <nav class="Tabsbar"><span class="ThisTab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span> <span class="NoCSS2">| </span> <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/contact.html">Contact</a></span></nav>
+  <div id="container" itemscope itemtype="http://schema.org/WebPage">
+    <meta itemprop="isFamilyFriendly" content="1" />
+    <meta itemprop="inLanguage" content="en" />
+    <nav class="Tabsbar" id="tabsbar" style="position: absolute; width: 100%">
+  
+  
+    <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/">About Us</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://consulting.gbdirect.co.uk/">Consultancy</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://development.gbdirect.co.uk/">Software</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="ThisTab">Publications</span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-source.gbdirect.co.uk/">Open&nbsp;Source</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://software-support.gbdirect.co.uk/">Support</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-standards.gbdirect.co.uk/">Open&nbsp;Standards</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://faq.gbdirect.co.uk/">FAQ</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://jobs.gbdirect.co.uk/">Jobs</a></span>
+  
+
+</nav>
+    <main id="main" >
+	  
+		<nav id="breadcrumb" itemprop="breadcrumb">
+			
+			<a href="https://publications.gbdirect.co.uk/">Publications</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/">The C&nbsp;Book</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/chapter5/">Arrays &amp; pointers</a>
+			
+			 &gt; Sizeof &amp; malloc
+			
+		</nav>
+		<br />
+	  
+      <h1>5.5. Sizeof and storage allocation</h1>
+      
+      
+
+
+  
+
+  <p>The <code>sizeof</code> operator returns the size in bytes of its
+   operand. Whether the result of <code>sizeof</code> is <code>unsigned
+   int</code> or <code>unsigned long</code> is implementation
+   defined&#8212;which is why the declaration of malloc above ducked the
+   issue by omitting any parameter information; normally you would use the
+   <code>stdlib.h</code> header file to declare <code>malloc</code>
+   correctly. Here is the last example done portably:</p>
+
+  <pre>
+#include &lt;stdlib.h&gt;     /* declares malloc() */
+float *fp;
+
+fp = (float *)malloc(sizeof(float));</pre>
+
+  <p>The operand of <code>sizeof</code> only has to be parenthesized if it's
+   a type name, as it was in the example. If you are using the name of
+   a data object instead, then the parentheses can be omitted, but they
+   rarely are.</p>
+
+  <pre>
+#include &lt;stdlib.h&gt;
+
+int *ip, ar[100];
+ip = (int *)malloc(sizeof ar);</pre>
+
+  <p>In the last example, the array <code>ar</code> is an array of <code>100
+   ints</code>; after the call to <code>malloc</code> (assuming that it was
+   successful), <code>ip</code> will point to a region of store that can
+   also be treated as an array of <code>100 ints</code>.</p>
+
+  <p>The fundamental unit of storage in C is the <code>char</code>, and by
+   definition</p>
+
+  <pre>
+sizeof(char)</pre>
+
+  <p>is equal to 1, so you could allocate space for an array of ten
+   <code>char</code>s with</p>
+
+  <pre>
+malloc(10)</pre>
+
+  <p>while to allocate room for an array of ten <code>int</code>s, you would
+   have to use</p>
+
+  <pre>
+malloc(sizeof(int[10]))</pre>
+
+  <p>If <code>malloc</code> can't find enough free space to satisfy
+   a request it returns a null pointer to indicate failure. For historical
+   reasons, the <code>stdio.h</code> header file contains a defined constant
+   called NULL which is traditionally used to check the return value from
+   <code>malloc</code> and some other library functions. An explicit
+   <code>0</code> or <code>(void *)0</code> could equally well be used.</p>
+
+  <p>As a first illustration of the use of <code>malloc</code>, here's
+   a program which reads up to <code>MAXSTRING</code> strings from its input
+   and sort them into alphabetical order using the library
+   <code>strcmp</code> routine. The strings are terminated by
+   a &#8216;<code>\n</code>&#8217; character. The sort is done by keeping an array
+   of pointers to the strings and simply exchanging the pointers until the
+   order is correct. This saves having to copy the strings themselves, which
+   improves the efficency somewhat.</p>
+
+  <p>The example is done first using fixed size arrays, then another version
+   uses malloc and allocates space for the strings at run time.
+   Unfortunately, the array of pointers is still fixed in size: a better
+   solution would use a linked list or similar data structure to store the
+   pointers and would have no fixed arrays at all. At the moment, we haven't
+   seen how to do that.</p>
+
+  <p>The overall structure is this:</p>
+
+  <pre>
+while(number of strings read &lt; MAXSTRING
+      &amp;&amp; input still remains){
+
+              read next string;
+}
+sort array of pointers;
+print array of pointers;
+exit;</pre>
+
+  <p>A number of functions are used to implement this program:</p>
+
+  <dl>
+   <dt><code>char *next_string(char *destination)</code></dt>
+   <dd>
+    <p>Read a line of characters terminated by &#8216;<code>\n</code>&#8217; from
+     the program's input. The first <code>MAXLEN-1</code> characters are
+     written into the array pointed to by destination.</p>
+    <p>If the first character read is <code>EOF</code>, return a null pointer,
+     otherwise return the address of the start of the string (destination).
+     On return, destination always points to a null-terminated string.</p>
+   </dd>
+
+   <dt><code>void sort_arr(const char *p_array[])</code></dt>
+   <dd>
+    <p><code>P_array[]</code> is an array of pointers to characters. The
+     array can be arbitrarily long; its end is indicated by the first element
+     containing a null pointer.</p>
+    <p><code>Sort_arr</code> sorts the pointers so that the pointers point to
+     strings which are in alphabetical order when the array is traversed in
+     index order.</p>
+   </dd>
+
+   <dt><code>void print_arr(const char *p_array[])</code></dt>
+   <dd>Like <code>sort_arr</code>, but prints the strings in index order.</dd>
+  </dl>
+
+  <p>It will help to understand the examples if you remember that in an
+   expression, an array's name is converted to the address of its first
+   element. Similarly, for a two-dimensional array (such as
+   <code>strings</code> below), then the expression
+   <code>strings[1][2]</code> has type char, but <code>strings[1]</code> has
+   type &#8216;array of <code>char</code>&#8217; which is therefore converted to
+   the address of the first element: it is equivalent to
+   <code>&amp;strings[1][0]</code>.</p>
+
+  <div class="inset-example"><a name="example-10"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+
+#define MAXSTRING       50      /* max no. of strings */
+#define MAXLEN          80      /* max length. of strings */
+
+void print_arr(const char *p_array[]);
+void sort_arr(const char *p_array[]);
+char *next_string(char *destination);
+
+main(){
+      /* leave room for null at end */
+      char *p_array[MAXSTRING+1];
+
+      /* storage for strings */
+      char strings[MAXSTRING][MAXLEN];
+
+      /* count of strings read */
+      int nstrings;
+
+      nstrings = 0;
+      while(nstrings &lt; MAXSTRING &amp;&amp;
+              next_string(strings[nstrings]) != 0){
+
+              p_array[nstrings] = strings[nstrings];
+              nstrings++;
+      }
+      /* terminate p_array */
+      p_array[nstrings] = 0;
+
+      sort_arr(p_array);
+      print_arr(p_array);
+      exit(EXIT_SUCCESS);
+}
+
+void print_arr(const char *p_array[]){
+      int index;
+      for(index = 0; p_array[index] != 0; index++)
+              printf(&quot;%s\n&quot;, p_array[index]);
+}
+
+
+void sort_arr(const char *p_array[]){
+      int comp_val, low_index, hi_index;
+      const char *tmp;
+
+      for(low_index = 0;
+              p_array[low_index] != 0 &amp;&amp;
+                              p_array[low_index+1] != 0;
+                      low_index++){
+
+              for(hi_index = low_index+1;
+                      p_array[hi_index] != 0;
+                              hi_index++){
+
+                      comp_val=strcmp(p_array[hi_index],
+                              p_array[low_index]);
+                      if(comp_val &gt;= 0)
+                              continue;
+                      /* swap strings */
+                      tmp = p_array[hi_index];
+                      p_array[hi_index] = p_array[low_index];
+                      p_array[low_index] = tmp;
+              }
+      }
+}
+
+
+
+char *next_string(char *destination){
+      char *cp;
+      int c;
+
+      cp = destination;
+      while((c = getchar()) != '\n' &amp;&amp; c != EOF){
+              if(cp-destination &lt; MAXLEN-1)
+                      *cp++ = c;
+      }
+      *cp = 0;
+      if(c == EOF &amp;&amp; cp == destination)
+              return(0);
+      return(destination);
+}</pre><cite>Example&#160;5.10</cite></div>
+
+  <p>It is no accident that <code>next_string</code> returns a pointer. We
+   can now dispense with the strings array by getting
+   <code>next_string</code> to allocate its own storage.</p>
+
+  <div class="inset-example"><a name="example-11"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+
+#define MAXSTRING       50      /* max no. of strings */
+#define MAXLEN          80      /* max length. of strings */
+
+void print_arr(const char *p_array[]);
+void sort_arr(const char *p_array[]);
+char *next_string(void);
+
+main(){
+      char *p_array[MAXSTRING+1];
+      int nstrings;
+
+      nstrings = 0;
+      while(nstrings &lt; MAXSTRING &amp;&amp;
+              (p_array[nstrings] = next_string()) != 0){
+
+              nstrings++;
+      }
+      /* terminate p_array */
+      p_array[nstrings] = 0;
+
+      sort_arr(p_array);
+      print_arr(p_array);
+      exit(EXIT_SUCCESS);
+}
+
+void print_arr(const char *p_array[]){
+      int index;
+      for(index = 0; p_array[index] != 0; index++)
+              printf(&quot;%s\n&quot;, p_array[index]);
+}
+
+
+void sort_arr(const char *p_array[]){
+      int comp_val, low_index, hi_index;
+      const char *tmp;
+
+      for(low_index = 0;
+              p_array[low_index] != 0 &amp;&amp;
+                      p_array[low_index+1] != 0;
+                      low_index++){
+
+              for(hi_index = low_index+1;
+                      p_array[hi_index] != 0;
+                              hi_index++){
+
+                      comp_val=strcmp(p_array[hi_index],
+                              p_array[low_index]);
+                      if(comp_val &gt;= 0)
+                              continue;
+                      /* swap strings */
+                      tmp = p_array[hi_index];
+                      p_array[hi_index] = p_array[low_index];
+                      p_array[low_index] = tmp;
+              }
+      }
+}
+
+char *next_string(void){
+      char *cp, *destination;
+      int c;
+
+      destination = (char *)malloc(MAXLEN);
+      if(destination != 0){
+              cp = destination;
+              while((c = getchar()) != '\n' &amp;&amp; c != EOF){
+                      if(cp-destination &lt; MAXLEN-1)
+                              *cp++ = c;
+              }
+              *cp = 0;
+              if(c == EOF &amp;&amp; cp == destination)
+                      return(0);
+      }
+      return(destination);
+}</pre><cite>Example&#160;5.11</cite></div>
+
+  <p>Finally, for the extremely brave, here is the whole thing with even
+   <code>p_array</code> allocated using <code>malloc</code>. Further, most
+   of the array indexing is rewritten to use pointer notation. If you are
+   feeling queasy, skip this example. It is hard. One word of explanation:
+   <code>char **p</code> means a pointer to a pointer to a character. Many
+   C programmers find this hard to deal with.</p>
+
+  <div class="inset-example"><a name="example-12"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.hi&gt;
+#include &lt;string.h&gt;
+
+#define MAXSTRING       50      /* max no. of strings */
+#define MAXLEN          80      /* max length. of strings */
+
+void print_arr(const char **p_array);
+void sort_arr(const char **p_array);
+char *next_string(void);
+
+main(){
+      char **p_array;
+      int nstrings;   /* count of strings read */
+
+      p_array = (char **)malloc(
+                      sizeof(char *[MAXSTRING+1]));
+      if(p_array == 0){
+              printf(&quot;No memory\n&quot;);
+              exit(EXIT_FAILURE);
+      }
+
+      nstrings = 0;
+      while(nstrings &lt; MAXSTRING &amp;&amp;
+              (p_array[nstrings] = next_string()) != 0){
+
+              nstrings++;
+      }
+      /* terminate p_array */
+      p_array[nstrings] = 0;
+
+      sort_arr(p_array);
+      print_arr(p_array);
+      exit(EXIT_SUCCESS);
+}
+
+void print_arr(const char **p_array){
+      while(*p_array)
+              printf(&quot;%s\n&quot;, *p_array++);
+}
+
+
+void sort_arr(const char **p_array){
+      const char **lo_p, **hi_p, *tmp;
+
+      for(lo_p = p_array;
+              *lo_p != 0 &amp;&amp; *(lo_p+1) != 0;
+                                      lo_p++){
+              for(hi_p = lo_p+1; *hi_p != 0; hi_p++){
+
+                      if(strcmp(*hi_p, *lo_p) &gt;= 0)
+                              continue;
+                      /* swap strings */
+                      tmp = *hi_p;
+                      *hi_p = *lo_p;
+                      *lo_p = tmp;
+              }
+      }
+}
+
+
+
+char *next_string(void){
+      char *cp, *destination;
+      int c;
+
+      destination = (char *)malloc(MAXLEN);
+      if(destination != 0){
+              cp = destination;
+              while((c = getchar()) != '\n' &amp;&amp; c != EOF){
+                      if(cp-destination &lt; MAXLEN-1)
+                              *cp++ = c;
+              }
+              *cp = 0;
+              if(c == EOF &amp;&amp; cp == destination)
+                      return(0);
+      }
+      return(destination);
+}</pre><cite>Example&#160;5.12</cite></div>
+
+  <p>To further illustrate the use of <code>malloc</code>, another example
+   program follows which can cope with arbitrarily long strings. It simply
+   reads strings from its standard input, looking for a newline character to
+   mark the end of the string, then prints the string on its standard
+   output.  It stops when it detects end-of-file. The characters are put
+   into an array, the end of the string being indicated (as always) by
+   a zero. The newline is not stored, but used to detect when a full line of
+   input should be printed on the output. The program doesn't know how long
+   the string will be, so it starts by allocating ten characters&#8212;enough
+   for a short string.</p>
+
+  <p>If the string is more than ten characters long, <code>malloc</code> is
+   called to allocate room for the current string plus ten more characters.
+   The current characters are copied into the new space, the old storage
+   previously allocated is released and the program continues using the new
+   storage.</p>
+
+  <p>To release storage allocated by <code>malloc</code>, the library
+   function <code>free</code> is used. If you don't release storage when it
+   isn't needed any more, it just hangs around taking up space. Using
+   <code>free</code> allows it to be &#8216;given away&#8217;, or at least re-used
+   later.</p>
+
+  <p>The program reports errors by using <code>fprintf</code>, a close
+   cousin of <code>printf</code>. The only difference between them is that
+   fprintf takes an additional first argument which indicates where its
+   output should go. There are two constants of the right type for this
+   purpose defined in <code>stdio.h</code>. Using <code>stdout</code>
+   indicates that the program's standard output is to be used;
+   <code>stderr</code> refers to the program's standard error stream. On
+   some systems both may be the same, but other systems do make the
+   distinction.</p>
+
+  <div class="inset-example"><a name="example-13"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+
+#define GROW_BY 10      /* string grows by 10 chars */
+
+main(){
+      char *str_p, *next_p, *tmp_p;
+      int ch, need, chars_read;
+
+      if(GROW_BY &lt; 2){
+              fprintf(stderr,
+                      &quot;Growth constant too small\n&quot;);
+              exit(EXIT_FAILURE);
+      }
+
+      str_p = (char *)malloc(GROW_BY);
+      if(str_p == NULL){
+              fprintf(stderr,&quot;No initial store\n&quot;);
+              exit(EXIT_FAILURE);
+      }
+
+      next_p = str_p;
+      chars_read = 0;
+      while((ch = getchar()) != EOF){
+              /*
+               * Completely restart at each new line.
+               * There will always be room for the
+               * terminating zero in the string,
+               * because of the check further down,
+               * unless GROW_BY is less than 2,
+               * and that has already been checked.
+               */
+              if(ch == '\n'){
+                      /* indicate end of line */
+                      *next_p = 0;
+                      printf(&quot;%s\n&quot;, str_p);
+                      free(str_p);
+                      chars_read = 0;
+                      str_p = (char *)malloc(GROW_BY);
+                      if(str_p == NULL){
+                              fprintf(stderr,&quot;No initial store\n&quot;);
+                              exit(EXIT_FAILURE);
+                      }
+                      next_p = str_p;
+                      continue;
+              }
+              /*
+               * Have we reached the end of the current
+               * allocation ?
+               */
+              if(chars_read == GROW_BY-1){
+                      *next_p = 0;    /* mark end of string */
+                      /*
+                       * use pointer subtraction
+                       * to find length of
+                       * current string.
+                       */
+                      need = next_p - str_p +1;
+                      tmp_p = (char *)malloc(need+GROW_BY);
+                      if(tmp_p == NULL){
+                              fprintf(stderr,&quot;No more store\n&quot;);
+                              exit(EXIT_FAILURE);
+                      }
+                      /*
+                       * Copy the string using library.
+                       */
+                      strcpy(tmp_p, str_p);
+                      free(str_p);
+                      str_p = tmp_p;
+                      /*
+                       * and reset next_p, character count
+                       */
+                      next_p = str_p + need-1;
+                      chars_read = 0;
+              }
+              /*
+               * Put character at end of current string.
+               */
+              *next_p++ = ch;
+              chars_read++;
+      }
+      /*
+       * EOF - but do unprinted characters exist?
+       */
+      if(str_p - next_p){
+              *next_p = 0;
+              fprintf(stderr,&quot;Incomplete last line\n&quot;);
+              printf(&quot;%s\n&quot;, str_p);
+      }
+      exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;5.13</cite></div>
+
+  <p>That may not be a particularly realistic example of how to handle
+   arbitrarily long strings&#8212;for one thing, the maximum storage demand
+   is <em>twice</em> the amount needed for the longest string&#8212;but it
+   does actually work. It also costs rather a lot in terms of copying
+   around. Both problems could be reduced by using the library
+   <code>realloc</code> function instead.</p>
+
+  <p>A more sophisticated method might use a linked list, implemented with
+   the use of <dfn>structures</dfn>, as described in the next chapter. That
+   would have its drawbacks too though, because then the standard library
+   routines wouldn't work for a different method of storing strings.</p>
+
+  <h2><a name="section-1"></a>5.5.1.&#160;What sizeof can't do</h2>
+   
+
+   <p>One common mistake made by beginners is shown below:</p>
+
+   <div class="inset-example"><a name="example-14"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+const char arr[] = &quot;hello&quot;;
+const char *cp = arr;
+main(){
+
+      printf(&quot;Size of arr %lu\n&quot;, (unsigned long)
+                      sizeof(arr));
+      printf(&quot;Size of *cp %lu\n&quot;, (unsigned long)
+                      sizeof(*cp));
+      exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;5.14</cite></div>
+
+   <p>The numbers printed will <em>not</em> be the same. The first will,
+    correctly, identify the size of <code>arr</code> as <code>6</code>; five
+    characters followed by a null. The second one will always, on every
+    system, print <code>1</code>. That's because the type of
+    <code>*cp</code> is <code>const char</code>, which can only have a size
+    of <code>1</code>, whereas the type of <code>arr</code> is different:
+    array of <code>const char</code>. The confusion arises because this is
+    the one place that the use of an array is not converted into a pointer
+    first. It is never possible, using <code>sizeof</code>, to find out how
+    long an array a pointer points to; you <em>must</em> have a genuine
+    array name instead.</p>
+
+  
+
+  <h2><a name="section-2"></a>5.5.2.&#160;The type of sizeof</h2>
+   
+
+   <p>Now comes the question of just what this does:</p>
+
+   <pre>
+sizeof ( sizeof (anything legal) )</pre>
+
+   <p>That is to say, what type does the result of <code>sizeof</code> have?
+    The answer is that it is implementation defined, and will be either
+    <code>unsigned long</code> or <code>unsigned int</code>, depending on
+    your implementation. There are two safe things to do: either always cast
+    the return value to unsigned long, as the examples have done, or to use
+    the defined type <code>size_t</code> provided in the
+    <code>&lt;stddef.h&gt;</code> header file. For example:</p>
+
+   <div class="inset-example"><a name="example-15"></a><pre>
+#include &lt;stddef.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+main(){
+      size_t sz;
+      sz = sizeof(sz);
+      printf(&quot;size of sizeof is %lu\n&quot;,
+              (unsigned long)sz);
+      exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;5.15</cite></div>
+
+  
+
+ <div class="cbook_next_prev"><p><a href="character_handling.html">Previous section</a> | <a href="../chapter5/">Chapter contents</a> | <a href="function_pointers.html">Next section</a></p></div>
+
+    </main>
+    <nav id="menu" class="Left">
+      
+ 
+  
+  <div class="nav">
+
+	
+	
+			
+			  <div class="nav0">
+				
+				  <a href="/">Publications</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav1">
+				
+				  <a href="/c_book/">The C&nbsp;Book</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/preface/">Preface</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter1/">Introduction</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter2/">Variables &amp; arithmetic</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter3/">Control flow</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter4/">Functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter5/">Arrays &amp; pointers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter5/opening_shots.html">Opening shots</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter5/arrays.html">Arrays</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter5/pointers.html">Pointers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter5/character_handling.html">Character handling</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <strong>Sizeof &amp; malloc</strong>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter5/function_pointers.html">Function pointers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter5/pointer_expressions.html">Pointer expressions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter5/arrays_and_address_of.html">Arrays &amp; address-of</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter5/summary.html">Summary</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter5/exercises.html">Exercises</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter6/">Structures</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter7/">Preprocessor</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter8/">Specialized areas</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter9/">Libraries</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter10/">Complete Programs</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/answers/">Answers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/copyright.html">Copyright</a>
+				
+				
+			</div>
+			
+	
+
+</div>
+
+ 
+
+      <div class="ColBtm">
+        <hr />
+<div class="h1"><a href="https://ebusiness.gbdirect.co.uk/contact.html">Contact Us</a></div>
+
+      </div>
+
+    </nav>
+    <aside id="sidebar" class="Right">
+      
+ <div class="box">
+  
+  
+<img src="https://global.gbdirect.co.uk/Themes/printer-friendly-12x12.png" alt="" title="Printer-friendly version of this page" />
+<a href="?format=pf" rel="nofollow">
+  Printer-friendly version
+</a>
+
+ </div>
+
+ <div class="box">
+  <h3>The C Book</h3>
+  
+<p>This book is published as a matter of historical interest.
+ Please read the
+ <a href="/c_book/copyright.html">copyright and disclaimer information</a>.</p>
+
+<p>GBdirect Ltd provides up-to-date training and consultancy in
+ <a href="http://training.gbdirect.co.uk/courses/c/">C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c/real_time_linux_embedded_c_training.html">Embedded C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c++/">C++</a>
+ and a wide range of
+ <a href="http://training.gbdirect.co.uk/courses/">other subjects based on
+ open standards</a> if you happen to be interested.</p>
+
+ </div>
+
+
+    </aside>
+  </div>
+  
+<script type="text/javascript">
+        var maxheight = 0;
+        var a =  Array('main', 'menu', 'sidebar');
+        for(index in a){
+                var name = a[index];
+                // alert(name);
+                var id = document.getElementById(name);
+                if(id){
+                        if(id.offsetHeight > maxheight){
+                                maxheight = id.offsetHeight;
+                        }
+                }
+        }
+        var tabbar = document.getElementById('tabsbar');
+        if(tabbar){
+                if(tabbar.style) tabbar=tabbar.style;
+                tabbar.left = 0+'px';
+                tabbar.top = maxheight+'px';
+        }
+        
+</script>
+</body>
+</html>

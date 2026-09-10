@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1">
+<title>The C Book &#8212; Formatted I/O</title>
+<meta property="og:title" content="The C Book &amp;#8212; Formatted I/O" />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://global.gbdirect.co.uk/Themes/logo-og.png" />
+
+<link rel="SHORTCUT ICON" href="https://global.gbdirect.co.uk/favicon.ico" />
+<link rel="stylesheet" type="text/css" href="https://global.gbdirect.co.uk/Themes/Quarters.css" />
+
+<link rel="prev" href="/c_book/chapter9/input_and_output.html" />
+<link rel="next" href="/c_book/chapter9/character_io.html" />
+<link rel="contents" href="/c_book/chapter9/" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<!-- order 12-->
+<!-- lastmod 2005-11-10T16:42:02Z-->
+
+
+<link rel="canonical" href="https://publications.gbdirect.co.uk/c_book/chapter9/formatted_io.html"/><meta property="og:url" content="https://publications.gbdirect.co.uk/c_book/chapter9/formatted_io.html" />
+<script type="text/javascript"> var _gaq = _gaq || []; _gaq.push(['_setAccount', 'UA-3566842-1']); _gaq.push(['_setDomainName', '.gbdirect.co.uk']); _gaq.push(['_trackPageview']); (function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = 'https://www.google-analytics.com/ga.js'; var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s); })(); </script>
+</head>
+
+<body>
+  <header class="Banner">
+    <span id="Logo">
+      <a href="https://ebusiness.gbdirect.co.uk">
+        <img src="https://global.gbdirect.co.uk/Themes/gbdirect.gif"
+             alt="GBdirect Homepage"
+             title="GBdirect Homepage" /></a>
+    </span>
+<!-- Original homebrew search
+    <form action="https://global.gbdirect.co.uk/search.cgi"
+          method="get" id="Search">
+      <label for="search_textbox">Search</label>
+      <input type="text" name="query" size="12" id="search_textbox" value="" />
+      <input type="submit" name="Submit" value="Go" />
+    </form>
+-->
+<!-- Google search -->
+    <form class="Search" action="https://www.google.com/cse" id="cse-search-box">
+      <input type="hidden" name="cx" value="010270212093732037646:4pvgkishmkg" />
+      <input type="hidden" name="ie" value="UTF-8" />
+      <label for="search_textbox">Search</label>
+      <input type="text" name="q" id="search_textbox" size="12" />
+      <input type="submit" name="sa" value="Go" />
+    </form>
+    <script type="text/javascript" src="https://www.google.com/cse/brand?form=cse-search-box&amp;lang=en&amp;sitesearch=true"></script>
+<!-- End Google search -->
+  </header>
+  <nav class="Tabsbar"><span class="ThisTab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span> <span class="NoCSS2">| </span> <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/contact.html">Contact</a></span></nav>
+  <div id="container" itemscope itemtype="http://schema.org/WebPage">
+    <meta itemprop="isFamilyFriendly" content="1" />
+    <meta itemprop="inLanguage" content="en" />
+    <nav class="Tabsbar" id="tabsbar" style="position: absolute; width: 100%">
+  
+  
+    <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/">About Us</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://consulting.gbdirect.co.uk/">Consultancy</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://development.gbdirect.co.uk/">Software</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="ThisTab">Publications</span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-source.gbdirect.co.uk/">Open&nbsp;Source</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://software-support.gbdirect.co.uk/">Support</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-standards.gbdirect.co.uk/">Open&nbsp;Standards</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://faq.gbdirect.co.uk/">FAQ</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://jobs.gbdirect.co.uk/">Jobs</a></span>
+  
+
+</nav>
+    <main id="main" >
+	  
+		<nav id="breadcrumb" itemprop="breadcrumb">
+			
+			<a href="https://publications.gbdirect.co.uk/">Publications</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/">The C&nbsp;Book</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/chapter9/">Libraries</a>
+			
+			 &gt; Formatted I/O
+			
+		</nav>
+		<br />
+	  
+      <h1>9.11. Formatted I/O</h1>
+      
+      
+
+
+  
+
+  <p>There are a number of related functions used for formatted I/O, each one
+   determining the format of the I/O from a <dfn>format string</dfn>.  For
+   output, the format string consists of plain text, which is output unchanged,
+   and embedded <dfn>format specifications</dfn> which call for some special
+   processing of one of the remaining arguments to the function.  On input, the
+   plain text must match what is seen in the input stream; the format
+   specifications again specify what the meaning of remaining arguments is.</p>
+
+  <p>Each format specification is introduced by a <code>%</code> character,
+   followed by the rest of the specification.</p>
+
+  <h2><a name="section-1"></a>9.11.1.&#160;Output: the printf family</h2>
+   
+
+   <p>For those functions performing output, the format
+    specification takes the following form, with optional parts
+    enclosed in brackets:</p>
+
+   <pre>
+%<var>&lt;flags&gt;</var><var>&lt;field width&gt;</var><var>&lt;precision&gt;</var><var>&lt;length&gt;</var><var>conversion</var></pre>
+
+   <p>The meaning of <var>flags</var>, <var>field width</var>,
+    <var>precision</var>,  <var>length</var>,  and <var>conversion</var>  are
+    given  below,  although  tersely.  For more detail, it is worth looking at
+    what the Standard says.</p>
+
+   <dl>
+    <dt><var>flags</var></dt>
+    <dd>
+     <p>Zero or more of the following:</p>
+     <dl>
+      <dt><code>-</code></dt>
+      <dd>Left justify the conversion within its field.</dd>
+
+      <dt><code>+</code></dt>
+      <dd>A signed conversion will always start with a  plus  or
+       minus sign.</dd>
+
+      <dt><var>space</var></dt>
+      <dd>If the first character of a signed conversion is not a
+       sign, insert a space.  Overridden by <code>+</code> if present.</dd>
+
+      <dt><code>#</code></dt>
+      <dd>Forces an alternative form of output.  The first digit
+       of  an octal conversion will always be a <code>0</code>; inserts
+       <code>0X</code> in front of a non-zero hexadecimal conversion;  forces
+       a decimal point in all floating point conversions even
+       if one is not  necessary;  does  not  remove  trailing
+       zeros from <code>g</code> and <code>G</code> conversions.</dd>
+
+      <dt><code>0</code></dt>
+      <dd>Pad <code>d</code>, <code>i</code>, <code>o</code>, <code>u</code>,
+       <code>x</code>, <code>X</code>, <code>e</code>, <code>E</code>,
+       <code>f</code>, <code>F</code> and <code>G</code> conversions  on
+       the  left with zeros up to the field width.  Overidden
+       by the <code>-</code>&#160;flag.  If a precision is specified for the
+       <code>d</code>, <code>i</code>, <code>o</code>, <code>u</code>,
+       <code>x</code> or <code>X</code> conversions, the flag is ignored.  The
+       behaviour is undefined for other conversions.</dd>
+    </dl>
+   </dd>
+
+   <dt><var>field width</var></dt>
+   <dd>A decimal integer specifying  the  minimum  output  field width.   This
+    will  be  exceeded  if  necessary.   If an asterisk is used here, the next
+    argument is converted  to an  integer and used for the value of the field
+    width; if the value is negative it is treated as a <code>-</code>&#160;flag
+    followed by  a  positive  field  width.  Output that would be less than the
+    field width is padded with spaces (zeros if  the <var>field width</var>
+    integer  starts  with  a zero) to fit.  The padding is on the left unless
+    the left-adjustment flag is specified.</dd>
+
+   <dt><var>precision</var></dt>
+   <dd>This starts with a period &#8216;<code>.</code>&#8217;.  It specifies the
+    minimum number of digits for <code>d</code>, <code>i</code>,
+    <code>o</code>, <code>u</code>, <code>x</code>, or <code>X</code>
+    conversions; the number of digits after the decimal  point  for
+    <code>e</code>, <code>E</code>, <code>f</code> conversions;  the  maximum
+    number  of digits for <code>g</code> and <code>G</code> conversions; the
+    number of characters to be printed  from a  string  for  <code>s</code>
+    conversion.  The  amount  of  padding overrides the <code>field
+    width</code>.  If an asterisk is used  here, the next argument is converted
+    to an integer and used for the value of the field width. If the value  is
+    negative, it  is treated as if it were missing.  If only the period is
+    present, the precision is taken to be zero.</dd>
+
+   <dt><var>length</var></dt>
+   <dd><code>h</code> preceding a specifier to print an integral type  causes
+    it  to  be treated as if it were a <code>short</code>.  (Note that the
+    various sorts of short are always promoted to one of  the flavours of int
+    when passed as an argument.) <code>l</code> works like <code>h</code> but
+    applies to a <code>long</code> integral argument.  <code>L</code> is used
+    to indicate  that  a  <code>long double</code> argument is to be printed,
+    and only applies to the floating-point specifiers.  These are  cause
+    undefined behaviour if they are used with the &#8216;wrong&#8217; type of
+    conversion.</dd>
+
+   <dt><var>conversion</var></dt>
+   <dd>See Table&#160;9.5.</dd>
+   </dl>
+
+   <div class="inset-table"><a name="table-5"></a><table><thead><tr class="cbook-table-heading">
+     <th>Specifier</th>
+     <th>Effect</th>
+     <th>Default precision</th>
+    </tr></thead><tbody><tr class="cbook-table-first-row">
+     <td><code>d</code></td>
+     <td>signed decimal</td>
+     <td>1</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>i</code></td>
+     <td>signed decimal</td>
+     <td>1</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>u</code></td>
+     <td>unsigned decimal</td>
+     <td>1</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>o</code></td>
+     <td>unsigned octal</td>
+     <td>1</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>x</code></td>
+     <td>unsigned hexadecimal (<code>0</code>&#8211;<code>f</code>)</td>
+     <td>1</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>X</code></td>
+     <td>unsigned hexadecimal (<code>0</code>&#8211;<code>F</code>)</td>
+     <td>1</td>
+    </tr><tr class="cbook-table-row">
+     <td></td>
+     <td><var>Precision</var> specifies minimum number of digits, expanded
+      with leading zeros if necessary.  Printing a value
+      of zero with zero precision outputs no characters.</td>
+     <td></td>
+    </tr><tr class="cbook-table-row">
+     <td><code>f</code></td>
+     <td>Print a <code>double</code> with <var>precision</var>
+      digits (rounded) after the decimal point.  To suppress
+      the decimal point use a <var>precision</var> of explicitly zero.
+      Otherwise, at least one digit appears in front of the point.</td>
+     <td>6</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>e</code>, <code>E</code></td>
+     <td>Print a <code>double</code> in exponential format, rounded, with one
+      digit before the decimal point, <var>precision</var> after it.  A
+      <var>precision</var> of zero suppresses the decimal point.  There will
+      be at least two digits in the exponent, which is printed as
+      <code>1.23e15</code> in <code>e</code> format, or <code>1.23E15</code>
+      in <code>E</code> format.</td>
+     <td>6</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>g,G</code></td>
+     <td>Use style <code>f</code>, or <code>e</code> (<code>E</code> with
+      <code>G</code>) depending on the exponent.  If the exponent is less
+      than &#8722;4 or &#8805; <var>precision</var>, <code>f</code> is not
+      used.  Trailing zeros are suppressed, a decimal point is only
+      printed if there is a following digit.</td>
+     <td>unspecified</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>c</code></td>
+     <td>The <code>int</code> argument is converted
+              to an unsigned char and the
+              resultant character printed.</td>
+     <td></td>
+    </tr><tr class="cbook-table-row">
+     <td><code>s</code></td>
+     <td>Print a string up to <var>precision</var> digits long. If
+      <var>precision</var> is not specified, or is greater than the
+      length of the string, the string must be <code>NUL</code>
+      terminated.</td>
+     <td>infinite</td>
+    </tr><tr class="cbook-table-row">
+    <td><code>p</code></td>
+     <td>Display the value of a (<code>void&#160;*</code>) pointer in a
+      system-dependent way.</td>
+     <td></td>
+    </tr><tr class="cbook-table-row">
+     <td><code>n</code></td>
+     <td>The argument must be a pointer to an integer.  The number of
+      characters output so far by this call will be written into
+      the integer.</td>
+     <td></td>
+    </tr><tr class="cbook-table-last-row">
+     <td><code>%</code></td>
+     <td>A <code>%</code></td>
+     <td>&#8212;</td>
+    </tr></tbody></table><cite>Table&#160;9.5.&#160;Conversions</cite></div>
+
+   <p>The functions that use these formats are described in
+    Table&#160;9.6.  All need the inclusion of
+    <code>&lt;stdio.h&gt;</code>.  Their declarations are as shown.</p>
+
+   <pre>
+#include &lt;stdio.h&gt;
+
+int fprintf(FILE *stream, const char *format, ...);
+int printf(const char *format, ...);
+int sprintf(char *s, const char *format, ...);
+
+#include &lt;stdarg.h&gt;     /* as well as stdio.h */
+int vfprintf(FILE *stream, const char *format, va list arg);
+int vprintf(const char *format, va list arg);
+int vsprintf(char *s, const char *format, va list arg);</pre>
+
+   <div class="inset-table"><a name="table-6"></a><table><thead><tr class="cbook-table-heading">
+     <th>Name</th>
+     <th>Purpose</th>
+    </tr></thead><tbody><tr class="cbook-table-first-row">
+     <td><code>fprintf</code></td>
+     <td>General formatted output  as  described.
+      Output  is written to the file indicated
+      by <code>stream</code>.</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>printf</code></td>
+     <td>Identical  to  <code>fprintf</code>  with   a   first
+      argument equal to <code>stdout</code>.</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>sprintf</code></td>
+     <td>Identical to  <code>fprintf</code>  except  that  the
+      output  is  not  written  to a file, but
+      written into the character array pointed
+      to by <code>s</code>.</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>vfprintf</code></td>
+     <td>Formatted output  as  for  <code>fprintf</code>,  but
+      with the variable argument list replaced
+      by arg which must have been  initialized
+      by  <code>va_start</code>. <code>va_end</code>  is not called by
+      this function.</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>vprintf</code></td>
+     <td>Identical  to  <code>vfprintf</code>  with  a   first
+      argument equal to <code>stdout</code>.</td>
+    </tr><tr class="cbook-table-last-row">
+     <td><code>vsprintf</code></td>
+     <td>Formatted output  as  for  <code>sprintf</code>,  but
+      with the variable argument list replaced
+      by <code>arg</code> which must have been  initialized
+      by  <code>va_start</code>.   <code>va_end</code>  is not called by
+      this function.</td>
+    </tr></tbody></table><cite>Table&#160;9.6.&#160;Functions performing formatted output</cite></div>
+
+   <p>All of the above functions return the number  of  characters
+    output,  or a negative value on error.  The trailing null is
+    <em>not</em> counted by <code>sprintf</code> and <code>vsprintf</code>.</p>
+
+   <p>Implementations must permit at least 509&#160;characters  to  be
+    produced by any single conversion.</p>
+
+  
+
+  <h2><a name="section-2"></a>9.11.2.&#160;Input: the scanf family</h2>
+   
+
+   <p>A number of functions exist analogous to the <code>printf</code> family,
+    but for the purposes of input instead.  The most immediate difference
+    between the two families is that the <code>scanf</code> group needs to be
+    passed <em>pointers</em> to their arguments, so that the values read can be
+    assigned to the proper destinations.  Forgetting to pass a pointer is
+    a very common error, and one which the compiler cannot detect&#8212;the
+    variable argument list prevents it.</p>
+
+   <p>The format string is used to control interpretation of a stream of input
+    data, which generally contains values to be assigned to the objects pointed
+    to by the remaining arguments to <code>scanf</code>.  The contents of the
+    format string may contain:</p>
+
+   <dl>
+    <dt><var>white space</var></dt>
+    <dd>This causes the input stream to be read up to the next
+     non-white-space character.</dd>
+
+    <dt><var>ordinary character</var></dt>
+    <dd>Anything except white-space or <code>%</code> characters.  The next
+     character in the input stream <em>must</em> match this character.</dd>
+
+    <dt><var>conversion specification</var></dt>
+    <dd>This is a <code>%</code> character, followed by an optional
+     <code>*</code> character (which suppresses the conversion), followed by
+     an optional nonzero decimal integer specifying the maximum field width,
+     an optional <code>h</code>, <code>l</code> or <code>L</code> to control
+     the length of the conversion and finally a non-optional conversion
+     specifier.  Note that use of <code>h</code>, <code>l</code>, or
+     <code>L</code> will affect the type of pointer which must be used.</dd>
+   </dl>
+
+   <p>Except for the specifiers <code>c</code>, <code>n</code> and
+    <code>[</code>, a field of input is a sequence of non-space characters
+    starting at the first non-space character in the input.  It terminates at
+    the first conflicting character or when the input field width is
+    reached.</p>
+
+   <p>The result is put into wherever the corresponding argument points, unless
+    the assignment is suppressed using the <code>*</code> mentioned already.
+    The following conversion specifiers may be used:</p>
+
+   <dl>
+    <dt><code>d i o u x</code></dt>
+    <dd>Convert a signed integer, a signed integer in a form
+     acceptable to <code>strtol</code>, an octal integer, an unsigned
+     integer and a hexadecimal integer respectively.</dd>
+
+    <dt><code>e f g</code></dt>
+    <dd>Convert a <code>float</code> (<em>not</em> a double).</dd>
+
+    <dt><code>s</code></dt>
+    <dd>Read a string, and add a null at the end.  The string is
+     terminated by whitespace on input (which is not read as
+     part of the string).</dd>
+
+    <dt><code>[</code></dt>
+    <dd>Read a string.  A list of characters, called the <dfn>scan set</dfn>
+     follows the <code>[</code>. A <code>]</code> delimits the list. Characters
+     are read until (but not including) the first character which is
+     <em>not</em> in the scan set.  If the first character in the list
+     is a circumflex <code>^</code>, then the scan set includes any
+     character not in the list.  If the initial sequence is
+     <code>[^]</code> or <code>[]</code>, the <code>]</code> is not a
+     delimiter, but part of the list and another <code>]</code> will be needed
+     to end the list.  If there is a minus sign (<code>-</code>) in the list,
+     it must be either the first or the last character; otherwise the meaning
+     is implementation defined.</dd>
+
+    <dt><code>c</code></dt>
+    <dd>Read a single character; white space is significant here.
+     To read the first non-white space character, use <code>%1s</code>.  A
+     field width indicates that an array of characters is to
+     be read.</dd>
+
+    <dt><code>p</code></dt>
+    <dd>Read a (<code>void&#160;*</code>) pointer previously written out using
+     the <code>%p</code> of one of the <code>printfs</code>.</dd>
+
+    <dt><code>%</code></dt>
+    <dd>A <code>%</code> is expected in the input, no assignment is made.</dd>
+
+    <dt><code>n</code></dt>
+    <dd>Return as an integer the number of characters read by
+     this call so far.</dd>
+   </dl>
+
+   <p>The size specifiers have the effect shown in Table&#160;9.7.</p>
+
+   <div class="inset-table"><a name="table-7"></a><table><thead><tr class="cbook-table-heading">
+     <th>Specifier</th>
+     <th>Modifies</th>
+     <th>Converts</th>
+    </tr></thead><tbody><tr class="cbook-table-first-row">
+     <td><code>l</code></td>
+     <td><code>d i o u x</code></td>
+     <td>long int</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>h</code></td>
+     <td><code>d i o u x</code></td>
+     <td>short int</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>l</code></td>
+     <td><code>e f</code></td>
+     <td>double</td>
+    </tr><tr class="cbook-table-last-row">
+     <td><code>L</code></td>
+     <td><code>e f</code></td>
+     <td>long double</td>
+    </tr></tbody></table><cite>Table&#160;9.7.&#160;Size specifiers</cite></div>
+
+   <p>The functions are described below, with the following declarations:</p>
+
+   <pre>
+#include &lt;stdio.h&gt;
+
+int fscanf(FILE *stream, const char *format, ...);
+int sscanf(const char *s, const char *format, ...);
+int scanf(const char *format, ...);</pre>
+
+   <p><code>Fscanf</code> takes its input from the designated stream,
+    <code>scanf</code>  is identical  to  <code>fscanf</code>  with  a  first
+    argument of <code>stdin</code>, and <code>sscanf</code> takes its input
+    from the designated character array.</p>
+
+   <p>If an input failure occurs before  any  conversion,  EOF  is returned.
+    Otherwise,  the number of successful conversions is  returned:  this  may
+    be  zero  if  no  conversions  are performed.</p>
+
+   <p>An input failure is caused by reading <code>EOF</code>  or  reaching  the
+    end  of  the  input  string  (as appropriate).  A conversion failure is
+    caused by a failure to match the  proper  pattern for a particular
+    conversion.</p>
+
+  
+
+ <div class="cbook_next_prev"><p><a href="input_and_output.html">Previous section</a> | <a href="../chapter9/">Chapter contents</a> | <a href="character_io.html">Next section</a></p></div>
+
+    </main>
+    <nav id="menu" class="Left">
+      
+ 
+  
+  <div class="nav">
+
+	
+	
+			
+			  <div class="nav0">
+				
+				  <a href="/">Publications</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav1">
+				
+				  <a href="/c_book/">The C&nbsp;Book</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/preface/">Preface</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter1/">Introduction</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter2/">Variables &amp; arithmetic</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter3/">Control flow</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter4/">Functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter5/">Arrays &amp; pointers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter6/">Structures</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter7/">Preprocessor</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter8/">Specialized areas</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter9/">Libraries</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/introduction.html">Introduction</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/diagnostics.html">Diagnostics</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/character_handling.html">Character handling</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/localization.html">Localization</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/limits.html">Limits</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/maths_functions.html">Maths functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/nonlocal_jumps.html">Non-local jumps</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/signal_handling.html">Signal handling</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/stdarg.html">Stdarg</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/input_and_output.html">Input &amp; output</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <strong>Formatted I/O</strong>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/character_io.html">Character I/O</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/unformatted_io.html">Unformatted I/O</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/random_access_io.html">Random access I/O</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/general_utilities.html">General Utilities</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/string_handling.html">String handling</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/date_and_time.html">Date and time</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/summary.html">Summary</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter10/">Complete Programs</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/answers/">Answers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/copyright.html">Copyright</a>
+				
+				
+			</div>
+			
+	
+
+</div>
+
+ 
+
+      <div class="ColBtm">
+        <hr />
+<div class="h1"><a href="https://ebusiness.gbdirect.co.uk/contact.html">Contact Us</a></div>
+
+      </div>
+
+    </nav>
+    <aside id="sidebar" class="Right">
+      
+ <div class="box">
+  
+  
+<img src="https://global.gbdirect.co.uk/Themes/printer-friendly-12x12.png" alt="" title="Printer-friendly version of this page" />
+<a href="?format=pf" rel="nofollow">
+  Printer-friendly version
+</a>
+
+ </div>
+
+ <div class="box">
+  <h3>The C Book</h3>
+  
+<p>This book is published as a matter of historical interest.
+ Please read the
+ <a href="/c_book/copyright.html">copyright and disclaimer information</a>.</p>
+
+<p>GBdirect Ltd provides up-to-date training and consultancy in
+ <a href="http://training.gbdirect.co.uk/courses/c/">C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c/real_time_linux_embedded_c_training.html">Embedded C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c++/">C++</a>
+ and a wide range of
+ <a href="http://training.gbdirect.co.uk/courses/">other subjects based on
+ open standards</a> if you happen to be interested.</p>
+
+ </div>
+
+
+    </aside>
+  </div>
+  
+<script type="text/javascript">
+        var maxheight = 0;
+        var a =  Array('main', 'menu', 'sidebar');
+        for(index in a){
+                var name = a[index];
+                // alert(name);
+                var id = document.getElementById(name);
+                if(id){
+                        if(id.offsetHeight > maxheight){
+                                maxheight = id.offsetHeight;
+                        }
+                }
+        }
+        var tabbar = document.getElementById('tabsbar');
+        if(tabbar){
+                if(tabbar.style) tabbar=tabbar.style;
+                tabbar.left = 0+'px';
+                tabbar.top = maxheight+'px';
+        }
+        
+</script>
+</body>
+</html>

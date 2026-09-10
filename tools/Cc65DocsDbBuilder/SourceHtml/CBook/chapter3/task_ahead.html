@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1">
+<title>The C Book &#8212; The Task ahead</title>
+<meta property="og:title" content="The C Book &amp;#8212; The Task ahead" />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://global.gbdirect.co.uk/Themes/logo-og.png" />
+
+<link rel="SHORTCUT ICON" href="https://global.gbdirect.co.uk/favicon.ico" />
+<link rel="stylesheet" type="text/css" href="https://global.gbdirect.co.uk/Themes/Quarters.css" />
+
+
+<link rel="next" href="/c_book/chapter3/flow_control.html" />
+<link rel="contents" href="/c_book/chapter3/" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<!-- order 2-->
+<!-- lastmod 2005-11-10T16:42:04Z-->
+
+
+<link rel="canonical" href="https://publications.gbdirect.co.uk/c_book/chapter3/task_ahead.html"/><meta property="og:url" content="https://publications.gbdirect.co.uk/c_book/chapter3/task_ahead.html" />
+<script type="text/javascript"> var _gaq = _gaq || []; _gaq.push(['_setAccount', 'UA-3566842-1']); _gaq.push(['_setDomainName', '.gbdirect.co.uk']); _gaq.push(['_trackPageview']); (function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = 'https://www.google-analytics.com/ga.js'; var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s); })(); </script>
+</head>
+
+<body>
+  <header class="Banner">
+    <span id="Logo">
+      <a href="https://ebusiness.gbdirect.co.uk">
+        <img src="https://global.gbdirect.co.uk/Themes/gbdirect.gif"
+             alt="GBdirect Homepage"
+             title="GBdirect Homepage" /></a>
+    </span>
+<!-- Original homebrew search
+    <form action="https://global.gbdirect.co.uk/search.cgi"
+          method="get" id="Search">
+      <label for="search_textbox">Search</label>
+      <input type="text" name="query" size="12" id="search_textbox" value="" />
+      <input type="submit" name="Submit" value="Go" />
+    </form>
+-->
+<!-- Google search -->
+    <form class="Search" action="https://www.google.com/cse" id="cse-search-box">
+      <input type="hidden" name="cx" value="010270212093732037646:4pvgkishmkg" />
+      <input type="hidden" name="ie" value="UTF-8" />
+      <label for="search_textbox">Search</label>
+      <input type="text" name="q" id="search_textbox" size="12" />
+      <input type="submit" name="sa" value="Go" />
+    </form>
+    <script type="text/javascript" src="https://www.google.com/cse/brand?form=cse-search-box&amp;lang=en&amp;sitesearch=true"></script>
+<!-- End Google search -->
+  </header>
+  <nav class="Tabsbar"><span class="ThisTab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span> <span class="NoCSS2">| </span> <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/contact.html">Contact</a></span></nav>
+  <div id="container" itemscope itemtype="http://schema.org/WebPage">
+    <meta itemprop="isFamilyFriendly" content="1" />
+    <meta itemprop="inLanguage" content="en" />
+    <nav class="Tabsbar" id="tabsbar" style="position: absolute; width: 100%">
+  
+  
+    <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/">About Us</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://consulting.gbdirect.co.uk/">Consultancy</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://development.gbdirect.co.uk/">Software</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="ThisTab">Publications</span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-source.gbdirect.co.uk/">Open&nbsp;Source</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://software-support.gbdirect.co.uk/">Support</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-standards.gbdirect.co.uk/">Open&nbsp;Standards</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://faq.gbdirect.co.uk/">FAQ</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://jobs.gbdirect.co.uk/">Jobs</a></span>
+  
+
+</nav>
+    <main id="main" >
+	  
+		<nav id="breadcrumb" itemprop="breadcrumb">
+			
+			<a href="https://publications.gbdirect.co.uk/">Publications</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/">The C&nbsp;Book</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/chapter3/">Control flow</a>
+			
+			 &gt; The Task ahead
+			
+		</nav>
+		<br />
+	  
+      <h1>3.1. The Task ahead</h1>
+      
+      
+
+
+  
+
+  <p>In this chapter we look at the various ways that the control of flow
+   statements can be used in a C&#160;program, including some statements that
+   haven't been introduced so far. They are almost always used in conjunction
+   with logical expressions to select the next action. Examples of
+   <dfn>logical expressions</dfn> that have been seen already are some simple
+   ones used in <code>if</code> or <code>while</code> statements. As you might
+   have expected, you can use expressions more complicated than simple
+   comparison (<code>&gt;</code>, <code>&lt;=</code>, <code>==</code> etc.);
+   what may surprise you is the type of the result.</p>
+
+  <h2><a name="section-1"></a>3.1.1.&#160;Logical expressions and Relational Operators</h2>
+   
+
+   <p>All of the examples we have used so far have deliberately avoided using
+    complicated logical expressions in the control of flow statements. We have
+    seen expressions like this</p>
+
+   <pre>
+if(a != 100){...</pre>
+
+   <p>and presumably you have formed the idea that C&#160;supports the concept
+    of &#8216;true&#8217; and &#8216;false&#8217; for these relationships. In a way, it
+    does, but in a way that differs from what is often expected.</p>
+
+   <p>All of the relational operators shown in Table&#160;3.1 are used
+    to compare two operands in the way indicated. When the operands are
+    arithmetic types, the usual arithmetic conversions are applied to
+    them.</p>
+
+   <div class="inset-table"><a name="table-1"></a><table><thead><tr class="cbook-table-heading">
+     <th>Operator</th>
+     <th>Operation</th>
+    </tr></thead><tbody><tr class="cbook-table-first-row">
+     <td><code>&lt;</code></td>
+     <td>less than</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>&lt;=</code></td>
+     <td>less than or equal to</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>&gt;</code></td>
+     <td>greater than</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>&gt;=</code></td>
+     <td>greater than or equal to</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>==</code></td>
+     <td>equal to</td>
+    </tr><tr class="cbook-table-last-row">
+     <td><code>!=</code></td>
+     <td>not equal to</td>
+    </tr></tbody></table><cite>Table&#160;3.1.&#160;Relational operators</cite></div>
+
+   <p>Be extra careful of the test for equality, <code>==</code>. As we have
+    already pointed out, it is often valid to use assignment <code>=</code>
+    where you might have meant <code>==</code> and C can't tell you about your
+    mistake. The results are normally different and it takes a long time for
+    beginners to get used to using <code>==</code> and <code>=</code>.</p>
+
+   <p>Now, that usefully introduces the question &#8216;why?&#8217;. Why are both
+    valid?  The answer is simple. C's concept of &#8216;true&#8217; and
+    &#8216;false&#8217; boils down to simply &#8216;non-zero&#8217; and &#8216;zero&#8217;,
+    respectively. Where we have seen expressions involving relational
+    operators used to control <code>do</code> and <code>if</code>
+    statements, we have just been using expressions with numeric results. If
+    the expression evaluates to non-zero, then the result is effectively
+    true. If the reverse is the case, then of course the result is false.
+    Anywhere that the relational operators appear, so may any other
+    expression.</p>
+
+   <p>The relational operators work by comparing their operands and giving
+    zero for false and (remember this) one for true. The result is of type
+    <code>int</code>. This example shows how they work.</p>
+
+   <div class="inset-example"><a name="example-1"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+main(){
+    int i;
+
+    i = -10;
+    while(i &lt;= 5){
+            printf(&quot;value of i is %d, &quot;, i);
+            printf(&quot;i == 0 = %d, &quot;, i==0 );
+            printf(&quot;i &gt; -5 = %d\n&quot;, i &gt; -5);
+            i++;
+    }
+    exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;3.1</cite></div>
+
+   <p>Which produces this on its standard output:</p>
+
+   <pre>
+value of i is -10, i == 0 = 0, i &gt; -5 = 0
+value of i is -9, i == 0 = 0, i &gt; -5 = 0
+value of i is -8, i == 0 = 0, i &gt; -5 = 0
+value of i is -7, i == 0 = 0, i &gt; -5 = 0
+value of i is -6, i == 0 = 0, i &gt; -5 = 0
+value of i is -5, i == 0 = 0, i &gt; -5 = 0
+value of i is -4, i == 0 = 0, i &gt; -5 = 1
+value of i is -3, i == 0 = 0, i &gt; -5 = 1
+value of i is -2, i == 0 = 0, i &gt; -5 = 1
+value of i is -1, i == 0 = 0, i &gt; -5 = 1
+value of i is 0, i == 0 = 1, i &gt; -5 = 1
+value of i is 1, i == 0 = 0, i &gt; -5 = 1
+value of i is 2, i == 0 = 0, i &gt; -5 = 1
+value of i is 3, i == 0 = 0, i &gt; -5 = 1
+value of i is 4, i == 0 = 0, i &gt; -5 = 1
+value of i is 5, i == 0 = 0, i &gt; -5 = 1</pre>
+
+   <p>In this probably mistaken piece of code, what do you think happens?</p>
+
+   <pre>
+if(a = b)...</pre>
+
+   <p>The value of <code>b</code> is assigned to <code>a</code>. As you know,
+    the result has the type of a and whatever value was assigned to
+    <code>a</code>. The if will execute the next statement if the value
+    assigned is not zero. If zero is assigned, the next statement is ignored.
+    So now you understand what happens if you confuse the assignment with the
+    equality operator!</p>
+
+   <p>In all of the statements that test the value of an expression, the
+    <code>if</code>, <code>while</code>, <code>do</code>, and for statements,
+    the expression is simply tested to see if its value is zero or not.</p>
+
+   <p>We will look at each one in turn.</p>
+
+  
+
+ <div class="cbook_next_prev"><p><a href="../chapter3/">Chapter contents</a> | <a href="flow_control.html">Next section</a></p></div>
+
+    </main>
+    <nav id="menu" class="Left">
+      
+ 
+  
+  <div class="nav">
+
+	
+	
+			
+			  <div class="nav0">
+				
+				  <a href="/">Publications</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav1">
+				
+				  <a href="/c_book/">The C&nbsp;Book</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/preface/">Preface</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter1/">Introduction</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter2/">Variables &amp; arithmetic</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter3/">Control flow</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <strong>The Task ahead</strong>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter3/flow_control.html">Flow control</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter3/logical_expressions.html">Logical expressions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter3/strange_operators.html">Strange operators</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter3/summary.html">Summary</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter3/exercises.html">Exercises</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter4/">Functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter5/">Arrays &amp; pointers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter6/">Structures</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter7/">Preprocessor</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter8/">Specialized areas</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter9/">Libraries</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter10/">Complete Programs</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/answers/">Answers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/copyright.html">Copyright</a>
+				
+				
+			</div>
+			
+	
+
+</div>
+
+ 
+
+      <div class="ColBtm">
+        <hr />
+<div class="h1"><a href="https://ebusiness.gbdirect.co.uk/contact.html">Contact Us</a></div>
+
+      </div>
+
+    </nav>
+    <aside id="sidebar" class="Right">
+      
+ <div class="box">
+  
+  
+<img src="https://global.gbdirect.co.uk/Themes/printer-friendly-12x12.png" alt="" title="Printer-friendly version of this page" />
+<a href="?format=pf" rel="nofollow">
+  Printer-friendly version
+</a>
+
+ </div>
+
+ <div class="box">
+  <h3>The C Book</h3>
+  
+<p>This book is published as a matter of historical interest.
+ Please read the
+ <a href="/c_book/copyright.html">copyright and disclaimer information</a>.</p>
+
+<p>GBdirect Ltd provides up-to-date training and consultancy in
+ <a href="http://training.gbdirect.co.uk/courses/c/">C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c/real_time_linux_embedded_c_training.html">Embedded C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c++/">C++</a>
+ and a wide range of
+ <a href="http://training.gbdirect.co.uk/courses/">other subjects based on
+ open standards</a> if you happen to be interested.</p>
+
+ </div>
+
+
+    </aside>
+  </div>
+  
+<script type="text/javascript">
+        var maxheight = 0;
+        var a =  Array('main', 'menu', 'sidebar');
+        for(index in a){
+                var name = a[index];
+                // alert(name);
+                var id = document.getElementById(name);
+                if(id){
+                        if(id.offsetHeight > maxheight){
+                                maxheight = id.offsetHeight;
+                        }
+                }
+        }
+        var tabbar = document.getElementById('tabsbar');
+        if(tabbar){
+                if(tabbar.style) tabbar=tabbar.style;
+                tabbar.left = 0+'px';
+                tabbar.top = maxheight+'px';
+        }
+        
+</script>
+</body>
+</html>

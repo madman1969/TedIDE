@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1">
+<title>The C Book &#8212; Expressions involving pointers</title>
+<meta property="og:title" content="The C Book &amp;#8212; Expressions involving pointers" />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://global.gbdirect.co.uk/Themes/logo-og.png" />
+
+<link rel="SHORTCUT ICON" href="https://global.gbdirect.co.uk/favicon.ico" />
+<link rel="stylesheet" type="text/css" href="https://global.gbdirect.co.uk/Themes/Quarters.css" />
+
+<link rel="prev" href="/c_book/chapter5/function_pointers.html" />
+<link rel="next" href="/c_book/chapter5/arrays_and_address_of.html" />
+<link rel="contents" href="/c_book/chapter5/" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<!-- order 8-->
+<!-- lastmod 2009-01-14T14:21:42Z-->
+
+
+<link rel="canonical" href="https://publications.gbdirect.co.uk/c_book/chapter5/pointer_expressions.html"/><meta property="og:url" content="https://publications.gbdirect.co.uk/c_book/chapter5/pointer_expressions.html" />
+<script type="text/javascript"> var _gaq = _gaq || []; _gaq.push(['_setAccount', 'UA-3566842-1']); _gaq.push(['_setDomainName', '.gbdirect.co.uk']); _gaq.push(['_trackPageview']); (function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = 'https://www.google-analytics.com/ga.js'; var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s); })(); </script>
+</head>
+
+<body>
+  <header class="Banner">
+    <span id="Logo">
+      <a href="https://ebusiness.gbdirect.co.uk">
+        <img src="https://global.gbdirect.co.uk/Themes/gbdirect.gif"
+             alt="GBdirect Homepage"
+             title="GBdirect Homepage" /></a>
+    </span>
+<!-- Original homebrew search
+    <form action="https://global.gbdirect.co.uk/search.cgi"
+          method="get" id="Search">
+      <label for="search_textbox">Search</label>
+      <input type="text" name="query" size="12" id="search_textbox" value="" />
+      <input type="submit" name="Submit" value="Go" />
+    </form>
+-->
+<!-- Google search -->
+    <form class="Search" action="https://www.google.com/cse" id="cse-search-box">
+      <input type="hidden" name="cx" value="010270212093732037646:4pvgkishmkg" />
+      <input type="hidden" name="ie" value="UTF-8" />
+      <label for="search_textbox">Search</label>
+      <input type="text" name="q" id="search_textbox" size="12" />
+      <input type="submit" name="sa" value="Go" />
+    </form>
+    <script type="text/javascript" src="https://www.google.com/cse/brand?form=cse-search-box&amp;lang=en&amp;sitesearch=true"></script>
+<!-- End Google search -->
+  </header>
+  <nav class="Tabsbar"><span class="ThisTab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span> <span class="NoCSS2">| </span> <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/contact.html">Contact</a></span></nav>
+  <div id="container" itemscope itemtype="http://schema.org/WebPage">
+    <meta itemprop="isFamilyFriendly" content="1" />
+    <meta itemprop="inLanguage" content="en" />
+    <nav class="Tabsbar" id="tabsbar" style="position: absolute; width: 100%">
+  
+  
+    <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/">About Us</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://consulting.gbdirect.co.uk/">Consultancy</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://development.gbdirect.co.uk/">Software</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="ThisTab">Publications</span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-source.gbdirect.co.uk/">Open&nbsp;Source</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://software-support.gbdirect.co.uk/">Support</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-standards.gbdirect.co.uk/">Open&nbsp;Standards</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://faq.gbdirect.co.uk/">FAQ</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://jobs.gbdirect.co.uk/">Jobs</a></span>
+  
+
+</nav>
+    <main id="main" >
+	  
+		<nav id="breadcrumb" itemprop="breadcrumb">
+			
+			<a href="https://publications.gbdirect.co.uk/">Publications</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/">The C&nbsp;Book</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/chapter5/">Arrays &amp; pointers</a>
+			
+			 &gt; Pointer expressions
+			
+		</nav>
+		<br />
+	  
+      <h1>5.7. Expressions involving pointers</h1>
+      
+      
+
+
+  
+
+  <p>Because of the introduction of qualified types and of the notion of
+   incomplete types, together with the use of <code>void *</code>, there are
+   now some complicated rules about how you can mix pointers and what
+   arithmetic with pointers really permits you to do. Most people will
+   survive quite well without ever learning this explicitly, because a lot
+   of it is &#8216;obvious&#8217;, but we will include it here in case you do want
+   to know. For the final word in accuracy, obviously you will want to see
+   what the Standard says. What follows is our interpretation in (hopefully)
+   plainer English.</p>
+
+  <p>You don't yet know the Standard means when it talks about
+   <dfn>objects</dfn> or <dfn>incomplete types</dfn>. So far we have tended
+   to use the term loosely, but properly speaking an object is a piece of
+   data storage whose contents is to be interpreted as a value. A function
+   is not an object. An incomplete type is one whose name and type are
+   mostly known, but whose size hasn't yet been determined. You can get
+   these in two ways:</p>
+
+  <ol>
+   <li>By declaring an array but omitting information about its size:
+    <code>int&#160;x[];</code>. In that case, there must be additional
+    information given later in a definition for the array. The type remains
+    incomplete until the later definition.</li>
+
+   <li>By declaring a <dfn>structure</dfn> or <dfn>union</dfn> but not
+    defining its contents.  The contents must be defined in a later
+    declaration. The type remains incomplete until the later declaration.</li>
+  </ol>
+
+  <p>There will be some more discussion of incomplete types in later
+   chapters.</p>
+
+  <p>Now for what you are allowed to do with pointers. Note that wherever we
+   talk about qualified types they can be qualified with <code>const</code>,
+   <code>volatile</code>, or both; the examples are illustrated with const
+   only.</p>
+
+  <h2><a name="section-1"></a>5.7.1.&#160;Conversions</h2>
+   
+
+   <p>Pointers to <code>void</code> can be freely converted backwards and
+    forwards with pointers to any object or incomplete type. Converting
+    a pointer to an object or an incomplete type to <code>void *</code> and
+    then back gives a value which is equal to the original one:</p>
+
+   <pre>
+int i;
+int *ip;
+void *vp;
+
+ip = &amp;i;
+vp = ip;
+ip = vp;
+if(ip != &amp;i)
+      printf(&quot;Compiler error\n&quot;);</pre>
+
+   <p>An unqualified pointer type may be converted to a qualified pointer
+    type, but the reverse is not true. The two values will be equal:</p>
+
+   
+   <pre>
+int i;
+int *ip;
+const int *cpi;
+
+ip = &amp;i;
+cpi = ip;       /* permitted */
+if(cpi != ip)
+      printf(&quot;Compiler error\n&quot;);
+ip = cpi;       /* not permitted */</pre>
+
+   <p>A null pointer constant (see earlier) will not be equal to a pointer
+    to any object or function.</p>
+
+  
+
+  <h2><a name="section-2"></a>5.7.2.&#160;Arithmetic</h2>
+   
+
+   <p>Expressions can add (or subtract, which is equivalent to adding
+    negative values) integral values to the value of a pointer to any object
+    type. The result has the type of the pointer and if <var>n</var> is
+    added, then the result points <var>n</var> array elements away from the
+    pointer. The most common use is repeatedly to add <code>1</code> to
+    a pointer to step it from the start to the end of an array, but addition
+    or subtraction of values other than one is possible.</p>
+
+   <p>It the pointer resulting from the addition points in front of the
+    array or past the non-existent element just after the last element of
+    the array, then you have had overflow or underflow and the result is
+    undefined.</p>
+
+   <p>The last-plus-one element of an array has always been assumed to be
+    a valid address for a pointer and the Standard confirms this. You
+    mustn't actually access that element, but the address is guaranteed to
+    exist rather than being an overflow condition.</p>
+
+   <p>We've been careful to use the term &#8216;expression&#8217; rather than
+    saying that you actually add something to the pointer itself. You can do
+    that, but only if the pointer is not qualified with <code>const</code>
+    (of course). The increment and decrement operators are equivalent to
+    adding or subtracting 1.</p>
+
+   <p>Two pointers to <dfn>compatible types</dfn> whether or not qualified
+    may be subtracted. The result has the type <code>ptrdiff_t</code>, which
+    is defined in the header file <code>&lt;stddef.h&gt;</code>. Both
+    pointers must point into the same array, or one past the end of the
+    array, otherwise the behaviour is undefined. The value of the result is
+    the number of array elements that separate the two pointers. E.g.:</p>
+
+   <pre>
+int x[100];
+int *pi, *cpi = &amp;x[99]; /* cpi points to the last element of x */
+
+pi = x;
+if((cpi - pi) != 99)
+      printf(&quot;Error\n&quot;);
+
+pi = cpi;
+pi++;                   /* increment past end of x */
+if((pi - cpi) != 1)
+      printf(&quot;Error\n&quot;);</pre>
+
+  
+
+  <h2><a name="section-3"></a>5.7.3.&#160;Relational expressions</h2>
+   
+
+   <p>These allow us to compare pointers with each other. You can only
+    compare</p>
+
+   <ul>
+    <li>Pointers to compatible object types with each other</li>
+    <li>Pointers to compatible incomplete types with each other</li>
+   </ul>
+
+   <p>It does not matter if the types that are pointed to are qualified or
+    unqualified.</p>
+
+   <p>If two pointers compare equal to each other then they point to the
+    same thing, whether it is an object or the non-existent element off the
+    end of an array (see arithmetic, above). If two pointers point to the
+    same thing, then they compare equal to each other. The relational
+    operators &gt;, &lt;= and so on all give the result that you would
+    expect if the pointers point into the same array: if one pointer
+    compares less than another, then it points nearer to the front of the
+    array.</p>
+
+   <p>A null pointer constant can be assigned to a pointer; that pointer
+    will then compare equal to the null pointer constant (which is pretty
+    obvious). A null pointer constant or a null pointer will not compare
+    equal to a pointer that points to anything which actually exists.</p>
+
+  
+
+  <h2><a name="section-4"></a>5.7.4.&#160;Assignment</h2>
+   
+
+   <p>You can use pointers with the assignment operators if the following
+    conditions are met:</p>
+
+   <ul>
+    <li>The left-hand operand is a pointer and the right-hand operand is a
+     null pointer constant.</li>
+    <li>One operand is a pointer to an object or incomplete type; the other
+     is a pointer to <code>void</code> (whether qualified or not).</li>
+    <li>Both of the operands are pointers to compatible types (whether
+     qualified or not).</li>
+   </ul>
+
+   <p>In the last two cases, the type pointed to by the left-hand side must
+    have at least the same qualifiers as the type pointed to by the
+    right-hand side (possibly more).</p>
+
+   <p>So, you can assign a pointer to int to a pointer to <code>const
+    int</code> (more qualifiers on the left than the right) but you cannot
+    assign a pointer to <code>const int</code> to a pointer to
+    <code>int</code>. If you think about it, it makes sense.</p>
+
+   <p>The <code>+=</code> and <code>-=</code> operators can involve pointers
+    as long as the left-hand side is a pointer to an object and the
+    right-hand side is an integral expression. The arithmetic rules above
+    describe what happens.</p>
+
+  
+
+  <h2><a name="section-5"></a>5.7.5.&#160;Conditional operator</h2>
+   
+
+   <p>The description of the behaviour of this operator when it is used with
+     pointers has already been given in <a href="../chapter3/">Chapter&#160;3</a>.</p>
+
+  
+
+ <div class="cbook_next_prev"><p><a href="function_pointers.html">Previous section</a> | <a href="../chapter5/">Chapter contents</a> | <a href="arrays_and_address_of.html">Next section</a></p></div>
+
+    </main>
+    <nav id="menu" class="Left">
+      
+ 
+  
+  <div class="nav">
+
+	
+	
+			
+			  <div class="nav0">
+				
+				  <a href="/">Publications</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav1">
+				
+				  <a href="/c_book/">The C&nbsp;Book</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/preface/">Preface</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter1/">Introduction</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter2/">Variables &amp; arithmetic</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter3/">Control flow</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter4/">Functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter5/">Arrays &amp; pointers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter5/opening_shots.html">Opening shots</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter5/arrays.html">Arrays</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter5/pointers.html">Pointers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter5/character_handling.html">Character handling</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter5/sizeof_and_malloc.html">Sizeof &amp; malloc</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter5/function_pointers.html">Function pointers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <strong>Pointer expressions</strong>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter5/arrays_and_address_of.html">Arrays &amp; address-of</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter5/summary.html">Summary</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter5/exercises.html">Exercises</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter6/">Structures</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter7/">Preprocessor</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter8/">Specialized areas</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter9/">Libraries</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter10/">Complete Programs</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/answers/">Answers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/copyright.html">Copyright</a>
+				
+				
+			</div>
+			
+	
+
+</div>
+
+ 
+
+      <div class="ColBtm">
+        <hr />
+<div class="h1"><a href="https://ebusiness.gbdirect.co.uk/contact.html">Contact Us</a></div>
+
+      </div>
+
+    </nav>
+    <aside id="sidebar" class="Right">
+      
+ <div class="box">
+  
+  
+<img src="https://global.gbdirect.co.uk/Themes/printer-friendly-12x12.png" alt="" title="Printer-friendly version of this page" />
+<a href="?format=pf" rel="nofollow">
+  Printer-friendly version
+</a>
+
+ </div>
+
+ <div class="box">
+  <h3>The C Book</h3>
+  
+<p>This book is published as a matter of historical interest.
+ Please read the
+ <a href="/c_book/copyright.html">copyright and disclaimer information</a>.</p>
+
+<p>GBdirect Ltd provides up-to-date training and consultancy in
+ <a href="http://training.gbdirect.co.uk/courses/c/">C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c/real_time_linux_embedded_c_training.html">Embedded C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c++/">C++</a>
+ and a wide range of
+ <a href="http://training.gbdirect.co.uk/courses/">other subjects based on
+ open standards</a> if you happen to be interested.</p>
+
+ </div>
+
+
+    </aside>
+  </div>
+  
+<script type="text/javascript">
+        var maxheight = 0;
+        var a =  Array('main', 'menu', 'sidebar');
+        for(index in a){
+                var name = a[index];
+                // alert(name);
+                var id = document.getElementById(name);
+                if(id){
+                        if(id.offsetHeight > maxheight){
+                                maxheight = id.offsetHeight;
+                        }
+                }
+        }
+        var tabbar = document.getElementById('tabsbar');
+        if(tabbar){
+                if(tabbar.style) tabbar=tabbar.style;
+                tabbar.left = 0+'px';
+                tabbar.top = maxheight+'px';
+        }
+        
+</script>
+</body>
+</html>

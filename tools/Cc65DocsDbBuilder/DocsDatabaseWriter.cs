@@ -3,7 +3,7 @@ using Microsoft.Data.Sqlite;
 namespace Cc65DocsDbBuilder;
 
 /// <summary>One converted page, ready to write to Docs.db.</summary>
-public sealed record ConvertedPage(string FileName, string Category, int CategorySortOrder, int PageSortOrder, string Description, string Markdown);
+public sealed record ConvertedPage(string FileName, string Book, int BookSortOrder, string Category, int CategorySortOrder, int PageSortOrder, string Description, string Markdown);
 
 /// <summary>
 /// Writes the converted pages into a fresh SQLite database (Docs.db) that Tedide.DocViewer embeds
@@ -27,6 +27,8 @@ public static class DocsDatabaseWriter
                 """
                 CREATE TABLE Pages (
                     FileName TEXT PRIMARY KEY,
+                    Book TEXT NOT NULL,
+                    BookSortOrder INTEGER NOT NULL,
                     Category TEXT NOT NULL,
                     CategorySortOrder INTEGER NOT NULL,
                     PageSortOrder INTEGER NOT NULL,
@@ -49,10 +51,12 @@ public static class DocsDatabaseWriter
         {
             insertPage.CommandText =
                 """
-                INSERT INTO Pages (FileName, Category, CategorySortOrder, PageSortOrder, Description, Markdown)
-                VALUES ($fileName, $category, $categorySortOrder, $pageSortOrder, $description, $markdown);
+                INSERT INTO Pages (FileName, Book, BookSortOrder, Category, CategorySortOrder, PageSortOrder, Description, Markdown)
+                VALUES ($fileName, $book, $bookSortOrder, $category, $categorySortOrder, $pageSortOrder, $description, $markdown);
                 """;
             var fileName = insertPage.Parameters.Add("$fileName", SqliteType.Text);
+            var book = insertPage.Parameters.Add("$book", SqliteType.Text);
+            var bookSortOrder = insertPage.Parameters.Add("$bookSortOrder", SqliteType.Integer);
             var category = insertPage.Parameters.Add("$category", SqliteType.Text);
             var categorySortOrder = insertPage.Parameters.Add("$categorySortOrder", SqliteType.Integer);
             var pageSortOrder = insertPage.Parameters.Add("$pageSortOrder", SqliteType.Integer);
@@ -68,6 +72,8 @@ public static class DocsDatabaseWriter
             foreach (var page in pages)
             {
                 fileName.Value = page.FileName;
+                book.Value = page.Book;
+                bookSortOrder.Value = page.BookSortOrder;
                 category.Value = page.Category;
                 categorySortOrder.Value = page.CategorySortOrder;
                 pageSortOrder.Value = page.PageSortOrder;

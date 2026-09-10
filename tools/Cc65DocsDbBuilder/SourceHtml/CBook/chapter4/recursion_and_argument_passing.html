@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1">
+<title>The C Book &#8212; Recursion and argument passing</title>
+<meta property="og:title" content="The C Book &amp;#8212; Recursion and argument passing" />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://global.gbdirect.co.uk/Themes/logo-og.png" />
+
+<link rel="SHORTCUT ICON" href="https://global.gbdirect.co.uk/favicon.ico" />
+<link rel="stylesheet" type="text/css" href="https://global.gbdirect.co.uk/Themes/Quarters.css" />
+
+<link rel="prev" href="/c_book/chapter4/function_types.html" />
+<link rel="next" href="/c_book/chapter4/linkage.html" />
+<link rel="contents" href="/c_book/chapter4/" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<!-- order 4-->
+<!-- lastmod 2005-11-10T16:42:04Z-->
+
+
+<link rel="canonical" href="https://publications.gbdirect.co.uk/c_book/chapter4/recursion_and_argument_passing.html"/><meta property="og:url" content="https://publications.gbdirect.co.uk/c_book/chapter4/recursion_and_argument_passing.html" />
+<script type="text/javascript"> var _gaq = _gaq || []; _gaq.push(['_setAccount', 'UA-3566842-1']); _gaq.push(['_setDomainName', '.gbdirect.co.uk']); _gaq.push(['_trackPageview']); (function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = 'https://www.google-analytics.com/ga.js'; var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s); })(); </script>
+</head>
+
+<body>
+  <header class="Banner">
+    <span id="Logo">
+      <a href="https://ebusiness.gbdirect.co.uk">
+        <img src="https://global.gbdirect.co.uk/Themes/gbdirect.gif"
+             alt="GBdirect Homepage"
+             title="GBdirect Homepage" /></a>
+    </span>
+<!-- Original homebrew search
+    <form action="https://global.gbdirect.co.uk/search.cgi"
+          method="get" id="Search">
+      <label for="search_textbox">Search</label>
+      <input type="text" name="query" size="12" id="search_textbox" value="" />
+      <input type="submit" name="Submit" value="Go" />
+    </form>
+-->
+<!-- Google search -->
+    <form class="Search" action="https://www.google.com/cse" id="cse-search-box">
+      <input type="hidden" name="cx" value="010270212093732037646:4pvgkishmkg" />
+      <input type="hidden" name="ie" value="UTF-8" />
+      <label for="search_textbox">Search</label>
+      <input type="text" name="q" id="search_textbox" size="12" />
+      <input type="submit" name="sa" value="Go" />
+    </form>
+    <script type="text/javascript" src="https://www.google.com/cse/brand?form=cse-search-box&amp;lang=en&amp;sitesearch=true"></script>
+<!-- End Google search -->
+  </header>
+  <nav class="Tabsbar"><span class="ThisTab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span> <span class="NoCSS2">| </span> <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/contact.html">Contact</a></span></nav>
+  <div id="container" itemscope itemtype="http://schema.org/WebPage">
+    <meta itemprop="isFamilyFriendly" content="1" />
+    <meta itemprop="inLanguage" content="en" />
+    <nav class="Tabsbar" id="tabsbar" style="position: absolute; width: 100%">
+  
+  
+    <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/">About Us</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://consulting.gbdirect.co.uk/">Consultancy</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://development.gbdirect.co.uk/">Software</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="ThisTab">Publications</span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-source.gbdirect.co.uk/">Open&nbsp;Source</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://software-support.gbdirect.co.uk/">Support</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-standards.gbdirect.co.uk/">Open&nbsp;Standards</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://faq.gbdirect.co.uk/">FAQ</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://jobs.gbdirect.co.uk/">Jobs</a></span>
+  
+
+</nav>
+    <main id="main" >
+	  
+		<nav id="breadcrumb" itemprop="breadcrumb">
+			
+			<a href="https://publications.gbdirect.co.uk/">Publications</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/">The C&nbsp;Book</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/chapter4/">Functions</a>
+			
+			 &gt; Recursion &amp; argument passing
+			
+		</nav>
+		<br />
+	  
+      <h1>4.3. Recursion and argument passing</h1>
+      
+      
+
+
+  
+
+  <p>So far, we've seen how to give functions a type (how to declare the
+   return value and the type of any arguments the function takes), and how
+   the definition is used to give the body of the function. Next we need to
+   see what the arguments can be used for.</p>
+
+  <h2><a name="section-1"></a>4.3.1.&#160;Call by value</h2>
+   
+
+   <p>The way that C treats arguments to functions is both simple and
+    consistent, with no exceptions to the single rule.</p>
+
+   <p>When a function is called, any arguments that are provided by the
+    caller are simply treated as expressions. The value of each expression
+    has the appropriate conversions applied and is then used to initialize
+    the corresponding formal parameter in the called function, which behaves
+    in exactly the same way as any other local variables in the function.
+    It's illustrated here:</p>
+<div class="inset-example"><a name="example-6"></a><pre>
+void called_func(int, float);
+
+main(){
+      called_func(1, 2*3.5);
+      exit(EXIT_SUCCESS);
+}
+
+void
+called_func(int iarg, float farg){
+      float tmp;
+
+      tmp = iarg * farg;
+}</pre><cite>Example&#160;4.6</cite></div>
+   <p>The arguments to <code>called_func</code> in <code>main</code> are two
+    expressions, which are evaluated. The value of each expression is used
+    to initialize the parameters <code>iarg</code> and <code>farg</code> in
+    <code>called_func</code>, and the parameters are indistinguishable from
+    the other local variable declared in <code>called_func</code>, which is
+    <code>tmp</code>.</p>
+
+   <p>The initialization of the formal parameters is the last time that any
+    communication occurs between the caller and the called function, except
+    for the return value.</p>
+
+   <p>For those who are used to FORTRAN and <code>var</code> arguments in
+    Pascal, where a function <em>can</em> change the values of its
+    arguments: forget it. You cannot affect the values of a function's
+    actual arguments by anything that you try. Here is an example to show
+    what we mean.</p>
+<div class="inset-example"><a name="example-7"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+main(){
+      void changer(int);
+      int i;
+
+      i = 5;
+      printf(&quot;before i=%d\n&quot;, i);
+      changer(i);
+      printf(&quot;after i=%d\n&quot;, i);
+      exit(EXIT_SUCCESS);
+}
+
+void
+changer(int x){
+      while(x){
+              printf(&quot;changer: x=%d\n&quot;, x);
+              x--;
+      }
+}</pre><cite>Example&#160;4.7</cite></div>
+   <p>The result of running that is:</p>
+<pre>
+before i=5
+changer: x=5
+changer: x=4
+changer: x=3
+changer: x=2
+changer: x=1
+after i=5</pre>
+   <p>The function <code>changer</code> uses its formal parameter
+    <code>x</code> as an ordinary variable&#8212;which is exactly what it is.
+    Although the value of <code>x</code> is changed, the variable
+    <code>i</code> (in main) is unaffected. That is the whole point&#8212;the
+    arguments in C are passed into a function by their value only, no
+    changes made by the function are passed back.</p>
+
+  
+
+  <h2><a name="section-2"></a>4.3.2.&#160;Call by reference</h2>
+   
+   <p>It is possible to write functions that take <dfn>pointers</dfn> as
+    their arguments, giving a form of call by reference. This is described
+    in <a href="../chapter5/">Chapter&#160;5</a> and <em>does</em> allow functions to change
+    values in their callers.</p>
+  
+
+  <h2><a name="section-3"></a>4.3.3.&#160;Recursion</h2>
+   
+
+   <p>With argument passing safely out of the way we can look at recursion.
+    Recursion is a topic that often provokes lengthy and unenlightening
+    arguments from opposing camps. Some think it is wonderful, and use it at
+    every opportunity; some others take exactly the opposite view. Let's
+    just say that when you need it, you really <em>do</em> need it, and
+    since it doesn't cost much to put into a language, as you would expect,
+    C supports recursion.</p>
+
+   <p>Every function in C may be called from any other or itself. Each
+    invocation of a function causes a new allocation of the variables
+    declared inside it. In fact, the declarations that we have been using
+    until now have had something missing: the keyword <code>auto</code>,
+    meaning &#8216;automatically allocated&#8217;.</p>
+<pre>
+/* Example of auto */
+main(){
+      auto int var_name;
+      .
+      .
+      .
+}</pre>
+   <p>The storage for auto variables is automatically allocated and freed on
+    function entry and return. If two functions both declare large automatic
+    arrays, the program will only have to find room for both arrays if both
+    functions are active at the same time. Although auto is a keyword, it is
+    never used in practice because it's the default for internal
+    declarations and is invalid for external ones. If an explicit initial
+    value (see &#8216; initialization&#8217;) isn't given for an automatic
+    variable, then its value will be unknown when it is declared. In that
+    state, any use of its value will cause undefined behaviour.</p>
+
+   <p>The real problem with illustrating recursion is in the selection of
+    examples. Too often, simple examples are used which don't really get
+    much out of recursion. The problems where it really helps are almost
+    always well out of the grasp of a beginner who is having enough trouble
+    trying to sort out the difference between, say, definition and
+    declaration without wanting the extra burden of having to wrap his or
+    her mind around a new concept as well. The chapter on data structures
+    will show examples of recursion where it is a genuinely useful
+    technique.</p>
+
+   <p>The following example uses recursive functions to evaluate expressions
+    involving single digit numbers, the operators <code>*</code>,
+    <code>%</code>, <code>/</code>, <code>+</code>, <code>-</code> and
+    parentheses in the same way that C does. (Stroustrup<sup class="footnote-mark"><a href="#foot1">1</a></sup>, in his book about C++, uses
+    almost an identical example to illustrate recursion. This happened
+    purely by chance.) The whole expression is evaluated and its value
+    printed when a character not in the &#8216;language&#8217; is read. For
+    simplicity no error checking is performed. Extensive use is made of the
+    <code>ungetc</code> library function, which allows the last character
+    read by <code>getchar</code> to be &#8216;unread&#8217; and become once again
+    the next character to be read. Its second argument is one of the things
+    declared in <code>stdio.h</code>.</p>
+
+   <p>Those of you who understand BNF notation might like to know that the
+    expressions it will understand are described as follows:</p>
+<pre>
+&lt;primary&gt; ::= digit | (&lt;exp&gt;)
+&lt;unary&gt;   ::= &lt;primary&gt; | -&lt;unary&gt; | +&lt;unary&gt;
+&lt;mult&gt;    ::= &lt;unary&gt; | &lt;mult&gt; * &lt;unary&gt; |
+              &lt;mult&gt; / &lt;unary&gt; | &lt;mult&gt; % &lt;unary&gt;
+&lt;exp&gt;     ::= &lt;exp&gt; + &lt;mult&gt; | &lt;exp&gt; - &lt;mult&gt; | &lt;mult&gt;</pre>
+   <p>The main places where recursion occurs are in the function
+    <code>unary_exp</code>, which calls itself, and at the bottom level
+    where <code>primary</code> calls the top level all over again to
+    evaluate parenthesized expressions.</p>
+
+   <p>If you don't understand what it does, try running it. Trace its
+    actions by hand on inputs such as</p>
+<pre>
+1
+1+2
+1+2 * 3+4
+1+--4
+1+(2*3)+4</pre>
+   <p>That should keep you busy for a while!</p>
+
+<div class="inset-example"><a name="example-8"></a><pre>
+/*
+* Recursive descent parser for simple C expressions.
+* Very little error checking.
+*/
+
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+int expr(void);
+int mul_exp(void);
+int unary_exp(void);
+int primary(void);
+
+main(){
+      int val;
+
+      for(;;){
+              printf(&quot;expression: &quot;);
+              val = expr();
+              if(getchar() != '\n'){
+                      printf(&quot;error\n&quot;);
+                      while(getchar() != '\n')
+                              ; /* NULL */
+              } else{
+                      printf(&quot;result is %d\n&quot;, val);
+              }
+      }
+      exit(EXIT_SUCCESS);
+}
+
+int
+expr(void){
+      int val, ch_in;
+
+      val = mul_exp();
+      for(;;){
+              switch(ch_in = getchar()){
+              default:
+                      ungetc(ch_in,stdin);
+                      return(val);
+              case '+':
+                      val = val + mul_exp();
+                      break;
+              case '-':
+                      val = val - mul_exp();
+                      break;
+              }
+      }
+}
+
+int
+mul_exp(void){
+      int val, ch_in;
+
+      val = unary_exp();
+      for(;;){
+              switch(ch_in = getchar()){
+              default:
+                      ungetc(ch_in, stdin);
+                      return(val);
+              case '*':
+                      val = val * unary_exp();
+                      break;
+              case '/':
+                      val = val / unary_exp();
+                      break;
+              case '%':
+                      val = val % unary_exp();
+                      break;
+              }
+      }
+}
+
+int
+unary_exp(void){
+      int val, ch_in;
+
+      switch(ch_in = getchar()){
+      default:
+              ungetc(ch_in, stdin);
+              val = primary();
+              break;
+      case '+':
+              val = unary_exp();
+              break;
+      case '-':
+              val = -unary_exp();
+              break;
+      }
+      return(val);
+}
+
+int
+primary(void){
+      int val, ch_in;
+
+      ch_in = getchar();
+      if(ch_in &gt;= '0' &amp;&amp; ch_in &lt;= '9'){
+              val = ch_in - '0';
+              goto out;
+      }
+      if(ch_in == '('){
+              val = expr();
+              getchar();      /* skip closing ')' */
+              goto out;
+      }
+      printf(&quot;error: primary read %d\n&quot;, ch_in);
+      exit(EXIT_FAILURE);
+out:
+      return(val);
+}</pre><cite>Example&#160;4.8</cite></div>
+
+  
+
+<h2>Footnotes</h2><p class="footnote-text">1.<a name="foot1"> </a>Stroustrup
+     B.&#160;(1991). <cite>The C++ Programming Language</cite> 2nd edn.
+     Reading, MA: Addison-Wesley</p><div class="cbook_next_prev"><p><a href="function_types.html">Previous section</a> | <a href="../chapter4/">Chapter contents</a> | <a href="linkage.html">Next section</a></p></div>
+
+    </main>
+    <nav id="menu" class="Left">
+      
+ 
+  
+  <div class="nav">
+
+	
+	
+			
+			  <div class="nav0">
+				
+				  <a href="/">Publications</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav1">
+				
+				  <a href="/c_book/">The C&nbsp;Book</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/preface/">Preface</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter1/">Introduction</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter2/">Variables &amp; arithmetic</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter3/">Control flow</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter4/">Functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter4/changes.html">Changes</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter4/function_types.html">Function types</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <strong>Recursion &amp; argument passing</strong>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter4/linkage.html">Linkage</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter4/summary.html">Summary</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter4/exercises.html">Exercises</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter5/">Arrays &amp; pointers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter6/">Structures</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter7/">Preprocessor</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter8/">Specialized areas</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter9/">Libraries</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter10/">Complete Programs</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/answers/">Answers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/copyright.html">Copyright</a>
+				
+				
+			</div>
+			
+	
+
+</div>
+
+ 
+
+      <div class="ColBtm">
+        <hr />
+<div class="h1"><a href="https://ebusiness.gbdirect.co.uk/contact.html">Contact Us</a></div>
+
+      </div>
+
+    </nav>
+    <aside id="sidebar" class="Right">
+      
+ <div class="box">
+  
+  
+<img src="https://global.gbdirect.co.uk/Themes/printer-friendly-12x12.png" alt="" title="Printer-friendly version of this page" />
+<a href="?format=pf" rel="nofollow">
+  Printer-friendly version
+</a>
+
+ </div>
+
+ <div class="box">
+  <h3>The C Book</h3>
+  
+<p>This book is published as a matter of historical interest.
+ Please read the
+ <a href="/c_book/copyright.html">copyright and disclaimer information</a>.</p>
+
+<p>GBdirect Ltd provides up-to-date training and consultancy in
+ <a href="http://training.gbdirect.co.uk/courses/c/">C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c/real_time_linux_embedded_c_training.html">Embedded C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c++/">C++</a>
+ and a wide range of
+ <a href="http://training.gbdirect.co.uk/courses/">other subjects based on
+ open standards</a> if you happen to be interested.</p>
+
+ </div>
+
+
+    </aside>
+  </div>
+  
+<script type="text/javascript">
+        var maxheight = 0;
+        var a =  Array('main', 'menu', 'sidebar');
+        for(index in a){
+                var name = a[index];
+                // alert(name);
+                var id = document.getElementById(name);
+                if(id){
+                        if(id.offsetHeight > maxheight){
+                                maxheight = id.offsetHeight;
+                        }
+                }
+        }
+        var tabbar = document.getElementById('tabsbar');
+        if(tabbar){
+                if(tabbar.style) tabbar=tabbar.style;
+                tabbar.left = 0+'px';
+                tabbar.top = maxheight+'px';
+        }
+        
+</script>
+</body>
+</html>

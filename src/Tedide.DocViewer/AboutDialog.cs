@@ -43,11 +43,11 @@ public sealed class AboutDialog : Dialog
         // 1-cell gap on each side, matching the "every field needs clearance" convention).
         var textWidth = Dim.Fill(AvatarWidth + 2);
 
-        var titleLabel = new Label { Text = "Tedide DocViewer - CC65 Documentation", X = 0, Y = 0, Width = textWidth };
+        var titleLabel = new Label { Text = "Tedide DocViewer", X = 0, Y = 0, Width = textWidth };
 
         var descriptionLabel = new Label
         {
-            Text = "A terminal (TUI) viewer for cc65's documentation, with\nfull-text search and bookmarks.",
+            Text = "A terminal (TUI) viewer for the cc65 manual and The C Book, with\nfull-text search and bookmarks.",
             X = 0, Y = 2, Width = textWidth, Height = 2,
         };
 

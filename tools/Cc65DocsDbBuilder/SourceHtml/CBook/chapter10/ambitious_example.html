@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1">
+<title>The C Book &#8212; A more ambitious example</title>
+<meta property="og:title" content="The C Book &amp;#8212; A more ambitious example" />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://global.gbdirect.co.uk/Themes/logo-og.png" />
+
+<link rel="SHORTCUT ICON" href="https://global.gbdirect.co.uk/favicon.ico" />
+<link rel="stylesheet" type="text/css" href="https://global.gbdirect.co.uk/Themes/Quarters.css" />
+
+<link rel="prev" href="/c_book/chapter10/pattern_matching_example.html" />
+<link rel="next" href="/c_book/chapter10/afterword.html" />
+<link rel="contents" href="/c_book/chapter10/" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<!-- order 6-->
+<!-- lastmod 2005-11-10T16:42:02Z-->
+
+
+<link rel="canonical" href="https://publications.gbdirect.co.uk/c_book/chapter10/ambitious_example.html"/><meta property="og:url" content="https://publications.gbdirect.co.uk/c_book/chapter10/ambitious_example.html" />
+<script type="text/javascript"> var _gaq = _gaq || []; _gaq.push(['_setAccount', 'UA-3566842-1']); _gaq.push(['_setDomainName', '.gbdirect.co.uk']); _gaq.push(['_trackPageview']); (function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = 'https://www.google-analytics.com/ga.js'; var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s); })(); </script>
+</head>
+
+<body>
+  <header class="Banner">
+    <span id="Logo">
+      <a href="https://ebusiness.gbdirect.co.uk">
+        <img src="https://global.gbdirect.co.uk/Themes/gbdirect.gif"
+             alt="GBdirect Homepage"
+             title="GBdirect Homepage" /></a>
+    </span>
+<!-- Original homebrew search
+    <form action="https://global.gbdirect.co.uk/search.cgi"
+          method="get" id="Search">
+      <label for="search_textbox">Search</label>
+      <input type="text" name="query" size="12" id="search_textbox" value="" />
+      <input type="submit" name="Submit" value="Go" />
+    </form>
+-->
+<!-- Google search -->
+    <form class="Search" action="https://www.google.com/cse" id="cse-search-box">
+      <input type="hidden" name="cx" value="010270212093732037646:4pvgkishmkg" />
+      <input type="hidden" name="ie" value="UTF-8" />
+      <label for="search_textbox">Search</label>
+      <input type="text" name="q" id="search_textbox" size="12" />
+      <input type="submit" name="sa" value="Go" />
+    </form>
+    <script type="text/javascript" src="https://www.google.com/cse/brand?form=cse-search-box&amp;lang=en&amp;sitesearch=true"></script>
+<!-- End Google search -->
+  </header>
+  <nav class="Tabsbar"><span class="ThisTab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span> <span class="NoCSS2">| </span> <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/contact.html">Contact</a></span></nav>
+  <div id="container" itemscope itemtype="http://schema.org/WebPage">
+    <meta itemprop="isFamilyFriendly" content="1" />
+    <meta itemprop="inLanguage" content="en" />
+    <nav class="Tabsbar" id="tabsbar" style="position: absolute; width: 100%">
+  
+  
+    <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/">About Us</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://consulting.gbdirect.co.uk/">Consultancy</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://development.gbdirect.co.uk/">Software</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="ThisTab">Publications</span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-source.gbdirect.co.uk/">Open&nbsp;Source</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://software-support.gbdirect.co.uk/">Support</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-standards.gbdirect.co.uk/">Open&nbsp;Standards</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://faq.gbdirect.co.uk/">FAQ</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://jobs.gbdirect.co.uk/">Jobs</a></span>
+  
+
+</nav>
+    <main id="main" >
+	  
+		<nav id="breadcrumb" itemprop="breadcrumb">
+			
+			<a href="https://publications.gbdirect.co.uk/">Publications</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/">The C&nbsp;Book</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/chapter10/">Complete Programs</a>
+			
+			 &gt; Ambitious example
+			
+		</nav>
+		<br />
+	  
+      <h1>10.5. A more ambitious example</h1>
+      
+      
+
+
+  
+
+  <p>Finally here is a set of programs designed to cooperate and manipulate
+   a single data file in a coherent, robust fashion.</p>
+
+  <p>The programs are intended to help keep track of a ladder of players who
+   compete against each other at some game, squash or chess perhaps.</p>
+
+  <p>Each player has a rank from one to n, where n is the number of players who
+   play, one being the highest rank on the ladder. Players lower down the
+   ladder may challenge players above them and, if the lower ranked player
+   wins, he or she moves up taking the rank of the player who loses. The loser
+   in such a situation, and any other players between challenger and loser, are
+   then moved down one rank. If a challenger does not win, the rankings on the
+   ladder remain unchanged.</p>
+
+  <p>To provide some measure of equilibrium in the rankings, a player may
+   challenge any higher ranked player, but only wins over players ranked three
+   (or less) higher will allow the challenger to move up the rankings. This
+   ensures that new players added to the bottom of the ladder are forced to
+   play more than one game to reach the top of the ladder!</p>
+
+  <p>There are three basic tasks which are required to record all the
+   information needed to keep such a ladder going:</p>
+
+  <ul>
+   <li>Printing the ladder.</li>
+   <li>Addition of new players.</li>
+   <li>Recording of results.</li>
+  </ul>
+
+  <p>The design to be used here provides a separate program to perform each of
+   these tasks. Having made this decision it is clear that a number of
+   operations needed by each program will be common to all three. For example,
+   all three will need to read player records from the data file, at least two
+   will need to write player records into the data file.</p>
+
+  <p>This suggests that a good approach would be to design a &#8216;library&#8217; of
+   functions which manipulate player records and the data file which may in
+   turn be combined to make up the programs which maintain the ladder.</p>
+
+  <p>Before this can be done it will be necessary to define the data structure
+   which represents player records. The minimum information necessary to record
+   for each player consists of player name and rank. However, to allow for more
+   interesting statistics to be compiled about the ladder let us chose to also
+   keep a record of games won, games lost and the time when the last game was
+   played. Clearly this disparate set of information is best collected together
+   in a structure.</p>
+
+  <p>The player structure declaration together with the declarations of the
+   player library functions are combined together in the <code>player.h</code>
+   header file. The data file is maintained as lines of text, each line
+   corresponding to a record; this requires input and output conversions to be
+   performed but is a useful technique if the conversions don't cost too much
+   in performance terms.</p>
+
+  <div class="inset-example"><a name="example-4"></a><pre>
+/*
+*
+* Declarations and definitions for functions which manipulate player
+* records which form the basis of the ladder
+*
+*/
+
+#include &lt;stddef.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;time.h&gt;
+
+#define NAMELEN 12              /* max. for player name length */
+
+#define LENBUF 256              /* max. for input buffer length */
+
+#define CHALLENGE_RANGE 3       /* number of higher ranked players who may
+                                * be challenged to move up in rank
+                                */
+
+extern char *OptArg;
+
+typedef struct {
+        char    name[NAMELEN+1];
+        int     rank;
+        int     wins;
+        int     losses;
+        time_t  last_game;
+} player;
+
+#define NULLPLAYER (player *)0
+
+extern const char *LadderFile;
+
+extern const char *WrFmt;       /* used when writing records */
+extern const char *RdFmt;       /* used when reading records */
+
+/*
+* Declarations for routines used to manipulate the player records
+* and the ladder file which are defined in player.c
+*
+*/
+
+int     valid_records(FILE *);
+int     read_records(FILE *, int, player *);
+int     write_records(FILE *, player *, int);
+player *find_by_name(char *, player *, int);
+player *find_by_rank(int, player *, int);
+void    push_down(player *, int, int, int);
+int     print_records(player *, int);
+void    copy_player(player *, player *);
+int     compare_name(player *, player *);
+int     compare_rank(player *, player *);
+void    sort_players(player *, int);</pre><cite>Example&#160;10.4</cite></div>
+
+  <p>Here is the code for the <code>player.c</code> file implementing the
+   generic functions which manipulate player records and the data file. These
+   functions can be combined with more specific routines to make up the three
+   programs required to maintain the ladder.</p>
+
+  <p>Notice that to manipulate the player records, each program is required to
+   read the entire data file into a dynamically allocated array. Before this
+   array is written back to the data file, it is assumed that the records it
+   contains will have been sorted into rank order. If the records do not remain
+   sorted, the <code>push_down</code> function will produce some
+   &#8216;interesting&#8217; results!</p>
+
+  <div class="inset-example"><a name="example-5"></a><pre>
+/*
+* Generic functions to manipulate the ladder data file and
+* player records.
+*
+*/
+
+#include &quot;player.h&quot;
+
+const char *LadderFile = &quot;ladder&quot;;
+
+const char *WrFmt = &quot;%s %d      %d      %d      %ld\n&quot;;
+const char *RdFmt = &quot;%s %d      %d      %d      %ld&quot;;
+
+
+/* note use of string-joining */
+const char *HeaderLine =
+        &quot;Player Rank Won Lost Last Game\n&quot;
+        &quot;===============================================\n&quot;;
+
+const char *PrtFmt = &quot;%-12s%4d %4d %4d %s\n&quot;;
+
+/* return the number of records in the data file */
+
+int valid_records(FILE *fp)
+{
+        int i = 0;
+        long plrs = 0L;
+        long tmp = ftell(fp);
+        char buf[LENBUF];
+
+        fseek(fp, 0L, SEEK_SET);
+
+        for(i = 0; fgets(buf, LENBUF, fp) != NULL ; i++)
+                ;
+
+        /* Restore the file pointer to original state */
+
+        fseek(fp, tmp, SEEK_SET);
+
+        return i;
+}
+
+/* read num player records from fp into the array them */
+
+int read_records(FILE *fp, int num, player *them)
+{
+        int i = 0;
+        long tmp = ftell(fp);
+
+        if(num == 0)
+                return 0;
+
+        fseek(fp, 0L, SEEK_SET);
+
+        for(i = 0 ; i &lt; num ; i++){
+                if(fscanf(fp, RdFmt, (them[i]).name,
+                                &amp;((them[i]).rank),
+                                &amp;((them[i]).wins),
+                                &amp;((them[i]).losses),
+                                &amp;((them[i]).last_game)) != 5)
+                        break;          /* error on fscanf! */
+        }
+
+        fseek(fp, tmp, SEEK_SET);
+        return i;
+}
+
+/* write num player records to the file fp from the array them */
+
+int write_records(FILE *fp, player *them, int num)
+{
+        int i = 0;
+
+        fseek(fp, 0L, SEEK_SET);
+
+        for(i = 0 ; i &lt; num ; i++){
+                if(fprintf(fp, WrFmt, (them[i]).name,
+                                (them[i]).rank,
+                                (them[i]).wins,
+                                (them[i]).losses,
+                                (them[i]).last_game) &lt; 0)
+                        break;          /* error on fprintf! */
+        }
+
+        return i;
+}
+
+/*
+* return a pointer to the player in array them
+* whose name matches name
+*/
+
+player *find_by_name(char * name, player *them, int num)
+{
+        player *pp = them;
+        int i = 0;
+
+        for(i = 0; i &lt; num; i++, pp++)
+                if(strcmp(name, pp-&gt;name) == 0)
+                        return pp;
+
+        return NULLPLAYER;
+}
+
+/*
+* return a pointer to the player in array them
+* whose rank matches rank
+*/
+
+player *find_by_rank(int rank, player *them, int num)
+{
+        player *pp = them;
+        int i = 0;
+
+        for(i = 0; i &lt; num; i++, pp++)
+                if(rank == pp-&gt;rank)
+                        return pp;
+
+        return NULLPLAYER;
+}
+
+/*
+* reduce by one the ranking of all players in array them
+* whose ranks are now between start and end
+*/
+
+void push_down(player *them, int number, int start, int end)
+{
+        int i;
+        player *pp;
+
+        for(i = end; i &gt;= start; i--){
+        if((pp = find_by_rank(i, them, number)) == NULLPLAYER){
+                fprintf(stderr,
+                        &quot;error: could not find player ranked %d\n&quot;, i);
+                free(them);
+                exit(EXIT_FAILURE);
+        } else
+                (pp-&gt;rank)++;
+        }
+}
+
+/* pretty print num player records from the array them */
+
+int print_records(player *them, int num)
+{
+        int i = 0;
+
+        printf(HeaderLine);
+
+        for(i = 0 ; i &lt; num ; i++){
+                if(printf(PrtFmt,
+                        (them[i]).name, (them[i]).rank,
+                        (them[i]).wins, (them[i]).losses,
+                        asctime(localtime(&amp;(them[i]).last_game))) &lt; 0)
+                        break;          /* error on printf! */
+        }
+
+        return i;
+}
+
+/* copy the values from player from to player to */
+
+void copy_player(player *to, player *from)
+{
+        if((to == NULLPLAYER) || (from == NULLPLAYER))
+                return;
+
+        *to = *from;
+        return;
+}
+
+/* compare the names of player first and player second */
+
+int compare_name(player *first, player *second)
+{
+        return strcmp(first-&gt;name, second-&gt;name);
+}
+
+/* compare the ranks of player first and player second */
+
+int compare_rank(player *first, player *second)
+{
+        return (first-&gt;rank - second-&gt;rank);
+}
+
+/* sort num player records in the array them */
+
+void sort_players(player *them, int num)
+{
+        qsort(them, num, sizeof(player), compare_rank);
+}</pre><cite>Example&#160;10.5</cite></div>
+
+  <p>This code, when tested, was compiled into an object file which was then
+   linked (together with an object file containing the code for the
+   <code>options</code> function) with one of the following three programs to
+   for the ladder maintenance utilities.</p>
+
+  <p>Here is the code for the simplest of those utilities,
+   <code>showlddr</code> which is contained in the file
+   <code>showlddr.c</code>.</p>
+
+  <p>This program takes a single option, <code>-f</code>, which you will notice
+   takes an option argument. The purpose of this argument is to allow you to
+   print a ladder data file with a name other than the default file name,
+   <code>ladder</code>.</p>
+
+  <p>The player records in the data file should be stored pre-sorted but, just
+   to be safe, <code>showlddr</code> sorts them before it prints them out.</p>
+
+  <div class="inset-example"><a name="example-6"></a><pre>
+/*
+* Program to print the current ladder status.
+*
+*/
+
+#include &quot;player.h&quot;
+
+const char *ValidOpts = &quot;f:&quot;;
+
+const char *Usage = &quot;usage: showlddr [-f ladder_file]\n&quot;;
+
+char *OtherFile;
+
+int main(int argc, char *argv[])
+{
+        int number;
+        char ch;
+        player *them;
+        const char *fname;
+        FILE *fp;
+
+        if(argc == 3){
+                while((ch = options(argc, argv, ValidOpts)) != -1){
+                        switch(ch){
+                                case 'f':
+                                        OtherFile = OptArg;
+                                        break;
+                                case '?':
+                                        fprintf(stderr, Usage);
+                                        break;
+                        }
+                }
+        } else if(argc &gt; 1){
+                fprintf(stderr, Usage);
+                exit(EXIT_FAILURE);
+        }
+
+        fname = (OtherFile == 0)? LadderFile : OtherFile;
+        fp = fopen(fname, &quot;r+&quot;);
+
+        if(fp == NULL){
+                perror(&quot;showlddr&quot;);
+                exit(EXIT_FAILURE);
+        }
+
+        number = valid_records (fp);
+
+        them = (player *)malloc((sizeof(player) * number));
+
+        if(them == NULL){
+                fprintf(stderr,&quot;showlddr: out of memory\n&quot;);
+                exit(EXIT_FAILURE);
+        }
+
+        if(read_records(fp, number, them) != number){
+                fprintf(stderr, &quot;showlddr: error while reading&quot;
+                                        &quot; player records\n&quot;);
+                free(them);
+                fclose(fp);
+                exit(EXIT_FAILURE);
+        }
+
+        fclose(fp);
+
+        sort_players(them, number);
+
+        if(print_records(them, number) != number){
+                fprintf(stderr, &quot;showlddr: error while printing&quot;
+                                        &quot; player records\n&quot;);
+                free(them);
+                exit(EXIT_FAILURE);
+        }
+
+        free(them);
+        exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;10.6</cite></div>
+
+  <p>Of course the <code>showlddr</code> program works only if there is an
+   existing data file containing player records in the correct format. The
+   program newplyr creates such a file if one does not already exist and then
+   adds a new player record, in the correct format to that file.</p>
+
+  <p>Typically, new players are added at the bottom of the rankings but for the
+   odd occasion where this really may not make sense, <code>newplyr</code> also
+   allows a player to be inserted into the middle of the rankings.</p>
+
+  <p>A player may only appear once on the ladder (unless a pseudonym is used!)
+   and there can only be one player at any one rank. Thus the program checks
+   for duplicate entries and if the new player is to be inserted into
+   a middling rank, moves other players already on the ladder out of the
+   way.</p>
+
+  <p>As with the <code>showlddr</code> program, <code>newplyr</code> recognises
+   a <code>-f</code> option as a request to add the new player to a file named
+   by the option argument rather than the default file, ladder. In addition,
+   newplyr requires two options, <code>-n</code> and <code>-r</code>, each with
+   option arguments to specify both the new player's name and initial ranking
+   respectively.</p>
+
+  <div class="inset-example"><a name="example-7"></a><pre>
+/*
+* Program to add a new player to the ladder.
+* You are expected to assign a realistic
+* ranking value to the player.
+*
+*/
+
+#include &quot;player.h&quot;
+
+const char *ValidOpts = &quot;n:r:f:&quot;;
+
+char *OtherFile;
+
+static const char *Usage = &quot;usage: newplyr -r rank -n name [-f file]\n&quot;;
+
+/* Forward declaration of function defined in this file */
+
+void record(player *extra);
+
+int main(int argc, char *argv[])
+{
+        char ch;
+        player dummy, *new = &amp;dummy;
+
+        if(argc &lt; 5){
+                fprintf(stderr, Usage);
+                exit(EXIT_FAILURE);
+        }
+
+        while((ch = options(argc, argv, ValidOpts)) != -1){
+                switch(ch){
+                case 'f':
+                        OtherFile=OptArg;
+                        break;
+                case 'n':
+                        strncpy(new-&gt;name, OptArg, NAMELEN);
+                        new-&gt;name[NAMELEN] = 0;
+                        if(strcmp(new-&gt;name, OptArg) != 0)
+                                fprintf(stderr,
+                                        &quot;Warning: name truncated to %s\n&quot;, new-&gt;name);
+                        break;
+                case 'r':
+                        if((new-&gt;rank = atoi(OptArg)) == 0){
+                                fprintf(stderr, Usage);
+                        exit(EXIT_FAILURE);
+                        }
+                        break;
+                case '?':
+                        fprintf(stderr, Usage);
+                        break;
+                }
+        }
+
+        if((new-&gt;rank == 0)){
+                fprintf(stderr, &quot;newplyr: bad value for rank\n&quot;);
+                exit(EXIT_FAILURE);
+        }
+
+        if(strlen(new-&gt;name) == 0){
+                fprintf(stderr,
+                        &quot;newplyr: needs a valid name for new player\n&quot;);
+                exit(EXIT_FAILURE);
+        }
+
+        new-&gt;wins = new-&gt;losses = 0;
+        time(&amp; new-&gt;last_game); /* make now the time of the &quot;last game&quot; */
+
+        record(new);
+
+        exit(EXIT_SUCCESS);
+}
+
+void record(player *extra)
+{
+        int number, new_number, i;
+        player *them;
+        const char *fname =(OtherFile==0)?LadderFile:OtherFile;
+        FILE *fp;
+
+        fp = fopen(fname, &quot;r+&quot;);
+
+        if(fp == NULL){
+                if((fp = fopen(fname, &quot;w&quot;)) == NULL){
+                        perror(&quot;newplyr&quot;);
+                        exit(EXIT_FAILURE);
+                }
+        }
+
+        number = valid_records (fp);
+        new_number = number + 1;
+
+        if((extra-&gt;rank &lt;= 0) || (extra-&gt;rank &gt; new_number)){
+                fprintf(stderr,
+                        &quot;newplyr: rank must be between 1 and %d\n&quot;,
+                        new_number);
+                exit(EXIT_FAILURE);
+        }
+
+        them = (player *)malloc((sizeof(player) * new_number));
+
+        if(them == NULL){
+                fprintf(stderr,&quot;newplyr: out of memory\n&quot;);
+                exit(EXIT_FAILURE);
+        }
+
+        if(read_records(fp, number, them) != number){
+                fprintf(stderr,
+                        &quot;newplyr: error while reading player records\n&quot;);
+                free(them);
+                exit(EXIT_FAILURE);
+        }
+
+        if(find_by_name(extra-&gt;name, them, number) != NULLPLAYER){
+                fprintf(stderr,
+                        &quot;newplyr: %s is already on the ladder\n&quot;,
+                        extra-&gt;name);
+                free(them);
+                exit(EXIT_FAILURE);
+        }
+
+        copy_player(&amp;them[number], extra);
+
+        if(extra-&gt;rank != new_number)
+                push_down(them, number, extra-&gt;rank, number);
+
+        sort_players(them, new_number);
+
+        if((fp = freopen(fname, &quot;w+&quot;, fp)) == NULL){
+                perror(&quot;newplyr&quot;);
+                free(them);
+                exit(EXIT_FAILURE);
+        }
+
+        if(write_records(fp, them, new_number) != new_number){
+                fprintf(stderr,
+                        &quot;newplyr: error while writing player records\n&quot;);
+                fclose(fp);
+                free(them);
+                exit(EXIT_FAILURE);
+        }
+        fclose(fp);
+        free(them);
+}</pre><cite>Example&#160;10.7</cite></div>
+
+  <p>The only remaining utility required is one for recording the results of
+   games played. The <code>result</code> program performs this task.</p>
+
+  <p>As with the previous two utilities, <code>result</code> will accept
+   a <code>-f</code> option together with a file name to specify an alternative
+   to the default player record file.</p>
+
+  <p>Unlike the <code>newplyr</code> utility, <code>result</code> interactively
+   prompts the user for the names of the winning and losing players. The
+   program insists that the names supplied should be those of existing
+   players.</p>
+
+  <p>Given a valid pair of names, a check is then made to see if the loser is
+   higher ranked than winner and whether or not the winner is ranked close
+   enough for the victory to alter the rankings.</p>
+
+  <p>If a change in the standings is in order, the victor takes the loser's
+   rank and the loser (as well as any other player on an intervening rank) is
+   demoted one rank.</p>
+
+  <p>Here is the code for the <code>result</code> utility.</p>
+
+  <div class="inset-example"><a name="example-8"></a><pre>
+/*
+* Program to record a result in the ladder
+*
+*/
+
+#include &quot;player.h&quot;
+
+/* Forward declarations for functions defined in this file */
+
+char *read_name(char *, char *);
+void move_winner(player *, player *, player *, int);
+
+const char *ValidOpts = &quot;f:&quot;;
+
+const char *Usage = &quot;usage: result [-f file]\n&quot;;
+
+char *OtherFile;
+
+int main(int argc, char *argv[])
+{
+        player *winner, *loser, *them;
+        int number;
+        FILE *fp;
+        const char *fname;
+        char buf[LENBUF], ch;
+
+        if(argc == 3){
+                while((ch = options(argc, argv, ValidOpts)) != -1){
+                        switch(ch){
+                                case 'f':
+                                        OtherFile = OptArg;
+                                        break;
+                                case '?':
+                                        fprintf(stderr, Usage);
+                                        break;
+                        }
+                }
+        } else if(argc &gt; 1){
+                fprintf(stderr, Usage);
+                exit(EXIT_FAILURE);
+        }
+
+        fname = (OtherFile == 0)? LadderFile : OtherFile;
+        fp = fopen(fname, &quot;r+&quot;);
+
+        if(fp == NULL){
+                perror(&quot;result&quot;);
+                exit(EXIT_FAILURE);
+        }
+
+        number = valid_records (fp);
+
+        them = (player *)malloc((sizeof(player) * number));
+
+        if(them == NULL){
+                fprintf(stderr,&quot;result: out of memory\n&quot;);
+                exit(EXIT_FAILURE);
+        }
+
+        if(read_records(fp, number, them) != number){
+                fprintf(stderr,
+                        &quot;result: error while reading player records\n&quot;);
+                fclose(fp);
+                free(them);
+                exit(EXIT_FAILURE);
+        }
+
+        fclose(fp);
+
+        if((winner = find_by_name(read_name(buf, &quot;winner&quot;), them, number))
+                == NULLPLAYER){
+                fprintf(stderr,&quot;result: no such player %s\n&quot;,buf);
+                free(them);
+                exit(EXIT_FAILURE);
+        }
+
+        if((loser = find_by_name(read_name(buf, &quot;loser&quot;), them, number))
+                == NULLPLAYER){
+                fprintf(stderr,&quot;result: no such player %s\n&quot;,buf);
+                free(them);
+                exit(EXIT_FAILURE);
+        }
+
+        winner-&gt;wins++;
+        loser-&gt;losses++;
+
+        winner-&gt;last_game = loser-&gt;last_game = time(0);
+
+        if(loser-&gt;rank &lt; winner-&gt;rank)
+                if((winner-&gt;rank - loser-&gt;rank) &lt;= CHALLENGE_RANGE)
+                        move_winner(winner, loser, them, number);
+
+        if((fp = freopen(fname, &quot;w+&quot;, fp)) == NULL){
+                perror(&quot;result&quot;);
+                free(them);
+                exit(EXIT_FAILURE);
+        }
+
+        if(write_records(fp, them, number) != number){
+                fprintf(stderr,&quot;result: error while writing player records\n&quot;);
+                free(them);
+                exit(EXIT_FAILURE);
+        }
+        fclose(fp);
+        free(them);
+        exit(EXIT_SUCCESS);
+}
+
+void move_winner(player *ww, player *ll, player *them, int number)
+{
+        int loser_rank = ll-&gt;rank;
+
+        if((ll-&gt;rank - ww-&gt;rank) &gt; 3)
+                return;
+
+        push_down(them, number, ll-&gt;rank, (ww-&gt;rank - 1));
+        ww-&gt;rank = loser_rank;
+        sort_players(them, number);
+        return;
+}
+
+char *read_name(char *buf, char *whom)
+{
+        for(;;){
+                char *cp;
+                printf(&quot;Enter name of %s : &quot;,whom);
+                if(fgets(buf, LENBUF, stdin) == NULL)
+                        continue;
+                /* delete newline */
+                cp = &amp;buf[strlen(buf)-1];
+                if(*cp == '\n')
+                        *cp = 0;
+                /* at least one char? */
+                if(cp != buf)
+                        return buf;
+        }
+}</pre><cite>Example&#160;10.8</cite></div>
+ 
+ <div class="cbook_next_prev"><p><a href="pattern_matching_example.html">Previous section</a> | <a href="../chapter10/">Chapter contents</a> | <a href="afterword.html">Next section</a></p></div>
+
+    </main>
+    <nav id="menu" class="Left">
+      
+ 
+  
+  <div class="nav">
+
+	
+	
+			
+			  <div class="nav0">
+				
+				  <a href="/">Publications</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav1">
+				
+				  <a href="/c_book/">The C&nbsp;Book</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/preface/">Preface</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter1/">Introduction</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter2/">Variables &amp; arithmetic</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter3/">Control flow</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter4/">Functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter5/">Arrays &amp; pointers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter6/">Structures</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter7/">Preprocessor</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter8/">Specialized areas</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter9/">Libraries</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter10/">Complete Programs</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter10/putting_it_together.html">Putting it together</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter10/arguments_to_main.html">Arguments to main()</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter10/interpreting_program_arguments.html">Interpreting program arguments</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter10/pattern_matching_example.html">Pattern matching example</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <strong>Ambitious example</strong>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter10/afterword.html">Afterword</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/answers/">Answers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/copyright.html">Copyright</a>
+				
+				
+			</div>
+			
+	
+
+</div>
+
+ 
+
+      <div class="ColBtm">
+        <hr />
+<div class="h1"><a href="https://ebusiness.gbdirect.co.uk/contact.html">Contact Us</a></div>
+
+      </div>
+
+    </nav>
+    <aside id="sidebar" class="Right">
+      
+ <div class="box">
+  
+  
+<img src="https://global.gbdirect.co.uk/Themes/printer-friendly-12x12.png" alt="" title="Printer-friendly version of this page" />
+<a href="?format=pf" rel="nofollow">
+  Printer-friendly version
+</a>
+
+ </div>
+
+ <div class="box">
+  <h3>The C Book</h3>
+  
+<p>This book is published as a matter of historical interest.
+ Please read the
+ <a href="/c_book/copyright.html">copyright and disclaimer information</a>.</p>
+
+<p>GBdirect Ltd provides up-to-date training and consultancy in
+ <a href="http://training.gbdirect.co.uk/courses/c/">C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c/real_time_linux_embedded_c_training.html">Embedded C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c++/">C++</a>
+ and a wide range of
+ <a href="http://training.gbdirect.co.uk/courses/">other subjects based on
+ open standards</a> if you happen to be interested.</p>
+
+ </div>
+
+
+    </aside>
+  </div>
+  
+<script type="text/javascript">
+        var maxheight = 0;
+        var a =  Array('main', 'menu', 'sidebar');
+        for(index in a){
+                var name = a[index];
+                // alert(name);
+                var id = document.getElementById(name);
+                if(id){
+                        if(id.offsetHeight > maxheight){
+                                maxheight = id.offsetHeight;
+                        }
+                }
+        }
+        var tabbar = document.getElementById('tabsbar');
+        if(tabbar){
+                if(tabbar.style) tabbar=tabbar.style;
+                tabbar.left = 0+'px';
+                tabbar.top = maxheight+'px';
+        }
+        
+</script>
+</body>
+</html>

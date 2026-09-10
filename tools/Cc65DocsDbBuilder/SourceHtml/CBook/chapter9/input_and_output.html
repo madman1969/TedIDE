@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1">
+<title>The C Book &#8212; Input and output</title>
+<meta property="og:title" content="The C Book &amp;#8212; Input and output" />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://global.gbdirect.co.uk/Themes/logo-og.png" />
+
+<link rel="SHORTCUT ICON" href="https://global.gbdirect.co.uk/favicon.ico" />
+<link rel="stylesheet" type="text/css" href="https://global.gbdirect.co.uk/Themes/Quarters.css" />
+
+<link rel="prev" href="/c_book/chapter9/stdarg.html" />
+<link rel="next" href="/c_book/chapter9/formatted_io.html" />
+<link rel="contents" href="/c_book/chapter9/" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<!-- order 11-->
+<!-- lastmod 2005-11-10T16:42:02Z-->
+
+
+<link rel="canonical" href="https://publications.gbdirect.co.uk/c_book/chapter9/input_and_output.html"/><meta property="og:url" content="https://publications.gbdirect.co.uk/c_book/chapter9/input_and_output.html" />
+<script type="text/javascript"> var _gaq = _gaq || []; _gaq.push(['_setAccount', 'UA-3566842-1']); _gaq.push(['_setDomainName', '.gbdirect.co.uk']); _gaq.push(['_trackPageview']); (function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = 'https://www.google-analytics.com/ga.js'; var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s); })(); </script>
+</head>
+
+<body>
+  <header class="Banner">
+    <span id="Logo">
+      <a href="https://ebusiness.gbdirect.co.uk">
+        <img src="https://global.gbdirect.co.uk/Themes/gbdirect.gif"
+             alt="GBdirect Homepage"
+             title="GBdirect Homepage" /></a>
+    </span>
+<!-- Original homebrew search
+    <form action="https://global.gbdirect.co.uk/search.cgi"
+          method="get" id="Search">
+      <label for="search_textbox">Search</label>
+      <input type="text" name="query" size="12" id="search_textbox" value="" />
+      <input type="submit" name="Submit" value="Go" />
+    </form>
+-->
+<!-- Google search -->
+    <form class="Search" action="https://www.google.com/cse" id="cse-search-box">
+      <input type="hidden" name="cx" value="010270212093732037646:4pvgkishmkg" />
+      <input type="hidden" name="ie" value="UTF-8" />
+      <label for="search_textbox">Search</label>
+      <input type="text" name="q" id="search_textbox" size="12" />
+      <input type="submit" name="sa" value="Go" />
+    </form>
+    <script type="text/javascript" src="https://www.google.com/cse/brand?form=cse-search-box&amp;lang=en&amp;sitesearch=true"></script>
+<!-- End Google search -->
+  </header>
+  <nav class="Tabsbar"><span class="ThisTab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span> <span class="NoCSS2">| </span> <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/contact.html">Contact</a></span></nav>
+  <div id="container" itemscope itemtype="http://schema.org/WebPage">
+    <meta itemprop="isFamilyFriendly" content="1" />
+    <meta itemprop="inLanguage" content="en" />
+    <nav class="Tabsbar" id="tabsbar" style="position: absolute; width: 100%">
+  
+  
+    <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/">About Us</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://consulting.gbdirect.co.uk/">Consultancy</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://development.gbdirect.co.uk/">Software</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="ThisTab">Publications</span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-source.gbdirect.co.uk/">Open&nbsp;Source</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://software-support.gbdirect.co.uk/">Support</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-standards.gbdirect.co.uk/">Open&nbsp;Standards</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://faq.gbdirect.co.uk/">FAQ</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://jobs.gbdirect.co.uk/">Jobs</a></span>
+  
+
+</nav>
+    <main id="main" >
+	  
+		<nav id="breadcrumb" itemprop="breadcrumb">
+			
+			<a href="https://publications.gbdirect.co.uk/">Publications</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/">The C&nbsp;Book</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/chapter9/">Libraries</a>
+			
+			 &gt; Input &amp; output
+			
+		</nav>
+		<br />
+	  
+      <h1>9.10. Input and output</h1>
+      
+      
+
+
+  
+
+  <h2><a name="section-1"></a>9.10.1.&#160;Introduction</h2>
+   
+
+   <p>One of the reasons that has prevented many programming languages from
+    becoming widely used for &#8216;real programming&#8217; is their poor support for
+    I/O, a subject which has never seemed to excite language designers.
+    C&#160;has avoided this problem, oddly enough, by having no I/O at all!
+    The C language approach has always been to do I/O using library functions,
+    which ensures that system designers can provide tailored I/O instead of
+    being forced to change the language itself.</p>
+
+   <p>As C has evolved, a library package known as the &#8216;Standard I/O
+    Library&#8217; or stdio, has evolved with it and has proved to be both
+    flexible and portable.  This package has now become part of the
+    Standard.</p>
+
+   <p>The old stdio package relied heavily on the UNIX model of file access, in
+    particular the assumption that there is no distinction between unstructured
+    binary files and files containing readable text.  Many operating systems do
+    maintain a distinction between the two, and to ensure that C programs can
+    be written portably to run on both types of file model, the stdio package
+    has been modified.  There are changes in this area which affect many
+    existing programs, although strenuous efforts were taken to limit the
+    amount of damage.</p>
+
+   <p>Old C programs should still be able work unmodified in a
+    UNIX environment.</p>
+
+  
+
+  <h2><a name="section-2"></a>9.10.2.&#160;The I/O model</h2>
+   
+
+   <p>The I/O model does not distinguish between the types of physical devices
+    supporting the I/O.  Each source or sink of data (file) is treated in the
+    same way, and is viewed as a <dfn>stream</dfn> of bytes.  Since the
+    smallest object that can be represented in C is the character, access to
+    a file is permitted at any character boundary. Any number of characters can
+    be read or written from a movable point, known as the <dfn>file position
+    indicator</dfn>.  The characters will be read, or written, in sequence from
+    this point, and the position indicator moved accordingly.  The position
+    indicator is initially set to the beginning of a file when it is opened,
+    but can also be moved by means of positioning requests.  (Where random
+    access is not possible, the file position indicator is ignored.) Opening
+    a file in append mode has an implementation defined effect on the stream's
+    file position indicator.</p>
+
+   <p>The overall effect is to provide sequential reads or writes unless the
+    stream was opened in append mode, or the file position indicator is
+    explicitly moved.</p>
+
+   <p>There are two types of file, <dfn>text files</dfn> and <dfn>binary
+    files</dfn>, which, within a program, are manipulated as <dfn>text
+    streams</dfn> and <dfn>binary</dfn> streams once they have been opened for
+    I/O.  The stdio package does not permit operations on the contents of files
+    &#8216;directly&#8217;, but only by viewing them as streams.</p>
+
+   <h3><a name="section-2.1"></a>9.10.2.1.&#160;Text streams</h3>
+    
+
+    <p>The Standard specifies what is meant by the term <dfn>text stream</dfn>,
+     which essentially considers a file to contain lines of text.  A line is
+     a sequence of zero or more characters terminated by a newline character.
+     It is quite possible that the actual representation of lines in the
+     external environment is different from this and there may be
+     transformations of the data stream on the way in and out of the program;
+     a common requirement is to translate the &#8216;<code>\n</code>&#8217;
+     line-terminator into the sequence &#8216;<code>\r\n</code>&#8217; on output, and
+     do the reverse on input.  Other translations may also be necessary.</p>
+
+    <p>Data read in from a text stream is guaranteed to compare equal to the
+     data that was earlier written out to the file if the data consists only of
+     complete lines of printable characters and the control characters
+     horizontal-tab and newline, no newline character is immediately preceded
+     by space characters and the last character is a newline.</p>
+
+    <p>It is guaranteed that, if the last character written to a text file is
+     a newline, it will read back as the same.</p>
+
+    <p>It is implementation defined whether the last line written to a text
+     file must terminate with a newline character; this is because on some
+     implementations text files and binary files are the same.</p>
+
+    <p>Some implementations may strip the leading space from lines consisting
+     only of a space followed by a newline, or strip trailing spaces at the end
+     of a line!</p>
+
+    <p>An implementation must support text files with lines containing at least
+     254&#160;characters, including the terminating newline.</p>
+
+    <p>Opening a text stream in update mode may result in a binary stream in
+     some implementations.</p>
+
+    <p>Writing on a text stream may cause some implementations to truncate the
+     file at that point&#8212;any data beyond the last byte of the current write
+     being discarded.</p>
+
+   
+
+   <h3><a name="section-2.2"></a>9.10.2.2.&#160;Binary streams</h3>
+    
+
+    <p>A binary stream is a sequence of characters that can be used to record
+     a program's internal data, such as the contents of structures or arrays in
+     binary form.  Data read in from a binary stream will always compare equal
+     to data written out earlier to the same stream, under the same
+     implementation.  In some circumstances, an implementation-defined number
+     of <code>NUL</code> characters may be appended to a binary stream.</p>
+
+    <p>The contents of binary files are exceedingly machine specific, and not,
+     in general, portable.</p>
+
+   
+
+   <h3><a name="section-2.3"></a>9.10.2.3.&#160;Other streams</h3>
+    
+
+    <p>Other stream types may exist, but are implementation defined.</p>
+
+   
+
+  
+
+  <h2><a name="section-3"></a>9.10.3.&#160;The stdio.h header file</h2>
+   
+
+   <p>To provide support for streams of the various kinds, a number of
+    functions and macros exist.  The <code>&lt;stdio.h&gt;</code> header file
+    contains the various declarations necessary for the functions, together
+    with the following macro and type declarations:</p>
+
+   <dl>
+    <dt><code>FILE</code></dt>
+    <dd>The type of an object used to contain stream control
+     information.  Users of stdio never need to know the
+     contents of these objects, but simply manipulate pointers
+     to them.  It is not safe to copy these objects within the
+     program; sometimes their addresses may be &#8216;magic&#8217;.</dd>
+
+    <dt><code>fpos_t</code></dt>
+    <dd>A type of object that can be used to record unique values
+     of a stream's file position indicator.</dd>
+
+    <dt><code>_IOFBF _IOLBF _IONBF</code></dt>
+    <dd>Values used to control the buffering of a stream in
+     conjunction with the <code>setvbuf</code> function.</dd>
+
+    <dt><code>BUFSIZ</code></dt>
+    <dd>The size of the buffer used by the <code>setbuf</code> function.  An
+     integral constant expression whose value is at least 256.</dd>
+
+    <dt><code>EOF</code></dt>
+    <dd>A negative integral constant expression, indicating the
+     end-of-file condition on a stream i.e. that there is no
+     more input.</dd>
+
+    <dt><code>FILENAME_MAX</code></dt>
+    <dd>The maximum length which a filename can have, if there is
+     a limit, or otherwise the recommended size of an array
+     intended to hold a file name.</dd>
+
+    <dt><code>FOPEN_MAX</code></dt>
+    <dd>The minimum number of files that the implementation
+     guarantees may be held open concurrently; at least eight
+     are guaranteed.  Note that three predefined streams exist
+     and may need to be closed if a program needs to open more
+     than five files explicitly.</dd>
+
+    <dt><code>L_tmpnam</code></dt>
+    <dd>The maximum length of the string generated by <code>tmpnam</code>; an
+     integral constant expression.</dd>
+
+    <dt><code>SEEK_CUR SEEK_END SEEK_SET</code></dt>
+    <dd>Integral constant expressions used to control the actions
+     of <code>fseek</code>.</dd>
+
+    <dt><code>TMP_MAX</code></dt>
+    <dd>The minimum number of unique filenames generated by
+     <code>tmpnam</code>; an integral constant expression with a value of
+     at least&#160;25.</dd>
+
+    <dt><code>stdin stdout stderr</code></dt>
+    <dd>Predefined objects of type (<code>FILE *</code>) referring to the
+     standard input, output and error streams respectively.
+     These streams are automatically open when a program
+     starts execution.</dd>
+   </dl>
+
+  
+
+  <h2><a name="section-4"></a>9.10.4.&#160;Opening, closing and buffering of streams</h2>
+   
+
+   <h3><a name="section-4.1"></a>9.10.4.1.&#160;Opening</h3>
+    
+
+    <p>A stream is connected to a file by means of the <code>fopen</code>,
+     <code>freopen</code> or <code>tmpfile</code> functions.  These functions
+     will, if successful, return a pointer to a <code>FILE</code> object.</p>
+
+    <p>Three streams are available without any special action; they are
+     normally all connected to the physical device associated with the
+     executing program: usually your terminal.  They are referred to by the
+     names <code>stdin</code>, the <dfn>standard input</dfn>,
+     <code>stdout</code>, the <dfn>standard output</dfn>, and
+     <code>stderr</code>, the <dfn>standard error</dfn> streams.  Normal
+     keyboard input is from <code>stdin</code>, normal terminal output is to
+     <code>stdout</code>, and error messages are directed to
+     <code>stderr</code>.  The separation of error messages from normal output
+     messages allows the stdout stream to be connected to something other than
+     the terminal device, and still to have error messages appear on the screen
+     in front of you, rather than to be redirected to this file.  These files
+     are only fully buffered if they do not refer to interactive devices.</p>
+
+    <p>As mentioned earlier, the file position indicator may or may not be
+     movable, depending on the underlying device. It is not possible, for
+     example, to move the file position indicator on stdin if that is connected
+     to a terminal, as it usually is.</p>
+
+    <p>All non-temporary files must have a <dfn>filename</dfn>, which is
+     a string.  The rules for what constitutes valid filenames are
+     implementation defined. Whether a file can be simultaneously open multiple
+     times is also implementation defined.  Opening a new file may involve
+     creating the file.  Creating an existing file causes its previous contents
+     to be discarded.</p>
+
+   
+
+   <h3><a name="section-4.2"></a>9.10.4.2.&#160;Closing</h3>
+    
+
+    <p>Files are closed by explicitly calling <code>fclose</code>,
+     <code>exit</code> or by returning from <code>main</code>.  Any buffered
+     data is flushed.  If a program stops for some other reason, the status of
+     files which it had open is undefined.</p>
+
+   
+
+   <h3><a name="section-4.3"></a>9.10.4.3.&#160;Buffering</h3>
+    
+
+    <p>There are three types of buffering:</p>
+
+    <dl>
+     <dt>Unbuffered</dt>
+     <dd>Minimum internal storage is used by stdio in an attempt
+      to send or receive data as soon as possible.</dd>
+
+     <dt>Line buffered</dt>
+     <dd>Characters are processed on a line-by-line basis.  This
+      is commonly used in interactive environments, and
+      internal buffers are flushed only when full or when a
+      newline is processed.</dd>
+
+     <dt>Fully buffered</dt>
+     <dd>Internal buffers are only flushed when full.</dd>
+    </dl>
+
+    <p>The buffering associated with a stream can always be flushed by using
+     <code>fflush</code> explicitly.  Support for the various types of
+     buffering is implementation defined, and can be controlled within these
+     limits using <code>setbuf</code> and <code>setvbuf</code>.</p>
+
+   
+
+  
+
+  <h2><a name="section-5"></a>9.10.5.&#160;Direct file manipulation</h2>
+   
+
+   <p>A number of functions exist to operate on files directly.</p>
+
+   <pre>
+#include &lt;stdio.h&gt;
+
+int remove(const char *filename);
+int rename(const char *old, const char *new);
+char *tmpnam(char *s);
+FILE *tmpfile(void);</pre>
+
+   <dl>
+    <dt><code>remove</code></dt>
+    <dd>Causes a file to be removed. Subsequent attempts to  open
+     the file will fail, unless it is first created again.  If
+     the file is already open,  the  operation  of  <code>remove</code>  is
+     implementation  defined.  The  return  value  is zero for
+     success, any other value for failure.</dd>
+
+    <dt><code>rename</code></dt>
+    <dd>
+     <p>Changes the name of the file identified by  <code>old</code>  to
+      <code>new</code>.
+      Subsequent  attempts to open the original name will fail,
+      unless another file is created with  the  old  name.   As
+      with <code>remove</code>, <code>rename</code> returns zero for a
+      successful operation, any other value indicating a failure.</p>
+
+     <p>If a file with the  new  name  exists  prior  to  calling
+      <code>rename</code>, the behaviour is implementation defined.</p>
+
+     <p>If <code>rename</code> fails for any  reason,  the  original  file  is
+      unaffected.</p>
+    </dd>
+
+    <dt><code>tmpnam</code></dt>
+    <dd>
+     <p>Generates a string that may be used as a filename and  is
+      guaranteed  to  be  different from any existing filename.
+      It may be called repeatedly, each time generating  a  new
+      name.  The  constant  <code>TMP_MAX</code> is used to specify how many
+      times <code>tmpnam</code> may be called before it can no longer find a
+      unique  name.  <code>TMP_MAX</code> will be at least 25.  If
+      <code>tmpnam</code> is
+      called more than this number of times, its  behaviour  is
+      undefined by the Standard, but many implementations offer
+      no practical limit.</p>
+
+     <p>If the argument s is set to <code>NULL</code>,  then
+      <code>tmpnam</code>  uses  an
+      internal  buffer to build the name, and returns a pointer
+      to that. Subsequent calls may  alter  the  same  internal
+      buffer.  The argument may instead point to an array of at
+      least <code>L_tmpnam</code> characters, in which case the name will be
+      filled  into  the  supplied  buffer.  Such a filename may
+      then be created, and used as a temporary file. Since  the
+      name  is  generated by the function, it is unlikely to be
+      very useful in any other context. Temporary files of this
+      nature  are  not  removed,  except by direct calls to the
+      remove  function.  They  are  most  often  used  to  pass
+      temporary data between two separate programs.</p>
+    </dd>
+
+    <dt><code>tmpfile</code></dt>
+    <dd>Creates a temporary binary file, opened for  update,  and
+     returns  a  pointer to the stream of that file.  The file
+     will be removed when the stream is closed.   If  no  file
+     could be opened, <code>tmpfile</code> returns a null pointer.</dd>
+   </dl>
+
+  
+
+  <h2><a name="section-6"></a>9.10.6.&#160;Opening named files</h2>
+   
+
+   <p>Named files are opened by a call to the <code>fopen</code> function,
+    whose declaration is this:</p>
+
+   <pre>
+#include &lt;stdio.h&gt;
+FILE *fopen(const char *pathname, const char *mode);</pre>
+
+   <p>The <code>pathname</code> argument is the name of the file to open,  such
+    as  that  returned  from  <code>tmpnam</code>,  or  some program-specific
+    filename.</p>
+
+   <p>Files can be opened in a variety of <dfn>modes</dfn>, such as
+    <dfn>read</dfn> mode for reading data, <dfn>write</dfn> mode for writing
+    data, and so on.</p>
+
+   <p>Note that if you only want to write data to  a  file, <code>fopen</code>
+    will  <dfn>create</dfn>  the  file  if  it  does  not already exist, or
+    truncate it to zero length (losing its previous contents) if it did
+    exist.</p>
+
+   <p>The Standard list of modes is shown in Table&#160;9.3,  although
+    implementations  may  permit  extra modes by appending extra characters at
+    the end of the modes.</p>
+
+   <div class="inset-table"><a name="table-3"></a><table><thead><tr class="cbook-table-heading">
+     <th>Mode</th>
+     <th>Type of file</th>
+     <th>Read</th>
+     <th>Write</th>
+     <th>Create</th>
+     <th>Truncate</th>
+    </tr></thead><tbody><tr class="cbook-table-first-row">
+     <td><code>&quot;r&quot;</code></td>
+     <td>text</td>
+     <td>yes</td>
+     <td>no</td>
+     <td>no</td>
+     <td>no</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>&quot;rb&quot;</code></td>
+     <td>binary</td>
+     <td>yes</td>
+     <td>no</td>
+     <td>no</td>
+     <td>no</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>&quot;r+&quot;</code></td>
+     <td>text</td>
+     <td>yes</td>
+     <td>yes</td>
+     <td>no</td>
+     <td>no</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>&quot;r+b&quot;</code></td>
+     <td>binary</td>
+     <td>yes</td>
+     <td>yes</td>
+     <td>no</td>
+     <td>no</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>&quot;rb+&quot;</code></td>
+     <td>binary</td>
+     <td>yes</td>
+     <td>yes</td>
+     <td>no</td>
+     <td>no</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>&quot;w&quot;</code></td>
+     <td>text</td>
+     <td>no</td>
+     <td>yes</td>
+     <td>yes</td>
+     <td>yes</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>&quot;wb&quot;</code></td>
+     <td>binary</td>
+     <td>no</td>
+     <td>yes</td>
+     <td>yes</td>
+     <td>yes</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>&quot;w+&quot;</code></td>
+     <td>text</td>
+     <td>yes</td>
+     <td>yes</td>
+     <td>yes</td>
+     <td>yes</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>&quot;w+b&quot;</code></td>
+     <td>binary</td>
+     <td>yes</td>
+     <td>yes</td>
+     <td>yes</td>
+     <td>yes</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>&quot;wb+&quot;</code></td>
+     <td>binary</td>
+     <td>yes</td>
+     <td>yes</td>
+     <td>yes</td>
+     <td>yes</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>&quot;a&quot;</code></td>
+     <td>text</td>
+     <td>no</td>
+     <td>yes</td>
+     <td>yes</td>
+     <td>no</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>&quot;ab&quot;</code></td>
+     <td>binary</td>
+     <td>no</td>
+     <td>yes</td>
+     <td>yes</td>
+     <td>no</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>&quot;a+&quot;</code></td>
+     <td>text</td>
+     <td>yes</td>
+     <td>yes</td>
+     <td>yes</td>
+     <td>no</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>&quot;a+b&quot;</code></td>
+     <td>binary</td>
+     <td>no</td>
+     <td>yes</td>
+     <td>yes</td>
+     <td>no</td>
+    </tr><tr class="cbook-table-last-row">
+     <td><code>&quot;ab+&quot;</code></td>
+     <td>binary</td>
+     <td>no</td>
+     <td>yes</td>
+     <td>yes</td>
+     <td>no</td>
+    </tr></tbody></table><cite>Table&#160;9.3.&#160;File opening modes</cite></div>
+
+   <p>Beware that some implementations of binary files may pad the last record
+    with <code>NULL</code> characters, so opening them with modes
+    <code>ab</code>, <code>ab+</code> or <code>a+b</code> could position the
+    file  pointer  beyond  the last data written.</p>
+
+   <p>If a file is opened in append mode, <em>all</em> writes will occur at the
+    end of the file, regardless of attempts to move the file position indicator
+    with <code>fseek</code>.  The initial position fo  the file position
+    indicator will be implementation defined.</p>
+
+   <p>Attempts to open a file in read mode, indicated by an '<code>r</code>' as
+    the  first  character  in  the mode string, will fail if the file does not
+    already exist or can't be read.</p>
+
+   <p>Files  opened  for  update  (&#8216;<code>+</code>&#8217;  as  the  second  or
+    third character  of mode) may be both read and written, but a read may not
+    immediately follow a write,  or  a  write  follow  a read,  without  an
+    intervening  call  to  one  (or more) of <code>fflush</code>,
+    <code>fseek</code>, <code>fsetpos</code> or <code>rewind</code>.   The
+    only  exception  is that a write may immediately follow a read if
+    <code>EOF</code> was read.</p>
+
+   <p>It may also be possible in some implementations to omit  the
+    <code>b</code>  in  the  binary  modes, using the same modes for text and
+    binary files.</p>
+
+   <p>Streams opened by fopen are fully buffered only if they  are not
+    connected  to  an interactive device; this ensures that prompts and
+    responses are handled properly.</p>
+
+   <p>If <code>fopen</code> fails to open a file, it returns  a  null  pointer;
+    otherwise,  it  returns  a pointer to the object controlling the stream.
+    The <code>stdin</code>, <code>stdout</code> and <code>stderr</code>
+    objects  are  not necessarily modifiable and it may not be possible to use
+    the value returned from <code>fopen</code> for assignment  to  one  of
+    them.  For this reason, <code>freopen</code> is provided.</p>
+
+  
+
+  <h2><a name="section-7"></a>9.10.7.&#160;Freopen</h2>
+   
+
+   <p>The <code>freopen</code> function is used to take an existing stream
+    pointer and associate it with another named file:</p>
+
+   <pre>
+#include &lt;stdio.h&gt;
+FILE *freopen(const char *pathname,
+              const char *mode, FILE *stream);</pre>
+
+   <p>The <code>mode</code> argument is the same as for <code>fopen</code>.
+    The  <code>stream</code>  is closed first, and any errors from the close
+    are ignored.  On error, <code>NULL</code> is returned, otherwise the new
+    value for <code>stream</code> is returned.</p>
+
+  
+
+  <h2><a name="section-8"></a>9.10.8.&#160;Closing files</h2>
+   
+
+   <p>An open file is closed using <code>fclose</code>.</p>
+
+   <pre>
+#include &lt;stdio.h&gt;
+
+int fclose(FILE *stream);</pre>
+
+   <p>Any unwritten data buffered for <code>stream</code> is  flushed  out  and
+    any  unread  data  is  thrown  away.   If  a buffer had been
+    automatically allocated for the stream, it  is  freed.   The
+    file is then closed.</p>
+
+   <p>Zero is returned on success, <code>EOF</code> if any error occurs.</p>
+
+  
+
+  <h2><a name="section-9"></a>9.10.9.&#160;Setbuf, setvbuf</h2>
+   
+
+   <p>These two functions are used to change the buffering strategy for an open
+    stream:</p>
+
+   <pre>
+#include &lt;stdio.h&gt;
+
+int setvbuf(FILE *stream, char *buf,
+              int type, size_t size);
+void setbuf(FILE *stream, char *buf);</pre>
+
+   <p>They must be used <em>before</em> the file is  either  read  from  or
+    written  to.   The <code>type</code> argument defines how the
+    <code>stream</code> will be buffered (see Table&#160;9.4).</p>
+
+   <div class="inset-table"><a name="table-4"></a><table><thead><tr class="cbook-table-heading">
+     <th>Value</th>
+     <th>Effect</th>
+    </tr></thead><tbody><tr class="cbook-table-first-row">
+     <td><code>_IONBF</code></td>
+     <td>Do not buffer I/O</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>_IOFBF</code></td>
+     <td>Fully buffer I/O</td>
+    </tr><tr class="cbook-table-last-row">
+     <td><code>_IOLBF</code></td>
+     <td>Line buffer:  flush  buffer  when  full, when  newline  is written
+      or when a read is requested.</td>
+    </tr></tbody></table><cite>Table&#160;9.4.&#160;Type of buffering</cite></div>
+
+   <p>The <code>buf</code> argument can be a null pointer,  in  which  case  an
+    array  is automatically allocated to hold the buffered data.  Otherwise,
+    the user can provide a buffer, but should  ensure that its lifetime is at
+    least as long as that of the <code>stream</code>: a common mistake  is  to
+    use  automatic  storage  allocated inside a compound statement; in correct
+    usage it is usual to obtain the storage from <code>malloc</code> instead.
+    The  size  of  the buffer is specified by the <code>size</code>
+    argument.</p>
+
+   <p>A call of <code>setbuf</code> is exactly the same as a  call  of
+    <code>setvbuf</code> with   <code>IOFBF</code>  for the <code>type</code>
+    argument, and <code>BUFSIZ</code> for the <code>size</code> argument.  If
+    <code>buf</code> is a null pointer,  the  value  <code>_IONBF</code>  is
+    used for <code>type</code> instead.</p>
+
+   <p>No value is returned by  <code>setbuf</code>,  <code>setvbuf</code>
+    returns  zero  on success, non-zero if invalid values are provided for
+    <code>type</code> or <code>size</code>, or the request cannot be complied
+    with.</p>
+
+  
+
+  <h2><a name="section-10"></a>9.10.10.&#160;Fflush</h2>
+   
+
+   <pre>
+#include &lt;stdio.h&gt;
+
+int fflush(FILE *stream);</pre>
+
+   <p>If <code>stream</code> refers to a file opened for output or update,  any
+    unwritten data is &#8216;written&#8217; out.  Exactly what that means is
+    a function of the host environment, and C cannot  guarantee, for  example,
+    that data immediately reaches the surface of a disk which might be
+    supporting the file.  If the  stream  is associated  with  a  file  opened
+    for  input or update, any preceding <code>ungetc</code> operation is
+    forgotten.</p>
+
+   <p>The most recent operation on the stream must  have  been  an output
+    operation; if not, the behaviour is undefined.</p>
+
+   <p>A call of <code>fflush</code> with an  argument  of  zero  flushes  every
+    output  or  update  stream.   Care  is  taken to avoid those streams that
+    have not had an output as their last operation, thus avoiding the undefined
+    behaviour mentioned above.</p>
+
+   <p><code>EOF</code> is returned if an error occurs, otherwise zero.</p>
+
+  
+
+ <div class="cbook_next_prev"><p><a href="stdarg.html">Previous section</a> | <a href="../chapter9/">Chapter contents</a> | <a href="formatted_io.html">Next section</a></p></div>
+
+    </main>
+    <nav id="menu" class="Left">
+      
+ 
+  
+  <div class="nav">
+
+	
+	
+			
+			  <div class="nav0">
+				
+				  <a href="/">Publications</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav1">
+				
+				  <a href="/c_book/">The C&nbsp;Book</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/preface/">Preface</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter1/">Introduction</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter2/">Variables &amp; arithmetic</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter3/">Control flow</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter4/">Functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter5/">Arrays &amp; pointers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter6/">Structures</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter7/">Preprocessor</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter8/">Specialized areas</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter9/">Libraries</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/introduction.html">Introduction</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/diagnostics.html">Diagnostics</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/character_handling.html">Character handling</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/localization.html">Localization</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/limits.html">Limits</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/maths_functions.html">Maths functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/nonlocal_jumps.html">Non-local jumps</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/signal_handling.html">Signal handling</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/stdarg.html">Stdarg</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <strong>Input &amp; output</strong>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/formatted_io.html">Formatted I/O</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/character_io.html">Character I/O</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/unformatted_io.html">Unformatted I/O</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/random_access_io.html">Random access I/O</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/general_utilities.html">General Utilities</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/string_handling.html">String handling</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/date_and_time.html">Date and time</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/summary.html">Summary</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter10/">Complete Programs</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/answers/">Answers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/copyright.html">Copyright</a>
+				
+				
+			</div>
+			
+	
+
+</div>
+
+ 
+
+      <div class="ColBtm">
+        <hr />
+<div class="h1"><a href="https://ebusiness.gbdirect.co.uk/contact.html">Contact Us</a></div>
+
+      </div>
+
+    </nav>
+    <aside id="sidebar" class="Right">
+      
+ <div class="box">
+  
+  
+<img src="https://global.gbdirect.co.uk/Themes/printer-friendly-12x12.png" alt="" title="Printer-friendly version of this page" />
+<a href="?format=pf" rel="nofollow">
+  Printer-friendly version
+</a>
+
+ </div>
+
+ <div class="box">
+  <h3>The C Book</h3>
+  
+<p>This book is published as a matter of historical interest.
+ Please read the
+ <a href="/c_book/copyright.html">copyright and disclaimer information</a>.</p>
+
+<p>GBdirect Ltd provides up-to-date training and consultancy in
+ <a href="http://training.gbdirect.co.uk/courses/c/">C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c/real_time_linux_embedded_c_training.html">Embedded C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c++/">C++</a>
+ and a wide range of
+ <a href="http://training.gbdirect.co.uk/courses/">other subjects based on
+ open standards</a> if you happen to be interested.</p>
+
+ </div>
+
+
+    </aside>
+  </div>
+  
+<script type="text/javascript">
+        var maxheight = 0;
+        var a =  Array('main', 'menu', 'sidebar');
+        for(index in a){
+                var name = a[index];
+                // alert(name);
+                var id = document.getElementById(name);
+                if(id){
+                        if(id.offsetHeight > maxheight){
+                                maxheight = id.offsetHeight;
+                        }
+                }
+        }
+        var tabbar = document.getElementById('tabsbar');
+        if(tabbar){
+                if(tabbar.style) tabbar=tabbar.style;
+                tabbar.left = 0+'px';
+                tabbar.top = maxheight+'px';
+        }
+        
+</script>
+</body>
+</html>

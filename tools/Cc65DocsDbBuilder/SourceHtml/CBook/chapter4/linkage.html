@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1">
+<title>The C Book &#8212; Linkage</title>
+<meta property="og:title" content="The C Book &amp;#8212; Linkage" />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://global.gbdirect.co.uk/Themes/logo-og.png" />
+
+<link rel="SHORTCUT ICON" href="https://global.gbdirect.co.uk/favicon.ico" />
+<link rel="stylesheet" type="text/css" href="https://global.gbdirect.co.uk/Themes/Quarters.css" />
+
+<link rel="prev" href="/c_book/chapter4/recursion_and_argument_passing.html" />
+<link rel="next" href="/c_book/chapter4/summary.html" />
+<link rel="contents" href="/c_book/chapter4/" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<!-- order 5-->
+<!-- lastmod 2011-08-12T15:42:28Z-->
+
+
+<link rel="canonical" href="https://publications.gbdirect.co.uk/c_book/chapter4/linkage.html"/><meta property="og:url" content="https://publications.gbdirect.co.uk/c_book/chapter4/linkage.html" />
+<script type="text/javascript"> var _gaq = _gaq || []; _gaq.push(['_setAccount', 'UA-3566842-1']); _gaq.push(['_setDomainName', '.gbdirect.co.uk']); _gaq.push(['_trackPageview']); (function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = 'https://www.google-analytics.com/ga.js'; var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s); })(); </script>
+</head>
+
+<body>
+  <header class="Banner">
+    <span id="Logo">
+      <a href="https://ebusiness.gbdirect.co.uk">
+        <img src="https://global.gbdirect.co.uk/Themes/gbdirect.gif"
+             alt="GBdirect Homepage"
+             title="GBdirect Homepage" /></a>
+    </span>
+<!-- Original homebrew search
+    <form action="https://global.gbdirect.co.uk/search.cgi"
+          method="get" id="Search">
+      <label for="search_textbox">Search</label>
+      <input type="text" name="query" size="12" id="search_textbox" value="" />
+      <input type="submit" name="Submit" value="Go" />
+    </form>
+-->
+<!-- Google search -->
+    <form class="Search" action="https://www.google.com/cse" id="cse-search-box">
+      <input type="hidden" name="cx" value="010270212093732037646:4pvgkishmkg" />
+      <input type="hidden" name="ie" value="UTF-8" />
+      <label for="search_textbox">Search</label>
+      <input type="text" name="q" id="search_textbox" size="12" />
+      <input type="submit" name="sa" value="Go" />
+    </form>
+    <script type="text/javascript" src="https://www.google.com/cse/brand?form=cse-search-box&amp;lang=en&amp;sitesearch=true"></script>
+<!-- End Google search -->
+  </header>
+  <nav class="Tabsbar"><span class="ThisTab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span> <span class="NoCSS2">| </span> <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/contact.html">Contact</a></span></nav>
+  <div id="container" itemscope itemtype="http://schema.org/WebPage">
+    <meta itemprop="isFamilyFriendly" content="1" />
+    <meta itemprop="inLanguage" content="en" />
+    <nav class="Tabsbar" id="tabsbar" style="position: absolute; width: 100%">
+  
+  
+    <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/">About Us</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://consulting.gbdirect.co.uk/">Consultancy</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://development.gbdirect.co.uk/">Software</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="ThisTab">Publications</span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-source.gbdirect.co.uk/">Open&nbsp;Source</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://software-support.gbdirect.co.uk/">Support</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-standards.gbdirect.co.uk/">Open&nbsp;Standards</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://faq.gbdirect.co.uk/">FAQ</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://jobs.gbdirect.co.uk/">Jobs</a></span>
+  
+
+</nav>
+    <main id="main" >
+	  
+		<nav id="breadcrumb" itemprop="breadcrumb">
+			
+			<a href="https://publications.gbdirect.co.uk/">Publications</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/">The C&nbsp;Book</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/chapter4/">Functions</a>
+			
+			 &gt; Linkage
+			
+		</nav>
+		<br />
+	  
+      <h1>4.4. Linkage</h1>
+      
+      
+
+
+  
+
+  <p>Although the simple examples have carefully avoided the topic, we now
+   have to look into the effects of scope and linkage, terms used to
+   describe the accessibility of various objects in a C program. Why bother?
+   It's because realistic programs are built up out of multiple files and of
+   course libraries. It is clearly crucial that functions in one file
+   should be able to refer to functions (or other objects) in other files
+   and libraries; naturally there are a number of concepts and rules that
+   apply to this mechanism.</p>
+
+  <p>If you are relatively new to C, there are more important subjects to
+   cover first. Come back to this stuff later instead.</p>
+
+  <p>There are essentially two types of object in C: the internal and
+   external objects. The distinction between external and internal is to do
+   with functions: anything declared outside a function is external,
+   anything inside one, including its formal parameters, is internal. Since
+   no function can be defined inside another, functions themselves are
+   always external. At the outermost level, a C program is a collection of
+   <dfn>external objects</dfn>.</p>
+
+  <p>Only external objects participate in this cross-file and library
+   communication.</p>
+
+  <p>The term used by the Standard to describe the accessibility of objects
+   from one file to another, or even within the same file, is
+   <dfn>linkage</dfn>. There are three types of linkage: <dfn>external
+   linkage</dfn>, <dfn>internal linkage</dfn> and <dfn>no linkage</dfn>.
+   Anything internal to a function&#8212;its arguments, variables and so
+   on&#8212;<em>always</em> has no linkage and so can only be accessed from
+   inside the function itself. (The way around this is to declare something
+   inside a function but prefix it with the keyword <code>extern</code>
+   which says &#8216;it isn't really internal&#8217;, but we needn't worry about
+   that just yet.)</p>
+
+  <p>Objects that have external linkage are all considered to be located at
+   the outermost level of the program; this is the default linkage for
+   functions and anything declared outside of a function. <em>All instances
+    of a particular name with external linkage refer to the same object in
+    the program.</em> If two or more declarations of the same name have
+   external linkage but incompatible types, then you've done something very
+   silly and have undefined behaviour. The most obvious example of external
+   linkage is the printf function, whose declaration in
+   <code>&lt;stdio.h&gt;</code> is</p>
+<pre>
+int printf(const char *, ...);</pre>
+  <p>From that we can tell that it's a function returning int and with a
+   particular prototype&#8212;so we know everything about its type. We also
+   know that it has external linkage, because that is the default for every
+   external object. As a result, everywhere that the name <code>printf</code>
+   is used with external linkage, we are referring to this function.</p>
+
+  <p>Quite often, you want to be able to declare functions and other objects
+   within a single file in a way that allows them to reference each other
+   but <em>not</em> to be accessible from outside that file. This is often
+   necessary in the modules that support library functions, where the
+   additional framework that makes those functions work is not interesting
+   to the user and would be a positive nuisance if the names of those things
+   became visible outside the module. You do it through the use of
+   <dfn>internal linkage</dfn>.</p>
+
+  <p>Names with internal linkage only refer to the same object within a
+   single source file. You do this by prefixing their declarations with the
+   keyword <code>static</code>, which changes the linkage of external
+   objects from external linkage to internal linkage. It is also possible to
+   declare internal objects to be <code>static</code>, but that has an
+   entirely different meaning which we can defer for the moment.</p>
+
+  <p>It's confusing that the types of linkage and the types of object are
+   both described by the terms &#8216;internal&#8217; and &#8216;external&#8217;; this
+   is to some extent historical. C archaeologists may know that at one time
+   the two were equivalent and one implied the other&#8212;for us it's
+   unfortunate that the terms remain but the meanings have diverged. To
+   summarize:</p>
+
+  <div class="inset-table"><a name="table-1"></a><table><thead><tr class="cbook-table-heading">
+    <th>Type of linkage</th>
+    <th>Type of object</th>
+    <th>Accessibility</th>
+   </tr></thead><tbody><tr class="cbook-table-first-row">
+    <td>external</td>
+    <td>external</td>
+    <td>throughout the program</td>
+   </tr><tr class="cbook-table-row">
+    <td>internal</td>
+    <td>external</td>
+    <td>a single file</td>
+   </tr><tr class="cbook-table-last-row">
+    <td>none</td>
+    <td>internal</td>
+    <td>local to a single function</td>
+   </tr></tbody></table><cite>Table&#160;4.1.&#160;Linkage and accessibility</cite></div>
+
+  <p>Finally, before we see an example, it is important to know that all
+   objects with external linkage must have one and only one definition,
+   although there can be as many compatible declarations as you like. Here's
+   the example.</p>
+<div class="inset-example"><a name="example-9"></a><pre>
+/* first file */
+
+int i; /* definition */
+main () {
+  void f_in_other_place (void);   /* declaration */
+  i = 0
+}
+/* end of first file */
+
+
+/* start of second file */
+
+extern int i; /* declaration */
+void f_in_other_place (void){   /* definition */
+  i++;
+}
+/* end of second file */</pre><cite>Example&#160;4.9</cite></div>
+  <p>Although the full set of rules is a bit more complex, the basic way of
+   working out what constitutes a definition and a declaration is not
+   hard:</p>
+  <ul>
+   <li>A function declaration without a body for the function is just a
+    declaration.</li>
+   <li>A function declaration with a body for the function is a
+    definition.</li>
+   <li>At the external level, a declaration of an object (like the
+    variable<code>i</code>) is a definition unless it has the keyword
+    <code>extern</code> in front of it, when it is a declaration only.</li>
+  </ul>
+  <p><a href="../chapter8/">Chapter&#160;8</a> revisits the definition and declaration criteria
+   to a depth that will cause decompression sickness when you surface.</p>
+
+  <p>In the example it's easy to see that each file is able to access the
+   objects defined in the other by using their names. Just from that example
+   alone you should be able to work out how to construct programs with
+   multiple files and functions and variables declared or defined as
+   appropriate in each of them.</p>
+
+  <p>Here's another example, using <code>static</code> to restrict the
+   accessibility of functions and other things.</p>
+<div class="inset-example"><a name="example-10"></a><pre>
+/* example library module */
+/* only 'callable' is visible outside */
+static buf [100];
+static length;
+static void fillup(void);
+
+int
+callable (){
+      if (length ==0){
+              fillup ();
+      }
+      return (buf [length--]);
+}
+
+static void
+fillup (void){
+      while (length &lt;100){
+              buf [length++] = 0;
+      }
+}</pre><cite>Example&#160;4.10</cite></div>
+  <p>A user of this module can safely re-use the names declared here,
+   <code>length</code>, <code>buf</code>, and <code>fillup</code>, without
+   any danger of surprising effects. Only the name <code>callable</code> is
+   accessible outside this module.</p>
+
+  <p>A very useful thing to know is that any external object that has no
+   other initalizer (and except for functions we haven't seen any
+   initializers yet) is always set to the value of zero before the program
+   starts. This is widely used and relied on&#8212;the previous example
+   relies on it for the initial value of <code>length</code>.</p>
+
+  <h2><a name="section-1"></a>4.4.1.&#160;Effect of scope</h2>
+   
+
+   <p>There's one additional complicating factor beyond simply linkage.
+    Linkage allows you to couple names together on a per-program or a
+    per-file basis, but scope determines the visibility of the names.
+    Fortunately, the rules of scope are completely independent of anything
+    to do with linkage, so you don't have to remember funny combinations of
+    both.</p>
+
+   <p>What introduces the complexity is the dreaded extern keyword. The nice
+    regular block structure gets blown to pieces with this, which although
+    at a first glance is simple and obvious, does some very nasty things to
+    the fabric of the language. We'll leave its nasty problems to
+    <a href="../chapter8/">Chapter&#160;8</a>, since they only rear up if you deliberately
+    start to do perverse things with it and then say &#8216;what does this
+    mean&#8217;? We've already seen it used to ensure that the declaration of
+    something at the outer block level (the external level) of the program
+    is a declaration and not a definition (but beware: you can still
+    override the <code>extern</code> by, for example, providing an
+    <dfn>initializer</dfn> for the object).</p>
+
+   <p>Unless you prefix it with <code>extern</code>, the declaration of any
+    data object (not a function) at the outer level is also a definition.
+    Look back to Example&#160;4.9 to see this in use.</p>
+
+   <p>All function declarations implicitly have the <code>extern</code>
+    stuck in front of them, whether or not you put it there too. These two
+    ways of declaring <code>some_function</code> are equivalent and are
+    always declarations:</p>
+<pre>
+void some_function(void);
+
+extern void some_function(void);</pre>
+   <p>The thing that mysteriously turns those declarations into definitions
+    is that when you also provide the body of the function, that is
+    effectively the initializer for the function, so the comment about
+    initializers comes into effect and the declaration becomes a definition.
+    So far, no problem.</p>
+
+   <p>Now, what is going on here?</p>
+<pre>
+void some_function(void){
+      int i_var;
+      extern float e_f_var;
+}
+
+void another_func(void){
+      int i;
+      i = e_f_var;    /* scope problem */
+}</pre>
+   <p>What happened was that although the declaration of
+    <code>e_f_var</code> declares that something called <code>e_f_var</code>
+    is of type <code>float</code> and is accessible throughout the entire
+    program, the <em>scope</em> of the name disappears at the end of the
+    function that contains it. That's why it is meaningless inside
+    <code>another_func</code>&#8212;the name of <code>e_f_var</code> is out
+    of scope, just as much as <code>i_var</code> is.</p>
+
+   <p>So what use is that? It's sometimes handy if you only want to make use
+    of an external object from within a single function. If you followed the
+    usual practice and declared it at the head of the particular source
+    file, then there is no easy way for the reader of that file to see which
+    functions actually use it. By restricting the access and the scope of
+    the name to the place where is needed, you do communicate to a later
+    reader of the program that this is a very restricted use of the name and
+    that there is no intention to make widespread use of it throughout the
+    file. Of course, any half-way decent cross-reference listing would
+    communicate that anyway, so the argument is a bit hard to maintain.</p>
+
+   <p><a href="../chapter8/">Chapter&#160;8</a> is the place to find out more. There's a set of
+    guidelines for how to get the results that are most often wanted from
+    multi-file construction, and a good deal more detail on what happens
+    when you mix <code>extern</code>, <code>static</code> and internal and
+    external declarations. It isn't the sort of reading that you're likely
+    to do for pleasure, but it does answer the &#8216;what if&#8217;
+    questions.</p>
+  
+
+  <h2><a name="section-2"></a>4.4.2.&#160;Internal static</h2>
+   
+
+   <p>You are also allowed to declare internal objects as
+    <code>static</code>. Internal variables with this attribute have some
+    interesting properties: they are initialized to zero when the program
+    starts, they retain their value between entry to and exit from the
+    statement containing their declaration and there is only one copy of
+    each one, which is shared between all recursive calls of the function
+    containing it.</p>
+
+   <p>Internal statics can be used for a number of things. One is to count
+    the number of times that a function has been called; unlike ordinary
+    internal variables whose value is lost after leaving their function,
+    statics are convenient for this. Here's a function that always returns a
+    number between 0 and 15, but remembers how often it was called.</p>
+<div class="inset-example"><a name="example-11"></a><pre>
+int
+small_val (void) {
+      static unsigned count;
+      count ++;
+      return (count % 16);
+}</pre><cite>Example&#160;4.11</cite></div>
+   <p>They can help detect excessive recursion:</p>
+<div class="inset-example"><a name="example-12"></a><pre>
+void
+r_func (void){
+      static int depth;
+      depth++;
+      if (depth &gt; 200) {
+              printf (&quot;excessive recursion\n&quot;);
+              exit (1);
+      }
+      else {
+              /* do usual thing,
+               * not shown here.
+               * This last action
+               * occasionally results in another
+               * call on r_func()
+               */
+              x_func();
+      }
+      depth--;
+}</pre><cite>Example&#160;4.12</cite></div>
+
+  
+
+ <h2>Footnotes</h2><p class="footnote-text">1.<a name="foot1"> </a>Stroustrup
+     B.&#160;(1991). <cite>The C++ Programming Language</cite> 2nd edn.
+     Reading, MA: Addison-Wesley</p><div class="cbook_next_prev"><p><a href="recursion_and_argument_passing.html">Previous section</a> | <a href="../chapter4/">Chapter contents</a> | <a href="summary.html">Next section</a></p></div>
+
+    </main>
+    <nav id="menu" class="Left">
+      
+ 
+  
+  <div class="nav">
+
+	
+	
+			
+			  <div class="nav0">
+				
+				  <a href="/">Publications</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav1">
+				
+				  <a href="/c_book/">The C&nbsp;Book</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/preface/">Preface</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter1/">Introduction</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter2/">Variables &amp; arithmetic</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter3/">Control flow</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter4/">Functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter4/changes.html">Changes</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter4/function_types.html">Function types</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter4/recursion_and_argument_passing.html">Recursion &amp; argument passing</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <strong>Linkage</strong>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter4/summary.html">Summary</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter4/exercises.html">Exercises</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter5/">Arrays &amp; pointers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter6/">Structures</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter7/">Preprocessor</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter8/">Specialized areas</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter9/">Libraries</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter10/">Complete Programs</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/answers/">Answers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/copyright.html">Copyright</a>
+				
+				
+			</div>
+			
+	
+
+</div>
+
+ 
+
+      <div class="ColBtm">
+        <hr />
+<div class="h1"><a href="https://ebusiness.gbdirect.co.uk/contact.html">Contact Us</a></div>
+
+      </div>
+
+    </nav>
+    <aside id="sidebar" class="Right">
+      
+ <div class="box">
+  
+  
+<img src="https://global.gbdirect.co.uk/Themes/printer-friendly-12x12.png" alt="" title="Printer-friendly version of this page" />
+<a href="?format=pf" rel="nofollow">
+  Printer-friendly version
+</a>
+
+ </div>
+
+ <div class="box">
+  <h3>The C Book</h3>
+  
+<p>This book is published as a matter of historical interest.
+ Please read the
+ <a href="/c_book/copyright.html">copyright and disclaimer information</a>.</p>
+
+<p>GBdirect Ltd provides up-to-date training and consultancy in
+ <a href="http://training.gbdirect.co.uk/courses/c/">C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c/real_time_linux_embedded_c_training.html">Embedded C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c++/">C++</a>
+ and a wide range of
+ <a href="http://training.gbdirect.co.uk/courses/">other subjects based on
+ open standards</a> if you happen to be interested.</p>
+
+ </div>
+
+
+    </aside>
+  </div>
+  
+<script type="text/javascript">
+        var maxheight = 0;
+        var a =  Array('main', 'menu', 'sidebar');
+        for(index in a){
+                var name = a[index];
+                // alert(name);
+                var id = document.getElementById(name);
+                if(id){
+                        if(id.offsetHeight > maxheight){
+                                maxheight = id.offsetHeight;
+                        }
+                }
+        }
+        var tabbar = document.getElementById('tabsbar');
+        if(tabbar){
+                if(tabbar.style) tabbar=tabbar.style;
+                tabbar.left = 0+'px';
+                tabbar.top = maxheight+'px';
+        }
+        
+</script>
+</body>
+</html>

@@ -62,7 +62,7 @@ public static class HtmlToMarkdownConverter
                 if (text.Length == 0)
                     continue;
 
-                var slug = MakeUniqueSlug(text, slugUseCount);
+                var slug = MarkdownSlug.MakeUnique(text, slugUseCount);
                 foreach (var name in names)
                     slugsByAnchorName[name] = slug;
             }
@@ -126,41 +126,8 @@ public static class HtmlToMarkdownConverter
             .Where(n => n.Length > 0)
             .ToList();
 
-    /// <summary>Markdig's default GitHub-style auto-identifier algorithm, confirmed by direct testing
-    /// against the actual Terminal.Gui.Views.Markdown view rather than assumed: lowercase, drop every
-    /// character that isn't a letter, digit, space or hyphen, then turn runs of whitespace into a
-    /// single hyphen (e.g. "4.1 default config file (apple2.cfg)" -> "41-default-config-file-apple2cfg").</summary>
-    private static string Slugify(string headingText)
-    {
-        var sb = new StringBuilder();
-        var lastWasSeparator = true; // suppresses a leading hyphen
-        foreach (var ch in headingText.ToLowerInvariant())
-        {
-            if (char.IsLetterOrDigit(ch))
-            {
-                sb.Append(ch);
-                lastWasSeparator = false;
-            }
-            else if ((ch == ' ' || ch == '-') && !lastWasSeparator)
-            {
-                sb.Append('-');
-                lastWasSeparator = true;
-            }
-        }
-        return sb.ToString().TrimEnd('-');
-    }
-
-    /// <summary>Applies Markdig's duplicate-slug suffixing ("-1", "-2", ...) so
-    /// <see cref="BuildAnchorIndex"/>'s slugs match what the Markdown view computes for a page whose
-    /// real headings happen to repeat text (rare now that ToC entries no longer count as headings -
-    /// see this class's own doc comment - but not impossible).</summary>
-    private static string MakeUniqueSlug(string headingText, Dictionary<string, int> useCountBySlug)
-    {
-        var baseSlug = Slugify(headingText);
-        var count = useCountBySlug.GetValueOrDefault(baseSlug);
-        useCountBySlug[baseSlug] = count + 1;
-        return count == 0 ? baseSlug : $"{baseSlug}-{count}";
-    }
+    // Slug generation itself (Markdig's auto-identifier algorithm) is shared with
+    // CBookHtmlToMarkdownConverter via MarkdownSlug - see that class's doc comment.
 
     private static void AppendChildren(HtmlNode node, Context ctx)
     {

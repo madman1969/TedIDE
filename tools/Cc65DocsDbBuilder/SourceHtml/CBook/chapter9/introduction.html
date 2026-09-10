@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1">
+<title>The C Book &#8212; Introduction</title>
+<meta property="og:title" content="The C Book &amp;#8212; Introduction" />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://global.gbdirect.co.uk/Themes/logo-og.png" />
+
+<link rel="SHORTCUT ICON" href="https://global.gbdirect.co.uk/favicon.ico" />
+<link rel="stylesheet" type="text/css" href="https://global.gbdirect.co.uk/Themes/Quarters.css" />
+
+
+<link rel="next" href="/c_book/chapter9/diagnostics.html" />
+<link rel="contents" href="/c_book/chapter9/" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<!-- order 2-->
+<!-- lastmod 2005-11-10T16:42:02Z-->
+
+
+<link rel="canonical" href="https://publications.gbdirect.co.uk/c_book/chapter9/introduction.html"/><meta property="og:url" content="https://publications.gbdirect.co.uk/c_book/chapter9/introduction.html" />
+<script type="text/javascript"> var _gaq = _gaq || []; _gaq.push(['_setAccount', 'UA-3566842-1']); _gaq.push(['_setDomainName', '.gbdirect.co.uk']); _gaq.push(['_trackPageview']); (function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = 'https://www.google-analytics.com/ga.js'; var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s); })(); </script>
+</head>
+
+<body>
+  <header class="Banner">
+    <span id="Logo">
+      <a href="https://ebusiness.gbdirect.co.uk">
+        <img src="https://global.gbdirect.co.uk/Themes/gbdirect.gif"
+             alt="GBdirect Homepage"
+             title="GBdirect Homepage" /></a>
+    </span>
+<!-- Original homebrew search
+    <form action="https://global.gbdirect.co.uk/search.cgi"
+          method="get" id="Search">
+      <label for="search_textbox">Search</label>
+      <input type="text" name="query" size="12" id="search_textbox" value="" />
+      <input type="submit" name="Submit" value="Go" />
+    </form>
+-->
+<!-- Google search -->
+    <form class="Search" action="https://www.google.com/cse" id="cse-search-box">
+      <input type="hidden" name="cx" value="010270212093732037646:4pvgkishmkg" />
+      <input type="hidden" name="ie" value="UTF-8" />
+      <label for="search_textbox">Search</label>
+      <input type="text" name="q" id="search_textbox" size="12" />
+      <input type="submit" name="sa" value="Go" />
+    </form>
+    <script type="text/javascript" src="https://www.google.com/cse/brand?form=cse-search-box&amp;lang=en&amp;sitesearch=true"></script>
+<!-- End Google search -->
+  </header>
+  <nav class="Tabsbar"><span class="ThisTab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span> <span class="NoCSS2">| </span> <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/contact.html">Contact</a></span></nav>
+  <div id="container" itemscope itemtype="http://schema.org/WebPage">
+    <meta itemprop="isFamilyFriendly" content="1" />
+    <meta itemprop="inLanguage" content="en" />
+    <nav class="Tabsbar" id="tabsbar" style="position: absolute; width: 100%">
+  
+  
+    <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/">About Us</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://consulting.gbdirect.co.uk/">Consultancy</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://development.gbdirect.co.uk/">Software</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="ThisTab">Publications</span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-source.gbdirect.co.uk/">Open&nbsp;Source</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://software-support.gbdirect.co.uk/">Support</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-standards.gbdirect.co.uk/">Open&nbsp;Standards</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://faq.gbdirect.co.uk/">FAQ</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://jobs.gbdirect.co.uk/">Jobs</a></span>
+  
+
+</nav>
+    <main id="main" >
+	  
+		<nav id="breadcrumb" itemprop="breadcrumb">
+			
+			<a href="https://publications.gbdirect.co.uk/">Publications</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/">The C&nbsp;Book</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/chapter9/">Libraries</a>
+			
+			 &gt; Introduction
+			
+		</nav>
+		<br />
+	  
+      <h1>9.1. Introduction</h1>
+      
+      
+
+
+  
+
+  <p>There is no doubt that the Standard Committee's decision to
+   define a set of library routines will prove to be a huge
+   benefit to users of&#160;C.  Previously there were <em>no</em> standard,
+   accepted, definitions of library routines to provide support
+   for the language.  As a result, portability suffered
+   seriously.</p>
+
+  <p>The library routines do not have to be present; they will
+   only be present in a <dfn>hosted environment</dfn>&#8212;typically the case
+   for applications programmers.  Writers of embedded systems
+   and the writers of the hosted environment libraries will not
+   have the libraries present.  They are using &#8216;raw&#8217; C, in a
+   <dfn>freestanding environment</dfn>, and this chapter will not be of
+   much interest to them.</p>
+
+  <p>The descriptions (except for this introduction) are not
+   meant to be read as a whole chapter, but as individual
+   pieces.  The material included here is meant more for
+   information and convenient reference than as a full tutorial
+   introduction.  It would take a full book by itself to do
+   real justice to the libraries.</p>
+
+  <h2><a name="section-1"></a>9.1.1.&#160;Headers and standard types</h2>
+   
+
+   <p>A number of types and macros are used widely by the library
+    functions.  Where necessary, they are defined in the
+    appropriate <code>#include</code> file for that function.  The header
+    will also declare appropriate types and prototypes for the
+    library functions.  Some important points should be noted
+    here:</p>
+
+   <ul>
+    <li>All external identifiers and macro names declared in any
+     of the library headers are reserved.  They must not be
+     used, or redefined, for any other purpose.  In some cases
+     they may be &#8216;magic&#8217;&#8212;their names may be known to the
+     compiler and cause it to use special methods to implement
+     them.</li>
+
+    <li>All identifiers that begin with an underscore are
+     reserved.</li>
+
+    <li>Headers may be included in any order, and more than once,
+     but must be included outside of any external declaration
+     or definition and before any use of the functions or
+     macros defined inside them.</li>
+
+    <li>Giving a &#8216;bad value&#8217; to a function&#8212;say a null pointer,
+     or a value outside the range of values expected by the
+     function&#8212;results in undefined behaviour unless
+     otherwise stated.</li>
+   </ul>
+
+   <p>The Standard isn't quite as restrictive about identifiers as
+    the list above is, but it's a brave move to make use of the
+    loopholes.  Play safe instead.</p>
+
+   <p>The Standard headers are:</p>
+
+   <pre>
+&lt;assert.h&gt;   &lt;locale.h&gt;   &lt;stddef.h&gt;
+&lt;ctype.h&gt;    &lt;math.h&gt;     &lt;stdio.h&gt;
+&lt;errno.h&gt;    &lt;setjmp.h&gt;   &lt;stdlib.h&gt;
+&lt;float.h&gt;    &lt;signal.h&gt;   &lt;string.h&gt;
+&lt;limits.h&gt;   &lt;stdarg.h&gt;   &lt;time.h&gt;</pre>
+
+   <p>A last general point is that many of  the  library  routines
+    may be implemented as macros, provided that there will be no
+    problems to do with side-effects (as <a href="../chapter7/">Chapter&#160;7</a> describes).
+    The  Standard  guarantees  that,  if  a function <em>is</em> normally
+    implemented as a macro, there will also be a  true  function
+    provided  to  do  the  same  job.  To use the real function,
+    either undefine the macro name with <code>#undef</code>, or  enclose  its
+    name  in parentheses, which ensures that it won't be treated
+    as a macro:</p>
+
+   <pre>
+some function(&quot;Might be a macro\n&quot;);
+(some function)(&quot;Can't be a macro\n&quot;);</pre>
+
+  
+
+  <h2><a name="section-2"></a>9.1.2.&#160;Character set and cultural dependencies</h2>
+   
+
+   <p>The Committee has introduced features that attempt to cater
+    for the use of C in environments which are not based on the
+    character set of US ASCII and where there are cultural
+    dependencies such as the use of comma or full stop to
+    indicate the decimal point.  Facilities have been provided
+    (see <a href="../chapter9/localization.html">Section&#160;9.4</a>) for setting a program's idea of its
+    <dfn>locale</dfn>, which is used to control the behaviour of the
+    library functions.</p>
+
+   <p>Providing full support for different native languages and
+    customs is a difficult and poorly understood task; the
+    facilities provided by the C library are only a first step
+    on the road to a full solution.</p>
+
+   <p>In several places the &#8216;C locale&#8217; is referred to.  This is
+    the only locale defined by the Standard and effectively
+    provides support for the way that Old C worked.  Other
+    locale settings may provide different behaviour in
+    implementation-defined ways.</p>
+
+  
+
+  <h2><a name="section-3"></a>9.1.3.&#160;The &lt;stddef.h&gt; Header</h2>
+   
+
+   <p>There are a small number of types and macros, found in
+    <code>&lt;stddef.h&gt;</code>, which are widely used in other headers.
+    They are described in the following paragraphs.</p>
+
+   <p>Subtracting one pointer from another gives a result whose
+    type differs between different implementations.  To allow
+    safe use of the difference, the type is defined in
+    <code>&lt;stddef.h&gt;</code> to be <code>ptrdiff_t</code>.  Similarly, you
+    can use <code>size_t</code> to store the result of <code>sizeof</code>.</p>
+
+   <p>For reasons which still escape us, there is an &#8216;implementation
+    defined null pointer constant&#8217; defined in <code>&lt;stddef.h&gt;</code>
+    called <code>NULL</code>.  Since the language explicitly
+    defines the integer constant <code>0</code> to be the value which can be
+    assigned to, and compared with, a null pointer, this would
+    seem to be unnecessary.  However, it is <em>very</em> common practice
+    among experienced C programmers to write this sort of thing:</p>
+
+   <pre>
+#include &lt;stdio.h&gt;
+#include &lt;stddef.h&gt;
+FILE *fp;
+
+if((fp = fopen(&quot;somefile&quot;, &quot;r&quot;)) != NULL){
+        /* and so on */</pre>
+
+   <p>There is also a macro called <code>offsetof</code> which can be  used  to
+    find  the  offset,  in  bytes,  of  a structure member.  The
+    offset is the distance between the member and the  start  of
+    the structure.  It would be used like this:</p>
+
+   <div class="inset-example"><a name="example-1"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stddef.h&gt;
+
+main(){
+        size_t distance;
+        struct x{
+                int a, b, c;
+        }s_tr;
+
+        distance = offsetof(s_tr, c);
+        printf(&quot;Offset of x.c is %lu bytes\n&quot;,
+                (unsigned long)distance);
+
+        exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;9.1</cite></div>
+
+   <p>The expression <code>s_tr.c</code> must be capable of  evaluation  as  an
+    address  constant  (see  <a href="../chapter6/">Chapter&#160;6</a>).   If  the member whose
+    offset you want is a bitfield,  then  you're  out  of  luck;
+    offsetof has undefined behaviour in that case.</p>
+
+   <p>Note carefully the way that a <code>size_t</code> has to be cast  to  the
+    longest  possible  unsigned  type to ensure that not only is the argument
+    to <code>printf</code> of the type that it expects (<code>%lu</code>is
+    the  format string for <code>unsigned long</code>), but also no precision
+    is lost.  This is all because the  type  of  <code>size_t</code>  is  not
+    known to the programmer.</p>
+
+   <p>The last item declared in <code>&lt;stddef.h&gt;</code> is
+    <code>wchar_t</code>, an integral type large enough to hold a wide
+    character from any supported extended character sets.</p>
+
+  
+
+  <h2><a name="section-4"></a>9.1.4.&#160;The &lt;errno.h&gt; Header</h2>
+   
+
+   <p>This header defines errno along with the macros <code>EDOM</code> and
+    <code>ERANGE</code>, which expand to nonzero integral constant
+    expressions; their form is additionally guaranteed to be
+    acceptable to <code>#if</code> directives.  The latter two are used by
+    the mathematical functions to report which kind of errors
+    they encountered and are more fully described later.</p>
+
+   <p><code>errno</code> is provided to tell you when library functions have
+    detected an error.  It is not necessarily, as it used to be,
+    an external variable, but is now a modifiable lvalue that
+    has type <code>int</code>.  It is set to zero at program start-up, but
+    from then on never reset unless explicitly assigned to; in
+    particular, the library routines never reset it.  If an
+    error occurs in a library routine, errno is set to a
+    particular value to indicate what went wrong, and the
+    routine returns a value (often &#8722;1) to indicate that it
+    failed.  The usual use is like this:</p>
+
+   <pre>
+#include &lt;stdio.h&gt;
+#include &lt;stddef.h&gt;
+#include &lt;errno.h&gt;
+
+errno = 0;
+if(some_library_function(arguments) &lt; 0){
+        /* error processing code... */
+        /* may use value of errno directly */</pre>
+
+   <p>The implementation of <code>errno</code> is not known to the  programmer,
+    so  don't  try to do anything other than reset it or inspect
+    its value.  It isn't guaranteed  to  have  an  address,  for
+    example.</p>
+
+   <p>What's more, you should only check <code>errno</code> if the particular
+    library function in use documents its effect on <code>errno</code>.</p>
+
+   <p>Other library functions are free  to  set  it  to  arbitrary
+    values  after  a  call  unless  their description explicitly
+    states what they do with it.</p>
+
+  
+
+ <div class="cbook_next_prev"><p><a href="../chapter9/">Chapter contents</a> | <a href="diagnostics.html">Next section</a></p></div>
+
+    </main>
+    <nav id="menu" class="Left">
+      
+ 
+  
+  <div class="nav">
+
+	
+	
+			
+			  <div class="nav0">
+				
+				  <a href="/">Publications</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav1">
+				
+				  <a href="/c_book/">The C&nbsp;Book</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/preface/">Preface</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter1/">Introduction</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter2/">Variables &amp; arithmetic</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter3/">Control flow</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter4/">Functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter5/">Arrays &amp; pointers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter6/">Structures</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter7/">Preprocessor</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter8/">Specialized areas</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter9/">Libraries</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <strong>Introduction</strong>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/diagnostics.html">Diagnostics</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/character_handling.html">Character handling</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/localization.html">Localization</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/limits.html">Limits</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/maths_functions.html">Maths functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/nonlocal_jumps.html">Non-local jumps</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/signal_handling.html">Signal handling</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/stdarg.html">Stdarg</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/input_and_output.html">Input &amp; output</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/formatted_io.html">Formatted I/O</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/character_io.html">Character I/O</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/unformatted_io.html">Unformatted I/O</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/random_access_io.html">Random access I/O</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/general_utilities.html">General Utilities</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/string_handling.html">String handling</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/date_and_time.html">Date and time</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/summary.html">Summary</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter10/">Complete Programs</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/answers/">Answers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/copyright.html">Copyright</a>
+				
+				
+			</div>
+			
+	
+
+</div>
+
+ 
+
+      <div class="ColBtm">
+        <hr />
+<div class="h1"><a href="https://ebusiness.gbdirect.co.uk/contact.html">Contact Us</a></div>
+
+      </div>
+
+    </nav>
+    <aside id="sidebar" class="Right">
+      
+ <div class="box">
+  
+  
+<img src="https://global.gbdirect.co.uk/Themes/printer-friendly-12x12.png" alt="" title="Printer-friendly version of this page" />
+<a href="?format=pf" rel="nofollow">
+  Printer-friendly version
+</a>
+
+ </div>
+
+ <div class="box">
+  <h3>The C Book</h3>
+  
+<p>This book is published as a matter of historical interest.
+ Please read the
+ <a href="/c_book/copyright.html">copyright and disclaimer information</a>.</p>
+
+<p>GBdirect Ltd provides up-to-date training and consultancy in
+ <a href="http://training.gbdirect.co.uk/courses/c/">C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c/real_time_linux_embedded_c_training.html">Embedded C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c++/">C++</a>
+ and a wide range of
+ <a href="http://training.gbdirect.co.uk/courses/">other subjects based on
+ open standards</a> if you happen to be interested.</p>
+
+ </div>
+
+
+    </aside>
+  </div>
+  
+<script type="text/javascript">
+        var maxheight = 0;
+        var a =  Array('main', 'menu', 'sidebar');
+        for(index in a){
+                var name = a[index];
+                // alert(name);
+                var id = document.getElementById(name);
+                if(id){
+                        if(id.offsetHeight > maxheight){
+                                maxheight = id.offsetHeight;
+                        }
+                }
+        }
+        var tabbar = document.getElementById('tabsbar');
+        if(tabbar){
+                if(tabbar.style) tabbar=tabbar.style;
+                tabbar.left = 0+'px';
+                tabbar.top = maxheight+'px';
+        }
+        
+</script>
+</body>
+</html>

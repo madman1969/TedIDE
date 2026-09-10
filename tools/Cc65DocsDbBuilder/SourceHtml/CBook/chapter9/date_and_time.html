@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1">
+<title>The C Book &#8212; Date and time</title>
+<meta property="og:title" content="The C Book &amp;#8212; Date and time" />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://global.gbdirect.co.uk/Themes/logo-og.png" />
+
+<link rel="SHORTCUT ICON" href="https://global.gbdirect.co.uk/favicon.ico" />
+<link rel="stylesheet" type="text/css" href="https://global.gbdirect.co.uk/Themes/Quarters.css" />
+
+<link rel="prev" href="/c_book/chapter9/string_handling.html" />
+<link rel="next" href="/c_book/chapter9/summary.html" />
+<link rel="contents" href="/c_book/chapter9/" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<!-- order 18-->
+<!-- lastmod 2005-11-10T16:42:02Z-->
+
+
+<link rel="canonical" href="https://publications.gbdirect.co.uk/c_book/chapter9/date_and_time.html"/><meta property="og:url" content="https://publications.gbdirect.co.uk/c_book/chapter9/date_and_time.html" />
+<script type="text/javascript"> var _gaq = _gaq || []; _gaq.push(['_setAccount', 'UA-3566842-1']); _gaq.push(['_setDomainName', '.gbdirect.co.uk']); _gaq.push(['_trackPageview']); (function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = 'https://www.google-analytics.com/ga.js'; var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s); })(); </script>
+</head>
+
+<body>
+  <header class="Banner">
+    <span id="Logo">
+      <a href="https://ebusiness.gbdirect.co.uk">
+        <img src="https://global.gbdirect.co.uk/Themes/gbdirect.gif"
+             alt="GBdirect Homepage"
+             title="GBdirect Homepage" /></a>
+    </span>
+<!-- Original homebrew search
+    <form action="https://global.gbdirect.co.uk/search.cgi"
+          method="get" id="Search">
+      <label for="search_textbox">Search</label>
+      <input type="text" name="query" size="12" id="search_textbox" value="" />
+      <input type="submit" name="Submit" value="Go" />
+    </form>
+-->
+<!-- Google search -->
+    <form class="Search" action="https://www.google.com/cse" id="cse-search-box">
+      <input type="hidden" name="cx" value="010270212093732037646:4pvgkishmkg" />
+      <input type="hidden" name="ie" value="UTF-8" />
+      <label for="search_textbox">Search</label>
+      <input type="text" name="q" id="search_textbox" size="12" />
+      <input type="submit" name="sa" value="Go" />
+    </form>
+    <script type="text/javascript" src="https://www.google.com/cse/brand?form=cse-search-box&amp;lang=en&amp;sitesearch=true"></script>
+<!-- End Google search -->
+  </header>
+  <nav class="Tabsbar"><span class="ThisTab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span> <span class="NoCSS2">| </span> <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/contact.html">Contact</a></span></nav>
+  <div id="container" itemscope itemtype="http://schema.org/WebPage">
+    <meta itemprop="isFamilyFriendly" content="1" />
+    <meta itemprop="inLanguage" content="en" />
+    <nav class="Tabsbar" id="tabsbar" style="position: absolute; width: 100%">
+  
+  
+    <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/">About Us</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://consulting.gbdirect.co.uk/">Consultancy</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://development.gbdirect.co.uk/">Software</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="ThisTab">Publications</span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-source.gbdirect.co.uk/">Open&nbsp;Source</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://software-support.gbdirect.co.uk/">Support</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-standards.gbdirect.co.uk/">Open&nbsp;Standards</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://faq.gbdirect.co.uk/">FAQ</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://jobs.gbdirect.co.uk/">Jobs</a></span>
+  
+
+</nav>
+    <main id="main" >
+	  
+		<nav id="breadcrumb" itemprop="breadcrumb">
+			
+			<a href="https://publications.gbdirect.co.uk/">Publications</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/">The C&nbsp;Book</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/chapter9/">Libraries</a>
+			
+			 &gt; Date and time
+			
+		</nav>
+		<br />
+	  
+      <h1>9.17. Date and time</h1>
+      
+      
+
+
+  
+
+  <p>These functions deal with either &#8216;elapsed&#8217; or &#8216;calendar&#8217; time.
+   They share the <code>&lt;time.h&gt;</code> header, which declares the
+   functions as necessary and also the following:</p>
+
+  <dl>
+   <dt><code>CLOCKS_PER_SEC</code></dt>
+   <dd>This is the number of &#8216;ticks&#8217; per second returned by the
+    <code>clock</code> function.</dd>
+
+   <dt><code>clock_t</code></dt>
+   <dt><code>time_t</code></dt>
+   <dd>These are arithmetic types used to represent different forms of
+    time.</dd>
+
+   <dt><code>struct tm</code></dt>
+   <dd>
+    <p>This structure is used to hold the values representing a calendar time.
+     It contains the following members, with the meanings as shown.</p>
+
+    <pre>
+int tm_sec      /* seconds after minute [0-61] (61 allows for 2 leap-seconds)*/
+int tm_min      /* minutes after hour [0-59] */
+int tm_hour     /* hours after midnight [0-23] */
+int tm_mday     /* day of the month [1-31] */
+int tm_mon      /* month of year [0-11] */
+int tm_year     /* current year-1900 */
+int tm_wday     /* days since Sunday [0-6] */
+int tm_yday     /* days since January 1st [0-365] */
+int tm_isdst    /* daylight savings indicator */</pre>
+
+    <p>The <code>tm_isdst</code> member is positive if daylight savings  time
+     is in   effect,  zero  if  not  and  negative  if  that information is not
+     available.</p>
+
+    <p>The time manipulation functions are the following:</p>
+
+    <pre>
+#include &lt;time.h&gt;
+
+clock_t clock(void);
+double difftime(time_t time1, time_t time2);
+time_t mktime(struct tm *timeptr);
+time_t time(time_t *timer);
+char *asctime(const struct tm *timeptr);
+char *ctime(const time_t *timer);
+struct tm *gmtime(const time_t *timer);
+struct tm *localtime(const time_t *timer);
+size_t strftime(char *s, size_t maxsize,
+  const char *format,
+  const struct tm *timeptr);</pre>
+   </dd>
+  </dl>
+
+  <p>The  functions  <code>asctime</code>,  <code>ctime</code>,
+   <code>gmtime</code>,   <code>localtime</code>,   and <code>strftime</code>
+   all  share  static data structures, either of type <code>struct tm</code> or
+   <code>char&#160;[]</code>, and calls to one of them may overwrite the data
+   stored by a previous call to one of the others.  If this is likely to cause
+   problems, their  users  should  take care to copy any values needed.</p>
+
+  <dl>
+   <dt><code>clock</code></dt>
+   <dd>Returns the best available approximation to the time used by  the
+    current  invocation  of the program, in &#8216;ticks&#8217;.
+    <code>(clock_t)-1</code> is returned if no  value  is  available.   To find
+    the  actual  time used by a run of a program, it is necessary to find the
+    difference between the value at the start  of  the run and the time of
+    interest&#8212;there is an implementation-defined constant factor which
+    biases  the value  returned  from  clock.   To  determine the time in
+    seconds,  the  value  returned  should  be   divided   by
+    <code>CLOCKS_PER_SEC</code>.</dd>
+
+   <dt><code>difftime</code></dt>
+   <dd>This  returns  the  difference  in  seconds  between  two calendar
+    times.</dd>
+
+   <dt><code>mktime</code></dt>
+   <dd>
+    <p>This returns  the  calendar  time  corresponding  to  the values   in
+     a  structure  pointed  to  by  <code>timeptr</code>,  or
+     <code>(time_t)-1</code> if the value cannot be represented.</p>
+
+    <p>The <code>tm_wday</code> and <code>tm_yday</code>  members  of  the
+     structure  are ignored,  the  other  members are not restricted to their
+     usual values.  On successful conversion, the  members  of the  structure
+     are  all set to appropriate values within their normal ranges.  This
+     function is useful to find out what  value  of  a <code>time_t</code>
+     corresponds to a known date and time.</p>
+   </dd>
+
+   <dt><code>time</code></dt>
+   <dd>Returns the best approximation to  the  current  calendar time  in an
+    unspecified encoding.  <code>(time_t)-1</code> is returned if the time is
+    not available.</dd>
+
+   <dt><code>asctime</code></dt>
+   <dd>
+    <p>Converts the time in the structure pointed to by  <code>timeptr</code>
+     into a string of the form</p>
+
+    <pre>
+Sun Sep 16 01:03:52 1973\n\0</pre>
+
+    <p>the example being taken from the Standard.  The  Standard defines  the
+     algorithm  used, but the important point to notice is that all the fields
+     within that string  are  of constant  width  and  relevant  to  most
+     English-speaking communities.  The string is stored in a static  structure
+     which  may  be overwritten by a subsequent call to one of the other
+     time-manipulation functions (see above).</p>
+   </dd>
+
+   <dt><code>ctime</code></dt>
+   <dd>Equivalent to <code>asctime(localtime(timer))</code>.  See
+    <code>asctime</code> for the return value.</dd>
+
+   <dt><code>gmtime</code></dt>
+   <dd>Returns a pointer to a <code>struct tm</code>  set  to  represent  the
+    calendar time pointed to by <code>timer</code>.  The time is expressed in
+    terms of Coordinated Universal  Time  (UTC)  (formerly Greenwich  Mean
+    Time).  A null pointer is returned if UTC is not available.</dd>
+
+   <dt><code>localtime</code></dt>
+   <dd>Converts the time pointed to by <code>timer</code> into local time and
+    puts the results into a <code>struct tm</code>, returning a pointer to that
+    structure.</dd>
+
+   <dt><code>strftime</code></dt>
+   <dd>
+    <p>Fills the character array pointed to by <code>s</code>  with  at  most
+     <code>maxsize</code>  characters.  The <code>format</code> string is used
+     to format the time represented in the structure pointed to
+     <code>timeptr</code>.  Characters   in   the   format   string
+     (including  the terminating null) are copied unchanged  into  the  array,
+     unless  one of the following format directives is found&#8212;then the
+     value  specified  below  is  copied  into  the destination, <em>as
+     appropriate to the locale</em>.</p>
+
+    <div class="inset-table"><a name="table-"></a><table><tbody><tr class="cbook-table-first-row">
+      <td><code>%a</code></td>
+      <td>abbreviated weekday name</td>
+     </tr><tr class="cbook-table-row">
+      <td><code>%A</code></td>
+      <td>full weekday name</td>
+     </tr><tr class="cbook-table-row">
+      <td><code>%b</code></td>
+      <td>abbreviated month name</td>
+     </tr><tr class="cbook-table-row">
+      <td><code>%B</code></td>
+      <td>full month name</td>
+     </tr><tr class="cbook-table-row">
+      <td><code>%c</code></td>
+      <td>date and time representation</td>
+     </tr><tr class="cbook-table-row">
+      <td><code>%d</code></td>
+      <td>decimal day of month number 01&#8211;31</td>
+     </tr><tr class="cbook-table-row">
+      <td><code>%H</code></td>
+      <td>hour 00&#8211;23 (24 hour format)</td>
+     </tr><tr class="cbook-table-row">
+      <td><code>%I</code></td>
+      <td>hour 01&#8211;12 (12 hour format)</td>
+     </tr><tr class="cbook-table-row">
+      <td><code>%j</code></td>
+      <td>day of year 001&#8211;366</td>
+     </tr><tr class="cbook-table-row">
+      <td><code>%m</code></td>
+      <td>month 01&#8211;12</td>
+     </tr><tr class="cbook-table-row">
+      <td><code>%M</code></td>
+      <td>minute 00&#8211;59</td>
+     </tr><tr class="cbook-table-row">
+      <td><code>%p</code></td>
+      <td>local equivalent of &#8216;AM&#8217; or &#8216;PM&#8217;</td>
+     </tr><tr class="cbook-table-row">
+      <td><code>%S</code></td>
+      <td>second 00&#8211;61</td>
+     </tr><tr class="cbook-table-row">
+      <td><code>%U</code></td>
+      <td>week number in year 00&#8211;53
+       (Sunday  is  first  day  of week</td>
+     </tr><tr class="cbook-table-row">
+      <td><code>%w</code></td>
+      <td>weekday, 0&#8211;6 (Sunday is&#160;0)</td>
+     </tr><tr class="cbook-table-row">
+      <td><code>%W</code></td>
+      <td>week number in year 00&#8211;53
+       (Monday  is  first  day  of week</td>
+     </tr><tr class="cbook-table-row">
+      <td><code>%x</code></td>
+      <td>local date representation</td>
+     </tr><tr class="cbook-table-row">
+      <td><code>%X</code></td>
+      <td>local time representation</td>
+     </tr><tr class="cbook-table-row">
+      <td><code>%y</code></td>
+      <td>year without century prefix 00&#8211;99</td>
+     </tr><tr class="cbook-table-row">
+      <td><code>%Y</code></td>
+      <td>year with century prefix</td>
+     </tr><tr class="cbook-table-row">
+      <td><code>%Z</code></td>
+      <td>timezone name, or no characters if no timezone exists</td>
+     </tr><tr class="cbook-table-last-row">
+      <td><code>%%</code></td>
+      <td>a <code>%</code> character</td>
+     </tr></tbody></table></div>
+
+    <p>The  total  number  of  characters  copied  into  <code>*s</code>   is
+     returned,  excluding the null.  If there was not room (as determined by
+     <code>maxsize</code>) for the  trailing  null,  zero  is returned.</p>
+   </dd>
+  </dl>
+
+ <div class="cbook_next_prev"><p><a href="string_handling.html">Previous section</a> | <a href="../chapter9/">Chapter contents</a> | <a href="summary.html">Next section</a></p></div>
+
+    </main>
+    <nav id="menu" class="Left">
+      
+ 
+  
+  <div class="nav">
+
+	
+	
+			
+			  <div class="nav0">
+				
+				  <a href="/">Publications</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav1">
+				
+				  <a href="/c_book/">The C&nbsp;Book</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/preface/">Preface</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter1/">Introduction</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter2/">Variables &amp; arithmetic</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter3/">Control flow</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter4/">Functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter5/">Arrays &amp; pointers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter6/">Structures</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter7/">Preprocessor</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter8/">Specialized areas</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter9/">Libraries</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/introduction.html">Introduction</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/diagnostics.html">Diagnostics</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/character_handling.html">Character handling</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/localization.html">Localization</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/limits.html">Limits</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/maths_functions.html">Maths functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/nonlocal_jumps.html">Non-local jumps</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/signal_handling.html">Signal handling</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/stdarg.html">Stdarg</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/input_and_output.html">Input &amp; output</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/formatted_io.html">Formatted I/O</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/character_io.html">Character I/O</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/unformatted_io.html">Unformatted I/O</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/random_access_io.html">Random access I/O</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/general_utilities.html">General Utilities</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/string_handling.html">String handling</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <strong>Date and time</strong>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/summary.html">Summary</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter10/">Complete Programs</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/answers/">Answers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/copyright.html">Copyright</a>
+				
+				
+			</div>
+			
+	
+
+</div>
+
+ 
+
+      <div class="ColBtm">
+        <hr />
+<div class="h1"><a href="https://ebusiness.gbdirect.co.uk/contact.html">Contact Us</a></div>
+
+      </div>
+
+    </nav>
+    <aside id="sidebar" class="Right">
+      
+ <div class="box">
+  
+  
+<img src="https://global.gbdirect.co.uk/Themes/printer-friendly-12x12.png" alt="" title="Printer-friendly version of this page" />
+<a href="?format=pf" rel="nofollow">
+  Printer-friendly version
+</a>
+
+ </div>
+
+ <div class="box">
+  <h3>The C Book</h3>
+  
+<p>This book is published as a matter of historical interest.
+ Please read the
+ <a href="/c_book/copyright.html">copyright and disclaimer information</a>.</p>
+
+<p>GBdirect Ltd provides up-to-date training and consultancy in
+ <a href="http://training.gbdirect.co.uk/courses/c/">C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c/real_time_linux_embedded_c_training.html">Embedded C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c++/">C++</a>
+ and a wide range of
+ <a href="http://training.gbdirect.co.uk/courses/">other subjects based on
+ open standards</a> if you happen to be interested.</p>
+
+ </div>
+
+
+    </aside>
+  </div>
+  
+<script type="text/javascript">
+        var maxheight = 0;
+        var a =  Array('main', 'menu', 'sidebar');
+        for(index in a){
+                var name = a[index];
+                // alert(name);
+                var id = document.getElementById(name);
+                if(id){
+                        if(id.offsetHeight > maxheight){
+                                maxheight = id.offsetHeight;
+                        }
+                }
+        }
+        var tabbar = document.getElementById('tabsbar');
+        if(tabbar){
+                if(tabbar.style) tabbar=tabbar.style;
+                tabbar.left = 0+'px';
+                tabbar.top = maxheight+'px';
+        }
+        
+</script>
+</body>
+</html>

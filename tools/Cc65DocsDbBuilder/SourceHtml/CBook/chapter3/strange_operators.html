@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1">
+<title>The C Book &#8212; Strange operators</title>
+<meta property="og:title" content="The C Book &amp;#8212; Strange operators" />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://global.gbdirect.co.uk/Themes/logo-og.png" />
+
+<link rel="SHORTCUT ICON" href="https://global.gbdirect.co.uk/favicon.ico" />
+<link rel="stylesheet" type="text/css" href="https://global.gbdirect.co.uk/Themes/Quarters.css" />
+
+<link rel="prev" href="/c_book/chapter3/logical_expressions.html" />
+<link rel="next" href="/c_book/chapter3/summary.html" />
+<link rel="contents" href="/c_book/chapter3/" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<!-- order 5-->
+<!-- lastmod 2005-11-10T16:42:04Z-->
+
+
+<link rel="canonical" href="https://publications.gbdirect.co.uk/c_book/chapter3/strange_operators.html"/><meta property="og:url" content="https://publications.gbdirect.co.uk/c_book/chapter3/strange_operators.html" />
+<script type="text/javascript"> var _gaq = _gaq || []; _gaq.push(['_setAccount', 'UA-3566842-1']); _gaq.push(['_setDomainName', '.gbdirect.co.uk']); _gaq.push(['_trackPageview']); (function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = 'https://www.google-analytics.com/ga.js'; var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s); })(); </script>
+</head>
+
+<body>
+  <header class="Banner">
+    <span id="Logo">
+      <a href="https://ebusiness.gbdirect.co.uk">
+        <img src="https://global.gbdirect.co.uk/Themes/gbdirect.gif"
+             alt="GBdirect Homepage"
+             title="GBdirect Homepage" /></a>
+    </span>
+<!-- Original homebrew search
+    <form action="https://global.gbdirect.co.uk/search.cgi"
+          method="get" id="Search">
+      <label for="search_textbox">Search</label>
+      <input type="text" name="query" size="12" id="search_textbox" value="" />
+      <input type="submit" name="Submit" value="Go" />
+    </form>
+-->
+<!-- Google search -->
+    <form class="Search" action="https://www.google.com/cse" id="cse-search-box">
+      <input type="hidden" name="cx" value="010270212093732037646:4pvgkishmkg" />
+      <input type="hidden" name="ie" value="UTF-8" />
+      <label for="search_textbox">Search</label>
+      <input type="text" name="q" id="search_textbox" size="12" />
+      <input type="submit" name="sa" value="Go" />
+    </form>
+    <script type="text/javascript" src="https://www.google.com/cse/brand?form=cse-search-box&amp;lang=en&amp;sitesearch=true"></script>
+<!-- End Google search -->
+  </header>
+  <nav class="Tabsbar"><span class="ThisTab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span> <span class="NoCSS2">| </span> <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/contact.html">Contact</a></span></nav>
+  <div id="container" itemscope itemtype="http://schema.org/WebPage">
+    <meta itemprop="isFamilyFriendly" content="1" />
+    <meta itemprop="inLanguage" content="en" />
+    <nav class="Tabsbar" id="tabsbar" style="position: absolute; width: 100%">
+  
+  
+    <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/">About Us</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://consulting.gbdirect.co.uk/">Consultancy</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://development.gbdirect.co.uk/">Software</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="ThisTab">Publications</span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-source.gbdirect.co.uk/">Open&nbsp;Source</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://software-support.gbdirect.co.uk/">Support</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-standards.gbdirect.co.uk/">Open&nbsp;Standards</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://faq.gbdirect.co.uk/">FAQ</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://jobs.gbdirect.co.uk/">Jobs</a></span>
+  
+
+</nav>
+    <main id="main" >
+	  
+		<nav id="breadcrumb" itemprop="breadcrumb">
+			
+			<a href="https://publications.gbdirect.co.uk/">Publications</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/">The C&nbsp;Book</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/chapter3/">Control flow</a>
+			
+			 &gt; Strange operators
+			
+		</nav>
+		<br />
+	  
+      <h1>3.4. Strange operators</h1>
+      
+      
+
+
+  
+
+  <p>There are two operators left to mention which look decidedly odd. They
+   aren't &#8216;essential&#8217;, but from time to time do have their uses. Don't
+   ignore them completely. This is the only place where we describe them, so
+   our description includes what happens when they are mixed with pointer
+   types, which makes them look more complicated than they really are.</p>
+
+  <h2><a name="section-1"></a>3.4.1.&#160;The ?: operator</h2>
+   
+
+   <p>Like playing the accordion, this is easier to demonstrate than to
+    describe.</p>
+
+   <pre>
+<var>expression1</var>?<var>expression2</var>:<var>expression3</var></pre>
+
+   <p>If <var>expression1</var> is true, then the result of the whole
+    expression is <var>expression2</var>, otherwise it is
+    <var>expression3</var>; depending on the value of <var>expression1</var>,
+    only one of them will be evaluated when the result is calculated.</p>
+
+   <p>The various combinations of types that are permitted for
+    <var>expression2</var> and <var>expression3</var> and, based on those, the
+    resulting type of the whole expression, are complicated. A lot of the
+    complexity is due to types and notions that we haven't seen so far. For
+    completeness they are described in detail below, but you'll have to put up
+    with a number of forward references.</p>
+
+   <p>The easiest case is when both expressions have arithmetic type (i.e.
+    integral or real). The usual arithmetic conversions are applied to find a
+    common type for both expressions and then that is the type of the result.
+    For example</p>
+
+   <pre>
+a&gt;b?1:3.5</pre>
+
+   <p>contains a constant&#160;(1) of type <code>int</code> and
+    another&#160;(3.5) of type <code>double</code>. Applying the arithmetic
+    conversions gives a result of type <code>double</code>.</p>
+
+   <p>Other combinations are also permitted.</p>
+
+   <ul>
+    <li>If both operands are of compatible structure or union types, then that
+     is the type of the result.</li>
+    <li>If both operands have <code>void</code> type, then that is the type of
+     the result.</li>
+   </ul>
+
+   <p>Various pointer types can be mixed.</p>
+
+   <ul>
+    <li>Both operands may be pointers to (possibly <dfn>qualified</dfn>)
+     compatible types.</li>
+
+    <li>One operand may be a pointer and the other a <dfn>null pointer
+     constant</dfn>.</li>
+
+    <li>One operand may be a <dfn>pointer to an object or incomplete
+     type</dfn> and the other a pointer to (possibly qualified)
+     <code>void</code>.</li>
+   </ul>
+
+   <p>The type of the result when pointers are involved is derived in two
+    separate steps.</p>
+
+   <ol>
+    <li>If either of the operands is a pointer to a qualified type, the result
+     is a pointer to a type that is qualified by all the qualifiers of both
+     operands.</li>
+
+    <li>If one operand is a null pointer constant, then the result has the
+     type of the other operand. If one operand is a pointer to void, the other
+     operand is converted to pointer to <code>void</code> and that is the type
+     of the result. If both operands are pointers to compatible types
+     (ignoring any qualifiers) the the result has the <dfn>composite
+     type</dfn>.</li>
+   </ol>
+
+   <p>Qualifiers, composite types and compatible types are all subjects
+    discussed later.</p>
+
+   <p>The shortest useful example that we can think of is this one, where the
+    string to be printed by <code>printf</code> is selected using this magical
+    operator.</p>
+
+   <div class="inset-example"><a name="example-9"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+main(){
+      int i;
+
+      for(i=0; i &lt;= 10; i++){
+              printf((i&amp;1) ? &quot;odd\n&quot; : &quot;even\n&quot;);
+      }
+      exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;3.9</cite></div>
+
+   <p>It's cute when you need it, but the first time that they see it most
+    people look very uncomfortable for a while, then recollect an urgent
+    appointment somewhere else.</p>
+
+   <p>After evaluating the first operand there is one of the <dfn>sequence
+    points</dfn> described in <a href="../chapter8/">Chapter&#160;8</a>.</p>
+
+
+  
+
+  <h2><a name="section-2"></a>3.4.2.&#160;The comma operator</h2>
+   
+
+   <p>This wins the prize for &#8216;most obscure operator&#8217;. It allows a list
+    of expressions to be separated by commas:</p>
+
+   <pre>
+<var>expression-1</var>,<var>expression-2</var>,<var>expression-3</var>,...,<var>expression-n</var></pre>
+
+   <p>and it goes on as long as you like. The <var>expressions</var> are
+    evaluated strictly left to right and their values discarded, except for
+    the last one, whose type and value determine the result of the overall
+    expression. Don't confuse this version of the comma with any of the other
+    uses C finds for it, especially the one that separates function arguments.
+    Here are a couple of examples of it in use.</p>
+
+   <div class="inset-example"><a name="example-10"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+main(){
+      int i, j;
+
+      /* comma used - this loop has two counters */
+      for(i=0, j=0; i &lt;= 10; i++, j = i*i){
+              printf(&quot;i %d j %d\n&quot;, i, j);
+      }
+
+      /*
+       * In this futile example, all but the last
+       * constant value is discarded.
+       * Note use of parentheses to force a comma
+       * expression in a function call.
+       */
+      printf(&quot;Overall: %d\n&quot;, (&quot;abc&quot;, 1.2e6, 4*3+2));
+      exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;3.10</cite></div>
+
+   <p>Unless you are feeling very adventurous, the comma operator is just as
+    well ignored. Be prepared to see it only on special occasions.</p>
+
+   <p>After evaluating each operand there is one of the <dfn>sequence
+    points</dfn> described in <a href="../chapter8/">Chapter&#160;8</a>.</p>
+
+  
+
+ <div class="cbook_next_prev"><p><a href="logical_expressions.html">Previous section</a> | <a href="../chapter3/">Chapter contents</a> | <a href="summary.html">Next section</a></p></div>
+
+    </main>
+    <nav id="menu" class="Left">
+      
+ 
+  
+  <div class="nav">
+
+	
+	
+			
+			  <div class="nav0">
+				
+				  <a href="/">Publications</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav1">
+				
+				  <a href="/c_book/">The C&nbsp;Book</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/preface/">Preface</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter1/">Introduction</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter2/">Variables &amp; arithmetic</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter3/">Control flow</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter3/task_ahead.html">The Task ahead</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter3/flow_control.html">Flow control</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter3/logical_expressions.html">Logical expressions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <strong>Strange operators</strong>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter3/summary.html">Summary</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter3/exercises.html">Exercises</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter4/">Functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter5/">Arrays &amp; pointers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter6/">Structures</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter7/">Preprocessor</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter8/">Specialized areas</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter9/">Libraries</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter10/">Complete Programs</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/answers/">Answers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/copyright.html">Copyright</a>
+				
+				
+			</div>
+			
+	
+
+</div>
+
+ 
+
+      <div class="ColBtm">
+        <hr />
+<div class="h1"><a href="https://ebusiness.gbdirect.co.uk/contact.html">Contact Us</a></div>
+
+      </div>
+
+    </nav>
+    <aside id="sidebar" class="Right">
+      
+ <div class="box">
+  
+  
+<img src="https://global.gbdirect.co.uk/Themes/printer-friendly-12x12.png" alt="" title="Printer-friendly version of this page" />
+<a href="?format=pf" rel="nofollow">
+  Printer-friendly version
+</a>
+
+ </div>
+
+ <div class="box">
+  <h3>The C Book</h3>
+  
+<p>This book is published as a matter of historical interest.
+ Please read the
+ <a href="/c_book/copyright.html">copyright and disclaimer information</a>.</p>
+
+<p>GBdirect Ltd provides up-to-date training and consultancy in
+ <a href="http://training.gbdirect.co.uk/courses/c/">C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c/real_time_linux_embedded_c_training.html">Embedded C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c++/">C++</a>
+ and a wide range of
+ <a href="http://training.gbdirect.co.uk/courses/">other subjects based on
+ open standards</a> if you happen to be interested.</p>
+
+ </div>
+
+
+    </aside>
+  </div>
+  
+<script type="text/javascript">
+        var maxheight = 0;
+        var a =  Array('main', 'menu', 'sidebar');
+        for(index in a){
+                var name = a[index];
+                // alert(name);
+                var id = document.getElementById(name);
+                if(id){
+                        if(id.offsetHeight > maxheight){
+                                maxheight = id.offsetHeight;
+                        }
+                }
+        }
+        var tabbar = document.getElementById('tabsbar');
+        if(tabbar){
+                if(tabbar.style) tabbar=tabbar.style;
+                tabbar.left = 0+'px';
+                tabbar.top = maxheight+'px';
+        }
+        
+</script>
+</body>
+</html>

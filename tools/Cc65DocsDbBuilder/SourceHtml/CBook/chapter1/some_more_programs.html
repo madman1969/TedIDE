@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1">
+<title>The C Book &#8212; Some more programs</title>
+<meta property="og:title" content="The C Book &amp;#8212; Some more programs" />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://global.gbdirect.co.uk/Themes/logo-og.png" />
+
+<link rel="SHORTCUT ICON" href="https://global.gbdirect.co.uk/favicon.ico" />
+<link rel="stylesheet" type="text/css" href="https://global.gbdirect.co.uk/Themes/Quarters.css" />
+
+<link rel="prev" href="/c_book/chapter1/description_of_example.html" />
+<link rel="next" href="/c_book/chapter1/terminology.html" />
+<link rel="contents" href="/c_book/chapter1/" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<!-- order 5-->
+<!-- lastmod 2010-04-07T14:12:29Z-->
+
+
+<link rel="canonical" href="https://publications.gbdirect.co.uk/c_book/chapter1/some_more_programs.html"/><meta property="og:url" content="https://publications.gbdirect.co.uk/c_book/chapter1/some_more_programs.html" />
+<script type="text/javascript"> var _gaq = _gaq || []; _gaq.push(['_setAccount', 'UA-3566842-1']); _gaq.push(['_setDomainName', '.gbdirect.co.uk']); _gaq.push(['_trackPageview']); (function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = 'https://www.google-analytics.com/ga.js'; var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s); })(); </script>
+</head>
+
+<body>
+  <header class="Banner">
+    <span id="Logo">
+      <a href="https://ebusiness.gbdirect.co.uk">
+        <img src="https://global.gbdirect.co.uk/Themes/gbdirect.gif"
+             alt="GBdirect Homepage"
+             title="GBdirect Homepage" /></a>
+    </span>
+<!-- Original homebrew search
+    <form action="https://global.gbdirect.co.uk/search.cgi"
+          method="get" id="Search">
+      <label for="search_textbox">Search</label>
+      <input type="text" name="query" size="12" id="search_textbox" value="" />
+      <input type="submit" name="Submit" value="Go" />
+    </form>
+-->
+<!-- Google search -->
+    <form class="Search" action="https://www.google.com/cse" id="cse-search-box">
+      <input type="hidden" name="cx" value="010270212093732037646:4pvgkishmkg" />
+      <input type="hidden" name="ie" value="UTF-8" />
+      <label for="search_textbox">Search</label>
+      <input type="text" name="q" id="search_textbox" size="12" />
+      <input type="submit" name="sa" value="Go" />
+    </form>
+    <script type="text/javascript" src="https://www.google.com/cse/brand?form=cse-search-box&amp;lang=en&amp;sitesearch=true"></script>
+<!-- End Google search -->
+  </header>
+  <nav class="Tabsbar"><span class="ThisTab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span> <span class="NoCSS2">| </span> <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/contact.html">Contact</a></span></nav>
+  <div id="container" itemscope itemtype="http://schema.org/WebPage">
+    <meta itemprop="isFamilyFriendly" content="1" />
+    <meta itemprop="inLanguage" content="en" />
+    <nav class="Tabsbar" id="tabsbar" style="position: absolute; width: 100%">
+  
+  
+    <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/">About Us</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://consulting.gbdirect.co.uk/">Consultancy</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://development.gbdirect.co.uk/">Software</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="ThisTab">Publications</span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-source.gbdirect.co.uk/">Open&nbsp;Source</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://software-support.gbdirect.co.uk/">Support</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-standards.gbdirect.co.uk/">Open&nbsp;Standards</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://faq.gbdirect.co.uk/">FAQ</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://jobs.gbdirect.co.uk/">Jobs</a></span>
+  
+
+</nav>
+    <main id="main" >
+	  
+		<nav id="breadcrumb" itemprop="breadcrumb">
+			
+			<a href="https://publications.gbdirect.co.uk/">Publications</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/">The C&nbsp;Book</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/chapter1/">Introduction</a>
+			
+			 &gt; Some more programs
+			
+		</nav>
+		<br />
+	  
+      <h1>1.4. Some more programs</h1>
+      
+      
+
+
+  
+
+  <p>While we're still in the informal phase, let's look at two more examples.
+   You will have to work out for yourself what some of the code does, but as
+   new or interesting features appear, they will be explained.</p>
+
+  <h2><a name="section-1"></a>1.4.1.&#160;A program to find prime numbers</h2>
+   
+
+   <div class="inset-example"><a name="example-2"></a><pre>
+/*
+*
+* Dumb program that generates prime numbers.
+*/
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+main(){
+    int this_number, divisor, not_prime;
+
+    this_number = 3;
+
+    while(this_number &lt; 10000){
+            divisor = this_number / 2;
+            not_prime = 0;
+            while(divisor &gt; 1){
+                    if(this_number % divisor == 0){
+                            not_prime = 1;
+                            divisor = 0;
+                    }
+                    else
+                            divisor = divisor-1;
+            }
+
+            if(not_prime == 0)
+                    printf(&quot;%d is a prime number\n&quot;, this_number);
+            this_number = this_number + 1;
+    }
+    exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;1.2</cite></div>
+
+   <p>What was interesting in there? A few new points, perhaps. The program
+    works in a really stupid way: to see if a number is prime, it divides that
+    number by all the numbers between half its value and two&#8212;if any
+    divide without remainder, then the number isn't prime. The two operators
+    that you haven't seen before are the remainder operator <code>%</code>,
+    and the equality operator, which is a double equal sign <code>==</code>.
+    That last one is without doubt the cause of more bugs in C programs than
+    any other single factor.</p>
+
+   <p>The problem with the equality test is that wherever it can appear it is
+    also legal to put the single <code>=</code> sign. The first,
+    <code>==</code>, compares two things to see if they are equal, and is
+    generally what you need in fragments like these:</p>
+
+   <pre>
+if(a == b)
+while (c == d)</pre>
+
+   <p>The assignment operator <code>=</code> is, perhaps surprisingly, also
+    legal in places like those, but of course it assigns the value of the
+    right-hand expression to whatever is on the left. The problem is
+    particularly bad if you are used to the languages where comparison for
+    equality is done with what C uses for assignment. There's nothing that you
+    can do to help, so start getting used to it now. (Modern compilers do tend
+    to produce warnings when they think they have detected
+    &#8216;questionable&#8217; uses of assignment operators, but that is a mixed
+    blessing when your choice was deliberate.)</p>
+
+   <p>There is also the introduction for the first time of the <code>if</code>
+    statement. Like the <code>while</code> statement, it tests an expression
+    to see if the expression is true. You might have noticed that also like
+    the <code>while</code> statement, the expression that controls the
+    <code>if</code> statement is in parentheses. That is always the case: all
+    of the conditional control of flow statements require a parenthesized
+    expression after the keyword that introduces them. The formal description
+    of the <code>if</code> statement goes like this:</p>
+
+   <pre>
+if(<var>expression</var>)
+        <var>statement</var>
+
+if(<var>expression</var>)
+        <var>statement</var>
+else
+        <var>statement</var></pre>
+
+   <p>showing that it comes in two forms. Of course, the effect is that if the
+    expression part is evaluated to be true, then the following statement is
+    executed. If the evaluation is false, then the following statement is not
+    executed. When there is an <code>else</code> part, the statement associated
+    with it is executed only if the evaluation gives a false result.</p>
+
+   <p><code>If</code> statements have a famous problem. In the following piece
+    of code, is the <em>statement-2</em> executed or not?</p>
+
+   <pre>
+if(1 &gt; 0)
+        if(1 &lt; 0)
+                <var>statement-1</var>
+else
+        <var>statement-2</var></pre>
+
+   <p>The answer is that it <em>is</em>. Ignore the indentation (which is
+    misleading). The <code>else</code> could belong to either the first or
+    second <code>if</code>, according to the description of the <code>if</code>
+    statement that has just been given, so an extra rule is needed to make it
+    unambiguous. The rule is simply that an <code>else</code> is associated
+    with the nearest <code>else</code>-less <code>if</code> above it. To make
+    the example work the way that the indentation implied, we have to invoke a
+    compound statement:</p>
+
+   <pre>
+if(1 &gt; 0){
+        if(1 &lt; 0)
+                <var>statement-1</var>
+}
+else
+        <var>statement-2</var></pre>
+
+   <p>Here, at least, C adheres to the practice used by most other languages.
+    In fact a lot of programmers who are used to languages where the problem
+    exists have never even realized that it is there&#8212;they just thought
+    that the disambiguating rule was &#8216;obvious&#8217;. Let's hope that
+    everyone feels that way.</p>
+
+  
+
+  <h2><a name="section-2"></a>1.4.2.&#160;The division operators</h2>
+   
+
+   
+   <p>The division operators are the division operator <code>/</code>, and the
+    remainder operator <code>%</code>. Division does what you would expect,
+    except that when it is applied to integer operands it gives a result that
+    is truncated towards zero. For example, <code>5/2</code> gives
+    <code>2</code>, <code>5/3</code> gives <code>1</code>. The remainder
+    operator is the way to get the truncated remainder. <code>5%2</code> gives
+    <code>1</code>, <code>5%3</code> gives <code>2</code>. The signs of the
+    remainder and quotient depend on the divisor and dividend in a way that is
+    defined in the Standard and shown in <a href="../chapter2/">Chapter&#160;2</a>.</p>
+
+  
+
+  <h2><a name="section-3"></a>1.4.3.&#160;An example performing input</h2>
+   
+
+   <p>It's useful to be able to perform input as well as to write programs
+    that print out more or less interesting lists and tables. The simplest of
+    the library routines (and the only one that we'll look at just now) is
+    called <code>getchar</code>. It reads single characters from the program's
+    input and returns an integer value. The value returned is a coded
+    representation for that character and can be used to print the same
+    character on the program output. It can also be compared against character
+    constants or other characters that have been read, although the only test
+    that makes sense is to see if both characters are the same. Comparing for
+    greater or less than each other is not portable in general; there is no
+    guarantee that <code>'a'</code> is less than <code>'b'</code>, although on
+    most common systems that would be the case. The only guarantee that the
+    Standard makes is that the codes for <code>'0'</code> through to
+    <code>'9'</code> will always be consecutive. Here is one example.</p>
+
+   <div class="inset-example"><a name="example-3"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+main(){
+        int ch;
+
+        ch = getchar();
+        while(ch != 'a'){
+                if(ch != '\n')
+                        printf(&quot;ch was %c, value %d\n&quot;, ch, ch);
+                ch = getchar();
+        }
+        exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;1.3</cite></div>
+
+   <p>There are two interesting points in there. The first is to notice that
+    at the end of each line of input read, the character represented by</p>
+
+   <pre>
+'\n'</pre>
+
+   <p>(a character constant) will be seen. This just like the way that the
+    same symbol results in a new line when <code>printf</code> prints it. The
+    model of I/O used by C is not based on a line by line view of the world,
+    but character by character instead; if you choose to think in a
+    line-oriented way, then <code>'\n'</code> allows you to mark the end of
+    each &#8216;line&#8217;. Second is the way that <code>%c</code> is used to
+    output a character by <code>printf</code>, when it appears on the output
+    as a character. Printing it with <code>%d</code> prints the same variable,
+    but displays the integer value used by your program to represent the
+    character.</p>
+
+   <p>If you try that program out, you may find that some systems do not pass
+    characters one by one to a program, but make you type a whole line of
+    input first. Then the whole line is made available as input, one character
+    at a time. Beginners have been known to be confused: the program is
+    started, they type some input, and nothing comes back. This behaviour is
+    nothing to do with C; it depends on the computer and operating system in
+    use.</p>
+
+  
+
+  <h2><a name="section-4"></a>1.4.4.&#160;Simple arrays</h2>
+   
+
+   <p>The use of <dfn>arrays</dfn> in C is often a problem for the beginner.
+    The declaration of arrays isn't too difficult, especially the
+    one-dimensional ones, but a constant source of confusion is the fact
+    that their indices always count from 0. To declare an array of
+    5 <code>int</code>s, the declaration would look like this:</p>
+
+   <pre>
+int something[5];</pre>
+
+   <p>In array declarations C uses square brackets, as you can see. There is
+    no support for arrays with indices whose ranges do not start at 0 and go
+    up; in the example, the valid array elements are <code>something[0]</code>
+    to <code>something[4]</code>. Notice very carefully that
+    <code>something[5]</code> is <em>not</em> a valid array element.</p>
+
+   <p>This program reads some characters from its input, sorts them into the
+    order suggested by their representation, then writes them back out. Work
+    out what it does for yourself; the algorithm won't be given much attention
+    in the explanation which follows.</p>
+
+   <div class="inset-example"><a name="example-4"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#define ARSIZE  10
+main(){
+        int ch_arr[ARSIZE],count1;
+        int count2, stop, lastchar;
+
+        lastchar = 0;
+        stop = 0;
+        /*
+         * Read characters into array.
+         * Stop if end of line, or array full.
+         */
+        while(stop != 1){
+                ch_arr[lastchar] = getchar();
+                if(ch_arr[lastchar] == '\n')
+                        stop = 1;
+                else
+                        lastchar = lastchar + 1;
+                if(lastchar == ARSIZE)
+                        stop = 1;
+        }
+        lastchar = lastchar-1;
+
+        /*
+         * Now the traditional bubble sort.
+         */
+        count1 = 0;
+        while(count1 &lt; lastchar){
+                count2 = count1 + 1;
+                while(count2 &lt;= lastchar){
+                        if(ch_arr[count1] &gt; ch_arr[count2]){
+                                /* swap */
+                                int temp;
+                                temp = ch_arr[count1];
+                                ch_arr[count1] = ch_arr[count2];
+                                ch_arr[count2] = temp;
+                        }
+                        count2 = count2 + 1;
+                }
+                count1 = count1 + 1;
+        }
+
+        count1 = 0;
+        while(count1 &lt;= lastchar){
+                printf(&quot;%c\n&quot;, ch_arr[count1]);
+                count1 = count1 + 1;
+        }
+        exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;1.4</cite></div>
+
+   <p>You might note that the defined constant <code>ARSIZE</code> is used
+    everywhere instead of the actual array size. Because of that, to change
+    the maximum number of characters that can be sorted by this program simply
+    involves a change to one line and then re-compiling. Not so obvious but
+    critical to the safety of the program is the detection of the array
+    becoming full. Look carefully; you'll find that the program stops when
+    element <code>ARSIZE-1</code> has been filled. That is because in an
+    <code>N</code> element array, only elements <code>0</code> through to
+    <code>N-1</code> are available (giving <code>N</code> in total).</p>
+
+   <p>Unlike some other languages it is unlikely that you will be told if you
+    &#8216;run off&#8217; the end of an array in C. It results in what is known as
+    <dfn>undefined behaviour</dfn> on the part of your program, this generally
+    being to produce obscure errors in the future. Most skilled programmers
+    avoid this happening by rigorous testing to make sure either that it can't
+    happen given the particular algorithm in use, or by putting in an explicit
+    test before accessing a particular member of an array. This is a common
+    source of run-time errors in C; you have been warned.</p>
+
+  
+
+  <h2><a name="section-5"></a>Summary</h2>
+   <p>Arrays always number from <code>0</code>; you have no choice.</p>
+   <p>A <code>n</code>-element array has members which number from
+    <code>0</code> to <code>n-1</code> only.  Element <code>n</code> does not
+    exist and to access it is a big mistake.</p>
+  
+
+ <div class="cbook_next_prev"><p><a href="description_of_example.html">Previous section</a> | <a href="../chapter1/">Chapter contents</a> | <a href="terminology.html">Next section</a></p></div>
+
+    </main>
+    <nav id="menu" class="Left">
+      
+ 
+  
+  <div class="nav">
+
+	
+	
+			
+			  <div class="nav0">
+				
+				  <a href="/">Publications</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav1">
+				
+				  <a href="/c_book/">The C&nbsp;Book</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/preface/">Preface</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter1/">Introduction</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter1/form_of_a_c_program.html">Form of C&#160;programs</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter1/functions.html">Functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter1/description_of_example.html">About example&#160;1.1</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <strong>Some more programs</strong>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter1/terminology.html">Terminology</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter1/summary.html">Summary</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter1/exercises.html">Exercises</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter2/">Variables &amp; arithmetic</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter3/">Control flow</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter4/">Functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter5/">Arrays &amp; pointers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter6/">Structures</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter7/">Preprocessor</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter8/">Specialized areas</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter9/">Libraries</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter10/">Complete Programs</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/answers/">Answers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/copyright.html">Copyright</a>
+				
+				
+			</div>
+			
+	
+
+</div>
+
+ 
+
+      <div class="ColBtm">
+        <hr />
+<div class="h1"><a href="https://ebusiness.gbdirect.co.uk/contact.html">Contact Us</a></div>
+
+      </div>
+
+    </nav>
+    <aside id="sidebar" class="Right">
+      
+ <div class="box">
+  
+  
+<img src="https://global.gbdirect.co.uk/Themes/printer-friendly-12x12.png" alt="" title="Printer-friendly version of this page" />
+<a href="?format=pf" rel="nofollow">
+  Printer-friendly version
+</a>
+
+ </div>
+
+ <div class="box">
+  <h3>The C Book</h3>
+  
+<p>This book is published as a matter of historical interest.
+ Please read the
+ <a href="/c_book/copyright.html">copyright and disclaimer information</a>.</p>
+
+<p>GBdirect Ltd provides up-to-date training and consultancy in
+ <a href="http://training.gbdirect.co.uk/courses/c/">C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c/real_time_linux_embedded_c_training.html">Embedded C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c++/">C++</a>
+ and a wide range of
+ <a href="http://training.gbdirect.co.uk/courses/">other subjects based on
+ open standards</a> if you happen to be interested.</p>
+
+ </div>
+
+
+    </aside>
+  </div>
+  
+<script type="text/javascript">
+        var maxheight = 0;
+        var a =  Array('main', 'menu', 'sidebar');
+        for(index in a){
+                var name = a[index];
+                // alert(name);
+                var id = document.getElementById(name);
+                if(id){
+                        if(id.offsetHeight > maxheight){
+                                maxheight = id.offsetHeight;
+                        }
+                }
+        }
+        var tabbar = document.getElementById('tabsbar');
+        if(tabbar){
+                if(tabbar.style) tabbar=tabbar.style;
+                tabbar.left = 0+'px';
+                tabbar.top = maxheight+'px';
+        }
+        
+</script>
+</body>
+</html>

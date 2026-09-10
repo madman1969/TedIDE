@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1">
+<title>The C Book &#8212; Pointers</title>
+<meta property="og:title" content="The C Book &amp;#8212; Pointers" />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://global.gbdirect.co.uk/Themes/logo-og.png" />
+
+<link rel="SHORTCUT ICON" href="https://global.gbdirect.co.uk/favicon.ico" />
+<link rel="stylesheet" type="text/css" href="https://global.gbdirect.co.uk/Themes/Quarters.css" />
+
+<link rel="prev" href="/c_book/chapter5/arrays.html" />
+<link rel="next" href="/c_book/chapter5/character_handling.html" />
+<link rel="contents" href="/c_book/chapter5/" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<!-- order 4-->
+<!-- lastmod 2014-11-10T19:34:47Z-->
+
+
+<link rel="canonical" href="https://publications.gbdirect.co.uk/c_book/chapter5/pointers.html"/><meta property="og:url" content="https://publications.gbdirect.co.uk/c_book/chapter5/pointers.html" />
+<script type="text/javascript"> var _gaq = _gaq || []; _gaq.push(['_setAccount', 'UA-3566842-1']); _gaq.push(['_setDomainName', '.gbdirect.co.uk']); _gaq.push(['_trackPageview']); (function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = 'https://www.google-analytics.com/ga.js'; var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s); })(); </script>
+</head>
+
+<body>
+  <header class="Banner">
+    <span id="Logo">
+      <a href="https://ebusiness.gbdirect.co.uk">
+        <img src="https://global.gbdirect.co.uk/Themes/gbdirect.gif"
+             alt="GBdirect Homepage"
+             title="GBdirect Homepage" /></a>
+    </span>
+<!-- Original homebrew search
+    <form action="https://global.gbdirect.co.uk/search.cgi"
+          method="get" id="Search">
+      <label for="search_textbox">Search</label>
+      <input type="text" name="query" size="12" id="search_textbox" value="" />
+      <input type="submit" name="Submit" value="Go" />
+    </form>
+-->
+<!-- Google search -->
+    <form class="Search" action="https://www.google.com/cse" id="cse-search-box">
+      <input type="hidden" name="cx" value="010270212093732037646:4pvgkishmkg" />
+      <input type="hidden" name="ie" value="UTF-8" />
+      <label for="search_textbox">Search</label>
+      <input type="text" name="q" id="search_textbox" size="12" />
+      <input type="submit" name="sa" value="Go" />
+    </form>
+    <script type="text/javascript" src="https://www.google.com/cse/brand?form=cse-search-box&amp;lang=en&amp;sitesearch=true"></script>
+<!-- End Google search -->
+  </header>
+  <nav class="Tabsbar"><span class="ThisTab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span> <span class="NoCSS2">| </span> <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/contact.html">Contact</a></span></nav>
+  <div id="container" itemscope itemtype="http://schema.org/WebPage">
+    <meta itemprop="isFamilyFriendly" content="1" />
+    <meta itemprop="inLanguage" content="en" />
+    <nav class="Tabsbar" id="tabsbar" style="position: absolute; width: 100%">
+  
+  
+    <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/">About Us</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://consulting.gbdirect.co.uk/">Consultancy</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://development.gbdirect.co.uk/">Software</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="ThisTab">Publications</span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-source.gbdirect.co.uk/">Open&nbsp;Source</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://software-support.gbdirect.co.uk/">Support</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-standards.gbdirect.co.uk/">Open&nbsp;Standards</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://faq.gbdirect.co.uk/">FAQ</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://jobs.gbdirect.co.uk/">Jobs</a></span>
+  
+
+</nav>
+    <main id="main" >
+	  
+		<nav id="breadcrumb" itemprop="breadcrumb">
+			
+			<a href="https://publications.gbdirect.co.uk/">Publications</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/">The C&nbsp;Book</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/chapter5/">Arrays &amp; pointers</a>
+			
+			 &gt; Pointers
+			
+		</nav>
+		<br />
+	  
+      <h1>5.3. Pointers</h1>
+      
+      
+
+
+  
+
+  <p>Using pointers is a bit like riding a bicycle. Just when you think that
+   you'll never understand them&#8212;suddenly you do! Once learned the trick
+   is hard to forget. There's no real magic to pointers, and a lot of
+   readers will already be familiar with their use. The only peculiarity of
+   C is how heavily it relies on the use of pointers, compared with other
+   languages, and the relatively permissive view of what you can do with
+   them.</p>
+
+  <h2><a name="section-1"></a>5.3.1.&#160;Declaring pointers</h2>
+   
+
+   <p>Of course, just like other variables, you have to declare pointers
+    before you can use them. Pointer declarations look much like other
+    declarations: but don't be misled. When pointers are declared, the
+    keyword at the beginning (c int, char and so on) declares the type of
+    variable that the pointer will point to. The pointer itself is not of
+    that type, it is of type pointer to that type. A given pointer only
+    points to one particular type, not to all possible types. Here's the
+    declaration of an array and a pointer:</p>
+
+   <pre>
+int ar[5], *ip;</pre>
+
+   <p>We now have an array and a pointer (see Figure&#160;5.3):</p>
+
+   <div class="inset-figure"><a name="figure-3"><img width="400" alt="Diagram showing an array with four elements (labelled &#39;ar[0]&#39; to            &#39;ar[4]&#39;) and a pointer called &#39;ip&#39; which does not currently            have any connection to the array." src="../figures/5.3.png" height="136" /></a><br /><cite>Figure&#160;5.3.&#160;An array and a pointer</cite></div>
+
+   <p>The&#160;<code>*</code> in front of <code>ip</code> in the declaration
+    shows that it is a pointer, not an ordinary variable. It is of type
+    <code>pointer to int</code>, and can only be used to refer to variables
+    of type int. It's still uninitialized, so to do anything useful with it,
+    it has to be made to point to something. You can't just stick some
+    integer value into it, because integer values have the type
+    <code>int</code>, not <code>pointer to int</code>, which is what we
+    want.  (In any case, what would it mean if this fragment were valid:</p>
+
+   <pre>
+ip = 6;</pre>
+
+   <p>What would <code>ip</code> be pointing to? In fact it could be
+    construed to have a number of meanings, but the simple fact is that, in
+    C, that sort of thing is just wrong.)</p>
+
+   <p>Here is the right way to initialize a pointer:</p>
+
+   <pre>
+int ar[5], *ip;
+ip = &amp;ar[3];</pre>
+
+   <p>In that example, the pointer is made to point to the member of the
+    array <code>ar</code> whose index is <code>3</code>, i.e. the fourth
+    member. This is important. You can assign values to pointers just like
+    ordinary variables; the difference is simply in what the value means.
+    The values of the variables that we have now are shown in Figure&#160;5.4 (<code>??</code> means uninitialized).</p>
+
+   <div class="inset-figure"><a name="figure-4"><img width="400" alt="Diagram showing an array with four elements (labelled &#39;ar[0]&#39; to            &#39;ar[4]&#39;) each of which has an undefined value, and a pointer            called &#39;ip&#39; which contains the address of &#39;ar[3]&#39;." src="../figures/5.4.png" height="129" /></a><br /><cite>Figure&#160;5.4.&#160;Array and initialized pointer</cite></div>
+
+   <p>You can see that the variable <code>ip</code> has the value of the
+    expression <code>&amp;ar[3]</code>. The arrow indicates that, when used
+    as a pointer, <code>ip</code> points to the variable
+    <code>ar[3]</code>.</p>
+
+   <p>What is this new unary <code>&amp;</code>? It is usually described as
+    the &#8216;address-of&#8217; operator, since on many systems the pointer will
+    hold the store address of the thing that it points to. If you understand
+    what addresses are, then you will probably have more trouble than those
+    who don't: thinking about pointers as if they were addresses generally
+    leads to grief. What seems a perfectly reasonable address manipulation
+    on processor X can almost always be shown to be impossible on
+    manufacturer Y's washing machine controller which uses 17-bit addressing
+    when it's on the spin cycle, and reverses the order of odd and even bits
+    when it's out of bleach. (Admittedly, it's unlikely that <em>anyone</em>
+    could get C to work an an architecture like that. But you should see
+    some of the ones it <em>does</em> work on; they aren't much better.)</p>
+
+   <p>We will continue to use the term &#8216;address of&#8217; though, because to
+    invent a different one would be even worse.</p>
+
+   <p>Applying the <code>&amp;</code> operator to an operand returns
+    a pointer to the operand:</p>
+
+   <pre>
+int i;
+float f;
+      /* '&amp;i' would be of type pointer to int */
+      /* '&amp;f' would be of type pointer to float */</pre>
+
+   <p>In each case the pointer would point to the object named in the
+    expression.</p>
+
+   <p>A pointer is only useful if there's some way of getting at the thing
+    that it points to; C uses the unary <code>*</code> operator for this
+    job.  If <code>p</code> is of type &#8216;pointer to something&#8217;, then *p
+    refers to the thing that is being pointed to. For example, to access the
+    variable <code>x</code> via the pointer <code>p</code>, this would
+    work:</p>
+
+   <div class="inset-example"><a name="example-1"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+main(){
+      int x, *p;
+
+      p = &amp;x;         /* initialise pointer */
+      *p = 0;         /* set x to zero */
+      printf(&quot;x is %d\n&quot;, x);
+      printf(&quot;*p is %d\n&quot;, *p);
+
+      *p += 1;        /* increment what p points to */
+      printf(&quot;x is %d\n&quot;, x);
+
+      (*p)++;         /* increment what p points to */
+      printf(&quot;x is %d\n&quot;, x);
+
+      exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;5.1</cite></div>
+
+   <p>You might be interested to note that, since <code>&amp;</code> takes
+    the address of an object, returning a pointer to it, and since
+    <code>*</code> means &#8216;the thing pointed to by the pointer&#8217;, the
+    <code>&amp;</code> and <code>*</code> in the combination
+    <code>*&amp;</code> effectively cancel each other out. (But be careful.
+    Some things, constants for example, don't have addresses and the
+    <code>&amp;</code> operator cannot be applied to them;
+    <code>&amp;1.5</code> is not a pointer to anything, it's an error.) It's
+    also interesting to see that C is one of the few languages that allows
+    an expression on the left-hand side of an assignment operator. Look back
+    at the example: the expression <code>*p</code> occurs twice in that
+    position, and then the amazing <code>(*p)++;</code> statement. That last
+    one is a great puzzle to most beginners&#8212;even if you've managed to
+    wrap your mind around the concept that <code>*p = 0</code> writes zero
+    into the thing pointed to by <code>p</code>, and that <code>*p +=
+    1</code> adds one to where <code>p</code> points, it still seems a bit
+    much to apply the <code>++</code> operator to <code>*p</code>.</p>
+
+   <p>The precedence of <code>(*p)++</code> deserves some thought. It will
+    be given more later, but for the moment let's work out what happens. The
+    brackets ensure that the * applies to p, so what we have is
+    &#8216;post-increment the thing pointed to by p&#8217;. Looking at Table&#160;2.9, it turns out that ++ and * have equal precedence, but they
+    associate right to left; in other words, without the brackets, the
+    implied operation would have been *(p++), whatever that would mean.
+    Later on you'll be more used to it&#8212;for the moment, we'll be careful
+    with brackets to show the way that those expressions work.</p>
+
+   <p>So, provided that a pointer holds the address of something, the
+    notation <code>*pointer</code> is equivalent to giving the name of the
+    something directly. What benefit do we get from all this? Well, straight
+    away it gets round the call-by-value restriction of functions. Imagine
+    a function that has to return, say, two integers representing a month
+    and a day within that month. The function has some (unspecified) way of
+    determining these values; the hard thing to do is to return two separate
+    values. Here's a skeleton of the way that it can be done:</p>
+
+   <div class="inset-example"><a name="example-2"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+void
+date(int *, int *);     /* declare the function */
+
+main(){
+      int month, day;
+      date (&amp;day, &amp;month);
+      printf(&quot;day is %d, month is %d\n&quot;, day, month);
+      exit(EXIT_SUCCESS);
+}
+
+void
+date(int *day_p, int *month_p){
+      int day_ret, month_ret;
+      /*
+       * At this point, calculate the day and month
+       * values in day_ret and month_ret respectively.
+       */
+      *day_p = day_ret;
+      *month_p = month_ret;
+}</pre><cite>Example&#160;5.2</cite></div>
+
+   <p>Notice carefully the advance declaration of <code>date</code> showing
+    that it takes two arguments of type &#8216;pointer to <code>int</code>&#8217;.
+    It returns <code>void</code>, because the values are passed back via the
+    pointers, not the usual return value. The <code>main</code> function
+    passes pointers as arguments to date, which first uses the internal
+    variables <code>day_ret</code> and <code>month_ret</code> for its
+    calculations, then takes those values and assigns them to the places
+    pointed to by its arguments.</p>
+
+   <p>When <code>date</code> is called, the situation looks like Figure&#160;5.5.</p>
+
+   <div class="inset-figure"><a name="figure-5"><img width="288" alt="Diagram showing the variables &#39;day&#39; and &#39;month&#39; which have undefined            values, and the pointers &#39;day_p&#39; and &#39;month_p&#39; which contain their            addresses." src="../figures/5.5.png" height="192" /></a><br /><cite>Figure&#160;5.5.&#160;Just as <code>date</code> is called</cite></div>
+
+   <p>The arguments have been passed to <code>date</code>, but in
+    <code>main</code>, day and month are uninitialized. When date reaches
+    the return statement, the situation is as shown in Figure&#160;5.6 (assuming that the values for day and month are 12 and
+    5 respectively).</p>
+
+   <div class="inset-figure"><a name="figure-6"><img width="288" alt="Diagram showing the same variables as Figure 5.5, except that            the &#39;day&#39; and &#39;month&#39; now have the values &#39;12&#39; and &#39;5&#39;            respectively." src="../figures/5.6.png" height="192" /></a><br /><cite>Figure&#160;5.6.&#160;Just as <code>date</code> is about to return</cite></div>
+
+   <p>One of the great benefits introduced by the new Standard is that it
+    allows the types of the arguments to date to be declared in advance.
+    A great favourite (and disastrous) mistake in C is to forget that
+    a function expects pointers as its arguments, and to pass something else
+    instead. Imagine what would have happened if the call of date above had
+    read</p>
+
+   <pre>
+date(day, month);</pre>
+
+   <p>and no previous declaration of date had been visible. The compiler
+    would not have known that date expects pointers as arguments, so it
+    would pass the <code>int</code> values of <code>day</code> and
+    <code>month</code> as the arguments. On a large number of computers,
+    pointers and integers can be passed in the same way, so the function
+    would execute, then pass back its return values by putting them into
+    wherever <code>day</code> and <code>month</code> would point if their
+    contents were pointers. This is very unlikely to give any sensible
+    results, and in general causes unexpected corruption of data elsewhere
+    in the computer's store. It can be extremely hard to track down!</p>
+
+   <p>Fortunately, by declaring <code>date</code> in advance, the compiler
+    has enough information to warn that a mistake has almost certainly been
+    made.</p>
+
+   <p>Perhaps surprisingly, it isn't all that common to see pointers used to
+    give this call-by-reference functionality. In the majority of cases,
+    call-by-value and a single return value are adequate. What is
+    <em>much</em> more common is to use pointers to &#8216;walk&#8217; along
+    arrays.</p>
+
+  
+
+  <h2><a name="section-2"></a>5.3.2.&#160;Arrays and pointers</h2>
+   
+
+   <p>Array elements are just like other variables: they have addresses.</p>
+
+   <pre>
+int ar[20], *ip;
+
+ip = &amp;ar[5];
+*ip = 0;        /* equivalent to ar[5] = 0; */</pre>
+
+   <p>The address of <code>ar[5]</code> is put into <code>ip</code>, then
+    the place pointed to has zero assigned to it. By itself, this isn't
+    particularly exciting. What <em>is</em> interesting is the way that
+    pointer arithmetic works. Although it's simple, it's one of the
+    cornerstones of C.</p>
+
+   <p>Adding an integral value to a pointer results in another pointer of
+    the same type. Adding <em>n</em> gives a pointer which points n elements
+    further along an array than the original pointer did. (Since <em>n</em>
+    can be negative, subtraction is obviously possible too.) In the example
+    above, a statement of the form</p>
+
+   <pre>
+*(ip+1) = 0;</pre>
+
+   <p>would set <code>ar[6]</code> to zero, and so on. Again, this is not
+    obviously any improvement on &#8216;ordinary&#8217; ways of accessing an
+    array, but the following is.</p>
+
+   <pre>
+int ar[20], *ip;
+
+for(ip = &amp;ar[0]; ip &lt; &amp;ar[20]; ip++)
+      *ip = 0;</pre>
+
+   <p>That example is a classic fragment of&#160;C. A pointer is set to
+    point to the start of an array, then, while it still points inside the
+    array, array elements are accessed one by one, the pointer incrementing
+    between each one. The Standard endorses existing practice by
+    guaranteeing that it's permissible to use the <em>address</em> of
+    <code>ar[20]</code> even though no such element exists. This allows you
+    to use it for checks in loops like the one above. The guarantee only
+    extends to one element beyond the end of an array and no further.</p>
+
+   <p>Why is the example better than indexing? Well, most arrays are
+    accessed sequentially. Very few programming examples actually make use
+    of the &#8216;random access&#8217; feature of arrays. If you do just want
+    sequential access, using a pointer can give a worthwhile improvement in
+    speed. In terms of the underlying address arithmetic, on most
+    architectures it takes one multiplication and one addition to access
+    a one-dimensional array through a subscript. Pointers require no
+    arithmetic at all&#8212;they nearly always hold the store address of the
+    object that they refer to. In the example above, the only arithmetic
+    that has to be done is in the <code>for</code> loop, where one
+    comparison and one addition are done each time round the loop. The
+    equivalent, using indexes, would be this:</p>
+
+   <pre>
+int ar[20], i;
+for(i = 0; i &lt; 20; i++)
+      ar[i] = 0;</pre>
+
+   <p>The same amount of arithmetic occurs in the loop statement, but an
+    extra address calculation has to be performed for every array
+    access.</p>
+
+   <p>Efficiency is not normally an important issue, but here it can be.
+    Loops often get traversed a substantial number of times, and every
+    microsecond saved in a big loop can matter. It isn't always easy for
+    even a smart compiler to recognize that this is the sort of code that
+    could be &#8216;pointerized&#8217; behind the scenes, and to convert from
+    indexing (what the programmer wrote) to actually use a pointer in the
+    generated code.</p>
+
+   <p>If you have found things easy so far, read on. If not, it's a good
+    idea to skip to <a href="../chapter5/pointers.html#section-3">Section&#160;5.3.3</a>. What follows, while
+    interesting, isn't essential. It has been known to frighten even
+    experienced C programmers.</p>
+
+   <p>To be honest, C doesn't really &#8216;understand&#8217; array indexing,
+    except in declarations. As far as the compiler is concerned, an
+    expression like <code>x[n]</code> is translated into <code>*(x+n)</code>
+    and use made of the fact that an array name is converted into a pointer
+    to the array's first element whenever the name occurs in an expression.
+    That's why, amongst other things, array elements count from zero: if
+    <code>x</code> is an array name, then in an expression, <code>x</code>
+    is equivalent to <code>&amp;x[0]</code>, i.e. a pointer to the first
+    element of the array. So, since <code>*(&amp;x[0])</code> uses the
+    pointer to get to <code>x[0]</code>, <code>*(&amp;x[0] + 5)</code> is
+    the same as <code>*(x + 5)</code> which is the same as
+    <code>x[5]</code>. A curiosity springs out of all this. If
+    <code>x[5]</code> is translated into <code>*(x + 5)</code>, and the
+    expression <code>x + 5</code> gives the same result as <code>5
+    + x</code> (it does), then <code>5[x]</code> should give the identical
+    result to <code>x[5]</code>! If you don't believe that, here is
+    a program that compiles and runs successfully:</p>
+
+   <div class="inset-example"><a name="example-3"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#define ARSZ 20
+main(){
+      int ar[ARSZ], i;
+      for(i = 0; i &lt; ARSZ; i++){
+              ar[i] = i;
+              i[ar]++;
+              printf(&quot;ar[%d] now = %d\n&quot;, i, ar[i]);
+      }
+
+      printf(&quot;15[ar] = %d\n&quot;, 15[ar]);
+      exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;5.3</cite></div>
+
+   <h3><a name="section-2.1"></a>Summary</h3>
+    <ul>
+     <li>Arrays always index from zero&#8212;end of story.</li>
+
+     <li>There are no multidimensional arrays; you use arrays of arrays
+      instead.</li>
+
+     <li>Pointers point to things; pointers to different types are
+      themselves different types. They have nothing in common with each
+      other or any other types in C; there are no automatic conversions
+      between pointers and other types.</li>
+
+     <li>Pointers can be used to simulate &#8216;call by reference&#8217; to
+      functions, but it takes a little work to do it.</li>
+
+     <li>Incrementing or adding something to a pointer can be used to step
+      along arrays.</li>
+
+     <li>To facilitate array access by incrementing pointers, the Standard
+      guarantees that in an <var>n</var> element array, although element
+      <var>n</var> does not exist, use of its address is not an
+      error&#8212;the valid range of addresses for an array declared as
+      <code>int&#160;ar[N]</code> is <code>&amp;ar[0]</code> through to
+      <code>&amp;ar[N]</code>. You must not try to access this last
+      pseudo-element.</li>
+    </ul>
+   
+
+  
+
+  <h2><a name="section-3"></a>5.3.3.&#160;Qualified types</h2>
+   
+
+   <p>If you are confident that you have got a good grasp of the basic
+    declaration and use of pointers we can continue. If not, it's important
+    to go back over the previous material and make sure that there is
+    nothing in it that you still find obscure; although what comes next
+    looks more complicated than it really is, there's no need to make it
+    worse by starting unprepared.</p>
+
+   <p>The Standard introduces two things called <dfn>type qualifiers</dfn>,
+    neither of which were in Old C. They can be applied to any declared type
+    to modify its behaviour&#8212;hence the term &#8216;qualifier&#8217;&#8212;and
+    although one of them can be ignored for the moment (the one named
+    <code>volatile</code>), the other, <code>const</code>, cannot.</p>
+
+   <p>If a declaration is prefixed with the keyword <code>const</code>, then
+    the thing that is declared is announced to the world as being constant.
+    You must not attempt to modify (change the value of) <code>const</code>
+    objects, or you get undefined behaviour. Unless you have used some very
+    dirty tricks, the compiler will know that the thing you are trying to
+    modify is constant, so it can warn you.</p>
+
+   <p>There are two benefits in being able to declare things to be
+    <code>const</code>.</p>
+
+   <ol>
+    <li>It documents the fact that the thing is unmodifiable and the
+     compiler helps to check. This is especially reassuring in the case
+     of functions which take pointers as arguments. If the declaration
+     of a function shows that the arguments are pointers to constant
+     objects, then you know that the function is not allowed to change
+     them through the pointers.</li>
+
+    <li>If the compiler knows that things are constant, it can often do
+     increased amounts of optimization or generate better code.</li>
+   </ol>
+
+   <p>Of course, constants are not much use unless you can assign an initial
+    value to them. We won't go into the rules about initialization here
+    (they are in <a href="../chapter6/">Chapter&#160;6</a>), but for the moment just note that
+    any declaration can also assign the value of a constant expression to
+    the thing being declared. Here are some example declarations involving
+    const:</p>
+
+   <pre>
+const int x = 1;        /* x is constant */
+const float f = 3.5;    /* f is constant */
+const char y[10];       /* y is an array of 10 const ints */
+                        /* don't think about initializing it yet! */</pre>
+
+   <p>What is more interesting is that pointers can have this qualifier
+    applied in two ways: either to the thing that it points to (pointer to
+    const), or to the pointer itself (constant pointer). Here are examples
+    of <em>that</em>:</p>
+
+   <pre>
+int i;                  /* i is an ordinary int */
+const int ci = 1;       /* ci is a constant int */
+int *pi;                /* pi is a pointer to an int */
+const int *pci;         /* pci is a pointer to a constant int */
+      /* and now the more complicated stuff */
+
+/* cpi is a constant pointer to an int */
+int *const cpi = &amp;i;
+
+/* cpci is a constant pointer to an constant int */
+const int *const cpci = &amp;ci;</pre>
+
+   <p>The first declaration (of <code>i</code>) is unsurprising. Next, the
+    declaration of <code>ci</code> shows that it is a constant integer, and
+    therefore may not be modified. If we didn't initialize it, it would be
+    pretty well useless.</p>
+
+   <p>It isn't hard to understand what a pointer to an integer and a pointer
+    to a constant integer do&#8212;but note that they are different types of
+    pointer now and can't be freely intermixed. You can change the values of
+    both <code>pi</code> and <code>pci</code> (so that they point to other
+    things); you can change the value of the thing that <code>pi</code>
+    points to (it's not a constant integer), but you are only allowed to
+    inspect the value of the thing that <code>pci</code> points to because
+    that is a constant.</p>
+
+   <p>The last two declarations are the most complicated. If the pointers
+    themselves are constant, then you are not allowed to make them point
+    somewhere else&#8212;so they need to be initialized, just like
+    <code>ci</code>. Independent of the <code>const</code> or other status
+    of the pointer itself, naturally the thing that it points to can also be
+    <code>const</code> or non-<code>const</code>, with the appropriate
+    constraints on what you can do with it.</p>
+
+   <p>A final piece of clarification: what constitutes a qualified type? In
+    the example, <code>ci</code> was clearly of a qualified type, but pci
+    was not, since the pointer was not qualified, only the thing that it
+    points to. The only things that had qualified type in that list were:
+    <code>ci</code>, <code>cpi</code>, and <code>cpci</code>.</p>
+
+   <p>Although the declarations do take some mental gymnastics to
+    understand, it just takes a little time to get used to seeing them,
+    after which you will find that they seem quite natural. The
+    complications come later when we have to explain whether or not you are
+    allowed to (say) compare an ordinary pointer with a constant pointer,
+    and if so, what does it mean? Most of those rules are &#8216;obvious&#8217;
+    but they do have to be stated.</p>
+
+   <p>Type qualifiers are given a further airing in <a href="../chapter8/">Chapter&#160;8</a>.</p>
+
+  
+
+  <h2><a name="section-4"></a>5.3.4.&#160;Pointer arithmetic</h2>
+   
+
+   <p>Although a more rigorous description of pointer arithmetic is given
+    later, we'll start with an approximate version that will do for the
+    moment.</p>
+
+   <p>Not only can you add an integral value to a pointer, but you can also
+    compare or subtract two pointers of the same type. They must both point
+    into the same array, or the result is undefined. The difference between
+    two pointers is defined to be the number of array elements separating
+    them; the type of this difference is implementation defined and will be
+    one of <code>short</code>, <code>int</code>, or <code>long</code>. This
+    next example shows how the difference can be calculated and used, but
+    before you read it, you need to know an important point.</p>
+
+   <p><em>In an expression the name of an array is converted to a pointer to
+    the first element of the array</em>. The only places where that is not
+    true are when an array name is used in conjunction with
+    <code>sizeof</code>, when a string is used to initialize an array or
+    when the array name is the subject of the address-of operator (unary
+    <code>&amp;</code>). We haven't seen any of those cases yet, they will
+    be discussed later. Here's the example.</p>
+
+   <div class="inset-example"><a name="example-4"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#define ARSZ 10
+
+main(){
+      float fa[ARSZ], *fp1, *fp2;
+
+      fp1 = fp2 = fa; /* address of first element */
+      while(fp2 != &amp;fa[ARSZ]){
+              printf(&quot;Difference: %d\n&quot;, (int)(fp2-fp1));
+              fp2++;
+      }
+      exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;5.4</cite></div>
+
+   <p>The pointer <code>fp2</code> is stepped along the array, and the
+    difference between its current and original values is printed. To make
+    sure that <code>printf</code> isn't handed the wrong type of argument,
+    the difference between the two pointers is forced to be of type
+    <code>int</code> by using the cast <code>(int)</code>. That allows for
+    machines where the difference between two pointers is specified to be
+    long.</p>
+
+   <p>Unfortunately, if the difference does happen to be <code>long</code>
+    and the array is enormous, the last example may give the wrong answers.
+    This is a safe version, using a cast to force a long value to be
+    passed:</p>
+
+   <div class="inset-example"><a name="example-5"></a><pre>
+#include &lt;stdio.h&gt;
+#define ARSZ 10
+
+main(){
+      float fa[ARSZ], *fp1, *fp2;
+
+      fp1 = fp2 = fa; /* address of first element */
+      while(fp2 != &amp;fa[ARSZ]){
+              printf(&quot;Difference: %ld\n&quot;, (long)(fp2-fp1));
+              fp2++;
+      }
+      return(0);
+}</pre><cite>Example&#160;5.5</cite></div>
+
+  
+
+  <h2><a name="section-5"></a>5.3.5.&#160;void, null and dubious pointers</h2>
+   
+
+   <p>C is careful to keep track of the type of each pointer and will not in
+    general allow you to use pointers of different types in the same
+    expression. A pointer to char is a different type of pointer from
+    a pointer to <code>int</code> (say) and you cannot assign one to the
+    other, compare them, substitute one for the other as an argument to
+    a function .... in fact they may even be stored differently in memory
+    and even be of different lengths.</p>
+
+   <p><em>Pointers of different types are not the same. There are no
+    implicit conversions from one to the other (unlike the arithmetic
+    types)</em>.</p>
+
+   <p>There are a few occasions when you <em>do</em> want to be able to
+    sidestep some of those restrictions, so what can you do?</p>
+
+   <p>The solution is to use the special type, introduced for this purpose,
+    of &#8216;pointer to <code>void</code>&#8217;. This is one of the Standard's
+    invented features: before, it was tacitly assumed that &#8216;pointer to
+    <code>char</code>&#8217; was adequate for the task. This has been
+    a reasonably successful assumption, but was a rather untidy thing to do;
+    the new solution is both safer and less misleading. There isn't any
+    other use for a pointer of that type&#8212;<code>void *</code> can't
+    actually point to anything&#8212;so it improves readability. A pointer of
+    type <code>void *</code> can have the value of any other pointer
+    assigned to and can, conversely, be assigned to any other pointer. This
+    must be used with great care, because you can end up in some heinous
+    situations. We'll see it being used safely later with the malloc library
+    function.</p>
+
+   <p>You may also on occasion want a pointer that is guaranteed not to
+    point to any object&#8212;the so-called <dfn>null pointer</dfn>. It's
+    common practice in C to write routines that return pointers. If, for
+    some reason, they can't return a valid pointer (perhaps in case of an
+    error), then they will indicate failure by returning a null pointer
+    instead. An example could be a table lookup routine, which returns
+    a pointer to the object searched for if it is in the table, or a null
+    pointer if it is not.</p>
+
+   <p>How do you write a null pointer? There are two ways of doing it and
+    both of them are equivalent: either an integral constant with the value
+    of <code>0</code> or that value converted to type <code>void *</code> by
+    using a cast. Both versions are called the <dfn>null pointer
+    constant</dfn>. If you assign a null pointer constant to any other
+    pointer, or compare it for equality with any other pointer, then it is
+    first converted the type of that other pointer (neatly solving any
+    problems about type compatibility) and will not appear to have a value
+    that is equal to a pointer to any object in the program.</p>
+
+   <p>The only values that can be assigned to pointers apart from 0 are the
+    values of other pointers of the same type. However, one of the things
+    that makes C a useful replacement for assembly language is that it
+    allows you to do the sort of things that most other languages prevent.
+    Try this:</p>
+
+   <pre>
+int *ip;
+ip = (int *)6;
+*ip = 0xFF;</pre>
+
+   <p>What does that do? The pointer has been initialized to the value of
+    6 (notice the cast to turn an integer 6 into a pointer). This is
+    a highly machine-specific operation, and the bit pattern that ends up in
+    the pointer is quite possibly nothing like the machine representation of
+    6.  After the initialization, hexadecimal <code>FF</code> is written into
+    wherever the pointer is pointing. The int at location 6 has had
+    <code>0xFF</code> written into it&#8212;subject to whatever
+    &#8216;location 6&#8217; means on this particular machine.</p>
+
+   <p>It may or may not make sense to do that sort of thing; C gives you the
+    power to express it, it's up to you to get it right. As always, it's
+    possible to do things like this by accident, too, and to be
+    <em>very</em> surprised by the results.</p>
+
+  
+
+ <div class="cbook_next_prev"><p><a href="arrays.html">Previous section</a> | <a href="../chapter5/">Chapter contents</a> | <a href="character_handling.html">Next section</a></p></div>
+
+    </main>
+    <nav id="menu" class="Left">
+      
+ 
+  
+  <div class="nav">
+
+	
+	
+			
+			  <div class="nav0">
+				
+				  <a href="/">Publications</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav1">
+				
+				  <a href="/c_book/">The C&nbsp;Book</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/preface/">Preface</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter1/">Introduction</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter2/">Variables &amp; arithmetic</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter3/">Control flow</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter4/">Functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter5/">Arrays &amp; pointers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter5/opening_shots.html">Opening shots</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter5/arrays.html">Arrays</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <strong>Pointers</strong>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter5/character_handling.html">Character handling</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter5/sizeof_and_malloc.html">Sizeof &amp; malloc</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter5/function_pointers.html">Function pointers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter5/pointer_expressions.html">Pointer expressions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter5/arrays_and_address_of.html">Arrays &amp; address-of</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter5/summary.html">Summary</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter5/exercises.html">Exercises</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter6/">Structures</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter7/">Preprocessor</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter8/">Specialized areas</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter9/">Libraries</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter10/">Complete Programs</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/answers/">Answers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/copyright.html">Copyright</a>
+				
+				
+			</div>
+			
+	
+
+</div>
+
+ 
+
+      <div class="ColBtm">
+        <hr />
+<div class="h1"><a href="https://ebusiness.gbdirect.co.uk/contact.html">Contact Us</a></div>
+
+      </div>
+
+    </nav>
+    <aside id="sidebar" class="Right">
+      
+ <div class="box">
+  
+  
+<img src="https://global.gbdirect.co.uk/Themes/printer-friendly-12x12.png" alt="" title="Printer-friendly version of this page" />
+<a href="?format=pf" rel="nofollow">
+  Printer-friendly version
+</a>
+
+ </div>
+
+ <div class="box">
+  <h3>The C Book</h3>
+  
+<p>This book is published as a matter of historical interest.
+ Please read the
+ <a href="/c_book/copyright.html">copyright and disclaimer information</a>.</p>
+
+<p>GBdirect Ltd provides up-to-date training and consultancy in
+ <a href="http://training.gbdirect.co.uk/courses/c/">C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c/real_time_linux_embedded_c_training.html">Embedded C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c++/">C++</a>
+ and a wide range of
+ <a href="http://training.gbdirect.co.uk/courses/">other subjects based on
+ open standards</a> if you happen to be interested.</p>
+
+ </div>
+
+
+    </aside>
+  </div>
+  
+<script type="text/javascript">
+        var maxheight = 0;
+        var a =  Array('main', 'menu', 'sidebar');
+        for(index in a){
+                var name = a[index];
+                // alert(name);
+                var id = document.getElementById(name);
+                if(id){
+                        if(id.offsetHeight > maxheight){
+                                maxheight = id.offsetHeight;
+                        }
+                }
+        }
+        var tabbar = document.getElementById('tabsbar');
+        if(tabbar){
+                if(tabbar.style) tabbar=tabbar.style;
+                tabbar.left = 0+'px';
+                tabbar.top = maxheight+'px';
+        }
+        
+</script>
+</body>
+</html>

@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1">
+<title>The C Book &#8212; Initialization</title>
+<meta property="og:title" content="The C Book &amp;#8212; Initialization" />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://global.gbdirect.co.uk/Themes/logo-og.png" />
+
+<link rel="SHORTCUT ICON" href="https://global.gbdirect.co.uk/favicon.ico" />
+<link rel="stylesheet" type="text/css" href="https://global.gbdirect.co.uk/Themes/Quarters.css" />
+
+<link rel="prev" href="/c_book/chapter6/qualifiers_and_derived_types.html" />
+<link rel="next" href="/c_book/chapter6/summary.html" />
+<link rel="contents" href="/c_book/chapter6/" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<!-- order 8-->
+<!-- lastmod 2005-11-10T16:42:05Z-->
+
+
+<link rel="canonical" href="https://publications.gbdirect.co.uk/c_book/chapter6/initialization.html"/><meta property="og:url" content="https://publications.gbdirect.co.uk/c_book/chapter6/initialization.html" />
+<script type="text/javascript"> var _gaq = _gaq || []; _gaq.push(['_setAccount', 'UA-3566842-1']); _gaq.push(['_setDomainName', '.gbdirect.co.uk']); _gaq.push(['_trackPageview']); (function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = 'https://www.google-analytics.com/ga.js'; var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s); })(); </script>
+</head>
+
+<body>
+  <header class="Banner">
+    <span id="Logo">
+      <a href="https://ebusiness.gbdirect.co.uk">
+        <img src="https://global.gbdirect.co.uk/Themes/gbdirect.gif"
+             alt="GBdirect Homepage"
+             title="GBdirect Homepage" /></a>
+    </span>
+<!-- Original homebrew search
+    <form action="https://global.gbdirect.co.uk/search.cgi"
+          method="get" id="Search">
+      <label for="search_textbox">Search</label>
+      <input type="text" name="query" size="12" id="search_textbox" value="" />
+      <input type="submit" name="Submit" value="Go" />
+    </form>
+-->
+<!-- Google search -->
+    <form class="Search" action="https://www.google.com/cse" id="cse-search-box">
+      <input type="hidden" name="cx" value="010270212093732037646:4pvgkishmkg" />
+      <input type="hidden" name="ie" value="UTF-8" />
+      <label for="search_textbox">Search</label>
+      <input type="text" name="q" id="search_textbox" size="12" />
+      <input type="submit" name="sa" value="Go" />
+    </form>
+    <script type="text/javascript" src="https://www.google.com/cse/brand?form=cse-search-box&amp;lang=en&amp;sitesearch=true"></script>
+<!-- End Google search -->
+  </header>
+  <nav class="Tabsbar"><span class="ThisTab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span> <span class="NoCSS2">| </span> <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/contact.html">Contact</a></span></nav>
+  <div id="container" itemscope itemtype="http://schema.org/WebPage">
+    <meta itemprop="isFamilyFriendly" content="1" />
+    <meta itemprop="inLanguage" content="en" />
+    <nav class="Tabsbar" id="tabsbar" style="position: absolute; width: 100%">
+  
+  
+    <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/">About Us</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://consulting.gbdirect.co.uk/">Consultancy</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://development.gbdirect.co.uk/">Software</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="ThisTab">Publications</span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-source.gbdirect.co.uk/">Open&nbsp;Source</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://software-support.gbdirect.co.uk/">Support</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-standards.gbdirect.co.uk/">Open&nbsp;Standards</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://faq.gbdirect.co.uk/">FAQ</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://jobs.gbdirect.co.uk/">Jobs</a></span>
+  
+
+</nav>
+    <main id="main" >
+	  
+		<nav id="breadcrumb" itemprop="breadcrumb">
+			
+			<a href="https://publications.gbdirect.co.uk/">Publications</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/">The C&nbsp;Book</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/chapter6/">Structures</a>
+			
+			 &gt; Initialization
+			
+		</nav>
+		<br />
+	  
+      <h1>6.7. Initialization</h1>
+      
+      
+
+
+  
+
+  <p>Now that we have seen all of the data types supported by C, we can look at
+   the subject of initialization. C&#160;allows ordinary variables, structures,
+   unions and arrays to be given initial values in their definitions. Old C had
+   some strange rules about this, reflecting an unwillingness by compiler
+   writers to work too hard. The Standard has rationalized this, and now it is
+   possible to initialize things as and when you want.</p>
+
+  <p>There are basically two sorts of initialization: at compile time, and at
+   run time. Which one you get depends on the <dfn>storage duration</dfn> of
+   the thing being initialized.</p>
+
+  <p>Objects with <dfn>static duration</dfn> are declared either outside
+   functions, or inside them with the keyword <code>extern</code> or
+   <code>static</code> as part of the declaration. These can <em>only</em> be
+   initialized at compile time.</p>
+
+  <p>Any other object has <dfn>automatic duration</dfn>, and can only be
+   initialized at run time. The two categories are mutually exclusive.</p>
+
+  <p>Although they are related, storage duration and <dfn>linkage</dfn> (see
+   <a href="../chapter4/">Chapter&#160;4</a>) are different and should not be confused.</p>
+
+  <p>Compile-time initialization can only be done using <dfn>constant
+   expressions</dfn>; run-time initialization can be done using <em>any</em>
+   expression at all. The Old C restriction, that only simple variables (not
+   arrays, structures or unions) could be initialized at run time, has been
+   lifted.</p>
+
+  <h2><a name="section-1"></a>6.7.1.&#160;Constant expressions</h2>
+   
+
+   <p>There are a number of places where constant expressions must be used. The
+    definition of what constitutes a constant expression is relatively
+    simple.</p>
+
+   <p>A <dfn>constant expression</dfn> is evaluated by the compiler, not at
+    run-time. It may be used anywhere that a constant may be used. Unless it is
+    part of the operand of <code>sizeof</code>, it may not contain any
+    assignment, increment or decrement operations, function calls or comma
+    operators; that may seem odd, but it's because <code>sizeof</code> only
+    needs to evaluate the type of an expression, not its value.</p>
+
+   <p>If real numbers are evaluated at compile-time, then the Standard insists
+    that they are evaluated with at least as much precision and range as will
+    be used at run-time.</p>
+
+   <p>A more restricted form, called the <dfn>integral constant
+    expression</dfn> exists. This has integral type and only involves operands
+    that are integer constants, enumeration constants, character constants,
+    <code>sizeof</code> expressions and real constants that are the immediate
+    operands of casts. Any cast operators are only allowed to convert
+    arithmetic types to integral types. As with the previous note on
+    <code>sizeof</code> expressions, since they don't have to be evaluated,
+    just their type determined, no restrictions apply to their contents.</p>
+
+   <p>The <dfn>arithmetic constant expression</dfn> is like the integral
+    constant expression, but allows real constants to be used and restricts the
+    use of casts to converting one arithmetic type to another.</p>
+
+   <p>The <dfn>address constant</dfn> is a pointer to an object that has static
+    storage duration or a pointer to a function. You can get these by using the
+    <code>&amp;</code> operator or through the usual conversions of array and
+    function names into pointers when they are used in expressions. The
+    operators <code>[]</code>, <code>.</code>, <code>-&gt;</code>,
+    <code>&amp;</code> (address of) and <code>*</code> (pointer dereference) as
+    well as casts of pointers can all be used in the expression as long as they
+    don't involve accessing the value of any object.</p>
+
+  
+
+  <h2><a name="section-2"></a>6.7.2.&#160;More initialization</h2>
+   
+
+   <p>The various types of constants are permitted in various places; integral
+    constant expressions are particularly important because they are the only
+    type of expression that may be used to specify the size of arrays and the
+    values in <code>case</code> statement prefixes. The types of constants that
+    are permitted in initializer expressions are less restricted; you are
+    allowed to use: arithmetic constant expressions; null pointer or address
+    constants; an address constant for an object plus or minus an integral
+    constant expression. Of course it depends on the type of thing being
+    initialized whether or not a particular type of constant expression is
+    appropriate.</p>
+
+   <p>Here is an example using several initialized variables:</p>
+
+   <div class="inset-example"><a name="example-14"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+#define NMONTHS 12
+
+int month = 0;
+
+short month_days[] =
+      {31,28,31,30,31,30,31,31,30,31,30,31};
+
+char *mnames[] ={
+      &quot;January&quot;, &quot;February&quot;,
+      &quot;March&quot;, &quot;April&quot;,
+      &quot;May&quot;, &quot;June&quot;,
+      &quot;July&quot;, &quot;August&quot;,
+      &quot;September&quot;, &quot;October&quot;,
+      &quot;November&quot;, &quot;December&quot;
+};
+
+main(){
+
+      int day_count = month;
+
+      for(day_count = month; day_count &lt; NMONTHS;
+              day_count++){
+              printf(&quot;%d days in %s\n&quot;,
+                      month_days[day_count],
+                      mnames[day_count]);
+      }
+      exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;6.14</cite></div>
+
+   <p>Initializing ordinary variables is easy: put <code>= expression</code>
+    after the variable name in a declaration, and the variable is initialized
+    to the value of the expression. As with all objects, whether you can use
+    any expression, or just a constant expression, depends on its storage
+    duration.</p>
+
+   <p>Initializing arrays is easy for one-dimensional arrays. Just put a list
+    of the values you want, separated by commas, inside curly brackets. The
+    example shows how to do it. If you don't give a size for the array, then
+    the number of initializers will determine the size. If you do give a size,
+    then there must be at most that many initializers in the list. Too many is
+    an error, too few will just initialize the first elements of the array.</p>
+
+   <p>You could build up a string like this:</p>
+
+   <pre>
+char str[] = {'h', 'e', 'l', 'l', 'o', 0};</pre>
+
+   <p>but because it is so often necessary to do that, it is also permitted to
+    use a quoted string literal to initialize an array of chars:</p>
+
+   <pre>
+char str[] = &quot;hello&quot;;</pre>
+
+   <p>In that case, the null at the end of the string will also be included if
+    there is room, or if no size was specified. Here are examples:</p>
+
+   <pre>
+/* no room for the null */
+char str[5] = &quot;hello&quot;;
+
+/* room for the null */
+char str[6] = &quot;hello&quot;;</pre>
+
+   <p>The example program used string literals for a different purpose:
+    <em>there</em> they were being used to initialize an array of character
+    pointers; a very different prospect.</p>
+
+   <p>For structures that have automatic duration, an expression of the right
+    type can be used to initialize them, or else a bracketed list of constant
+    expressions must be used:</p>
+
+   <div class="inset-example"><a name="example-15"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+struct s{
+      int a;
+      char b;
+      char *cp;
+}ex_s = {
+      1, 'a', &quot;hello&quot;
+      };
+
+main(){
+      struct s first = ex_s;
+      struct s second = {
+              2, 'b', &quot;byebye&quot;
+              };
+
+      exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;6.15</cite></div>
+
+   <p>Only the first member of a union can be initialized.</p>
+
+   <p>If a structure or union contains unnamed members, whether unnamed
+    bitfields or padding for alignment, they are ignored in the initialization
+    process; they don't have to be counted when you provide the initializers
+    for the real members of the structure.</p>
+
+   <p>For objects that contain sub-objects within them, there are two ways of
+    writing the initializer. It can be written out with an initializer for each
+    member:</p>
+
+   <div class="inset-example"><a name="example-16"></a><pre>
+struct s{
+      int a;
+      struct ss{
+              int c;
+              char d;
+      }e;
+}x[] = {
+      1, 2, 'a',
+      3, 4, 'b'
+      };</pre><cite>Example&#160;6.16</cite></div>
+
+   <p>which will assign <code>1</code> to <code>x[0].a</code>, <code>2</code>
+    to <code>x[0].e.c</code>, <code>a</code> to <code>x[0].e.d</code> and
+    <code>3</code> to <code>x[1].a</code> and so on.</p>
+
+   <p>It is <em>much</em> safer to use internal braces to show what you mean,
+    or one missed value will cause havoc.</p>
+
+   <div class="inset-example"><a name="example-17"></a><pre>
+struct s{
+      int a;
+      struct ss{
+              int c;
+              char d;
+      }e;
+}x[] = {
+      {1, {2, 'a'}},
+      {3, {4, 'b'}}
+      };</pre><cite>Example&#160;6.17</cite></div>
+
+   <p><em>Always</em> fully bracket initializers&#8212;that is much the safest
+    thing to do.</p>
+
+   <p>It is the same for arrays as for structures:</p>
+
+   <div class="inset-example"><a name="example-18"></a><pre>
+float y[4][3] = {
+      {1, 3, 5},      /* y[0][0], y[0][1], y[0][2] */
+      {2, 4, 6},      /* y[1][0], y[1][1], y[1][2] */
+      {3, 5, 7}       /* y[2][0], y[2][1], y[2][2] */
+};</pre><cite>Example&#160;6.18</cite></div>
+
+   <p>that gives full initialization to the first three rows of <code>y</code>.
+    The fourth row, <code>y[3]</code>, is uninitialized.</p>
+
+   <p>Unless they have an explicit initializer, all objects with static
+    duration are given implicit initializers&#8212;the effect is as if the
+    constant <code>0</code> had been assigned to their components. This is in
+    fact widely used&#8212;it is an assumption made by most C programs that
+    external objects and internal static objects start with the value zero.</p>
+
+   <p>Initialization of objects with automatic duration is only guaranteed if
+    their compound statement is entered &#8216;at the top&#8217;. Jumping into the
+    middle of one may result in the initialization not happening&#8212;this is
+    often undesirable and should be avoided. It is explicitly noted by the
+    Standard with regard to <code>switch</code> statements, where providing
+    initializers in declarations <em>cannot</em> be of any use; this is because
+    a declaration is not linguistically a &#8216;statement&#8217; and only statements
+    may be labelled. As a result it is not possible for initializers in
+    <code>switch</code> statements ever to be executed, because the entry to
+    the block containing them <em>must</em> be below the declarations!</p>
+
+   <p>A declaration inside a function (block scope) can, using various
+    techniques outlined in <a href="../chapter4/">Chapter&#160;4</a> and <a href="../chapter8/">Chapter&#160;8</a>,
+    be made to refer to an object that has either <dfn>external</dfn> or
+    <dfn>internal linkage</dfn>. If you've managed to do that, and it's not
+    likely to happen by accident, then you can't initialize the object as part
+    of that declaration. Here is one way of trying it:</p>
+
+   <pre>
+int x;                        /* external linkage */
+main(){
+      extern int x = 5;       /* forbidden */
+}</pre>
+
+   <p>Our test compiler didn't notice that one, either.</p>
+
+  
+
+ <div class="cbook_next_prev"><p><a href="qualifiers_and_derived_types.html">Previous section</a> | <a href="../chapter6/">Chapter contents</a> | <a href="summary.html">Next section</a></p></div>
+
+    </main>
+    <nav id="menu" class="Left">
+      
+ 
+  
+  <div class="nav">
+
+	
+	
+			
+			  <div class="nav0">
+				
+				  <a href="/">Publications</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav1">
+				
+				  <a href="/c_book/">The C&nbsp;Book</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/preface/">Preface</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter1/">Introduction</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter2/">Variables &amp; arithmetic</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter3/">Control flow</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter4/">Functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter5/">Arrays &amp; pointers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter6/">Structures</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter6/history.html">History</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter6/structures.html">Structures</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter6/unions.html">Unions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter6/bitfields.html">Bitfields</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter6/enums.html">Enums</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter6/qualifiers_and_derived_types.html">Qualifiers &amp; derived types</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <strong>Initialization</strong>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter6/summary.html">Summary</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter6/exercises.html">Exercises</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter7/">Preprocessor</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter8/">Specialized areas</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter9/">Libraries</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter10/">Complete Programs</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/answers/">Answers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/copyright.html">Copyright</a>
+				
+				
+			</div>
+			
+	
+
+</div>
+
+ 
+
+      <div class="ColBtm">
+        <hr />
+<div class="h1"><a href="https://ebusiness.gbdirect.co.uk/contact.html">Contact Us</a></div>
+
+      </div>
+
+    </nav>
+    <aside id="sidebar" class="Right">
+      
+ <div class="box">
+  
+  
+<img src="https://global.gbdirect.co.uk/Themes/printer-friendly-12x12.png" alt="" title="Printer-friendly version of this page" />
+<a href="?format=pf" rel="nofollow">
+  Printer-friendly version
+</a>
+
+ </div>
+
+ <div class="box">
+  <h3>The C Book</h3>
+  
+<p>This book is published as a matter of historical interest.
+ Please read the
+ <a href="/c_book/copyright.html">copyright and disclaimer information</a>.</p>
+
+<p>GBdirect Ltd provides up-to-date training and consultancy in
+ <a href="http://training.gbdirect.co.uk/courses/c/">C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c/real_time_linux_embedded_c_training.html">Embedded C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c++/">C++</a>
+ and a wide range of
+ <a href="http://training.gbdirect.co.uk/courses/">other subjects based on
+ open standards</a> if you happen to be interested.</p>
+
+ </div>
+
+
+    </aside>
+  </div>
+  
+<script type="text/javascript">
+        var maxheight = 0;
+        var a =  Array('main', 'menu', 'sidebar');
+        for(index in a){
+                var name = a[index];
+                // alert(name);
+                var id = document.getElementById(name);
+                if(id){
+                        if(id.offsetHeight > maxheight){
+                                maxheight = id.offsetHeight;
+                        }
+                }
+        }
+        var tabbar = document.getElementById('tabsbar');
+        if(tabbar){
+                if(tabbar.style) tabbar=tabbar.style;
+                tabbar.left = 0+'px';
+                tabbar.top = maxheight+'px';
+        }
+        
+</script>
+</body>
+</html>

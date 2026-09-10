@@ -93,7 +93,7 @@ public sealed class SearchDialog : Dialog
             return;
 
         _results = _database.Search(term).ToList();
-        _resultsList.SetSource(new ObservableCollection<string>(_results.Select(r => $"{r.FileName}: {r.Snippet}")));
+        _resultsList.SetSource(new ObservableCollection<string>(_results.Select(r => $"[{r.Book}] {r.FileName}: {r.Snippet}")));
 
         _statusLabel.Text = _results.Count == 0
             ? $"No matches for \"{term}\"."

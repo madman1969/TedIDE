@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1">
+<title>The C Book &#8212; Unions</title>
+<meta property="og:title" content="The C Book &amp;#8212; Unions" />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://global.gbdirect.co.uk/Themes/logo-og.png" />
+
+<link rel="SHORTCUT ICON" href="https://global.gbdirect.co.uk/favicon.ico" />
+<link rel="stylesheet" type="text/css" href="https://global.gbdirect.co.uk/Themes/Quarters.css" />
+
+<link rel="prev" href="/c_book/chapter6/structures.html" />
+<link rel="next" href="/c_book/chapter6/bitfields.html" />
+<link rel="contents" href="/c_book/chapter6/" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<!-- order 4-->
+<!-- lastmod 2005-11-10T16:42:05Z-->
+
+
+<link rel="canonical" href="https://publications.gbdirect.co.uk/c_book/chapter6/unions.html"/><meta property="og:url" content="https://publications.gbdirect.co.uk/c_book/chapter6/unions.html" />
+<script type="text/javascript"> var _gaq = _gaq || []; _gaq.push(['_setAccount', 'UA-3566842-1']); _gaq.push(['_setDomainName', '.gbdirect.co.uk']); _gaq.push(['_trackPageview']); (function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = 'https://www.google-analytics.com/ga.js'; var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s); })(); </script>
+</head>
+
+<body>
+  <header class="Banner">
+    <span id="Logo">
+      <a href="https://ebusiness.gbdirect.co.uk">
+        <img src="https://global.gbdirect.co.uk/Themes/gbdirect.gif"
+             alt="GBdirect Homepage"
+             title="GBdirect Homepage" /></a>
+    </span>
+<!-- Original homebrew search
+    <form action="https://global.gbdirect.co.uk/search.cgi"
+          method="get" id="Search">
+      <label for="search_textbox">Search</label>
+      <input type="text" name="query" size="12" id="search_textbox" value="" />
+      <input type="submit" name="Submit" value="Go" />
+    </form>
+-->
+<!-- Google search -->
+    <form class="Search" action="https://www.google.com/cse" id="cse-search-box">
+      <input type="hidden" name="cx" value="010270212093732037646:4pvgkishmkg" />
+      <input type="hidden" name="ie" value="UTF-8" />
+      <label for="search_textbox">Search</label>
+      <input type="text" name="q" id="search_textbox" size="12" />
+      <input type="submit" name="sa" value="Go" />
+    </form>
+    <script type="text/javascript" src="https://www.google.com/cse/brand?form=cse-search-box&amp;lang=en&amp;sitesearch=true"></script>
+<!-- End Google search -->
+  </header>
+  <nav class="Tabsbar"><span class="ThisTab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span> <span class="NoCSS2">| </span> <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/contact.html">Contact</a></span></nav>
+  <div id="container" itemscope itemtype="http://schema.org/WebPage">
+    <meta itemprop="isFamilyFriendly" content="1" />
+    <meta itemprop="inLanguage" content="en" />
+    <nav class="Tabsbar" id="tabsbar" style="position: absolute; width: 100%">
+  
+  
+    <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/">About Us</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://consulting.gbdirect.co.uk/">Consultancy</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://development.gbdirect.co.uk/">Software</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="ThisTab">Publications</span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-source.gbdirect.co.uk/">Open&nbsp;Source</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://software-support.gbdirect.co.uk/">Support</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-standards.gbdirect.co.uk/">Open&nbsp;Standards</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://faq.gbdirect.co.uk/">FAQ</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://jobs.gbdirect.co.uk/">Jobs</a></span>
+  
+
+</nav>
+    <main id="main" >
+	  
+		<nav id="breadcrumb" itemprop="breadcrumb">
+			
+			<a href="https://publications.gbdirect.co.uk/">Publications</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/">The C&nbsp;Book</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/chapter6/">Structures</a>
+			
+			 &gt; Unions
+			
+		</nav>
+		<br />
+	  
+      <h1>6.3. Unions</h1>
+      
+      
+
+
+  
+
+  <p>Unions don't take long to explain. They are the same as structures, except
+   that, where you would have written <code>struct</code> before, now you write
+   <code>union</code>. Everything works the same way, but with one big
+   exception. In a structure, the members are allocated separate consecutive
+   chunks of storage. In a union, every member is allocated the same piece of
+   storage. What would you use them for? Well, sometimes you want a structure
+   to contain different values of different types at different times but to
+   conserve space as much as possible. Using a union, it's up to you to keep
+   track of whatever type you put into it and make sure that you retrieve the
+   right type at the right time. Here's an example:</p>
+
+  <div class="inset-example"><a name="example-11"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+main(){
+      union {
+              float u_f;
+              int u_i;
+      }var;
+
+      var.u_f = 23.5;
+      printf(&quot;value is %f\n&quot;, var.u_f);
+      var.u_i = 5;
+      printf(&quot;value is %d\n&quot;, var.u_i);
+      exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;6.11</cite></div>
+
+  <p>If the example had, say, put a <code>float</code> into the union and then
+   extracted it as an int, a strange value would have resulted. The two types
+   are almost certainly not only stored differently, but of different lengths.
+   The <code>int</code> retrieved would probably be the low-order bits of the
+   machine representation of a <code>float</code>, and might easily be made up
+   of part of the mantissa of the <code>float</code> plus a piece of the
+   exponent. The Standard says that if you do this, the behaviour is
+   implementation defined (not undefined). The behaviour is defined by the
+   Standard in one case: if some of the members of a union are structures with
+   a &#8216;common initial sequence&#8217; (the first members of each structure have
+   compatible type and in the case of <dfn>bitfields</dfn> are the same
+   length), and the union currently contains one of them, then the common
+   initial part of each can be used interchangeably. Oh good.</p>
+
+  <p>The C compiler does no more than work out what the biggest member in
+   a union can be and allocates enough storage (appropriately aligned if
+   neccessary). In particular, no checking is done to make sure that the right
+   sort of use is made of the members. That is your task, and you'll soon find
+   out if you get it wrong. The members of a union all start at the same
+   address&#8212;there is guaranteed to be no padding in front of any of
+   them.</p>
+
+  <p>The most common way of remembering what is in a union is to embed it in
+   a structure, with another member of the structure used to indicate the type
+   of thing currently in the union. Here is how it might be used:</p>
+
+  <div class="inset-example"><a name="example-12"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+/* code for types in union */
+#define FLOAT_TYPE      1
+#define CHAR_TYPE       2
+#define INT_TYPE        3
+
+struct var_type{
+      int type_in_union;
+      union{
+              float   un_float;
+              char    un_char;
+              int     un_int;
+      }vt_un;
+}var_type;
+
+void
+print_vt(void){
+
+      switch(var_type.type_in_union){
+              default:
+                      printf(&quot;Unknown type in union\n&quot;);
+                      break;
+              case FLOAT_TYPE:
+                      printf(&quot;%f\n&quot;, var_type.vt_un.un_float);
+                      break;
+              case CHAR_TYPE:
+                      printf(&quot;%c\n&quot;, var_type.vt_un.un_char);
+                      break;
+              case INT_TYPE:
+                      printf(&quot;%d\n&quot;, var_type.vt_un.un_int);
+                      break;
+      }
+}
+
+main(){
+
+      var_type.type_in_union = FLOAT_TYPE;
+      var_type.vt_un.un_float = 3.5;
+
+      print_vt();
+
+      var_type.type_in_union = CHAR_TYPE;
+      var_type.vt_un.un_char = 'a';
+
+      print_vt();
+      exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;6.12</cite></div>
+
+  <p>That also demonstrates how the dot notation is used to access structures
+   or unions inside other structures or unions. Some current C compilers allow
+   you to miss bits out of the names of embedded objects provided that they are
+   not ambiguous. In the example, such an unambiguous name would be
+   <code>var_type.un_int</code> and the compiler would work out what you meant.
+   None the less this is not permitted by the Standard.</p>
+
+  <p>It is because of unions that structures cannot be compared for equality.
+   The possibility that a structure might contain a union makes it hard to
+   compare such structures; the compiler can't tell what the union currently
+   contains and so wouldn't know how to compare the structures. This sounds
+   a bit hard to swallow and isn't 100% true&#8212;most structures don't contain
+   unions&#8212;but there is also a philosophical issue at stake about just what
+   is meant by &#8216;equality&#8217; when applied to structures. Anyhow, the union
+   business gives the Standard a good excuse to avoid the issue by not
+   supporting structure comparison.</p>
+
+ <div class="cbook_next_prev"><p><a href="structures.html">Previous section</a> | <a href="../chapter6/">Chapter contents</a> | <a href="bitfields.html">Next section</a></p></div>
+
+    </main>
+    <nav id="menu" class="Left">
+      
+ 
+  
+  <div class="nav">
+
+	
+	
+			
+			  <div class="nav0">
+				
+				  <a href="/">Publications</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav1">
+				
+				  <a href="/c_book/">The C&nbsp;Book</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/preface/">Preface</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter1/">Introduction</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter2/">Variables &amp; arithmetic</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter3/">Control flow</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter4/">Functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter5/">Arrays &amp; pointers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter6/">Structures</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter6/history.html">History</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter6/structures.html">Structures</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <strong>Unions</strong>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter6/bitfields.html">Bitfields</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter6/enums.html">Enums</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter6/qualifiers_and_derived_types.html">Qualifiers &amp; derived types</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter6/initialization.html">Initialization</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter6/summary.html">Summary</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter6/exercises.html">Exercises</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter7/">Preprocessor</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter8/">Specialized areas</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter9/">Libraries</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter10/">Complete Programs</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/answers/">Answers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/copyright.html">Copyright</a>
+				
+				
+			</div>
+			
+	
+
+</div>
+
+ 
+
+      <div class="ColBtm">
+        <hr />
+<div class="h1"><a href="https://ebusiness.gbdirect.co.uk/contact.html">Contact Us</a></div>
+
+      </div>
+
+    </nav>
+    <aside id="sidebar" class="Right">
+      
+ <div class="box">
+  
+  
+<img src="https://global.gbdirect.co.uk/Themes/printer-friendly-12x12.png" alt="" title="Printer-friendly version of this page" />
+<a href="?format=pf" rel="nofollow">
+  Printer-friendly version
+</a>
+
+ </div>
+
+ <div class="box">
+  <h3>The C Book</h3>
+  
+<p>This book is published as a matter of historical interest.
+ Please read the
+ <a href="/c_book/copyright.html">copyright and disclaimer information</a>.</p>
+
+<p>GBdirect Ltd provides up-to-date training and consultancy in
+ <a href="http://training.gbdirect.co.uk/courses/c/">C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c/real_time_linux_embedded_c_training.html">Embedded C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c++/">C++</a>
+ and a wide range of
+ <a href="http://training.gbdirect.co.uk/courses/">other subjects based on
+ open standards</a> if you happen to be interested.</p>
+
+ </div>
+
+
+    </aside>
+  </div>
+  
+<script type="text/javascript">
+        var maxheight = 0;
+        var a =  Array('main', 'menu', 'sidebar');
+        for(index in a){
+                var name = a[index];
+                // alert(name);
+                var id = document.getElementById(name);
+                if(id){
+                        if(id.offsetHeight > maxheight){
+                                maxheight = id.offsetHeight;
+                        }
+                }
+        }
+        var tabbar = document.getElementById('tabsbar');
+        if(tabbar){
+                if(tabbar.style) tabbar=tabbar.style;
+                tabbar.left = 0+'px';
+                tabbar.top = maxheight+'px';
+        }
+        
+</script>
+</body>
+</html>

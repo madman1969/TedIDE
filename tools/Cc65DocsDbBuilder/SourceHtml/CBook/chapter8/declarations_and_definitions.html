@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1">
+<title>The C Book &#8212; Declarations, Definitions and Accessibility</title>
+<meta property="og:title" content="The C Book &amp;#8212; Declarations, Definitions and Accessibility" />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://global.gbdirect.co.uk/Themes/logo-og.png" />
+
+<link rel="SHORTCUT ICON" href="https://global.gbdirect.co.uk/favicon.ico" />
+<link rel="stylesheet" type="text/css" href="https://global.gbdirect.co.uk/Themes/Quarters.css" />
+
+<link rel="prev" href="/c_book/chapter8/health_warning.html" />
+<link rel="next" href="/c_book/chapter8/typedef.html" />
+<link rel="contents" href="/c_book/chapter8/" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<!-- order 3-->
+<!-- lastmod 2010-02-19T17:00:37Z-->
+
+
+<link rel="canonical" href="https://publications.gbdirect.co.uk/c_book/chapter8/declarations_and_definitions.html"/><meta property="og:url" content="https://publications.gbdirect.co.uk/c_book/chapter8/declarations_and_definitions.html" />
+<script type="text/javascript"> var _gaq = _gaq || []; _gaq.push(['_setAccount', 'UA-3566842-1']); _gaq.push(['_setDomainName', '.gbdirect.co.uk']); _gaq.push(['_trackPageview']); (function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = 'https://www.google-analytics.com/ga.js'; var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s); })(); </script>
+</head>
+
+<body>
+  <header class="Banner">
+    <span id="Logo">
+      <a href="https://ebusiness.gbdirect.co.uk">
+        <img src="https://global.gbdirect.co.uk/Themes/gbdirect.gif"
+             alt="GBdirect Homepage"
+             title="GBdirect Homepage" /></a>
+    </span>
+<!-- Original homebrew search
+    <form action="https://global.gbdirect.co.uk/search.cgi"
+          method="get" id="Search">
+      <label for="search_textbox">Search</label>
+      <input type="text" name="query" size="12" id="search_textbox" value="" />
+      <input type="submit" name="Submit" value="Go" />
+    </form>
+-->
+<!-- Google search -->
+    <form class="Search" action="https://www.google.com/cse" id="cse-search-box">
+      <input type="hidden" name="cx" value="010270212093732037646:4pvgkishmkg" />
+      <input type="hidden" name="ie" value="UTF-8" />
+      <label for="search_textbox">Search</label>
+      <input type="text" name="q" id="search_textbox" size="12" />
+      <input type="submit" name="sa" value="Go" />
+    </form>
+    <script type="text/javascript" src="https://www.google.com/cse/brand?form=cse-search-box&amp;lang=en&amp;sitesearch=true"></script>
+<!-- End Google search -->
+  </header>
+  <nav class="Tabsbar"><span class="ThisTab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span> <span class="NoCSS2">| </span> <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/contact.html">Contact</a></span></nav>
+  <div id="container" itemscope itemtype="http://schema.org/WebPage">
+    <meta itemprop="isFamilyFriendly" content="1" />
+    <meta itemprop="inLanguage" content="en" />
+    <nav class="Tabsbar" id="tabsbar" style="position: absolute; width: 100%">
+  
+  
+    <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/">About Us</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://consulting.gbdirect.co.uk/">Consultancy</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://development.gbdirect.co.uk/">Software</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="ThisTab">Publications</span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-source.gbdirect.co.uk/">Open&nbsp;Source</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://software-support.gbdirect.co.uk/">Support</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-standards.gbdirect.co.uk/">Open&nbsp;Standards</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://faq.gbdirect.co.uk/">FAQ</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://jobs.gbdirect.co.uk/">Jobs</a></span>
+  
+
+</nav>
+    <main id="main" >
+	  
+		<nav id="breadcrumb" itemprop="breadcrumb">
+			
+			<a href="https://publications.gbdirect.co.uk/">Publications</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/">The C&nbsp;Book</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/chapter8/">Specialized areas</a>
+			
+			 &gt; Declarations &amp; definitions
+			
+		</nav>
+		<br />
+	  
+      <h1>8.2. Declarations, Definitions and Accessibility</h1>
+      
+      
+
+
+  
+
+  <p><a href="../chapter4/">Chapter&#160;4</a> introduced the concepts of <dfn>scope</dfn> and
+   <dfn>linkage</dfn>, showing how they can be combined to control the
+   accessibility of things throughout a program. We deliberately gave
+   a vague description of exactly what constitutes a <dfn>definition</dfn>
+   on the grounds that it would give you more pain than gain at that stage.
+   Eventually it has to be spelled out in detail, which we do in this
+   chapter. Just to make things interesting, we need to throw in
+   <dfn>storage class</dfn> too.</p>
+
+  <p>You'll probably find the interactions between these various elements to
+   be both complex and confusing: that's because they are! We try to
+   eliminate some of the confusion and give some useful rules of thumb in
+   <a href="../chapter8/declarations_and_definitions.html#section-5">Section&#160;8.2.5</a> below&#8212;but to understand them, you still
+   need to read the stuff in between at least once.</p>
+
+  <p>For a full understanding, you need a good grasp of three distinct but
+   related concepts. The Standard calls them:</p>
+
+  <ul>
+   <li>duration</li>
+   <li>scope</li>
+   <li>linkage</li>
+  </ul>
+
+  <p>and describes what they mean in a fairly readable way (for a standard).
+   Scope and linkage have already been described in <a href="../chapter4/">Chapter&#160;4</a>,
+   although we do present a review of them below.</p>
+
+  <h2><a name="section-1"></a>8.2.1.&#160;Storage class specifiers</h2>
+   
+
+   <p>There are five keywords under the category of <dfn>storage class
+    specifiers</dfn>, although one of them, <code>typedef</code>, is there
+    more out of convenience than utility; it has its own section later since
+    it doesn't really belong here. The ones remaining are <code>auto</code>,
+    <code>extern</code>, <code>register</code>, and <code>static</code>.</p>
+
+   <p>Storage class specifiers help you to specify the type of storage used
+    for data objects. Only one storage class specifier is permitted in
+    a declaration&#8212;this makes sense, as there is only one way of storing
+    things&#8212;and if you omit the storage class specifier in
+    a declaration, a default is chosen. The default depends on whether the
+    declaration is made outside a function (external declarations) or inside
+    a function (internal declarations). For external declarations the
+    default storage class specifier will be <code>extern</code> and for
+    <code>internal</code> declarations it will be <code>auto</code>. The
+    only exception to this rule is the declaration of functions, whose
+    <em>default</em> storage class specifier is always
+    <code>extern</code>.</p>
+
+   <p>The positioning of a declaration, the storage class specifiers used
+    (or their defaults) and, in some cases, preceding declarations of the
+    same name, can all affect the linkage of a name, although fortunately
+    not its scope or duration. We will investigate the easier items
+    first.</p>
+
+   <h3><a name="section-1.1"></a>8.2.1.1.&#160;Duration</h3>
+    
+
+    <p>The <dfn>duration</dfn> of an object describes whether its storage is
+     allocated once only, at program start-up, or is more transient in its
+     nature, being allocated and freed as necessary.</p>
+
+    <p>There are only two types of duration of objects: <dfn>static
+     duration</dfn> and <dfn>automatic duration</dfn>. Static duration means
+     that the object has its storage allocated permanently, automatic means
+     that the storage is allocated and freed as necessary. It's easy to tell
+     which is which: you only get automatic duration if</p>
+
+    <ul>
+     <li>the declaration is inside a function</li>
+     <li><em>and</em> the declaration does not contain the
+      <code>static</code> or <code>extern</code> keywords</li>
+     <li><em>and</em> the declaration is not the declaration of a function</li>
+    </ul>
+
+    <p>(if you work through the rules, you'll find that the formal
+     parameters of a function always meet all three requirements&#8212;they
+     are always &#8216;automatic&#8217;).</p>
+
+    <p>Although the presence of <code>static</code> in a declaration
+     unambiguously ensures that it has static duration, it's interesting to
+     see that it is by no means the only way. This is a notorious source of
+     confusion, but we just have to accept it.</p>
+
+    <p>Data objects declared inside functions are given the default storage
+     class specifier of <code>auto</code> unless some other storage class
+     specifier is used. In the vast majority of cases, you don't want these
+     objects to be accessible from outside the function, so you want them to
+     have <em>no linkage</em>. Either the default, <code>auto</code>, or the
+     explicit <code>register storage</code> class specifier results in an
+     object with no linkage and <dfn>automatic duration</dfn>. Neither
+     <code>auto</code> nor <code>register</code> can be applied to
+     a declaration that occurs outside a function.</p>
+
+    <p>The <code>register</code> storage class is quite interesting,
+     although it is tending to fall into disuse nowadays. It suggests to the
+     compiler that it would be a good idea to store the object in one or
+     more hardware registers in the interests of speed. The compiler does
+     not have to take any notice of this, but to make things easy for it,
+     <code>register</code> variables do not have an address (the
+     <code>&amp;</code> address-of operator is forbidden) because some
+     computers don't support the idea of addressable registers. Declaring
+     too many <code>register</code> objects may slow the program down,
+     rather than speed it up, because the compiler may either have to save
+     more registers on entrance to a function, often a slow process, or
+     there won't be enough registers remaining to be used for intermediate
+     calculations. Determining when to use registers will be
+     a machine-specific choice and should only be taken when detailed
+     measurements show that a particular function needs to be speeded up.
+     Then you will have to experiment. In our opinion, you should never
+     declare register variables during program development. Get the program
+     working first, then measure it, then, maybe, judicious use of registers
+     will give a useful increase in performance. But that work will have to
+     be repeated for every type of processor you move the program to; even
+     within one family of processors the characteristics are often
+     different.</p>
+
+    <p>A final note on <code>register</code> variables: this is the only
+     storage class specifier that may be used in a function prototype or
+     function definition. In a function prototype, the storage class
+     specifier is simply ignored, in a function definition it is a hint that
+     the actual parameter should be stored in a register if possible. This
+     example shows how it might be used:</p>
+
+<div class="inset-example"><a name="example-1"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+void func(register int arg1, double arg2);
+
+main(){
+      func(5, 2);
+      exit(EXIT_SUCCESS);
+}
+
+/*
+* Function illustrating that formal parameters
+* may be declared to have register storage class.
+*/
+void func(register int arg1, double arg2){
+
+      /*
+       * Illustrative only - nobody would do this
+       * in this context.
+       * Cannot take address of arg1, even if you want to
+       */
+      double *fp = &amp;arg2;
+
+      while(arg1){
+              printf(&quot;res = %f\n&quot;, arg1 * (*fp));
+              arg1--;
+      }
+}</pre><cite>Example&#160;8.1</cite></div>
+
+    <p>So, the duration of an object depends on the storage class specifier
+     used, whether it's a data object or function, and the position (block
+     or file scope) of the declaration concerned. The linkage is also
+     dependent on the storage class specifier, what kind of object it is and
+     the scope of the declaration. Table&#160;8.1 and Table&#160;8.2 show the resulting storage duration and apparent linkage
+     for the various combinations of storage class specifiers and location
+     of the declaration. The actual linkage of objects with static duration
+     is a bit more complicated, so use these tables only as a guide to the
+     simple cases and take a look at what we say later about
+     definitions.</p>
+
+    <div class="inset-table"><a name="table-1"></a><table><thead><tr class="cbook-table-heading">
+      <th>Storage Class Specifier</th>
+      <th>Function or Data Object</th>
+      <th>Linkage</th>
+      <th>Duration</th>
+     </tr></thead><tbody><tr class="cbook-table-first-row">
+      <td><code>static</code></td>
+      <td>either</td>
+      <td>internal</td>
+      <td>static</td>
+     </tr><tr class="cbook-table-row">
+      <td><code>extern</code></td>
+      <td>either</td>
+      <td>probably external</td>
+      <td>static</td>
+     </tr><tr class="cbook-table-row">
+      <td>none</td>
+      <td>function</td>
+      <td>probably external</td>
+      <td>static</td>
+     </tr><tr class="cbook-table-last-row">
+      <td>none</td>
+      <td>data object</td>
+      <td>external</td>
+      <td>static</td>
+     </tr></tbody></table><cite>Table&#160;8.1.&#160;External declarations (outside a function)</cite></div>
+
+    <p>The table above omits the <code>register</code> and <code>auto</code>
+     storage class specifiers because they are not permitted in file-scope
+     (external) declarations.</p>
+
+    <div class="inset-table"><a name="table-2"></a><table><thead><tr class="cbook-table-heading">
+      <th>Storage Class Specifier</th>
+      <th>Function or Data Object</th>
+      <th>Linkage</th>
+      <th>Duration</th>
+     </tr></thead><tbody><tr class="cbook-table-first-row">
+      <td><code>register</code></td>
+      <td>data object only</td>
+      <td>none</td>
+      <td>automatic</td>
+     </tr><tr class="cbook-table-row">
+      <td><code>auto</code></td>
+      <td>data object only</td>
+      <td>none</td>
+      <td>automatic</td>
+     </tr><tr class="cbook-table-row">
+      <td><code>static</code></td>
+      <td>data object only</td>
+      <td>none</td>
+      <td>static</td>
+     </tr><tr class="cbook-table-row">
+      <td><code>extern</code></td>
+      <td>either</td>
+      <td>probably external</td>
+      <td>static</td>
+     </tr><tr class="cbook-table-row">
+      <td>none</td>
+      <td>data object</td>
+      <td>none</td>
+      <td>automatic</td>
+     </tr><tr class="cbook-table-last-row">
+      <td>none</td>
+      <td>function</td>
+      <td>probably external</td>
+      <td>static</td>
+     </tr></tbody></table><cite>Table&#160;8.2.&#160;Internal declarations</cite></div>
+
+    <p>Internal <code>static</code> variables retain their values between
+     calls of the function that contains them, which is useful in certain
+     circumstances (see <a href="../chapter4/">Chapter&#160;4</a>).</p>
+
+   
+
+  
+
+  <h2><a name="section-2"></a>8.2.2.&#160;Scope</h2>
+   
+
+   <p>Now we must look again at the <dfn>scope</dfn> of the names of
+    objects, which defines when and where a given name has a particular
+    meaning. The different types of scope are the following:</p>
+
+   <ul>
+    <li>function scope</li>
+    <li>file scope</li>
+    <li>block scope</li>
+    <li>function prototype scope</li>
+   </ul>
+
+   <p>The easiest is <dfn>function scope</dfn>. This only applies to labels,
+    whose names are visible throughout the function where they are declared,
+    irrespective of the block structure. No two labels in the same function
+    may have the same name, but because the name only has function scope,
+    the same name can be used for labels in every function. Labels are
+    <em>not</em> objects&#8212;they have no storage associated with them and
+    the concepts of linkage and duration have no meaning for them.</p>
+
+   <p>Any name declared outside a function has <dfn>file scope</dfn>, which
+    means that the name is usable at any point from the declaration on to
+    the end of the source code file containing the declaration. Of course it
+    is possible for these names to be temporarily hidden by declarations
+    within compound statements. As we know, function definitions
+    <em>must</em> be outside other functions, so the name introduced by any
+    function definition will always have file scope.</p>
+
+   <p>A name declared inside a compound statement, or as a formal parameter
+    to a function, has <dfn>block scope</dfn> and is usable up to the end of
+    the associated <code>}</code> which closes the compound statement. Any
+    declaration of a name within a compound statement hides any outer
+    declaration of the same name until the end of the compound
+    statement.</p>
+
+   <p>A special and rather trivial example of scope is <dfn>function
+    prototype scope</dfn> where a declaration of a name extends only to the
+    end of the function prototype. That means simply that this is wrong
+    (same name used twice):</p>
+
+<pre>
+void func(int i, int i);</pre>
+
+   <p>and this is all right:</p>
+
+<pre>
+void func(int i, int j);</pre>
+
+   <p>The names declared inside the parentheses disappear outside them.</p>
+
+   <p>The scope of a name is completely independent of any storage class
+    specifier that may be used in its declaration.</p>
+
+  
+
+  <h2><a name="section-3"></a>8.2.3.&#160;Linkage</h2>
+   
+
+   <p>We will briefly review the subject of <dfn>linkage</dfn> here, too.
+    <dfn>Linkage</dfn> is used to determine what makes the same name
+    declared in different scopes refer to the same thing. An object only
+    ever has one name, but in many cases we would like to be able to refer
+    to the same object from different scopes. A typical example is the wish
+    to be able to call <code>printf</code> from several different places in
+    a program, even if those places are not all in the same source file.</p>
+
+   <p>The Standard warns that declarations which refer to the same thing
+    must all have compatible type, or the behaviour of the program will be
+    undefined. A full description of compatible type is given later; for the
+    moment you can take it to mean that, except for the use of the storage
+    class specifier, the declarations must be identical. It's the
+    responsibility of the programmer to get this right, though there will
+    probably be tools available to help you check this out.</p>
+
+   <p>The three different types of linkage are:</p>
+
+   <ul>
+    <li>external linkage</li>
+    <li>internal linkage</li>
+    <li>no linkage</li>
+   </ul>
+
+   <p>In an entire program, built up perhaps from a number of source files
+    and libraries, if a name has <dfn>external linkage</dfn>, then every
+    instance of a that name refers to the same object throughout the
+    program.</p>
+
+   <p>For something which has <dfn>internal linkage</dfn>, it is only within
+    a given source code file that instances of the same name will refer to
+    the same thing.</p>
+
+   <p>Finally, names with <dfn>no linkage</dfn> refer to separate
+    things.</p>
+
+  
+
+  <h2><a name="section-4"></a>8.2.4.&#160;Linkage and definitions</h2>
+   
+
+   <p>Every data object or function that is actually used in a program
+    (except as the operand of a <code>sizeof</code> operator) <em>must have
+    one and only one</em> corresponding <dfn>definition</dfn>. This is
+    actually very important, although we haven't really come across it yet
+    because most of our examples have used only data objects with automatic
+    duration, whose declarations are axiomatically definitions, or functions
+    which we have defined by providing their bodies.</p>
+
+   <p>This &#8216;exactly one&#8217; rule means that for objects with external
+    linkage there must be exactly one definition in the whole program; for
+    things with internal linkage (confined to one source code file) there
+    must be exactly one definition in the file where it is declared; for
+    things with no linkage, whose declaration is always a definition, there
+    is exactly one definition as well.</p>
+
+   <p>Now we try to draw everything together. The real questions are</p>
+
+   <ol>
+    <li>How do I get the sort of linkage that I want?</li>
+    <li>What actually constitutes a definition?</li>
+   </ol>
+
+   <p>We need to look into linkage first, then definitions.</p>
+
+   <p>How do you get the appropriate linkage for a particular name? The
+    rules are a little complicated.</p>
+
+   <ol>
+    <li>A declaration outside a function (file scope) which contains the
+     static storage class specifier results in <dfn>internal linkage</dfn>
+     for that name. (The Standard requires that function declarations which
+     contain <code>static</code> <em>must</em> be at file scope, outside any
+     block)</li>
+
+    <li>If a declaration contains the <code>extern</code> storage class
+     specifier, or is the declaration of a function with no storage class
+     specifier (or both), then:
+
+     <ul>
+      <li>If there is already a visible declaration of that identifier
+       with file scope, the resulting linkage is the same as that of
+       the visible declaration;</li>
+
+      <li>otherwise the result is <dfn>external linkage</dfn>.</li>
+     </ul>
+    </li>
+
+    <li>If a file scope declaration is neither the declaration of a
+     function nor contains an explicit storage class specifier, then the
+     result is <dfn>external linkage</dfn>.</li>
+
+    <li>Any other form of declaration results in <dfn>no linkage</dfn>.</li>
+
+    <li>In any one source code file, if a given identifer has both internal
+     and external linkage then the result is undefined.</li>
+   </ol>
+
+   <p>These rules were used to derive the &#8216;linkage&#8217; columns of
+    Table&#160;8.1 and Table&#160;8.2, without the full
+    application of rule 2&#8212;hence the use of the &#8216;probably
+    external&#8217; term. Rule 2 allows you to determine the precise linkage in
+    those cases.</p>
+
+   <p>What makes a declaration into a definition?</p>
+
+   <ul>
+    <li>Declarations that result in no linkage are also definitions.</li>
+
+    <li>Declarations that include an initializer are always definitions;
+     this includes the &#8216;initialization&#8217; of functions by providing their
+     body. Declarations with block scope may only have initializers if
+     they also have no linkage.</li>
+
+    <li>Otherwise, the declaration of a name with file scope and with
+     either no storage class specifier or with the <code>static</code>
+     storage class specifier is a <dfn>tentative definition</dfn>. If
+     a source code file contains one or more tentative definitions for
+     an object, then if that file contains no actual definitions, a
+     default definition is provided for that object as if it had an
+     initializer of&#160;<code>0</code>. (Structures and arrays have
+     all their elements initialized to&#160;<code>0</code>). Functions
+     do not have tentative definitions.</li>
+   </ul>
+
+   <p>A consequence of the foregoing is that unless you also provide an
+    initializer, declarations that explicitly include the extern storage
+    class specifier do <em>not</em> result in a definition.</p>
+
+  
+
+  <h2><a name="section-5"></a>8.2.5.&#160;Realistic use of linkage and definitions</h2>
+   
+
+   <p>The rules that determine the linkage and definition associated with
+    declarations look quite complicated. The combinations used in practice
+    are nothing like as bad; so let's investigate the usual cases.</p>
+
+   <p>The three types of accessibility that you will want of data objects or
+    functions are:</p>
+
+   <ul>
+    <li>throughout the entire program,</li>
+
+    <li>restricted to one source file,</li>
+
+    <li>restricted to one function (or perhaps a single compound
+     statement).</li>
+   </ul>
+
+   <p>For the three cases above, you will want external linkage, internal
+    linkage, and no linkage respectively. The recommended practice for the
+    first two cases is to declare all of the names in each of the relevant
+    source files <em>before</em> you define any functions. The recommended
+    layout of a source file would be as shown in Figure&#160;8.1.</p>
+
+   <div class="inset-figure"><a name="figure-1"><img width="292" alt="Diagram showing the typical layout of a C source file, starting            with external linkage declarations, which are followed by internal            linkage declarations, and then functions at the end." src="../figures/8.1.png" height="152" /></a><br /><cite>Figure&#160;8.1.&#160;Layout of a source file</cite></div>
+
+   <p>The external linkage declarations would be prefixed with extern, the
+    internal linkage declarations with <code>static</code>. Here's an
+    example.</p>
+
+<div class="inset-example"><a name="example-2"></a><pre>
+/* example of a single source file layout */
+#include &lt;stdio.h&gt;
+
+/* Things with external linkage:
+* accessible throughout program.
+* These are declarations, not definitions, so
+* we assume their definition is somewhere else.
+*/
+
+extern int important_variable;
+extern int library_func(double, int);
+
+/*
+* Definitions with external linkage.
+*/
+extern int ext_int_def = 0;     /* explicit definition */
+int tent_ext_int_def;           /* tentative definition */
+
+/*
+* Things with internal linkage:
+* only accessible inside this file.
+* The use of static means that they are also
+* tentative definitions.
+*/
+
+static int less_important_variable;
+static struct{
+        int member_1;
+        int member_2;
+}local_struct;
+
+/*
+* Also with internal linkage, but not a tentative
+* definition because this is a function.
+*/
+static void lf(void);
+
+/*
+* Definition with internal linkage.
+*/
+static float int_link_f_def = 5.3;
+
+/*
+* Finally definitions of functions within this file
+*/
+
+/*
+* This function has external linkage and can be called
+* from anywhere in the program.
+*/
+void f1(int a){}
+
+/*
+* These two functions can only be invoked by name from
+* within this file.
+*/
+static int local_function(int a1, int a2){
+        return(a1 * a2);
+}
+
+static void lf(void){
+        /*
+         * A static variable with no linkage,
+         * so usable only within this function.
+         * Also a definition (because of no linkage)
+         */
+        static int count;
+        /*
+         * Automatic variable with no linkage but
+         * an initializer
+         */
+        int i = 1;
+
+        printf(&quot;lf called for time no %d\n&quot;, ++count);
+}
+/*
+* Actual definitions are implicitly provided for
+* all remaining tentative definitions at the end of
+* the file
+*/</pre><cite>Example&#160;8.2</cite></div>
+
+   <p>We suggest that your re-read the preceding sections to see how the
+    rules have been applied in Example&#160;8.2.</p>
+
+  
+
+ <div class="cbook_next_prev"><p><a href="health_warning.html">Previous section</a> | <a href="../chapter8/">Chapter contents</a> | <a href="typedef.html">Next section</a></p></div>
+
+    </main>
+    <nav id="menu" class="Left">
+      
+ 
+  
+  <div class="nav">
+
+	
+	
+			
+			  <div class="nav0">
+				
+				  <a href="/">Publications</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav1">
+				
+				  <a href="/c_book/">The C&nbsp;Book</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/preface/">Preface</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter1/">Introduction</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter2/">Variables &amp; arithmetic</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter3/">Control flow</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter4/">Functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter5/">Arrays &amp; pointers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter6/">Structures</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter7/">Preprocessor</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter8/">Specialized areas</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter8/health_warning.html">Health warning</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <strong>Declarations &amp; definitions</strong>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter8/typedef.html">Typedef</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter8/const_and_volatile.html">Const &amp; volatile</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter8/sequence_points.html">Sequence points</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter8/summary.html">Summary</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter9/">Libraries</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter10/">Complete Programs</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/answers/">Answers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/copyright.html">Copyright</a>
+				
+				
+			</div>
+			
+	
+
+</div>
+
+ 
+
+      <div class="ColBtm">
+        <hr />
+<div class="h1"><a href="https://ebusiness.gbdirect.co.uk/contact.html">Contact Us</a></div>
+
+      </div>
+
+    </nav>
+    <aside id="sidebar" class="Right">
+      
+ <div class="box">
+  
+  
+<img src="https://global.gbdirect.co.uk/Themes/printer-friendly-12x12.png" alt="" title="Printer-friendly version of this page" />
+<a href="?format=pf" rel="nofollow">
+  Printer-friendly version
+</a>
+
+ </div>
+
+ <div class="box">
+  <h3>The C Book</h3>
+  
+<p>This book is published as a matter of historical interest.
+ Please read the
+ <a href="/c_book/copyright.html">copyright and disclaimer information</a>.</p>
+
+<p>GBdirect Ltd provides up-to-date training and consultancy in
+ <a href="http://training.gbdirect.co.uk/courses/c/">C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c/real_time_linux_embedded_c_training.html">Embedded C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c++/">C++</a>
+ and a wide range of
+ <a href="http://training.gbdirect.co.uk/courses/">other subjects based on
+ open standards</a> if you happen to be interested.</p>
+
+ </div>
+
+
+    </aside>
+  </div>
+  
+<script type="text/javascript">
+        var maxheight = 0;
+        var a =  Array('main', 'menu', 'sidebar');
+        for(index in a){
+                var name = a[index];
+                // alert(name);
+                var id = document.getElementById(name);
+                if(id){
+                        if(id.offsetHeight > maxheight){
+                                maxheight = id.offsetHeight;
+                        }
+                }
+        }
+        var tabbar = document.getElementById('tabsbar');
+        if(tabbar){
+                if(tabbar.style) tabbar=tabbar.style;
+                tabbar.left = 0+'px';
+                tabbar.top = maxheight+'px';
+        }
+        
+</script>
+</body>
+</html>

@@ -24,11 +24,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Every bundled page's Markdown (converted from https://cc65.github.io/doc/'s HTML) plus its
-         catalog metadata and a full-text search index, built once by tools/Cc65DocsDbBuilder from
-         SourceHtml/*.html there - see that project for the actual HTML-to-Markdown conversion and
-         its own doc comments for why cross-references resolve to Markdown heading-slug anchors
-         rather than cc65's original anchor names. A loose file copied next to the built exe (SQLite
+    <!-- Every bundled page's Markdown - the cc65 manual (converted from https://cc65.github.io/doc/)
+         and The C Book (converted from https://publications.gbdirect.co.uk/c_book/, bundled under
+         its own free-redistribution license) - plus catalog metadata and a full-text search index,
+         built once by tools/Cc65DocsDbBuilder from SourceHtml/*.html and SourceHtml/CBook/*.html
+         there - see that project for the actual HTML-to-Markdown conversion and its own doc
+         comments for why cross-references resolve to Markdown heading-slug anchors rather than
+         each site's own original anchor names. A loose file copied next to the built exe (SQLite
          needs a real file path to open), not an embedded resource - re-run the builder tool and
          rebuild to pick up any change to it. CopyToOutputDirectory alone lands it next to the DLL
          under bin/ for a normal build, but the standalone-exe publish task (PublishSingleFile)

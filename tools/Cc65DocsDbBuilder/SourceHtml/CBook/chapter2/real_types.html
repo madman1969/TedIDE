@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1">
+<title>The C Book &#8212; Real types</title>
+<meta property="og:title" content="The C Book &amp;#8212; Real types" />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://global.gbdirect.co.uk/Themes/logo-og.png" />
+
+<link rel="SHORTCUT ICON" href="https://global.gbdirect.co.uk/favicon.ico" />
+<link rel="stylesheet" type="text/css" href="https://global.gbdirect.co.uk/Themes/Quarters.css" />
+
+<link rel="prev" href="/c_book/chapter2/variable_declaration.html" />
+<link rel="next" href="/c_book/chapter2/integral_types.html" />
+<link rel="contents" href="/c_book/chapter2/" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<!-- order 7-->
+<!-- lastmod 2016-10-11T17:30:01Z-->
+
+
+<link rel="canonical" href="https://publications.gbdirect.co.uk/c_book/chapter2/real_types.html"/><meta property="og:url" content="https://publications.gbdirect.co.uk/c_book/chapter2/real_types.html" />
+<script type="text/javascript"> var _gaq = _gaq || []; _gaq.push(['_setAccount', 'UA-3566842-1']); _gaq.push(['_setDomainName', '.gbdirect.co.uk']); _gaq.push(['_trackPageview']); (function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = 'https://www.google-analytics.com/ga.js'; var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s); })(); </script>
+</head>
+
+<body>
+  <header class="Banner">
+    <span id="Logo">
+      <a href="https://ebusiness.gbdirect.co.uk">
+        <img src="https://global.gbdirect.co.uk/Themes/gbdirect.gif"
+             alt="GBdirect Homepage"
+             title="GBdirect Homepage" /></a>
+    </span>
+<!-- Original homebrew search
+    <form action="https://global.gbdirect.co.uk/search.cgi"
+          method="get" id="Search">
+      <label for="search_textbox">Search</label>
+      <input type="text" name="query" size="12" id="search_textbox" value="" />
+      <input type="submit" name="Submit" value="Go" />
+    </form>
+-->
+<!-- Google search -->
+    <form class="Search" action="https://www.google.com/cse" id="cse-search-box">
+      <input type="hidden" name="cx" value="010270212093732037646:4pvgkishmkg" />
+      <input type="hidden" name="ie" value="UTF-8" />
+      <label for="search_textbox">Search</label>
+      <input type="text" name="q" id="search_textbox" size="12" />
+      <input type="submit" name="sa" value="Go" />
+    </form>
+    <script type="text/javascript" src="https://www.google.com/cse/brand?form=cse-search-box&amp;lang=en&amp;sitesearch=true"></script>
+<!-- End Google search -->
+  </header>
+  <nav class="Tabsbar"><span class="ThisTab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span> <span class="NoCSS2">| </span> <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/contact.html">Contact</a></span></nav>
+  <div id="container" itemscope itemtype="http://schema.org/WebPage">
+    <meta itemprop="isFamilyFriendly" content="1" />
+    <meta itemprop="inLanguage" content="en" />
+    <nav class="Tabsbar" id="tabsbar" style="position: absolute; width: 100%">
+  
+  
+    <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/">About Us</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://consulting.gbdirect.co.uk/">Consultancy</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://development.gbdirect.co.uk/">Software</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="ThisTab">Publications</span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-source.gbdirect.co.uk/">Open&nbsp;Source</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://software-support.gbdirect.co.uk/">Support</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-standards.gbdirect.co.uk/">Open&nbsp;Standards</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://faq.gbdirect.co.uk/">FAQ</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://jobs.gbdirect.co.uk/">Jobs</a></span>
+  
+
+</nav>
+    <main id="main" >
+	  
+		<nav id="breadcrumb" itemprop="breadcrumb">
+			
+			<a href="https://publications.gbdirect.co.uk/">Publications</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/">The C&nbsp;Book</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/chapter2/">Variables &amp; arithmetic</a>
+			
+			 &gt; Reals
+			
+		</nav>
+		<br />
+	  
+      <h1>2.6. Real types</h1>
+      
+      
+
+
+  
+
+  <p>It's easier to deal with the real types first because there's less to say
+   about them and they don't get as complicated as the integer types. The
+   Standard breaks new ground by laying down some basic guarantees on the
+   precision and range of the real numbers; these are found in the header file
+   <dfn>float.h</dfn> which is discussed in detail in <a href="../chapter9/">Chapter&#160;9</a>.
+   For some users this is extremely important information, but it is of a
+   highly technical nature and is likely only to be fully understood by
+   numerical analysts.</p>
+
+  <p>The varieties of real numbers are these:</p>
+
+  <pre>
+float
+double
+long double</pre>
+
+  <p>Each of the types gives access to a particular way of representing real
+   numbers in the target computer. If it only has one way of doing things,
+   they might all turn out to be the same; if it has more than three, then C
+   has no way of specifying the extra ones. The type <code>float</code> is
+   intended to be the small, fast representation corresponding to what FORTRAN
+   would call <code>REAL</code>. You would use <code>double</code> for extra
+   precision, and <code>long double</code> for even more.</p>
+
+  <p>The main points of interest are that in the increasing &#8216;lengths&#8217; of
+   <code>float</code>, <code>double</code> and <code>long double</code>, each
+   type must give at least the same range and precision as the previous type.
+   For example, taking the value in a <code>double</code> and putting it into
+   a <code>long double</code> must result in the same value.</p>
+
+  <p>There is no requirement for the three types of &#8216;real&#8217; variables to
+   differ in their properties, so if a machine only has one type of real
+   arithmetic, all of C's three types could be implemented in the same way.
+   None the less, the three types would be considered to be different from the
+   point of view of type checking; it would be &#8216;as if&#8217; they really were
+   different. That helps when you move the program to a system where the three
+   types really are different&#8212;there won't suddenly be a set of
+   warnings coming out of your compiler about type mismatches that you didn't
+   get on the first system.</p>
+
+  <p>In contrast to more &#8216;strongly typed&#8217; languages, C&#160;permits
+   expressions to mix all of the scalar types: the various flavours of
+   integers, the real numbers and also the pointer types. When an expression
+   contains a mixture of arithmetic (integer and real) types there are
+   implicit conversions invoked which can be used to work out what the overall
+   type of the result will be. These rules are quite important and are known
+   as the <dfn>usual arithmetic conversions</dfn>; it will be worth committing
+   them to memory later. The full set of rules is described in <a href="../chapter2/expressions_and_arithmetic.html">Section&#160;2.8</a>; for the moment, we will investigate only the ones that involve
+   mixing <code>float</code>, <code>double</code> and <code>long double</code>
+   to see if they make sense.</p>
+
+  <p>The only time that the conversions are needed is when two different types
+   are mixed in an expression, as in the example below:</p>
+
+  <div class="inset-example"><a name="example-1"></a><pre>
+int f(void){
+        float f_var;
+        double d_var;
+        long double l_d_var;
+
+        f_var = 1; d_var = 1; l_d_var = 1;
+        d_var = d_var + f_var;
+        l_d_var = d_var + f_var;
+        return(l_d_var);
+}</pre><cite>Example&#160;2.1</cite></div>
+
+  <p>There are a lot of forced conversions in that example. Getting the
+   easiest of them out of the way first, let's look at the assignments of the
+   constant value&#160;<code>1</code> to each of the variables. As the section
+   on constants will point out, that <code>1</code> has type <code>int</code>,
+   i.e. it is an integer, not a real constant. The assignment converts the
+   integer value to the appropriate real type, which is easy to cope with.</p>
+
+  <p>The interesting conversions come next. The first of them is on the
+   line</p>
+
+  <pre>
+d_var = d_var + f_var;</pre>
+
+  <p>What is the type of the expression involving the <code>+</code> operator?
+   The answer is easy when you know the rules. Whenever two different real
+   types are involved in an expression, the lower precision type is first
+   implicitly converted to the higher precision type and then the arithmetic
+   is performed at that precision. The example involves both a
+   <code>double</code> and a <code>float</code>, so the value of
+   <code>f_var</code> is converted to type <code>double</code> and is then
+   added to the value of the double <code>d_var</code>. The result of the
+   expression is naturally of type <code>double</code> too, so it is clearly
+   of the correct type to assign to <code>d_var</code>.</p>
+
+  <p>The second of the additions is a little bit more complicated, but still
+   perfectly O.K. Again, the value of <code>f_var</code> is converted and the
+   arithmetic performed with the precision of <code>double</code>, forming the
+   sum of the two variables. Now there's a problem. The result (the sum) is
+   <code>double</code>, but the assignment is to a <code>long double</code>.
+   Once again the obvious procedure is to convert the lower precision value to
+   the higher one, which is done, and then make the assignment.</p>
+
+  <p>So we've taken the easy ones. The difficult thing to see is what to do
+   when forced to assign a higher precision result to a lower precision
+   destination. In those cases it may be necessary to lose precision, in a way
+   specified by the implementation. Basically, the implementation must specify
+   whether and in what way it rounds or truncates. Even worse, the destination
+   may be unable to hold the value at all. The Standard says that in these
+   cases loss of precision may occur; if the destination is unable to hold the
+   necessary value&#8212;say by attempting to add the largest representable
+   number to itself&#8212;then the behaviour is undefined, your program is
+   faulty and you can make no predictions whatsoever about any subsequent
+   behaviour.</p>
+
+  <p>It is no mistake to re-emphasize that last statement. What the Standard
+   means by <dfn>undefined behaviour</dfn> is exactly what it says. Once a
+   program's behaviour has entered the undefined region, absolutely anything
+   can happen. The program might be stopped by the operating system with an
+   appropriate message, or just as likely nothing observable would happen and
+   the program be allowed to continue with an erroneous value stored in the
+   variable in question. It is your responsibility to prevent your program
+   from exhibiting undefined behaviour. Beware!</p>
+
+  <h2><a name="section-1"></a>Summary of real arithmatic</h2>
+
+   <ul>
+    <li>Arithmetic with any two real types is done at the highest precision of
+     the members involved.</li>
+    <li>Assignment involves loss of precision if the receiving type has a lower
+     precision than the value being assigned to it.</li>
+    <li>Further conversions are often implied when expressions mix other types,
+     but they have not been described yet.</li>
+   </ul>
+
+  
+
+  <h2><a name="section-1"></a>2.6.1.&#160;Printing real numbers</h2>
+   
+
+   <p>The usual output function, <code>printf</code>, can be used to format
+    real numbers and print them. There are a number of ways to format these
+    numbers, but we'll stick to just one for now. Table&#160;2.4 below
+    shows the appropriate format description for each of the real types.</p>
+
+   <div class="inset-table"><a name="table-4"></a><table><thead><tr class="cbook-table-heading">
+     <th>Type</th>
+     <th>Format</th>
+    </tr></thead><tbody><tr class="cbook-table-first-row">
+     <td><code>float</code></td>
+     <td><code>%f</code></td>
+    </tr><tr class="cbook-table-row">
+     <td><code>double</code></td>
+     <td><code>%f</code></td>
+    </tr><tr class="cbook-table-last-row">
+     <td><code>long double</code></td>
+     <td><code>%Lf</code></td>
+    </tr></tbody></table><cite>Table&#160;2.4.&#160;Format codes for real numbers</cite></div>
+
+   <p>Here's an example to try:</p>
+
+   <div class="inset-example"><a name="example-2"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+#define BOILING 212     /* degrees Fahrenheit */
+
+main(){
+      float f_var; double d_var; long double l_d_var;
+      int i;
+
+      i = 0;
+      printf(&quot;Fahrenheit to Centigrade\n&quot;);
+      while(i &lt;= BOILING){
+              l_d_var = 5*(i-32);
+              l_d_var = l_d_var/9;
+              d_var = l_d_var;
+              f_var = l_d_var;
+              printf(&quot;%d %f %f %Lf\n&quot;, i,
+                      f_var, d_var, l_d_var);
+              i = i+1;
+      }
+      exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;2.2</cite></div>
+
+   <p>Try that example on your own computer to see what results you get.</p>
+
+  
+
+  <div class="cbook-exercises">
+
+   <p><strong class="exercise">Exercise<a name="exercise-10">&#160;</a>2.10.</strong>&#160;Which type of variable can hold the largest range of
+    values?</p>
+
+   <p><strong class="exercise">Exercise<a name="exercise-11">&#160;</a>2.11.</strong>&#160;Which type of variable can store values to the
+    greatest precision?</p>
+
+   <p><strong class="exercise">Exercise<a name="exercise-12">&#160;</a>2.12.</strong>&#160;Are there any problems possible when assigning a
+    <code>float</code> or <code>double</code> to a <code>double</code> or
+    <code>long double</code>?</p>
+
+   <p><strong class="exercise">Exercise<a name="exercise-13">&#160;</a>2.13.</strong>&#160;What could go wrong when assigning, say, a <code>long
+    double</code> to a <code>double</code>?</p>
+
+   <p><strong class="exercise">Exercise<a name="exercise-14">&#160;</a>2.14.</strong>&#160;What predictions can you make about a program showing
+    &#8216;undefined behaviour&#8217;?</p>
+
+  </div>
+
+ <div class="cbook_next_prev"><p><a href="variable_declaration.html">Previous section</a> | <a href="../chapter2/">Chapter contents</a> | <a href="integral_types.html">Next section</a></p></div>
+
+    </main>
+    <nav id="menu" class="Left">
+      
+ 
+  
+  <div class="nav">
+
+	
+	
+			
+			  <div class="nav0">
+				
+				  <a href="/">Publications</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav1">
+				
+				  <a href="/c_book/">The C&nbsp;Book</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/preface/">Preface</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter1/">Introduction</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter2/">Variables &amp; arithmetic</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/fundamentals.html">Fundamentals</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/alphabet_of_c.html">The C&#160;alphabet</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/textual_program_structure.html">Textual program structure</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/keywords_and_identifiers.html">Keywords &amp; identifiers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/variable_declaration.html">Declaring variables</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <strong>Reals</strong>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/integral_types.html">Integers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/expressions_and_arithmetic.html">Expressions &amp; arithmetic</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/constants.html">Constants</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/summary.html">Summary</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/exercises.html">Exercises</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter3/">Control flow</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter4/">Functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter5/">Arrays &amp; pointers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter6/">Structures</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter7/">Preprocessor</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter8/">Specialized areas</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter9/">Libraries</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter10/">Complete Programs</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/answers/">Answers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/copyright.html">Copyright</a>
+				
+				
+			</div>
+			
+	
+
+</div>
+
+ 
+
+      <div class="ColBtm">
+        <hr />
+<div class="h1"><a href="https://ebusiness.gbdirect.co.uk/contact.html">Contact Us</a></div>
+
+      </div>
+
+    </nav>
+    <aside id="sidebar" class="Right">
+      
+ <div class="box">
+  
+  
+<img src="https://global.gbdirect.co.uk/Themes/printer-friendly-12x12.png" alt="" title="Printer-friendly version of this page" />
+<a href="?format=pf" rel="nofollow">
+  Printer-friendly version
+</a>
+
+ </div>
+
+ <div class="box">
+  <h3>The C Book</h3>
+  
+<p>This book is published as a matter of historical interest.
+ Please read the
+ <a href="/c_book/copyright.html">copyright and disclaimer information</a>.</p>
+
+<p>GBdirect Ltd provides up-to-date training and consultancy in
+ <a href="http://training.gbdirect.co.uk/courses/c/">C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c/real_time_linux_embedded_c_training.html">Embedded C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c++/">C++</a>
+ and a wide range of
+ <a href="http://training.gbdirect.co.uk/courses/">other subjects based on
+ open standards</a> if you happen to be interested.</p>
+
+ </div>
+
+
+    </aside>
+  </div>
+  
+<script type="text/javascript">
+        var maxheight = 0;
+        var a =  Array('main', 'menu', 'sidebar');
+        for(index in a){
+                var name = a[index];
+                // alert(name);
+                var id = document.getElementById(name);
+                if(id){
+                        if(id.offsetHeight > maxheight){
+                                maxheight = id.offsetHeight;
+                        }
+                }
+        }
+        var tabbar = document.getElementById('tabsbar');
+        if(tabbar){
+                if(tabbar.style) tabbar=tabbar.style;
+                tabbar.left = 0+'px';
+                tabbar.top = maxheight+'px';
+        }
+        
+</script>
+</body>
+</html>

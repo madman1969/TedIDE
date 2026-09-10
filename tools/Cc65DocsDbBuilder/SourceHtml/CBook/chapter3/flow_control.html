@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1">
+<title>The C Book &#8212; Control of flow</title>
+<meta property="og:title" content="The C Book &amp;#8212; Control of flow" />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://global.gbdirect.co.uk/Themes/logo-og.png" />
+
+<link rel="SHORTCUT ICON" href="https://global.gbdirect.co.uk/favicon.ico" />
+<link rel="stylesheet" type="text/css" href="https://global.gbdirect.co.uk/Themes/Quarters.css" />
+
+<link rel="prev" href="/c_book/chapter3/task_ahead.html" />
+<link rel="next" href="/c_book/chapter3/logical_expressions.html" />
+<link rel="contents" href="/c_book/chapter3/" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<!-- order 3-->
+<!-- lastmod 2016-09-12T17:30:01Z-->
+
+
+<link rel="canonical" href="https://publications.gbdirect.co.uk/c_book/chapter3/flow_control.html"/><meta property="og:url" content="https://publications.gbdirect.co.uk/c_book/chapter3/flow_control.html" />
+<script type="text/javascript"> var _gaq = _gaq || []; _gaq.push(['_setAccount', 'UA-3566842-1']); _gaq.push(['_setDomainName', '.gbdirect.co.uk']); _gaq.push(['_trackPageview']); (function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = 'https://www.google-analytics.com/ga.js'; var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s); })(); </script>
+</head>
+
+<body>
+  <header class="Banner">
+    <span id="Logo">
+      <a href="https://ebusiness.gbdirect.co.uk">
+        <img src="https://global.gbdirect.co.uk/Themes/gbdirect.gif"
+             alt="GBdirect Homepage"
+             title="GBdirect Homepage" /></a>
+    </span>
+<!-- Original homebrew search
+    <form action="https://global.gbdirect.co.uk/search.cgi"
+          method="get" id="Search">
+      <label for="search_textbox">Search</label>
+      <input type="text" name="query" size="12" id="search_textbox" value="" />
+      <input type="submit" name="Submit" value="Go" />
+    </form>
+-->
+<!-- Google search -->
+    <form class="Search" action="https://www.google.com/cse" id="cse-search-box">
+      <input type="hidden" name="cx" value="010270212093732037646:4pvgkishmkg" />
+      <input type="hidden" name="ie" value="UTF-8" />
+      <label for="search_textbox">Search</label>
+      <input type="text" name="q" id="search_textbox" size="12" />
+      <input type="submit" name="sa" value="Go" />
+    </form>
+    <script type="text/javascript" src="https://www.google.com/cse/brand?form=cse-search-box&amp;lang=en&amp;sitesearch=true"></script>
+<!-- End Google search -->
+  </header>
+  <nav class="Tabsbar"><span class="ThisTab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span> <span class="NoCSS2">| </span> <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/contact.html">Contact</a></span></nav>
+  <div id="container" itemscope itemtype="http://schema.org/WebPage">
+    <meta itemprop="isFamilyFriendly" content="1" />
+    <meta itemprop="inLanguage" content="en" />
+    <nav class="Tabsbar" id="tabsbar" style="position: absolute; width: 100%">
+  
+  
+    <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/">About Us</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://consulting.gbdirect.co.uk/">Consultancy</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://development.gbdirect.co.uk/">Software</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="ThisTab">Publications</span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-source.gbdirect.co.uk/">Open&nbsp;Source</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://software-support.gbdirect.co.uk/">Support</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-standards.gbdirect.co.uk/">Open&nbsp;Standards</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://faq.gbdirect.co.uk/">FAQ</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://jobs.gbdirect.co.uk/">Jobs</a></span>
+  
+
+</nav>
+    <main id="main" >
+	  
+		<nav id="breadcrumb" itemprop="breadcrumb">
+			
+			<a href="https://publications.gbdirect.co.uk/">Publications</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/">The C&nbsp;Book</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/chapter3/">Control flow</a>
+			
+			 &gt; Flow control
+			
+		</nav>
+		<br />
+	  
+      <h1>3.2. Control of flow</h1>
+      
+      
+
+
+  
+
+  <h2><a name="section-1"></a>3.2.1.&#160;The if statement</h2>
+   
+
+   <p>The <code>if</code> statement has two forms:</p>
+
+   <pre>
+if(<var>expression</var>) <var>statement</var>
+
+if(<var>expression</var>) <var>statement1</var>
+else <var>statement2</var></pre>
+
+   <p>In the first form, if (and only if) the <var>expression</var> is
+    non-zero, the <var>statement</var> is executed. If the
+    <var>expression</var> is zero, the <var>statement</var> is ignored.
+    Remember that the <var>statement</var> can be compound; that is the way to
+    put several statements under the control of a single <code>if</code>.</p>
+
+   <p>The second form is like the first except that if the statement shown as
+    <var>statement1</var> is selected then <var>statement2</var> will not be,
+    and vice versa.</p>
+
+   <p>Either form is considered to be a single statement in the syntax
+    of&#160;C, so the following is completely legal.</p>
+
+   <pre>
+if(<var>expression</var>)
+    if(<var>expression</var>) <var>statement</var></pre>
+
+   <p>The first <code>if&#160;(<var>expression</var>)</code> is followed by a
+    properly formed, complete <code>if</code> statement. Since that is legally
+    a statement, the first <code>if</code> can be considered to read</p>
+
+   <pre>
+if(<var>expression</var>) <var>statement</var></pre>
+
+   <p>and is therefore itself properly formed. The argument can be extended as
+    far as you like, but it's a bad habit to get into. It is better style to
+    make the statement compound even if it isn't necessary. That makes it a
+    lot easier to add extra statements if they are needed and generally
+    improves readability.</p>
+
+   <p>The form involving <code>else</code> works the same way, so we can also
+    write this.</p>
+
+   <pre>
+if(<var>expression</var>)
+  if(<var>expression</var>)
+    <var>statement</var>
+  else
+    <var>statement</var></pre>
+
+   <p>As <a href="../chapter1/">Chapter&#160;1</a> has said already, this is now ambiguous. It is
+    not clear, except as indicated by the indentation, which of the
+    <code>if</code>s is responsible for the <code>else</code>. If we follow
+    the rules that the previous example suggests, then the second
+    <code>if</code> is followed by a statement, and is therefore itself a
+    statement, so the <code>else</code> belongs to the first
+    <code>if</code>.</p>
+
+   <p>That is <em>not</em> the way that C views it. The rule is that an
+    <code>else</code> belongs to the first if above that hasn't already got an
+    <code>else</code>. In the example we're discussing, the else goes with the
+    second if.</p>
+
+   <p>To prevent any unwanted association between an <code>else</code> and an
+    <code>if</code> just above it, the if can be hidden away by using a
+    compound statement. To repeat the example in <a href="../chapter1/">Chapter&#160;1</a>, here
+    it is.</p>
+
+   <pre>
+if(expression){
+    if(expression)
+            statement
+}else
+    statement</pre>
+
+   <p>Putting in all the compound statement brackets, it becomes this:</p>
+
+   <pre>
+if(expression){
+    if(expression){
+        statement
+    }
+}else{
+    statement
+}</pre>
+
+   <p>If you happen not to like the placing of the brackets, it is up to you
+    to put them where you think they look better; just be consistent about it.
+    You probably need to know that this a subject on which feelings run
+    deep.</p>
+
+  
+
+  <h2><a name="section-2"></a>3.2.2.&#160;The while and do statements</h2>
+   
+
+   <p>The <code>while</code> is simple:</p>
+
+   <pre>
+while(<var>expression</var>)
+    <var>statement</var></pre>
+
+   <p>The <var>statement</var> is only executed if the <var>expression</var>
+    is non-zero. After every execution of the <var>statement</var>, the
+    <var>expression</var> is evaluated again and the process repeats if it is
+    non-zero. What could be plainer than that? The only point to watch out for
+    is that the <var>statement</var> may never be executed, and that if
+    nothing in the statement affects the value of the <var>expression</var>
+    then the <code>while</code> will either do nothing or loop for ever,
+    depending on the initial value of the expression.</p>
+
+   <p>It is occasionally desirable to guarantee at least one execution of the
+    statement following the while, so an alternative form exists known as the
+    do statement. It looks like this:</p>
+
+   <pre>
+do
+    <var>statement</var>
+while(<var>expression</var>);</pre>
+
+   <p>and you should pay close attention to that semicolon&#8212;it is not
+    optional! The effect is that the statement part is executed before the
+    controlling expression is evaluated, so this guarantees at least one trip
+    around the loop. It was an unfortunate decision to use the keyword
+    <code>while</code> for both purposes, but it doesn't seem to cause too
+    many problems in practice.</p>
+
+   <p>If you feel the urge to use a <code>do</code>, think carefully. It is
+    undoubtedly essential in certain cases, but experience has shown that the
+    use of <code>do</code> statements is often associated with poorly
+    constructed code. Not every time, obviously, but as a general rule you
+    should stop and ask yourself if you have made the right choice. Their use
+    often indicates a hangover of thinking methods learnt with other
+    languages, or just sloppy design. When you <em>do</em> convince yourself
+    that nothing else will give you just what is wanted, then go ahead - be
+    daring&#8212;use it.</p>
+
+   <h3><a name="section-2.1"></a>3.2.2.1.&#160;Handy hints</h3>
+    
+
+    <p>A <em>very</em> common trick in C&#160;programs is to use the result of
+     an assignment to control <code>while</code> and <code>do</code> loops. It
+     is so commonplace that, even if you look at it the first time and blench,
+     you've got no alternative but to learn it. It falls into the category of
+     &#8216;idiomatic&#8217; C and eventually becomes second nature to anybody who
+     really uses the language. Here is the most common example of all:</p>
+
+    <div class="inset-example"><a name="example-2"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+main(){
+    int input_c;
+
+    /* The Classic Bit */
+    while( (input_c = getchar()) != EOF){
+            printf(&quot;%c was read\n&quot;, input_c);
+    }
+    exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;3.2</cite></div>
+
+    <p>The clever bit is the expression assigning to <code>input_c</code>. It
+     is assigned to, compared with <code>EOF</code> (End Of File), and used to
+     control the loop all in one go. Embedding the assignment like that is a
+     handy embellishment. Admittedly it only saves one line of code, but the
+     benefit in terms of readability (once you have got used to seeing it) is
+     quite large. Learn where the parentheses are, too. They're necessary for
+     precedence reasons&#8212;work out why!</p>
+
+    <p>Note that <code>input_c</code> is an <code>int</code>. This is because
+     <code>getchar</code> has to be able to return not only every possible
+     value of a <code>char</code>, but also an extra value, <code>EOF</code>.
+     To do that, a type longer than a <code>char</code> is necessary.</p>
+
+    <p>Both the <code>while</code> and the <code>do</code> statements are
+     themselves syntactically a single statement, just like an <code>if</code>
+     statement. They occur anywhere that any other single statement is
+     permitted. If you want them to control <em>several</em> statements, then
+     you will have to use a compound statement, as the examples of
+     <code>if</code> illustrated.</p>
+
+   
+
+  
+
+  <h2><a name="section-3"></a>3.2.3.&#160;The for statement</h2>
+   
+
+   <p>A very common feature in programs is loops that are controlled by
+    variables used as a counter. The counter doesn't always have to count
+    consecutive values, but the usual arrangement is for it to be initialized
+    outside the loop, checked every time around the loop to see when to finish
+    and updated each time around the loop. There are three important places,
+    then, where the loop control is concentrated: initialize, check and
+    update. This example shows them.</p>
+
+   <div class="inset-example"><a name="example-3"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+main(){
+      int i;
+
+      /* initialise */
+      i = 0;
+      /* check */
+      while(i &lt;= 10){
+              printf(&quot;%d\n&quot;, i);
+              /* update */
+              i++;
+      }
+      exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;3.3</cite></div>
+
+   <p>As you will have noticed, the initialization and check parts of the loop
+    are close together and their location is obvious because of the presence
+    of the <code>while</code> keyword. What is harder to spot is the place
+    where the update occurs, especially if the value of the controlling
+    variable is used within the loop. In that case, which is by far the most
+    common, the update has to be at the very end of the loop: far away from
+    the initialize and check. Readability suffers because it is hard to work
+    out how the loop is going to perform unless you read the whole body of the
+    loop carefully. What is needed is some way of bringing the initialize,
+    check and update parts into one place so that they can be read quickly and
+    conveniently. That is exactly what the for statement is designed to do.
+    Here it is.</p>
+
+   <pre>
+for (<var>initialize</var>; <var>check</var>; <var>update</var>) <var>statement</var></pre>
+
+   <p>The <var>initialize</var> part is an expression; nearly always an
+    assignment expression which is used to initialize the control variable.
+    After the initialization, the <var>check</var> expression is evaluated: if
+    it is non-zero, the statement is executed, followed by evaluation of the
+    update expression which generally increments the control variable, then
+    the sequence restarts at the check. The loop terminates as soon as the
+    check evaluates to zero.</p>
+
+   <p>There are two important things to realize about that last description:
+    one, that each of the three parts of the for statement between the
+    parentheses are just expressions; two, that the description has carefully
+    explained what they are intended to be used for without proscribing
+    alternative uses&#8212;that was done deliberately. You can use the
+    expressions to do whatever you like, but at the expense of readability if
+    they aren't used for their intended purpose.</p>
+
+   <p>Here is a program that does the same thing twice, the first time using a
+    <code>while</code> loop, the second time with a <code>for</code>. The use
+    of the increment operator is exactly the sort of use that you will see in
+    everyday practice.</p>
+
+   <div class="inset-example"><a name="example-4"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+main(){
+      int i;
+
+      i = 0;
+      while(i &lt;= 10){
+              printf(&quot;%d\n&quot;, i);
+              i++;
+      }
+
+      /* the same done using ``for'' */
+      for(i = 0; i &lt;= 10; i++){
+              printf(&quot;%d\n&quot;, i);
+      }
+      exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;3.4</cite></div>
+
+   <p>There isn't any difference betweeen the two, except that in this case
+    the <code>for</code> loop is more convenient and maintainable than the
+    <code>while</code> statement. You should always use the <code>for</code>
+    when it's appropriate; when a loop is being controlled by some sort of
+    counter. The <code>while</code> is more at home when an indeterminate
+    number of cycles of the loop are part of the problem. As always, it needs
+    a degree of judgement on behalf of the author of the program; an
+    understanding of form, style, elegance and the poetry of a well written
+    program. There is no evidence that the software business suffers from a
+    surfeit of those qualities, so feel free to exercise them if you are
+    able.</p>
+
+   <p>Any of the initialize, check and update expressions in the for statement
+    can be omitted, although the semicolons must stay. This can happen if the
+    counter is already initialized, or gets updated in the body of the loop.
+    If the check expression is omitted, it is assumed to result in a
+    &#8216;true&#8217; value and the loop never terminates. A common way of writing
+    never-ending loops is either</p>
+
+   <pre>
+for(;;)</pre>
+
+   <p>or</p>
+
+   <pre>
+while(1)</pre>
+
+   <p>and both can be seen in existing programs.</p>
+
+  
+
+  <h2><a name="section-4"></a>3.2.4.&#160;A brief pause </h2>
+   
+
+   <p>The control of flow statements that we've just seen are quite adequate
+    to write programs of any degree of complexity. They lie at the core
+    of&#160;C and even a quick reading of everyday C&#160;programs will
+    illustrate their importance, both in the provision of essential
+    functionality and in the structure that they emphasize. The remaining
+    statements are used to give programmers finer control or to make it easier
+    to deal with exceptional conditions. Only the <code>switch</code>
+    statement is enough of a heavyweight to need no justification for its use;
+    yes, it can be replaced with lots of <code>ifs</code>, but it adds a lot
+    of readability. The others, <code>break</code>, <code>continue</code> and
+    <code>goto</code>, should be treated like the spices in a delicate sauce.
+    Used carefully they can turn something commonplace into a treat, but a
+    heavy hand will drown the flavour of everything else.</p>
+
+  
+
+  <h2><a name="section-5"></a>3.2.5.&#160;The switch statement</h2>
+   
+
+   <p>This is not an essential part of&#160;C. You could do without it, but
+    the language would have become significantly less expressive and pleasant
+    to use.</p>
+
+   <p>It is used to select one of a number of alternative actions depending on
+    the value of an expression, and nearly always makes use of another of the
+    lesser statements: the <code>break</code>. It looks like this.</p>
+
+   <pre>
+switch (<var>expression</var>){
+case <var>const1</var>:    <var>statements</var>
+case <var>const2</var>:    <var>statements</var>
+default:        <var>statements</var>
+}</pre>
+
+   <p>The <var>expression</var> is evaluated and its value is compared with
+    all of the <var>const1</var> etc. expressions, which must all evaluate
+    to different constant values (strictly they are <dfn>integral constant
+    expressions</dfn>, see <a href="../chapter6/">Chapter&#160;6</a> and below). If any of them
+    has the same value as the <var>expression</var> then the statement
+    following the <code>case</code> label is selected for execution. If the
+    <code>default</code> is present, it will be selected when there is no
+    matching value found. If there is no <code>default</code> and no matching
+    value, the entire <code>switch</code> statement will do nothing and
+    execution will continue at the following statement.</p>
+
+   <p>One curious feature is that the cases are <em>not</em> exclusive, as
+    this example shows.</p>
+
+   <div class="inset-example"><a name="example-5"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+main(){
+      int i;
+      for(i = 0; i &lt;= 10; i++){
+              switch(i){
+                      case 1:
+                      case 2:
+                              printf(&quot;1 or 2\n&quot;);
+                      case 7:
+                              printf(&quot;7\n&quot;);
+                      default:
+                              printf(&quot;default\n&quot;);
+              }
+      }
+      exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;3.5</cite></div>
+
+   <p>The loop cycles with <code>i</code> having values 0&#8211;10. A value of
+    <code>1</code> or <code>2</code> will cause the printing of the message
+    <code>1</code> or <code>2</code> by selecting the first of the
+    <code>printf</code> statements. What you might not expect is the way that
+    the remaining messages would also appear! It's because the
+    <code>switch</code> only selects one entry point to the body of the
+    statement; after starting at a given point all of the following statements
+    are also executed. The <code>case</code> and <code>default</code> labels
+    simply allow you to indicate <em>which</em> of the statements is to be
+    selected. When <code>i</code> has the value of <code>7</code>, only the
+    last two messages will be printed. Any value other than <code>1</code>,
+    <code>2</code>, or <code>7</code> will find only the last message.</p>
+
+   <p>The labels can occur in any order, but no two values may be the same and
+    you are allowed either one or no <code>default</code> (which doesn't have
+    to be the last label). Several labels can be put in front of one statement
+    and several statements can be put after one label.</p>
+
+   <p>The expression controlling the <code>switch</code> can be of any of the
+    integral types. Old&#160;C used to insist on <em>only</em>
+    <code>int</code> here, and some compilers would forcibly truncate longer
+    types, giving rise on rare occasions to some very obscure bugs.</p>
+
+   <h3><a name="section-5.1"></a>3.2.5.1.&#160;The major restriction</h3>
+    
+
+    <p>The biggest problem with the <code>switch</code> statement is that it
+     doesn't allow you to select mutually exclusive courses of action; once
+     the body of the statement has been entered any subsequent statements
+     within the body will all be executed. What is needed is the
+     <code>break</code> statement. Here is the previous example, but amended
+     to make sure that the messages printed come out in a more sensible order.
+     The <code>break</code> statements cause execution to leave the
+     <code>switch</code> statement immediately and prevent any further
+     statements in the body of the <code>switch</code> from being
+     executed.</p>
+
+    <div class="inset-example"><a name="example-6"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+main(){
+      int i;
+      for(i = 0; i &lt;= 10; i++){
+              switch(i){
+                      case 1:
+                      case 2:
+                              printf(&quot;1 or 2\n&quot;);
+                              break;
+                      case 7:
+                              printf(&quot;7\n&quot;);
+                              break;
+                      default:
+                              printf(&quot;default\n&quot;);
+              }
+      }
+      exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;3.6</cite></div>
+
+    <p>The <code>break</code> has further uses. Its own section follows
+     soon.</p>
+
+   
+
+   <h3><a name="section-5.2"></a>3.2.5.2.&#160;Integral Constant Expression</h3>
+    
+
+    <p>Although <a href="../chapter6/">Chapter&#160;6</a> deals with constant expressions, it is
+     worth looking briefly at what an integral constant expression is, since
+     that is what must follow the <code>case</code> labels in a
+     <code>switch</code> statement. Loosely speaking, it is any expression
+     that does not involve any value-changing operation (like increment or
+     assignment), function calls or comma operators. The operands in the
+     expression must all be integer constants, character constants,
+     enumeration constants, <code>sizeof</code> expressions and floating-point
+     constants that are the immediate operands of casts. Any cast operators
+     must result in integral types.</p>
+
+    <p>Much what you would expect, really.</p>
+
+   
+
+  
+
+  <h2><a name="section-6"></a>3.2.6.&#160;The break statement</h2>
+   
+
+   <p>This is a simple statement. It only makes sense if it occurs in the body
+    of a <code>switch</code>, <code>do</code>, <code>while</code> or
+    <code>for</code> statement. When it is executed the control of flow jumps
+    to the statement immediately following the body of the statement
+    containing the <code>break</code>. Its use is widespread in
+    <code>switch</code> statements, where it is more or less essential to get
+    the control that most people want.</p>
+
+   <p>The use of the <code>break</code> within loops is of dubious legitimacy.
+    It has its moments, but is really only justifiable when exceptional
+    circumstances have happened and the loop has to be abandoned. It would be
+    nice if more than one loop could be abandoned with a single break but that
+    isn't how it works. Here is an example.</p>
+
+   <div class="inset-example"><a name="example-7"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+main(){
+      int i;
+
+      for(i = 0; i &lt; 10000; i++){
+              if(getchar() == 's')
+                      break;
+              printf(&quot;%d\n&quot;, i);
+      }
+      exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;3.7</cite></div>
+
+   <p>It reads a single character from the program's input before printing the
+    next in a sequence of numbers. If an &#8216;<code>s</code>&#8217; is typed, the
+    break causes an exit from the loop.</p>
+
+   <p>If you want to exit from more than one level of loop, the
+    <code>break</code> is the wrong thing to use. The <code>goto</code> is the
+    only easy way, but since it can't be mentioned in polite company, we'll
+    leave it till last.</p>
+
+  
+
+  <h2><a name="section-7"></a>3.2.7.&#160;The continue statement</h2>
+   
+
+   <p>This statement has only a limited number of uses. The rules for its use
+    are the same as for <code>break</code>, with the exception that it doesn't
+    apply to <code>switch</code> statements. Executing a <code>continue</code>
+    starts the next iteration of the smallest enclosing <code>do</code>,
+    <code>while</code> or <code>for</code> statement immediately. The use of
+    <code>continue</code> is largely restricted to the top of loops, where a
+    decision has to be made whether or not to execute the rest of the body of
+    the loop. In this example it ensures that division by zero (which gives
+    undefined behaviour) doesn't happen.</p>
+
+   <div class="inset-example"><a name="example-7"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+main(){
+      int i;
+
+      for(i = -10; i &lt; 10; i++){
+              if(i == 0)
+                      continue;
+              printf(&quot;%f\n&quot;, 15.0/i);
+              /*
+               * Lots of other statements .....
+               */
+      }
+      exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;3.7</cite></div>
+
+   <p>You could take a puritanical stance and argue that, instead of a
+    conditional <code>continue,</code>, the body of the loop should be made
+    conditional instead&#8212;but you wouldn't have many supporters. Most C
+    programmers would rather have the <code>continue</code> than the extra
+    level of indentation, particularly if the body of the loop is large.</p>
+
+   <p>Of course the <code>continue</code> can be used in other parts of a
+    loop, too, where it may occasionally help to simplify the logic of the
+    code and improve readability. It deserves to be used sparingly.</p>
+
+   <p>Do remember that <code>continue</code> has no special meaning to a
+    <code>switch</code> statement, where <code>break</code> does have. Inside
+    a <code>switch</code>, <code>continue</code> is only valid if there is a
+    loop that encloses the <code>switch</code>, in which case the next
+    iteration of the loop will be started.</p>
+
+   <p>There is an important difference between loops written with
+    <code>while</code> and <code>for</code>. In a <code>while</code>, a
+    continue will go immediately to the test of the controlling expression.
+    The same thing in a <code>for</code> will do two things: first the update
+    expression is evaluated, then the controlling expresion is evaluated.</p>
+
+  
+
+  <h2><a name="section-8"></a>3.2.8.&#160;goto and labels</h2>
+   
+
+   <p>Everybody knows that the <code>goto</code> statement is a &#8216;bad
+    thing&#8217;. Used without care it is a great way of making programs hard to
+    follow and of obscuring any structure in their flow. Dijkstra wrote a
+    famous paper in 1968 called &#8216;Goto Statement Considered Harmful&#8217;,
+    which everybody refers to and almost nobody has read.</p>
+
+   <p>What's especially annoying is that there are times when it is the most
+    appropriate thing to use in the circumstances! In&#160;C, it is used to
+    escape from multiple nested loops, or to go to an error handling exit at
+    the end of a function. You will need a <dfn>label</dfn> when you use a
+    <code>goto</code>; this example shows both.</p>
+
+   <pre>
+goto L1;
+/* whatever you like here */
+L1: /* anything else */</pre>
+
+   <p>A label is an identifier followed by a colon. Labels have their own
+    &#8216;name space&#8217; so they can't clash with the names of variables or
+    functions. The name space only exists for the function containing the
+    label, so label names can be re-used in different functions. The label can
+    be used before it is declared, too, simply by mentioning it in a
+    <code>goto</code> statement.</p>
+
+   <p>Labels <em>must</em> be part of a full statement, even if it's an empty
+    one. This usually only matters when you're trying to put a label at the
+    end of a compound statement&#8212;like this.</p>
+
+   <pre>
+label_at_end: ; /* empty statement */
+}</pre>
+
+   <p>The <code>goto</code> works in an obvious way, jumping to the labelled
+    statements. Because the name of the label is only visible inside its own
+    function, you can't jump from one function to another one.</p>
+
+   <p>It's hard to give rigid rules about the use of <code>goto</code>s but,
+    as with the <code>do</code>, <code>continue</code> and the
+    <code>break</code> (except in <code>switch</code> statements), over-use
+    should be avoided. Think carefully every time you feel like using one, and
+    convince yourself that the structure of the program demands it. More than
+    one <code>goto</code> every 3&#8211;5 functions is a symptom that should
+    be viewed with deep suspicion.</p>
+
+  
+
+  <h2><a name="section-9"></a>Summary</h2>
+
+   <p>Now we've seen all of the control of flow statements and examples of
+    their use. Some should be used whenever possible, some are not for use
+    line by line but for special purposes where their particular job is called
+    for. It is possible to write elegant and beautiful programs in C if you
+    are prepared to take the extra bit of care necessary; the specialized
+    control of flow statements give you the chance to add the extra polish
+    that some other languages lack.</p>
+
+   <p>All that remains to be done to complete the picture of flow of control
+    in C is to finish off the logical operators.</p>
+
+  
+
+ <div class="cbook_next_prev"><p><a href="task_ahead.html">Previous section</a> | <a href="../chapter3/">Chapter contents</a> | <a href="logical_expressions.html">Next section</a></p></div>
+
+    </main>
+    <nav id="menu" class="Left">
+      
+ 
+  
+  <div class="nav">
+
+	
+	
+			
+			  <div class="nav0">
+				
+				  <a href="/">Publications</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav1">
+				
+				  <a href="/c_book/">The C&nbsp;Book</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/preface/">Preface</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter1/">Introduction</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter2/">Variables &amp; arithmetic</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter3/">Control flow</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter3/task_ahead.html">The Task ahead</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <strong>Flow control</strong>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter3/logical_expressions.html">Logical expressions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter3/strange_operators.html">Strange operators</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter3/summary.html">Summary</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter3/exercises.html">Exercises</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter4/">Functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter5/">Arrays &amp; pointers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter6/">Structures</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter7/">Preprocessor</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter8/">Specialized areas</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter9/">Libraries</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter10/">Complete Programs</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/answers/">Answers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/copyright.html">Copyright</a>
+				
+				
+			</div>
+			
+	
+
+</div>
+
+ 
+
+      <div class="ColBtm">
+        <hr />
+<div class="h1"><a href="https://ebusiness.gbdirect.co.uk/contact.html">Contact Us</a></div>
+
+      </div>
+
+    </nav>
+    <aside id="sidebar" class="Right">
+      
+ <div class="box">
+  
+  
+<img src="https://global.gbdirect.co.uk/Themes/printer-friendly-12x12.png" alt="" title="Printer-friendly version of this page" />
+<a href="?format=pf" rel="nofollow">
+  Printer-friendly version
+</a>
+
+ </div>
+
+ <div class="box">
+  <h3>The C Book</h3>
+  
+<p>This book is published as a matter of historical interest.
+ Please read the
+ <a href="/c_book/copyright.html">copyright and disclaimer information</a>.</p>
+
+<p>GBdirect Ltd provides up-to-date training and consultancy in
+ <a href="http://training.gbdirect.co.uk/courses/c/">C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c/real_time_linux_embedded_c_training.html">Embedded C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c++/">C++</a>
+ and a wide range of
+ <a href="http://training.gbdirect.co.uk/courses/">other subjects based on
+ open standards</a> if you happen to be interested.</p>
+
+ </div>
+
+
+    </aside>
+  </div>
+  
+<script type="text/javascript">
+        var maxheight = 0;
+        var a =  Array('main', 'menu', 'sidebar');
+        for(index in a){
+                var name = a[index];
+                // alert(name);
+                var id = document.getElementById(name);
+                if(id){
+                        if(id.offsetHeight > maxheight){
+                                maxheight = id.offsetHeight;
+                        }
+                }
+        }
+        var tabbar = document.getElementById('tabsbar');
+        if(tabbar){
+                if(tabbar.style) tabbar=tabbar.style;
+                tabbar.left = 0+'px';
+                tabbar.top = maxheight+'px';
+        }
+        
+</script>
+</body>
+</html>

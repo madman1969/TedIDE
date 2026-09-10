@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1">
+<title>The C Book &#8212; Integral types</title>
+<meta property="og:title" content="The C Book &amp;#8212; Integral types" />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://global.gbdirect.co.uk/Themes/logo-og.png" />
+
+<link rel="SHORTCUT ICON" href="https://global.gbdirect.co.uk/favicon.ico" />
+<link rel="stylesheet" type="text/css" href="https://global.gbdirect.co.uk/Themes/Quarters.css" />
+
+<link rel="prev" href="/c_book/chapter2/real_types.html" />
+<link rel="next" href="/c_book/chapter2/expressions_and_arithmetic.html" />
+<link rel="contents" href="/c_book/chapter2/" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<!-- order 8-->
+<!-- lastmod 2005-11-10T16:42:03Z-->
+
+
+<link rel="canonical" href="https://publications.gbdirect.co.uk/c_book/chapter2/integral_types.html"/><meta property="og:url" content="https://publications.gbdirect.co.uk/c_book/chapter2/integral_types.html" />
+<script type="text/javascript"> var _gaq = _gaq || []; _gaq.push(['_setAccount', 'UA-3566842-1']); _gaq.push(['_setDomainName', '.gbdirect.co.uk']); _gaq.push(['_trackPageview']); (function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = 'https://www.google-analytics.com/ga.js'; var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s); })(); </script>
+</head>
+
+<body>
+  <header class="Banner">
+    <span id="Logo">
+      <a href="https://ebusiness.gbdirect.co.uk">
+        <img src="https://global.gbdirect.co.uk/Themes/gbdirect.gif"
+             alt="GBdirect Homepage"
+             title="GBdirect Homepage" /></a>
+    </span>
+<!-- Original homebrew search
+    <form action="https://global.gbdirect.co.uk/search.cgi"
+          method="get" id="Search">
+      <label for="search_textbox">Search</label>
+      <input type="text" name="query" size="12" id="search_textbox" value="" />
+      <input type="submit" name="Submit" value="Go" />
+    </form>
+-->
+<!-- Google search -->
+    <form class="Search" action="https://www.google.com/cse" id="cse-search-box">
+      <input type="hidden" name="cx" value="010270212093732037646:4pvgkishmkg" />
+      <input type="hidden" name="ie" value="UTF-8" />
+      <label for="search_textbox">Search</label>
+      <input type="text" name="q" id="search_textbox" size="12" />
+      <input type="submit" name="sa" value="Go" />
+    </form>
+    <script type="text/javascript" src="https://www.google.com/cse/brand?form=cse-search-box&amp;lang=en&amp;sitesearch=true"></script>
+<!-- End Google search -->
+  </header>
+  <nav class="Tabsbar"><span class="ThisTab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span> <span class="NoCSS2">| </span> <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/contact.html">Contact</a></span></nav>
+  <div id="container" itemscope itemtype="http://schema.org/WebPage">
+    <meta itemprop="isFamilyFriendly" content="1" />
+    <meta itemprop="inLanguage" content="en" />
+    <nav class="Tabsbar" id="tabsbar" style="position: absolute; width: 100%">
+  
+  
+    <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/">About Us</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://consulting.gbdirect.co.uk/">Consultancy</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://development.gbdirect.co.uk/">Software</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="ThisTab">Publications</span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-source.gbdirect.co.uk/">Open&nbsp;Source</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://software-support.gbdirect.co.uk/">Support</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-standards.gbdirect.co.uk/">Open&nbsp;Standards</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://faq.gbdirect.co.uk/">FAQ</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://jobs.gbdirect.co.uk/">Jobs</a></span>
+  
+
+</nav>
+    <main id="main" >
+	  
+		<nav id="breadcrumb" itemprop="breadcrumb">
+			
+			<a href="https://publications.gbdirect.co.uk/">Publications</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/">The C&nbsp;Book</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/chapter2/">Variables &amp; arithmetic</a>
+			
+			 &gt; Integers
+			
+		</nav>
+		<br />
+	  
+      <h1>2.7. Integral types</h1>
+      
+      
+
+
+  
+
+  <p>The real types were the easy ones. The rules for the integral types are
+   more complicated, but still tolerable, and these rules really should be
+   learnt. Fortunately, the only types used in C for routine data storage are
+   the real and integer types, or <dfn>structures</dfn> and <dfn>arrays</dfn>
+   built up from them. C&#160;doesn't have special types for character
+   manipulation or the handling of logical (boolean) quantities, but uses the
+   integral types instead. Once you know the rules for the reals and the
+   integers you know them all.</p>
+
+  <p>We will start by looking at the various types and then the conversion
+   rules.</p>
+
+  <h2><a name="section-1"></a>2.7.1.&#160;Plain integers</h2>
+   
+
+   <p>There are two types (often called &#8216;flavours&#8217;) of integer
+    variables. Other types can be built from these, as we'll see, but the
+    plain undecorated <code>ints</code> are the base. The most obvious of the
+    pair is the &#8216;signed&#8217; <code>int</code>, the less obvious is its close
+    relative, the <code>unsigned int</code>. These variables are supposed to
+    be stored in whatever is the most convenient unit for the machine running
+    your program. The <code>int</code> is the natural choice for undemanding
+    requirements when you just need a simple integral variable, say as a
+    counter in a short loop. There isn't any guarantee about the number of
+    bits that an int can hold, except that it will <em>always</em> be 16 or
+    more. The standard header file <code>&lt;limits.h&gt;</code> details the
+    actual number of bits available in a given implementation.</p>
+
+   <p>Curiously, Old&#160;C had no guarantee whatsoever about the length of an
+    <code>int</code>, but consensus and common practice has always assumed at
+    least 16&#160;bits.</p>
+
+   <p>Actually, <code>&lt;limits.h&gt;</code> doesn't quite specify a number
+    of bits, but gives maximum and minimum values for an <code>int</code>
+    instead. The values it gives are 32767 and -32767 which implies
+    16&#160;bits or more, whether ones or twos complement arithmetic is used.
+    Of course there is nothing to stop a given implementation from providing a
+    greater range in either direction.</p>
+
+   <p>The range specified in the Standard for an <code>unsigned int</code> is
+    0 to at least&#160;65535, meaning that it cannot be negative. More about
+    these shortly.</p>
+
+   <p>If you aren't used to thinking about the number of bits in a given
+    variable, and are beginning to get worried about the portability
+    implications of this apparently machine-dependent concern for the number
+    of bits, then you're doing the right thing. C&#160;takes portability
+    seriously and actually bothers to tell you what values and ranges are
+    guaranteed to be safe. The bitwise operators encourage you to think about
+    the number of bits in a variable too, because they give direct access to
+    the bits, which you manipulate one by one or in groups. Almost
+    paradoxically, the overall result is that C&#160;programmers have a
+    healthy awareness of portability issues which leads to more portable
+    programs. This is <em>not</em> to say that you can't write C&#160;programs
+    that are horribly non-portable!</p>
+
+  
+
+  <h2><a name="section-2"></a>2.7.2.&#160;Character variables</h2>
+   
+
+   <p>A bit less obvious than int is the other of the plain integral types,
+    the <code>char</code>. It's basically just another sort of
+    <code>int</code>, but has a different application. Because so many
+    C&#160;programs do a lot of character handling, it's a good idea to
+    provide a special type to help, especially if the range provided by an
+    <code>int</code> uses up much more storage than is needed by characters.
+    The limits file tells us that three things are guaranteed about
+    <code>char</code> variables: they have at least 8 bits, they can store a
+    value of at least&#160;+127, and the minimum value of a <code>char</code>
+    is zero or lower. This means that the only guaranteed range
+    is&#160;0&#8211;127. Whether or not <code>char</code> variables behave as
+    <code>signed</code> or <code>unsigned</code> types is implementation
+    defined.</p>
+
+   <p>In short, a character variable will probably take less storage than an
+    <code>int</code> and will most likely be used for character manipulation.
+    It's still an integer type though, and can be used for arithmetic, as this
+    example shows.</p>
+
+   <div class="inset-example"><a name="example-3"></a><pre>
+include &lt;limits.h&gt;
+include &lt;stdio.h&gt;
+include &lt;stdlib.h&gt;
+
+main(){
+      char c;
+
+      c = CHAR_MIN;
+      while(c != CHAR_MAX){
+              printf(&quot;%d\n&quot;, c);
+              c = c+1;
+      }
+
+      exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;2.3</cite></div>
+
+   <p>Running that program is left as an exercise for the easily amused. If
+    you are bothered about where <code>CHAR_MIN</code> and
+    <code>CHAR_MAX</code> come from, find <code>limits.h</code> and read
+    it.</p>
+
+   <p>Here's a more enlightening example. It uses character constants, which
+    are formed by placing a character in single quotes:</p>
+
+   <pre>
+'x'</pre>
+
+   <p>Because of the rules of arithmetic, the type of this sort of constant
+    turns out to be <code>int</code>, but that doesn't matter since their
+    value is always small enough to assign them to <code>char</code> variables
+    without any loss of precision. (Unfortunately, there is a related version
+    where that guarantee does not hold. Ignore it for the moment.) When a
+    character variable is printed using the <code>%c</code> format with
+    <code>printf</code>, the appropriate character is output. You can use
+    <code>%d</code>, if you like, to see what integer value is used to
+    represent the character. Why <code>%d</code>? Because a <code>char</code>
+    is just another integral type.</p>
+
+   <p>It's also useful to be able to read characters into a program. The
+    library function <code>getchar</code> is used for the job. It reads
+    characters from the program's <dfn>standard input</dfn> and returns an
+    <code>int</code> value suitable for storing into a <code>char</code>. The
+    int value is for one reason only: not only does getchar return all
+    possible character values, but it also returns an <em>extra</em> value to
+    indicate that end-of-input has been seen. The range of a <code>char</code>
+    might not be enough to hold this extra value, so the int has to be
+    used.</p>
+
+   <p>The following program reads its input and counts the number of commas
+    and full stops that it sees. On end-of-input, it prints the totals.</p>
+
+   <div class="inset-example"><a name="example-4"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+main(){
+      int this_char, comma_count, stop_count;
+
+      comma_count = stop_count = 0;
+      this_char = getchar();
+      while(this_char != EOF){
+              if(this_char == '.')
+                      stop_count = stop_count+1;
+              if(this_char == ',')
+                      comma_count = comma_count+1;
+              this_char = getchar();
+      }
+      printf(&quot;%d commas, %d stops\n&quot;, comma_count,
+                      stop_count);
+      exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;2.4</cite></div>
+
+   <p>The two features of note in that example were the multiple assignment to
+    the two counters and the use of the defined constant <code>EOF</code>.
+    <code>EOF</code> is the value returned by <code>getchar</code> on end of
+    input (it stands for End Of File), and is defined in
+    <code>&lt;stdio.h&gt;</code>. The multiple assignment is a fairly common
+    feature of C&#160;programs.</p>
+
+   <p>Another example, perhaps. This will either print out the whole lower
+    case alphabet, if your implementation has its characters stored
+    consecutively, or something even more interesting if they aren't.
+    C&#160;doesn't make many guarantees about the ordering of characters in
+    internal form, so this program produces <em>non-portable</em> results!</p>
+
+   <div class="inset-example"><a name="example-5"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+main(){
+      char c;
+
+      c = 'a';
+      while(c &lt;= 'z'){
+              printf(&quot;value %d char %c\n&quot;, c, c);
+              c = c+1;
+      }
+
+      exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;2.5</cite></div>
+
+   <p>Yet again this example emphasizes that a <code>char</code> is only
+    another form of integer variable and can be used just like any other form
+    of variable. It is <em>not</em> a &#8216;special&#8217; type with its own
+    rules.</p>
+
+   <p>The space saving that a <code>char</code> offers when compared to an
+    <code>int</code> only becomes worthwhile if a lot of them are being used.
+    Most character-processing operations involve the use of not just one or
+    two character variables, but large arrays of them. That's when the saving
+    can become noticeable: imagine an array of 1024&#160;<code>int</code>s. On
+    a lot of common machines that would eat up 4096&#160;8-bit bytes of
+    storage, assuming the common length of 4&#160;bytes per <code>int</code>.
+    If the computer architecture allows it to be done in a reasonably
+    efficient way, the C&#160;implementor will probably have arranged for
+    <code>char</code> variables to be packed one per byte, so the array would
+    only use 1024&#160;bytes and the space saving would be
+    3072&#160;bytes.</p>
+
+   <p>Sometimes it doesn't matter whether or not a program tries to save
+    space; sometimes it does. At least C gives you the option of choosing an
+    appropriate type.</p>
+
+  
+
+  <h2><a name="section-3"></a>2.7.3.&#160;More complicated types</h2>
+   
+
+   <p>The last two types were simple, in both their declaration and subsequent
+    use. For serious systems programming they just aren't adequate in the
+    precision of control over storage that they provide and the behaviour that
+    they follow. To correct this problem, C&#160;provides extra forms of
+    integral types, split into the categories of <code>signed</code> and
+    <code>unsigned</code>. (Although both these terms are reserved words, they
+    will also be used as adjectives.) The difference between the two types is
+    obvious. Signed types are those that are capable of being negative, the
+    unsigned types cannot be negative at any time. Unsigned types are usually
+    used for one of two reasons: to get an extra bit of precision, or when the
+    concept of being negative is simply not present in the data that is being
+    represented. The latter is by far the better reason for choosing them.</p>
+
+   <p>Unsigned types also have the special property of never overflowing in
+    arithmetic. Adding&#160;1 to a signed variable that already contains the
+    maximum possible positive number for its type will result in overflow, and
+    the program's behaviour becomes undefined. That can never happen with
+    unsigned types, because they are defined to work &#8216;modulo one greater
+    than the maximum number that they can hold&#8217;. What this means is best
+    illustrated by example:</p>
+
+   <div class="inset-example"><a name="example-6"></a><pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+main(){
+      unsigned int x;
+      x = 0;
+      while(x &gt;= 0){
+              printf(&quot;%u\n&quot;, x);
+              x = x+1;
+      }
+
+      exit(EXIT_SUCCESS);
+}</pre><cite>Example&#160;2.6</cite></div>
+
+   <p>Assuming that the variable&#160;<code>x</code> is stored in
+    16&#160;bits, then its range of values will be 0&#8211;65535 and that
+    sequence will be printed endlessly. The program can't terminate: the
+    test</p>
+
+   <pre>
+x &gt;= 0</pre>
+
+   <p>must always be true for an unsigned variable.</p>
+
+   <p>For both the signed and unsigned integral types there are three
+    subtypes: <code>short</code>, ordinary and <code>long</code>. Taking those
+    into account, here is a list of all of the possible integral types
+    in&#160;C, except for the character types:</p>
+
+   <pre>
+unsigned short int
+unsigned int
+unsigned long int
+signed short int
+signed int
+signed long int</pre>
+
+   <p>In the last three, the <code>signed</code> keyword is unnecessary
+    because the <code>int</code> types are signed types anyway: you
+    <em>have</em> to say <code>unsigned</code> to get anything different. It's
+    also permissible, but not recommended, to drop the int keyword from any of
+    those declarations provided that there is at least one other keyword
+    present&#8212;the <code>int</code> will be &#8216;understood&#8217; to be
+    present. For example <code>long</code> is equivalent to <code>signed long
+    int</code>. The long and short kinds give you more control over the amount
+    of space used to store variables. Each has its own minimum range specified
+    in <code>&lt;limits.h&gt;</code> which in practice means at least
+    16&#160;bits in a <code>short</code> and an <code>int</code>, and at least
+    32&#160;bits in a <code>long</code>, whether signed or unsigned. As
+    always, an implementation can choose to give you more bits than the
+    minimum if it wants to. The only restriction is that the limits must be
+    equalled or bettered, and that you don't get more bits in a shorter type
+    than a longer one (not an unreasonable rule).</p>
+
+   <p>The only character types are the <code>signed char</code> and the
+    <code>unsigned char</code>. The difference between <code>char</code> and
+    <code>int</code> variables is that, unless otherwise stated, all
+    <code>ints</code> are signed. The same is not true for <code>chars</code>,
+    which are signed or unsigned depending on the implementor's choice; the
+    choice is presumably taken on efficiency grounds. You can of course
+    explicitly force signed or unsignedness with the right keyword. The only
+    time that it is likely to matter is if you are using character variables
+    as extra short <code>shorts</code> to save more space.</p>
+
+  
+
+  <h2><a name="section-4"></a>Summary of integral types</h2>
+
+   <ul>
+    <li>The integral types are the <code>short</code>, <code>long</code>,
+     <code>signed</code>, <code>unsigned</code> and plain
+     <code>ints</code>.</li>
+    <li>The commonest is the ordinary <code>int</code>, which is signed unless
+     declared not to be.</li>
+    <li>The <code>char</code> variables <em>can</em> be made signed or
+     unsigned, as you prefer, but in the absence of indications to the
+     contrary, they will be allocated the most efficient type.</li>
+   </ul>
+
+  
+
+  <h2><a name="section-4"></a>2.7.4.&#160;Printing the integral types</h2>
+   
+
+   <p>Once again you can use <code>printf</code> to print these various types.
+    Character variables work exactly the same way that the other integral
+    variables do, so you can use the standard format letters to print their
+    contents&#8212;although the actual numbers stored in them are not likely
+    to be very interesting. To see their contents interpreted as characters,
+    use <code>%c</code> as was done earlier. All of the integral types can be
+    printed as if they were signed decimal numbers by using the
+    <code>%d</code> format, or <code>%ld</code> for long types. Other useful
+    formats are shown in Table&#160;2.5; notice that in every case a
+    letter &#8216;l&#8217; is put in front of the normal format letter if a
+    <code>long</code> is to be printed. That's not just there to get the right
+    result printed: the behaviour of <code>printf</code> is undefined if the
+    wrong format is given.</p>
+
+   <div class="inset-table"><a name="table-5"></a><table><thead><tr class="cbook-table-heading">
+     <th>Format</th>
+     <th>Use with</th>
+    </tr></thead><tbody><tr class="cbook-table-first-row">
+     <td><code>%c</code></td>
+     <td><code>char</code> (in character form)</td>
+    </tr><tr class="cbook-table-row">
+     <td><code>%d</code></td>
+     <td>decimal <code>signed int</code>, <code>short</code>,
+      <code>char</code></td>
+    </tr><tr class="cbook-table-row">
+     <td><code>%u</code></td>
+     <td>decimal <code>unsigned int</code>, <code>unsigned short</code>,
+      <code>unsigned char</code></td>
+    </tr><tr class="cbook-table-row">
+     <td><code>%x</code></td>
+     <td>hexadecimal <code>int</code>, <code>short</code>,
+      <code>char</code></td>
+    </tr><tr class="cbook-table-row">
+     <td><code>%o</code></td>
+     <td>octal <code>int</code>, <code>short</code>, <code>char</code></td>
+    </tr><tr class="cbook-table-row">
+     <td><code>%ld</code></td>
+     <td>decimal <code>signed long</code></td>
+    </tr><tr class="cbook-table-last-row">
+     <td><code>%lu %lx %lo</code></td>
+     <td>as above, but for <code>longs</code></td>
+    </tr></tbody></table><cite>Table&#160;2.5.&#160;More format codes</cite></div>
+
+   <p>A full description of the format codes that you can use with printf is
+    given in <a href="../chapter9/">Chapter&#160;9</a>.</p>
+
+  
+
+ <div class="cbook_next_prev"><p><a href="real_types.html">Previous section</a> | <a href="../chapter2/">Chapter contents</a> | <a href="expressions_and_arithmetic.html">Next section</a></p></div>
+
+    </main>
+    <nav id="menu" class="Left">
+      
+ 
+  
+  <div class="nav">
+
+	
+	
+			
+			  <div class="nav0">
+				
+				  <a href="/">Publications</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav1">
+				
+				  <a href="/c_book/">The C&nbsp;Book</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/preface/">Preface</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter1/">Introduction</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter2/">Variables &amp; arithmetic</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/fundamentals.html">Fundamentals</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/alphabet_of_c.html">The C&#160;alphabet</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/textual_program_structure.html">Textual program structure</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/keywords_and_identifiers.html">Keywords &amp; identifiers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/variable_declaration.html">Declaring variables</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/real_types.html">Reals</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <strong>Integers</strong>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/expressions_and_arithmetic.html">Expressions &amp; arithmetic</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/constants.html">Constants</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/summary.html">Summary</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter2/exercises.html">Exercises</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter3/">Control flow</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter4/">Functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter5/">Arrays &amp; pointers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter6/">Structures</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter7/">Preprocessor</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter8/">Specialized areas</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter9/">Libraries</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter10/">Complete Programs</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/answers/">Answers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/copyright.html">Copyright</a>
+				
+				
+			</div>
+			
+	
+
+</div>
+
+ 
+
+      <div class="ColBtm">
+        <hr />
+<div class="h1"><a href="https://ebusiness.gbdirect.co.uk/contact.html">Contact Us</a></div>
+
+      </div>
+
+    </nav>
+    <aside id="sidebar" class="Right">
+      
+ <div class="box">
+  
+  
+<img src="https://global.gbdirect.co.uk/Themes/printer-friendly-12x12.png" alt="" title="Printer-friendly version of this page" />
+<a href="?format=pf" rel="nofollow">
+  Printer-friendly version
+</a>
+
+ </div>
+
+ <div class="box">
+  <h3>The C Book</h3>
+  
+<p>This book is published as a matter of historical interest.
+ Please read the
+ <a href="/c_book/copyright.html">copyright and disclaimer information</a>.</p>
+
+<p>GBdirect Ltd provides up-to-date training and consultancy in
+ <a href="http://training.gbdirect.co.uk/courses/c/">C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c/real_time_linux_embedded_c_training.html">Embedded C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c++/">C++</a>
+ and a wide range of
+ <a href="http://training.gbdirect.co.uk/courses/">other subjects based on
+ open standards</a> if you happen to be interested.</p>
+
+ </div>
+
+
+    </aside>
+  </div>
+  
+<script type="text/javascript">
+        var maxheight = 0;
+        var a =  Array('main', 'menu', 'sidebar');
+        for(index in a){
+                var name = a[index];
+                // alert(name);
+                var id = document.getElementById(name);
+                if(id){
+                        if(id.offsetHeight > maxheight){
+                                maxheight = id.offsetHeight;
+                        }
+                }
+        }
+        var tabbar = document.getElementById('tabsbar');
+        if(tabbar){
+                if(tabbar.style) tabbar=tabbar.style;
+                tabbar.left = 0+'px';
+                tabbar.top = maxheight+'px';
+        }
+        
+</script>
+</body>
+</html>

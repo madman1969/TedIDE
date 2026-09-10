@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1">
+<title>The C Book &#8212; String handling</title>
+<meta property="og:title" content="The C Book &amp;#8212; String handling" />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://global.gbdirect.co.uk/Themes/logo-og.png" />
+
+<link rel="SHORTCUT ICON" href="https://global.gbdirect.co.uk/favicon.ico" />
+<link rel="stylesheet" type="text/css" href="https://global.gbdirect.co.uk/Themes/Quarters.css" />
+
+<link rel="prev" href="/c_book/chapter9/general_utilities.html" />
+<link rel="next" href="/c_book/chapter9/date_and_time.html" />
+<link rel="contents" href="/c_book/chapter9/" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<!-- order 17-->
+<!-- lastmod 2005-11-10T16:42:02Z-->
+
+
+<link rel="canonical" href="https://publications.gbdirect.co.uk/c_book/chapter9/string_handling.html"/><meta property="og:url" content="https://publications.gbdirect.co.uk/c_book/chapter9/string_handling.html" />
+<script type="text/javascript"> var _gaq = _gaq || []; _gaq.push(['_setAccount', 'UA-3566842-1']); _gaq.push(['_setDomainName', '.gbdirect.co.uk']); _gaq.push(['_trackPageview']); (function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = 'https://www.google-analytics.com/ga.js'; var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s); })(); </script>
+</head>
+
+<body>
+  <header class="Banner">
+    <span id="Logo">
+      <a href="https://ebusiness.gbdirect.co.uk">
+        <img src="https://global.gbdirect.co.uk/Themes/gbdirect.gif"
+             alt="GBdirect Homepage"
+             title="GBdirect Homepage" /></a>
+    </span>
+<!-- Original homebrew search
+    <form action="https://global.gbdirect.co.uk/search.cgi"
+          method="get" id="Search">
+      <label for="search_textbox">Search</label>
+      <input type="text" name="query" size="12" id="search_textbox" value="" />
+      <input type="submit" name="Submit" value="Go" />
+    </form>
+-->
+<!-- Google search -->
+    <form class="Search" action="https://www.google.com/cse" id="cse-search-box">
+      <input type="hidden" name="cx" value="010270212093732037646:4pvgkishmkg" />
+      <input type="hidden" name="ie" value="UTF-8" />
+      <label for="search_textbox">Search</label>
+      <input type="text" name="q" id="search_textbox" size="12" />
+      <input type="submit" name="sa" value="Go" />
+    </form>
+    <script type="text/javascript" src="https://www.google.com/cse/brand?form=cse-search-box&amp;lang=en&amp;sitesearch=true"></script>
+<!-- End Google search -->
+  </header>
+  <nav class="Tabsbar"><span class="ThisTab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span> <span class="NoCSS2">| </span> <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/contact.html">Contact</a></span></nav>
+  <div id="container" itemscope itemtype="http://schema.org/WebPage">
+    <meta itemprop="isFamilyFriendly" content="1" />
+    <meta itemprop="inLanguage" content="en" />
+    <nav class="Tabsbar" id="tabsbar" style="position: absolute; width: 100%">
+  
+  
+    <span class="Tab"><a class="global" href="https://ebusiness.gbdirect.co.uk/">About Us</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://training.gbdirect.co.uk/">Training</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://consulting.gbdirect.co.uk/">Consultancy</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://development.gbdirect.co.uk/">Software</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="ThisTab">Publications</span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-source.gbdirect.co.uk/">Open&nbsp;Source</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://software-support.gbdirect.co.uk/">Support</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://open-standards.gbdirect.co.uk/">Open&nbsp;Standards</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://faq.gbdirect.co.uk/">FAQ</a></span>
+  
+
+  <span class="NoCSS2">| </span>
+  
+    <span class="Tab"><a class="global" href="https://jobs.gbdirect.co.uk/">Jobs</a></span>
+  
+
+</nav>
+    <main id="main" >
+	  
+		<nav id="breadcrumb" itemprop="breadcrumb">
+			
+			<a href="https://publications.gbdirect.co.uk/">Publications</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/">The C&nbsp;Book</a>
+			
+			 &gt; <a href="https://publications.gbdirect.co.uk/c_book/chapter9/">Libraries</a>
+			
+			 &gt; String handling
+			
+		</nav>
+		<br />
+	  
+      <h1>9.16. String handling</h1>
+      
+      
+
+
+  
+
+  <p>Numerous functions exist to handle strings.  In C, a string is an array of
+   characters terminated by a null.  In all cases, the functions expect
+   a pointer to the first character in the string.  The header
+   <code>&lt;string.h&gt;</code> declares these functions.</p>
+
+  <h2><a name="section-1"></a>9.16.1.&#160;Copying</h2>
+   
+
+   <p>The functions for this purpose are:</p>
+
+   <pre>
+#include &lt;string.h&gt;
+
+void *memcpy(void *s1, const void *s2, size_t n);
+void *memmove (void *s1, const void *s2, size_t n);
+char *strcpy(char *s1, const char *s2);
+char *strncpy(char *s1, const char *s2, size_t n);
+char *strcat(char *s1, const char *s2);
+char *strncat(char *s1, const char *s2, size_t n);</pre>
+
+   <dl>
+    <dt><code>memcpy</code></dt>
+    <dd>This copies <code>n</code> bytes from the place pointed to  by
+     <code>s2</code>  to the  place pointed to by <code>s1</code>.  If the
+     objects overlap, the result is undefined.  The value of <code>s1</code> is
+     returned.</dd>
+
+    <dt><code>memmove</code></dt>
+    <dd>Identical to  <code>memcpy</code>,  but  works  even  for  overlapping
+     objects.  It may be marginally slower, though.</dd>
+
+    <dt><code>strcpy</code></dt>
+    <dt><code>strncpy</code></dt>
+    <dd>Both of these copy the string pointed to by <code>s2</code>  into  the
+     string  pointed  to  by <code>s1</code>, including the  trailing null.
+     <code>Strncpy</code> will copy at most  <code>n</code>  characters,  and
+     pad  with trailing  nulls  if  <code>s2</code> is shorter than
+     <code>n</code> characters.  If the strings overlap, the behaviour  is
+     undefined.   They return <code>s1</code>.</dd>
+
+    <dt><code>strcat</code></dt>
+    <dt><code>strncat</code></dt>
+    <dd>Both append the string in <code>s2</code> to <code>s1</code>,
+     overwriting the  null at  the  end  of <code>s1</code>.  A final null is
+     always written.  At most <code>n</code> characters are copied from
+     <code>s2</code>  by  <code>strncat</code>,  which means  that for safety
+     the destination string should have room for its original length (not
+     counting the null) plus <code>n + 1</code> characters.  They return
+     <code>s1</code>.</dd>
+   </dl>
+
+  
+
+  <h2><a name="section-2"></a>9.16.2.&#160;String and byte comparison</h2>
+   
+
+   <p>These comparison functions are used to compare arrays of bytes.  This
+    obviously includes the traditional C strings, which are an array of
+    <code>char</code> (bytes) with a terminating null.  All of these functions
+    work by comparing a byte at a time, and stopping either when two bytes
+    differ (in which case they return the sign of the difference between the
+    two bytes), or the arrays are considered to be equal: no differences were
+    found, and the length of the arrays was equal to the specified amount, or
+    the null was found at the end of a string comparison.</p>
+
+   <p>For all except <code>strxfrm</code>, the value returned is less than,
+    equal to or greater than zero depending on whether the first object was
+    considered to be less than, equal to or greater than the second.</p>
+
+   <pre>
+#include &lt;string.h&gt;
+
+int memcmp(const void *s1, const void *s2, size_t n);
+int strcmp(const char *s1, const char *s2);
+int strncmp(const char *s1, const char *s2, size_t n);
+size_t strxfrm(char *to, const char *from,
+int strcoll(const char *s1, const char *s2);</pre>
+
+   <dl>
+    <dt><code>memcmp</code></dt>
+    <dd>Compares the first <code>n</code> characters in the objects pointed to
+     by  <code>s1</code> and <code>s2</code>.  It is very dodgy to compare
+     structures in this way, because unions or &#8216;holes&#8217; caused  by
+     alignment padding can contain junk.</dd>
+
+    <dt><code>strcmp</code></dt>
+    <dd>Compares the two  strings.   This  is  one  of  the  most commonly used
+     of the string-handling functions.</dd>
+
+    <dt><code>strncmp</code></dt>
+    <dd>As for <code>strcmp</code>, but compares at most <code>n</code>
+     characters.</dd>
+
+    <dt><code>strxfrm</code></dt>
+    <dd>
+     <p>The string in from is  converted  (by  some  magic),  and placed
+      wherever  to  points.  At most <code>maxsize</code> characters (including
+      the  trailing  null)  are  written  into  the destination.    The   magic
+      guarantees  that  two  such transformed strings will give the  same
+      comparison  with each  other  for  the  user's  current  locale when
+      using strcmp, as when <code>strcoll</code> is applied to  the  original
+      two strings.</p>
+
+     <p>In all cases, the length of  the  resulting  string  (not counting its
+      terminating null) is returned.  If the value is equal to or greater than
+      maxsize, the contents of  *to is  undefined.   If  <code>maxsize</code>
+      is  zero,  <code>s1</code> may be a null pointer.</p>
+
+     <p>If the two objects overlap, the behaviour is undefined.</p>
+    </dd>
+
+    <dt><code>strcoll</code></dt>
+    <dd>This function compares the two strings according  to  the
+     collating sequence specified by the current locale.</dd>
+   </dl>
+
+  
+
+  <h2><a name="section-3"></a>9.16.3.&#160;Character and string searching functions</h2>
+   
+
+   <pre>
+#include &lt;string.h&gt;
+
+void *memchr(const void *s, int c, size_t n);
+char *strchr(const char *s, int c);
+size_t strcspn(const char *s1, const char *s2);
+char *strpbrk(const char *s1, const char *s2);
+char *strrchr(const char *s, int c);
+size_t strspn(const char *s1, const char *s2);
+char *strstr(const char *s1, const char *s2);
+char *strtok(const char *s1, const char *s2);</pre>
+
+   <dl>
+    <dt><code>memchr</code></dt>
+    <dd>Returns a pointer to the first occurrence in the  initial
+     <code>n</code> characters of <code>*s</code> of the <code>(unsigned
+     char)c</code>.  Returns null if there is no such occurrence.</dd>
+
+    <dt><code>strchr</code></dt>
+    <dd>Returns a pointer to the first occurrence of  <code>(char)c</code>  in
+     <code>*s</code>,  including  the  null in the search.  Returns null if
+     there is no such occurrence.</dd>
+
+    <dt><code>strcspn</code></dt>
+    <dd>Returns the length of the initial part of the  string  <code>s1</code>
+     which  contains  no  characters from <code>s2</code>.  The terminating
+     null is not considered to be part of <code>s2</code>.</dd>
+
+    <dt><code>strpbrk</code></dt>
+    <dd>Returns a pointer to the first character in <code>s1</code>  which  is
+     any of the characters in <code>s2</code>, or null if there is none.</dd>
+
+    <dt><code>strrchr</code></dt>
+    <dd>Returns a pointer to the last occurrence in <code>s1</code> of
+     <code>(char)c</code> counting  the  null  as  part  of <code>s1</code>, or
+     null if there is none.</dd>
+
+    <dt><code>strspn</code></dt>
+    <dd>Returns the length of the initial part of  <code>s1</code>  consisting
+     entirely of characters from <code>s1</code>.</dd>
+
+    <dt><code>strstr</code></dt>
+    <dd>Returns a pointer to the first occurrence in  <code>s1</code>  of  the
+     string <code>s2</code>, or null if there is none.</dd>
+
+    <dt><code>strtok</code></dt>
+    <dd>Breaks the string in <code>s1</code> into &#8216;tokens&#8217;, each
+     delimited  by one  of  the  characters from <code>s2</code> and returns
+     a pointer to the first token, or null if there  is  none.   Subsequent
+     calls  with  <code>(char&#160;*)0</code> as the value of <code>s1</code>
+     return the next token in sequence, with the extra fun that <code>s2</code>
+     (and hence the  delimiters)  may  differ on each subsequent call.  A null
+     pointer is returned if no tokens remain.</dd>
+   </dl>
+
+  
+
+  <h2><a name="section-4"></a>9.16.4.&#160;Miscellaneous functions</h2>
+   
+
+   <pre>
+#include &lt;string.h&gt;
+
+void *memset(void *s, int c, size_t n);
+char *strerror(int errnum);
+size_t strlen(const char *s);</pre>
+
+   <dl>
+    <dt><code>memset</code></dt>
+    <dd>Sets the <code>n</code>  bytes  pointed  to  by  <code>s</code>  to
+     the  value  of <code>(unsigned char)c</code>.  Returns
+     <code>s</code>.</dd>
+
+    <dt><code>strlen</code></dt>
+    <dd>Returns the length of  the  string  <code>s</code>  not  counting  the
+     terminating null.  This is a very widely used function.</dd>
+
+    <dt><code>strerror</code></dt>
+    <dd>Returns a pointer to a string describing the error number
+     <code>errnum</code>.   This  string may be changed by subsequent calls to
+     <code>strerror</code>.  Useful for finding out what the  values  in
+     <code>errno</code> mean.</dd>
+   </dl>
+
+  
+
+ <div class="cbook_next_prev"><p><a href="general_utilities.html">Previous section</a> | <a href="../chapter9/">Chapter contents</a> | <a href="date_and_time.html">Next section</a></p></div>
+
+    </main>
+    <nav id="menu" class="Left">
+      
+ 
+  
+  <div class="nav">
+
+	
+	
+			
+			  <div class="nav0">
+				
+				  <a href="/">Publications</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav1">
+				
+				  <a href="/c_book/">The C&nbsp;Book</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/preface/">Preface</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter1/">Introduction</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter2/">Variables &amp; arithmetic</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter3/">Control flow</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter4/">Functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter5/">Arrays &amp; pointers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter6/">Structures</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter7/">Preprocessor</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter8/">Specialized areas</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter9/">Libraries</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/introduction.html">Introduction</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/diagnostics.html">Diagnostics</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/character_handling.html">Character handling</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/localization.html">Localization</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/limits.html">Limits</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/maths_functions.html">Maths functions</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/nonlocal_jumps.html">Non-local jumps</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/signal_handling.html">Signal handling</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/stdarg.html">Stdarg</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/input_and_output.html">Input &amp; output</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/formatted_io.html">Formatted I/O</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/character_io.html">Character I/O</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/unformatted_io.html">Unformatted I/O</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/random_access_io.html">Random access I/O</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/general_utilities.html">General Utilities</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <strong>String handling</strong>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/date_and_time.html">Date and time</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav3">
+				
+				  <a href="/c_book/chapter9/summary.html">Summary</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/chapter10/">Complete Programs</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/answers/">Answers</a>
+				
+				
+			</div>
+			
+	
+			
+			  <div class="nav2">
+				
+				  <a href="/c_book/copyright.html">Copyright</a>
+				
+				
+			</div>
+			
+	
+
+</div>
+
+ 
+
+      <div class="ColBtm">
+        <hr />
+<div class="h1"><a href="https://ebusiness.gbdirect.co.uk/contact.html">Contact Us</a></div>
+
+      </div>
+
+    </nav>
+    <aside id="sidebar" class="Right">
+      
+ <div class="box">
+  
+  
+<img src="https://global.gbdirect.co.uk/Themes/printer-friendly-12x12.png" alt="" title="Printer-friendly version of this page" />
+<a href="?format=pf" rel="nofollow">
+  Printer-friendly version
+</a>
+
+ </div>
+
+ <div class="box">
+  <h3>The C Book</h3>
+  
+<p>This book is published as a matter of historical interest.
+ Please read the
+ <a href="/c_book/copyright.html">copyright and disclaimer information</a>.</p>
+
+<p>GBdirect Ltd provides up-to-date training and consultancy in
+ <a href="http://training.gbdirect.co.uk/courses/c/">C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c/real_time_linux_embedded_c_training.html">Embedded C</a>,
+ <a href="http://training.gbdirect.co.uk/courses/c++/">C++</a>
+ and a wide range of
+ <a href="http://training.gbdirect.co.uk/courses/">other subjects based on
+ open standards</a> if you happen to be interested.</p>
+
+ </div>
+
+
+    </aside>
+  </div>
+  
+<script type="text/javascript">
+        var maxheight = 0;
+        var a =  Array('main', 'menu', 'sidebar');
+        for(index in a){
+                var name = a[index];
+                // alert(name);
+                var id = document.getElementById(name);
+                if(id){
+                        if(id.offsetHeight > maxheight){
+                                maxheight = id.offsetHeight;
+                        }
+                }
+        }
+        var tabbar = document.getElementById('tabsbar');
+        if(tabbar){
+                if(tabbar.style) tabbar=tabbar.style;
+                tabbar.left = 0+'px';
+                tabbar.top = maxheight+'px';
+        }
+        
+</script>
+</body>
+</html>
