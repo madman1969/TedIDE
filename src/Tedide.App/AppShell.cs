@@ -55,6 +55,10 @@ public sealed class AppShell : Window
     private bool _isDebugging;
     private bool _isStopped;
     private bool _isStepping;
+    /// <summary>Maps each currently-armed breakpoint to the VICE-assigned checkpoint number
+    /// <see cref="ViceMonitorClient.SetCheckpointAsync"/> returned for it, so it can be deleted
+    /// again later - see <see cref="SyncCheckpointsWithViceAsync"/>.</summary>
+    private readonly Dictionary<BreakpointEntry, uint> _checkpointNumbers = new();
     private Tabs _outputTabs = null!;
     private View _outputTab = null!;
     private View _debugTab = null!;
@@ -987,6 +991,9 @@ public sealed class AppShell : Window
 
         _breakpoints.Save(project.ResolvedBreakpointsFile);
         RefreshBreakpointHighlights();
+        // Otherwise a breakpoint added/removed mid-session has no effect on the already-running
+        // VICE instance - checkpoints are only ever set once, at StartDebuggingAsync's own setup.
+        _ = SyncCheckpointsWithViceAsync();
     }
 
     private void ShowBreakpointsDialog()
@@ -1005,6 +1012,12 @@ public sealed class AppShell : Window
         // The dialog mutates the same _breakpoints instance in place (toggle/delete) - refresh in
         // case it changed anything for the currently open file.
         RefreshBreakpointHighlights();
+        // Toggling a breakpoint's Enabled flag (or deleting it) here has the exact same "VICE
+        // never finds out" gap as ToggleBreakpointAtCursor - see SyncCheckpointsWithViceAsync's
+        // own doc comment. The dialog can toggle/delete several entries in one visit, but the
+        // resync itself is a full re-sync (delete everything tracked, re-set every still-enabled
+        // breakpoint), not incremental, so one call after it closes covers all of them.
+        _ = SyncCheckpointsWithViceAsync();
     }
 
     /// <summary>
@@ -1135,18 +1148,73 @@ public sealed class AppShell : Window
             });
         }
 
-        foreach (var breakpoint in _breakpoints.Breakpoints.Where(b => b.Enabled))
-        {
-            var address = _dbgFile.FindAddressForSourceLine(breakpoint.SourceFile, breakpoint.Line);
-            if (address is { } addr)
-                await _debugClient.SetCheckpointAsync((ushort)addr);
-            else
-                Application.Invoke(() => AppendOutputLine(
-                    $"Could not resolve breakpoint {breakpoint.SourceFile}:{breakpoint.Line} to an address - it may be on a line with no compiled code."));
-        }
+        await SetAllEnabledCheckpointsAsync(_dbgFile, _debugClient);
 
         Application.Invoke(() => _debugPanel.SetStatus("Running..."));
         await _debugClient.ContinueAsync();
+    }
+
+    /// <summary>Sets a VICE checkpoint for every currently-enabled breakpoint, recording each one's
+    /// VICE-assigned checkpoint number in <see cref="_checkpointNumbers"/> so it can later be
+    /// deleted again (see <see cref="SyncCheckpointsWithViceAsync"/>). Shared between the initial
+    /// setup in <see cref="StartDebuggingAsync"/> and re-syncing after a breakpoint changes mid-session.</summary>
+    private async Task SetAllEnabledCheckpointsAsync(DbgFile dbgFile, ViceMonitorClient debugClient)
+    {
+        foreach (var breakpoint in _breakpoints.Breakpoints.Where(b => b.Enabled))
+        {
+            var address = dbgFile.FindAddressForSourceLine(breakpoint.SourceFile, breakpoint.Line);
+            if (address is { } addr)
+            {
+                var info = await debugClient.SetCheckpointAsync((ushort)addr);
+                _checkpointNumbers[breakpoint] = info.Number;
+            }
+            else
+            {
+                Application.Invoke(() => AppendOutputLine(
+                    $"Could not resolve breakpoint {breakpoint.SourceFile}:{breakpoint.Line} to an address - it may be on a line with no compiled code."));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Re-synchronizes VICE's actual checkpoints with the current breakpoint set - called whenever
+    /// a breakpoint is toggled/added/removed while a debug session is already running. Without
+    /// this, checkpoints are only ever set once (at <see cref="StartDebuggingAsync"/>'s own setup)
+    /// - VICE has no idea Tedide's breakpoint file changed afterward, so deleting or disabling a
+    /// breakpoint mid-session left execution still stopping there (the bug this fixes). Deletes
+    /// every checkpoint this app previously set and re-sets one for every currently-enabled
+    /// breakpoint, rather than diffing precisely - simpler, and the cost is negligible for the
+    /// handful of breakpoints a real debugging session has.
+    /// </summary>
+    private async Task SyncCheckpointsWithViceAsync()
+    {
+        if (_debugClient is not { } debugClient || _dbgFile is not { } dbgFile || !_isDebugging)
+            return;
+
+        try
+        {
+            foreach (var number in _checkpointNumbers.Values)
+            {
+                try
+                {
+                    await debugClient.DeleteCheckpointAsync(number);
+                }
+                catch (Exception ex)
+                {
+                    // VICE may already be gone, or may have dropped this checkpoint on its own
+                    // (e.g. a "temporary" one) - not fatal, the re-set pass below is what matters.
+                    Log.Debug(ex, "Could not delete checkpoint #{Number} while re-syncing", number);
+                }
+            }
+            _checkpointNumbers.Clear();
+
+            await SetAllEnabledCheckpointsAsync(dbgFile, debugClient);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error re-syncing breakpoints with VICE");
+            Application.Invoke(() => AppendOutputLine($"Error updating breakpoints in the running debug session: {ex.Message}"));
+        }
     }
 
     /// <summary>Builds a "Stopped [in {function}] at {where}" status string, prepending the
@@ -1343,6 +1411,8 @@ public sealed class AppShell : Window
         _dbgFile = null;
         _isDebugging = false;
         _isStopped = false;
+        // Stale once the connection's gone - StartDebuggingAsync repopulates this from scratch.
+        _checkpointNumbers.Clear();
         // Re-marshal onto the UI thread - see OnCheckpointHit's own comment on why the awaits
         // above don't guarantee this continuation is still there.
         Application.Invoke(() =>
