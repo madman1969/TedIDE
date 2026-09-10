@@ -47,6 +47,7 @@ public sealed class AppShell : Window
     private readonly SymbolPanelView _symbolPanel = new();
     private readonly DebugPanelView _debugPanel = new();
     private readonly CurrentDebugLineTransformer _debugLineTransformer = new();
+    private readonly BreakpointLineTransformer _breakpointLineTransformer = new();
     private BreakpointsFile _breakpoints = new();
     private ViceMonitorClient? _debugClient;
     private DbgFile? _dbgFile;
@@ -200,6 +201,10 @@ public sealed class AppShell : Window
         _outputTabs.Add(symbolsTab);
         _outputTabs.Add(debugTab);
 
+        // Breakpoint highlighting registered before the current-debug-line one, so the latter's
+        // Accent color wins on a line that's both a breakpoint and the paused line - see
+        // BreakpointLineTransformer's own doc comment for why order matters here.
+        _editorPane.Editor.LineTransformers.Add(_breakpointLineTransformer);
         // Highlights the source line execution is stopped at during a debug session - see its own
         // doc comment for why LineTransformers (not BackgroundRenderers) is the right extension
         // point for this.
@@ -257,15 +262,22 @@ public sealed class AppShell : Window
         var menuBar = new EditorMenuBar(_editorPane.Editor);
 
         _recentProjectsMenuItem = new MenuItem("_Recent Projects and Solutions", "", new Menu(BuildRecentProjectsMenuItems()));
+        // BindKeyToApplication = true is what actually makes a MenuItem's Key fire while its
+        // dropdown is closed - a Shortcut/MenuItem's Key only auto-registers a *HotKeyBinding*
+        // (confirmed in Terminal.Gui's own Shortcut.cs), which only fires while the view holding
+        // it is mounted in the tree; a menu's dropdown Menu only exists while open, unlike the
+        // always-present status bar (why Build/Breakpoint/Run/Save/Go To Line/Quit above work via
+        // a *duplicate* status-bar Shortcut instead). Applied here rather than duplicating these
+        // less-frequently-used actions into the status bar too and cluttering it further.
         var fileMenu = new MenuBarItem("_File", new List<View>
         {
-            new MenuItem("_New Project...", "", NewProject, Key.N.WithCtrl),
-            new MenuItem("_Open Project...", "", OpenProject, Key.O.WithCtrl),
+            new MenuItem("_New Project...", "", NewProject, Key.N.WithCtrl) { BindKeyToApplication = true },
+            new MenuItem("_Open Project...", "", OpenProject, Key.O.WithCtrl) { BindKeyToApplication = true },
             _recentProjectsMenuItem,
             new MenuItem("Close _Project", "", CloseSolution, Key.Empty),
             new Line(),
             new MenuItem("_Save", "", SaveAll, Key.S.WithCtrl),
-            new MenuItem("_Close File", "", CloseActiveFile, Key.W.WithCtrl),
+            new MenuItem("_Close File", "", CloseActiveFile, Key.W.WithCtrl) { BindKeyToApplication = true },
             new Line(),
             new MenuItem("_Quit", "", () => Application.RequestStop(this), Key.Q.WithCtrl),
         });
@@ -280,9 +292,9 @@ public sealed class AppShell : Window
         // F5/F6 above are already Build/Run - Start Debugging/Continue/Step use keys of their own.
         var debugMenu = new MenuBarItem("_Debug", new List<View>
         {
-            new MenuItem("_Start Debugging", "", () => _ = StartDebuggingAsync(), Key.F5.WithShift),
-            new MenuItem("_Continue", "", () => _ = ContinueDebuggingAsync(), Key.F5.WithCtrl),
-            new MenuItem("S_tep", "", () => _ = StepDebuggingAsync(), Key.F10),
+            new MenuItem("_Start Debugging", "", () => _ = StartDebuggingAsync(), Key.F5.WithShift) { BindKeyToApplication = true },
+            new MenuItem("_Continue", "", () => _ = ContinueDebuggingAsync(), Key.F5.WithCtrl) { BindKeyToApplication = true },
+            new MenuItem("S_tep", "", () => _ = StepDebuggingAsync(), Key.F10) { BindKeyToApplication = true },
             new MenuItem("Sto_p Debugging", "", () => _ = StopDebuggingAsync(), Key.Empty),
             new Line(),
             new MenuItem("_Toggle Breakpoint", "", ToggleBreakpointAtCursor, Key.F9),
@@ -314,7 +326,8 @@ public sealed class AppShell : Window
         // constructed with), so AddAt(0, ...) inserts it before Find the same way the library adds
         // its own items via Add().
         var editMenuItems = menuBar.EditMenu.PopoverMenu!.Root!;
-        editMenuItems.AddAt(0, new MenuItem("_Find in Files...", "", () => ShowFindInFiles(), Key.F.WithCtrl.WithShift));
+        editMenuItems.AddAt(0, new MenuItem("_Find in Files...", "", () => ShowFindInFiles(), Key.F.WithCtrl.WithShift) { BindKeyToApplication = true });
+        editMenuItems.AddAt(1, new MenuItem("_Go To Line...", "", ShowGoToLine, Key.G.WithCtrl));
         menuBar.Menus = [fileMenu, menuBar.EditMenu, menuBar.ViewMenu, buildMenu, debugMenu, projectMenu, themeMenu, helpMenu];
         menuBar.X = 0;
         menuBar.Y = 0;
@@ -332,8 +345,13 @@ public sealed class AppShell : Window
         statusBar.ThemeDropDown.Visible = false;
         statusBar.Add(new Shortcut(Key.F5, "~F5~ Build", () => _ = BuildActiveProjectAsync()));
         // A plain MenuItem's Key only acts as a hotkey while its menu is already open - a Shortcut
-        // is what actually makes a key global, the same reason Build's F5 above needs one too.
+        // is what actually makes a key global, the same reason Build's F5 above needs one too. F6
+        // Run and Ctrl+S Save had the same gap (menu-only, never worked while the editor had focus)
+        // until it was reported and fixed here alongside F9/Ctrl+G.
+        statusBar.Add(new Shortcut(Key.F6, "~F6~ Run", () => _ = RunActiveProjectAsync()));
         statusBar.Add(new Shortcut(Key.F9, "~F9~ Breakpoint", ToggleBreakpointAtCursor));
+        statusBar.Add(new Shortcut(Key.S.WithCtrl, "~^S~ Save", SaveAll));
+        statusBar.Add(new Shortcut(Key.G.WithCtrl, "~^G~ Go To Line", ShowGoToLine));
         statusBar.Add(new Shortcut(Key.Q.WithCtrl, "~^Q~ Quit", () => Application.RequestStop(this)));
         statusBar.X = 0;
         statusBar.Y = Pos.AnchorEnd(1);
@@ -641,6 +659,7 @@ public sealed class AppShell : Window
             _editorPane.Open(newPath);
             _editorFrame.Title = newFileName;
             UpdateLanguageIndicator();
+            RefreshBreakpointHighlights();
         }
     }
 
@@ -660,6 +679,7 @@ public sealed class AppShell : Window
             _editorPane.Close();
             _editorFrame.Title = NoFileOpenTitle;
             UpdateLanguageIndicator();
+            RefreshBreakpointHighlights();
         }
 
         File.Delete(path);
@@ -700,6 +720,7 @@ public sealed class AppShell : Window
         _editorPane.Open(path);
         _editorFrame.Title = Path.GetFileName(path);
         UpdateLanguageIndicator();
+        RefreshBreakpointHighlights();
     }
 
     /// <summary>Opens the Help > About dialog. Read-only - see <see cref="AboutDialog"/>.</summary>
@@ -728,6 +749,27 @@ public sealed class AppShell : Window
         Application.Run(dialog);
         if (dialog.SelectedMatch is { } match)
             OpenMatch(match);
+    }
+
+    /// <summary>
+    /// Prompts for a line number (pre-filled with the caret's current line) and moves the caret
+    /// to the start of that line, scrolling it into view - same CaretOffset-assignment mechanism
+    /// as <see cref="OpenMatch"/>, just without a column.
+    /// </summary>
+    private void ShowGoToLine()
+    {
+        var document = _editorPane.Editor.Document;
+        if (_editorPane.OpenPath is null || document is null)
+            return;
+
+        var currentLineNumber = document.GetLineByOffset(_editorPane.Editor.CaretOffset).LineNumber;
+        var dialog = new GoToLineDialog(currentLineNumber, document.LineCount);
+        Application.Run(dialog);
+        if (dialog.LineNumber is { } lineNumber)
+        {
+            _editorPane.Editor.CaretOffset = document.GetLineByNumber(lineNumber).Offset;
+            _editorPane.Editor.SetFocus();
+        }
     }
 
     /// <summary>
@@ -825,6 +867,26 @@ public sealed class AppShell : Window
         _breakpoints = _workspace.ActiveProject is { } project
             ? BreakpointsFile.Load(project.ResolvedBreakpointsFile)
             : new BreakpointsFile();
+        RefreshBreakpointHighlights();
+    }
+
+    /// <summary>
+    /// Recomputes <see cref="_breakpointLineTransformer"/>'s highlighted line set from
+    /// <see cref="_breakpoints"/>, scoped to whichever file is currently open (a breakpoint in any
+    /// other file is irrelevant since only one file is ever open at once - see EditorPane's class
+    /// summary). Called whenever either the open file or the breakpoint set itself changes.
+    /// </summary>
+    private void RefreshBreakpointHighlights()
+    {
+        _breakpointLineTransformer.BreakpointLines.Clear();
+        if (_workspace.ActiveProject is { } project && _editorPane.OpenPath is { } openPath)
+        {
+            var relativePath = Path.GetRelativePath(project.Directory, openPath).Replace('\\', '/');
+            foreach (var breakpoint in _breakpoints.Breakpoints)
+                if (breakpoint.Enabled && string.Equals(breakpoint.SourceFile, relativePath, StringComparison.OrdinalIgnoreCase))
+                    _breakpointLineTransformer.BreakpointLines.Add(breakpoint.Line);
+        }
+        _editorPane.Editor.SetNeedsDraw();
     }
 
     /// <summary>
@@ -858,6 +920,7 @@ public sealed class AppShell : Window
         }
 
         _breakpoints.Save(project.ResolvedBreakpointsFile);
+        RefreshBreakpointHighlights();
     }
 
     private void ShowBreakpointsDialog()
@@ -870,6 +933,9 @@ public sealed class AppShell : Window
         }
 
         Application.Run(new BreakpointsDialog(_breakpoints, project.ResolvedBreakpointsFile));
+        // The dialog mutates the same _breakpoints instance in place (toggle/delete) - refresh in
+        // case it changed anything for the currently open file.
+        RefreshBreakpointHighlights();
     }
 
     /// <summary>
@@ -1090,6 +1156,7 @@ public sealed class AppShell : Window
         _editorPane.Close();
         _editorFrame.Title = NoFileOpenTitle;
         UpdateLanguageIndicator();
+        RefreshBreakpointHighlights();
     }
 
     /// <summary>
@@ -1392,6 +1459,7 @@ public sealed class AppShell : Window
             _editorPane.Open(newOpenPath);
             _editorFrame.Title = Path.GetFileName(newOpenPath);
             UpdateLanguageIndicator();
+            RefreshBreakpointHighlights();
         }
     }
 
