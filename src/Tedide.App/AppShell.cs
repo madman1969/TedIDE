@@ -932,7 +932,10 @@ public sealed class AppShell : Window
             return;
         }
 
-        Application.Run(new BreakpointsDialog(_breakpoints, project.ResolvedBreakpointsFile));
+        var dialog = new BreakpointsDialog(_breakpoints, project.ResolvedBreakpointsFile);
+        dialog.BreakpointSelected += breakpoint =>
+            OpenSymbol((Path.Combine(project.Directory, breakpoint.SourceFile), breakpoint.Line));
+        Application.Run(dialog);
         // The dialog mutates the same _breakpoints instance in place (toggle/delete) - refresh in
         // case it changed anything for the currently open file.
         RefreshBreakpointHighlights();

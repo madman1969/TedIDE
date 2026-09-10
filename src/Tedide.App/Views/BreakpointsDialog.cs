@@ -14,13 +14,20 @@ namespace Tedide.App.Views;
 /// LineNumbers/Folding enum, no pluggable renderer). "Toggle Breakpoint" (F9, set from the editor's
 /// current cursor line - see AppShell) is the everyday way to add one; this dialog is for reviewing
 /// and bulk-managing them. Every change (toggle/delete) saves immediately, so there's no separate
-/// Save/Cancel state - only "Close".
+/// Save/Cancel state - only "Close". Selecting a row (arrow keys or mouse - anything that fires
+/// <see cref="TableView.ValueChanged"/>) raises <see cref="BreakpointSelected"/> so the host can
+/// show that breakpoint's file/line in the editor behind this dialog while it's still open.
 /// </summary>
 public sealed class BreakpointsDialog : Dialog
 {
     private readonly BreakpointsFile _breakpoints;
     private readonly string _savePath;
     private readonly TableView _table;
+
+    /// <summary>Raised whenever the selected row changes, carrying that row's breakpoint. Not
+    /// raised for the dialog's own initial auto-selected row on open - only for an actual
+    /// selection change after that, so opening the dialog doesn't itself jump the editor around.</summary>
+    public event Action<BreakpointEntry>? BreakpointSelected;
 
     public BreakpointsDialog(BreakpointsFile breakpoints, string savePath)
     {
@@ -40,6 +47,16 @@ public sealed class BreakpointsDialog : Dialog
             ViewportSettings = ViewportSettingsFlags.HasScrollBars,
         };
         Refresh();
+
+        _table.ValueChanged += (_, _) =>
+        {
+            if (SelectedIndex() is { } index)
+                BreakpointSelected?.Invoke(_breakpoints.Breakpoints[index]);
+            // Opening a different file (or one not yet open) moves focus to the editor - see
+            // EditorPane.Open's own SetFocus() call - which would otherwise strand this modal's
+            // keyboard navigation. Reclaim it immediately so arrow keys keep driving this table.
+            _table.SetFocus();
+        };
 
         var toggleButton = new Button { Text = "_Toggle Enabled", X = 0, Y = Pos.AnchorEnd(1), Width = 18 };
         toggleButton.Accepting += (_, e) => { ToggleSelected(); e.Handled = true; };
