@@ -125,6 +125,13 @@ samples/
     include/             screen.h, buffer.h, fileio.h, input.h, editor.h, vblank.h
     lib/                 Empty - drop a prebuilt .lib archive here to link against it
     bin/                 Build output (Nano128.prg) - gitignored
+  CBMInfo/             A single-screen system/hardware info utility, cross-target like HelloCBM
+    CBMInfo.tsln
+    CBMInfo.tproj        src/*.c, -I include for the headers
+    src/                 main.c, video.c
+    include/             main.h, video.h
+    lib/                 Empty - drop a prebuilt .lib archive here to link against it
+    bin/                 Build output (CBMInfo.prg) - gitignored
 ```
 
 ## Running
@@ -174,6 +181,13 @@ From the **File** menu:
 - **Open Project...** and pick `samples/inflate/inflate.tsln` for a single-file demo of a
   character-fill sprite that grows and shrinks between zero and the full screen size, redrawn each
   frame from an off-screen buffer.
+- **Open Project...** and pick `samples/CBMInfo/CBMInfo.tsln` for a single-screen system/hardware
+  info utility - `main.c` reports the machine model, CPU, clock speed, address/word width, RAM,
+  text/graphics resolution and colour count via the same per-target `#if defined(__C64__)`-style
+  conditional compilation as HelloCBM, while `video.c` detects PAL vs. NTSC *live* rather than from
+  a compile-time target guess, by polling the VIC-II raster line register ($D012) for its wraparound
+  point (262 lines for NTSC, 312 for PAL) - a good small example of direct hardware register access
+  alongside the cc65 runtime library calls the other samples mostly stick to.
 - **Open Project...** and pick `samples/Nano128/Nano128.tsln` for the largest sample - Nano128, a
   nano-style full-screen text editor for the C128, running in the VDC chip's 80-column mode from
   "C128_80" above. Commodore keyboards don't have most of the Ctrl+letter combos nano uses on a PC
@@ -242,6 +256,9 @@ Find in Files pre-populates the search field with the current selection - just i
 the selection spans more than one - and runs the search immediately, rather than opening to a
 blank field.
 
+**Edit > Go To Line...** (Ctrl+G) prompts for a line number (pre-filled with the caret's current
+line, validated against the open document's actual line count) and jumps straight there.
+
 Press **Ctrl+W** (or **File > Close File**) to close the open file. If it has unsaved changes
 you're prompted to save, discard, or cancel first - the same prompt appears if you select a
 *different* file in the Solution Explorer while the current one is modified, since opening a new
@@ -258,24 +275,41 @@ line, not just launching the emulator and watching it run.
    this there's no `.dbg` file to resolve breakpoints/addresses against source lines.
 2. Set a breakpoint with **F9** (or **Debug > Toggle Breakpoint**) on the line the cursor's on. This
    is the only way to set one - Terminal.Gui.Editor's `Editor` has no clickable gutter to click a
-   margin instead. Breakpoints persist per-project in `{Name}.breakpoints.json`, next to the `.tproj`
-   file (deliberately not part of the `.tproj` itself - see `BreakpointsFile` - toggling one
-   shouldn't dirty the project's own build settings). **Debug > Breakpoints...** lists/toggles/
-   deletes them all in one dialog.
+   margin instead. Every enabled breakpoint's line is highlighted in the editor (a persistent red
+   background) the moment it's set, not just while a debug session is stopped there. Breakpoints
+   persist per-project in `{Name}.breakpoints.json`, next to the `.tproj` file (deliberately not
+   part of the `.tproj` itself - see `BreakpointsFile` - toggling one shouldn't dirty the project's
+   own build settings). **Debug > Breakpoints...** lists/toggles/deletes them all in one dialog -
+   selecting a row jumps the editor straight to that breakpoint's file and line, same as the Error
+   List/Symbols tabs.
 3. **Debug > Start Debugging** (Shift+F5) builds, launches VICE with `-binarymonitor`, connects,
-   resolves every enabled breakpoint's source line to an address via the `.dbg` file, sets them, and
-   starts running. When one is hit, the **Debug** tab shows the register snapshot and the editor
-   highlights the current line (via a `Terminal.Gui.Editor` line transformer, not the gutter - see
-   step 2). **Continue** (Ctrl+F5) resumes; **Step** (F10) advances by *source line*, not raw 6502
-   instruction - it single-steps repeatedly until the resolved location changes, so one Step press
-   is one C statement, not one machine instruction. **Stop Debugging** disconnects (leaving VICE
-   itself running).
+   opens (and centers the editor on) the source line containing `main()`, resolves every enabled
+   breakpoint's source line to an address via the `.dbg` file, sets them, and starts running. The
+   **Debug** tab is switched to automatically so its status/register panel is visible right away.
+   The editor becomes read-only for the whole session - the running binary no longer matches
+   whatever you'd type, and this also guarantees jumping between files while stopped never gets
+   blocked by an "unsaved changes?" prompt. When a breakpoint is hit, the Debug tab shows the
+   register snapshot and status (`Stopped at <file>:<line>`), and the editor jumps to and
+   vertically centers the current line (highlighted via a `Terminal.Gui.Editor` line transformer,
+   not the gutter - see step 2; the same centering happens for every other stop below, not just the
+   first). **Continue** (Ctrl+F5) resumes; **Step** (F10) advances by *source line*, not raw 6502
+   instruction - it single-steps repeatedly until the resolved location changes to a *different* C
+   line (skipping over addresses that only resolve to cl65's own generated assembly, e.g. a
+   function's prologue, so it doesn't stop one instruction early), so one Step press is one C
+   statement, not one machine instruction - though stepping into a runtime library call (e.g.
+   `printf`) does step into its implementation, same as any debugger without a "step over". **Stop
+   Debugging** disconnects (leaving VICE itself running) and makes the editor editable again.
 
 The binary monitor's own protocol details (header layout, command bytes, how a checkpoint hit is
 reported, which register names VICE reports for the 6502) were confirmed against a real VICE 3.9
 session while building this, not just the manual - see VICE's own manual,
 [chapter 13](https://vice-emu.sourceforge.io/vice_13.html), if extending `ViceMonitorClient`
 further.
+
+Tedide logs to `%LocalAppData%\Tedide\logs\tedide-<date>.log` (Serilog, one file per day, 14 days
+kept) - debug-level detail on the checkpoint/step/resume flow above, and a full stack trace for any
+unhandled exception, since a crashed Terminal.Gui app otherwise just vanishes with no on-screen
+trace. Worth checking first if the app ever closes unexpectedly.
 
 ## Running the Doc Viewer
 
@@ -307,13 +341,13 @@ from cc65's own HTML manuals - regenerate it (and rebuild) if that tool's `Sourc
 
 ## Publishing a standalone executable
 
-Two VS Code tasks build single, self-contained executables that run on a Windows machine with no
-.NET runtime installed - **publish Tedide.App (standalone exe)** into `publish/Tedide.App.exe`,
-and **publish Tedide.DocViewer (standalone exe)** into `publish-docviewer/Tedide.DocViewer.exe`
+VS Code tasks build single, self-contained executables that run on a Windows machine with no .NET
+runtime installed - **publish Tedide.App (standalone exe)** into `publish/Tedide.App.exe`, and
+**publish Tedide.DocViewer (standalone exe)** into `publish-docviewer/Tedide.DocViewer.exe`
 (alongside its `Docs.db`, copied there explicitly by a post-publish MSBuild target - see the
 comment on `CopyDocsDbToPublishDir` in `Tedide.DocViewer.csproj` for why a plain
-`CopyToPublishDirectory` isn't reliable enough for this on its own). Equivalent from the command
-line:
+`CopyToPublishDirectory` isn't reliable enough for this on its own). **publish all (standalone
+exes)** just runs both of those in sequence. Equivalent from the command line:
 
 ```bash
 dotnet publish src/Tedide.App/Tedide.App.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -p:EnableCompressionInSingleFile=true -p:InvariantGlobalization=true -o publish
@@ -494,13 +528,15 @@ Two things worth knowing:
 
 Project/solution model, cc65 build integration with diagnostic parsing, VICE emulator launching,
 the core IDE layout (resizable explorer / editor / output/error-list/symbols/debug panes), a
-6502/ca65 syntax highlighter, Find in Files, source-level debugging against VICE's binary monitor
-protocol (breakpoints, registers, source-line stepping), a symbol browser for linker maps/labels, a
-Recent Projects and Solutions list, nine runtime-switchable themes, and standalone-executable
-publish tasks for both Tedide.App and Tedide.DocViewer are all in place and tested. Not yet
-implemented: true multi-project solution builds (a loaded solution's *first* project is always the
-one Build/Clean/Run/Debug act on), and a visual editor for `.cfg` linker configs (syntax
-highlighting only today - see "Editing" above).
+6502/ca65 syntax highlighter, Find in Files, Go To Line, source-level debugging against VICE's
+binary monitor protocol (breakpoints with persistent in-editor highlighting, registers, source-line
+stepping, a read-only editor and auto-centered current line while a session is active), a symbol
+browser for linker maps/labels, a Recent Projects and Solutions list, nine runtime-switchable
+themes, file-based logging for crash diagnosis, and standalone-executable publish tasks for both
+Tedide.App and Tedide.DocViewer are all in place and tested. Not yet implemented: true
+multi-project solution builds (a loaded solution's *first* project is always the one Build/Clean/
+Run/Debug act on), and a visual editor for `.cfg` linker configs (syntax highlighting only today -
+see "Editing" above).
 
 Note: this app is built against **prerelease** builds of
 [Terminal.Gui v2](https://github.com/gui-cs/Terminal.Gui) (`2.4.17`) and
