@@ -9,6 +9,11 @@ public class DbgFileTests
     // rather than a hand-written one.
     private static string LoadFixture() => File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "HelloCBM.dbg"));
 
+    // Real cc65/ld65 debug info from samples/CBMInfo, captured specifically because it has a case
+    // HelloCBM.dbg doesn't: an address where a narrow assembly-only span and a wider C-paired span
+    // both match (see FindSourceLocationForAddress_PrefersACSourceSpanOverAnOverlappingAssemblyOnlySpan).
+    private static string LoadCBMInfoFixture() => File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "CBMInfo.dbg"));
+
     [Fact]
     public void Parse_ReadsTheVersionRecord()
     {
@@ -126,6 +131,29 @@ public class DbgFileTests
         Assert.NotNull(location);
         Assert.Equal("src/main.c", location.Value.FilePath);
         Assert.Equal(26, location.Value.Line);
+    }
+
+    [Fact]
+    public void FindSourceLocationForAddress_PrefersACSourceSpanOverAnOverlappingAssemblyOnlySpan()
+    {
+        var dbg = DbgFile.Parse(LoadCBMInfoFixture());
+
+        // Confirmed against this exact build: at CODE segment offset 154, span 108 ("src/main.s",
+        // 2 bytes - a function's compiler-generated prologue) and span 116 ("src/main.c", 21 bytes
+        // - the whole "int main(void)\n{" statement) both cover this address. A breakpoint set on
+        // main.c's line 116 resolves to this same address (function entry), so a live debug session
+        // stopping there was resolving back to "src/main.s" instead of the user's own "src/main.c" -
+        // the real bug this test guards against (distinct from the same-span duplicate-line-record
+        // case the HelloCBM-based test above covers: here it's the *span* choice itself, not just
+        // which line record wins for one already-chosen span).
+        var address = dbg.FindAddressForSourceLine("src/main.c", 116);
+        Assert.NotNull(address);
+
+        var location = dbg.FindSourceLocationForAddress(address!.Value);
+
+        Assert.NotNull(location);
+        Assert.Equal("src/main.c", location.Value.FilePath);
+        Assert.Equal(116, location.Value.Line);
     }
 
     [Fact]

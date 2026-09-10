@@ -181,28 +181,46 @@ public sealed class DbgFile
                 continue;
 
             var offsetInSegment = address - segment.Start;
-            var span = Spans.FirstOrDefault(s =>
+            // More than one span can legitimately match the same address: cc65 emits a coarse span
+            // covering a whole C statement (paired with a .c line record) that can fully overlap a
+            // narrower .s-only span nested inside it for compiler-generated glue (e.g. a function's
+            // prologue) - confirmed against a real build of samples/CBMInfo: at offset 154, span 108
+            // ("src/main.s", 2 bytes, .s-only) and span 116 ("src/main.c", 21 bytes) both match.
+            // Picking only the first (narrowest/lowest-id) span, as a single Spans.FirstOrDefault
+            // would, can land on the .s-only one even though a wider .c-paired span also covers this
+            // exact address. Check every matching span and prefer whichever ultimately resolves to a
+            // non-assembly file.
+            var matchingSpans = Spans.Where(s =>
                 s.Seg == segment.Id && offsetInSegment >= s.Start && offsetInSegment < s.Start + s.Size);
-            if (span is null)
-                continue;
 
-            // A span compiled from C source carries TWO line records against the exact same code:
-            // one against cl65's own generated .s intermediate and one against the original .c/.h
-            // - confirmed against tests/Tedide.Core.Tests/Fixtures/HelloCBM.dbg, where span 7 has
-            // both "file=0 (src/main.s), line=62" and "file=2 (src/main.c), line=26". Picking
-            // whichever comes first (the .s one, since its file record sorts earlier) pointed the
-            // debugger at a generated file the user never sees on disk instead of their own source.
-            // Prefer any non-assembly candidate; fall back to assembly only when that's genuinely
-            // the only source (a hand-written .s file with no C counterpart, e.g. HelloCBM's
-            // border.s, which has its own module and no paired .c line record for its spans).
-            var candidates = Lines.Where(l => l.Spans.Contains(span.Id)).ToList();
-            var line = candidates.FirstOrDefault(l => !IsAssemblyFile(l.File)) ?? candidates.FirstOrDefault();
-            if (line is null)
-                continue;
+            (string FilePath, int Line)? assemblyFallback = null;
+            foreach (var span in matchingSpans)
+            {
+                // A span compiled from C source can also carry TWO line records against the exact
+                // same code: one against cl65's own generated .s intermediate and one against the
+                // original .c/.h - confirmed against tests/Tedide.Core.Tests/Fixtures/HelloCBM.dbg,
+                // where span 7 has both "file=0 (src/main.s), line=62" and "file=2 (src/main.c),
+                // line=26". Prefer any non-assembly candidate here too; fall back to assembly only
+                // when that's genuinely the only source for this span (a hand-written .s file with
+                // no C counterpart, e.g. HelloCBM's border.s, which has its own module and no paired
+                // .c line record for its spans).
+                var candidates = Lines.Where(l => l.Spans.Contains(span.Id)).ToList();
+                var line = candidates.FirstOrDefault(l => !IsAssemblyFile(l.File)) ?? candidates.FirstOrDefault();
+                if (line is null)
+                    continue;
 
-            var file = Files.FirstOrDefault(f => f.Id == line.File);
-            if (file is not null)
-                return (file.Name, line.Line);
+                var file = Files.FirstOrDefault(f => f.Id == line.File);
+                if (file is null)
+                    continue;
+
+                if (!IsAssemblyFile(line.File))
+                    return (file.Name, line.Line);
+
+                assemblyFallback ??= (file.Name, line.Line);
+            }
+
+            if (assemblyFallback is { } fallback)
+                return fallback;
         }
 
         return null;
