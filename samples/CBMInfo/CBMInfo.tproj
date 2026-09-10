@@ -1,0 +1,22 @@
+{
+  "Name": "CBMInfo",
+  "Target": "C64",
+  "OptimizationLevel": "Maximum",
+  "GenerateAssemblyListing": true,
+  "AddSourceAsComment": true,
+  "GenerateLinkerMap": true,
+  "GenerateDebugInfo": true,
+  "ExportLabels": true,
+  "SourceFiles": [
+    "src/main.c",
+    "src/video.c"
+  ],
+  "OutputFile": "bin/CBMInfo.prg",
+  "LinkerConfigPath": null,
+  "IncludePaths": [],
+  "PreprocessorDefines": [],
+  "ExtraArguments": [
+    "-I",
+    "include"
+  ]
+}
