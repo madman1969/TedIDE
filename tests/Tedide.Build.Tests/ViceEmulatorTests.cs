@@ -98,6 +98,59 @@ public class ViceEmulatorTests
         Assert.Equal(["-autostart", project.ResolvedOutputFile], args);
     }
 
+    [Theory]
+    [InlineData(null, "none")]
+    [InlineData("", "none")]
+    [InlineData("vic20.cfg", "none")]
+    [InlineData("some-custom-config.cfg", "none")]
+    [InlineData("vic20-asm-3k.cfg", "3k")]
+    [InlineData("vic20-tgi.cfg", "8k")]
+    [InlineData("vic20-32k.cfg", "all")]
+    [InlineData("vic20-asm-32k.cfg", "all")]
+    [InlineData("VIC20-32K.CFG", "all")]
+    public void Vic20MemorySpecFor_MapsKnownCc65ConfigNames_ToTheMatchingViceMemoryPreset(string? linkerConfigPath, string expectedSpec)
+    {
+        Assert.Equal(expectedSpec, ViceEmulator.Vic20MemorySpecFor(linkerConfigPath));
+    }
+
+    [Fact]
+    public void Vic20MemorySpecFor_MatchesByFileNameOnly_RegardlessOfDirectory()
+    {
+        Assert.Equal("all", ViceEmulator.Vic20MemorySpecFor(@"C:\CC65\cfg\vic20-32k.cfg"));
+    }
+
+    [Fact]
+    public void BuildArguments_IncludesMemoryFlag_ForVic20Projects()
+    {
+        var project = new TedideProject { Name = "Test", Target = Cc65Target.Vic20, LinkerConfigPath = "vic20-32k.cfg" };
+
+        var args = ViceEmulator.BuildArguments(project, enableBinaryMonitor: false);
+
+        Assert.Contains("-memory", args);
+        Assert.Contains("all", args);
+    }
+
+    [Fact]
+    public void BuildArguments_AssumesUnexpanded_WhenAVic20ProjectHasNoCustomLinkerConfig()
+    {
+        var project = new TedideProject { Name = "Test", Target = Cc65Target.Vic20, LinkerConfigPath = null };
+
+        var args = ViceEmulator.BuildArguments(project, enableBinaryMonitor: false);
+
+        Assert.Contains("-memory", args);
+        Assert.Contains("none", args);
+    }
+
+    [Fact]
+    public void BuildArguments_OmitsMemoryFlag_ForNonVic20Projects()
+    {
+        var project = new TedideProject { Name = "Test", Target = Cc65Target.C64 };
+
+        var args = ViceEmulator.BuildArguments(project, enableBinaryMonitor: false);
+
+        Assert.DoesNotContain("-memory", args);
+    }
+
     [Fact]
     public void Launch_ThrowsNotSupportedException_WhenTargetHasNoViceEmulator()
     {

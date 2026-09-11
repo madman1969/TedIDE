@@ -113,6 +113,53 @@ public sealed class ViceEmulator(string binDirectory = ViceEmulator.DefaultBinDi
         var args = new List<string> { "-autostart", project.ResolvedOutputFile };
         if (enableBinaryMonitor)
             args.Add("-binarymonitor");
+
+        // VICE remembers whichever RAM expansion was last configured (in its own persisted
+        // settings), which has nothing to do with this project - passing -memory explicitly every
+        // time, based on which linker config this build actually used, is what makes xvic's actual
+        // memory map match what the linker already assumed instead of whatever xvic was last left
+        // in from some other project.
+        if (project.Target == Cc65Target.Vic20)
+        {
+            args.Add("-memory");
+            args.Add(Vic20MemorySpecFor(project.LinkerConfigPath));
+        }
+
         return args;
+    }
+
+    /// <summary>
+    /// Maps a VIC-20 linker config to the VICE "-memory" preset (see xvic's own "-memory
+    /// &lt;spec&gt;" option: none/3k/8k/16k/24k/all) that provides the same RAM expansion it
+    /// assumes - by file name only (cc65's own bundled vic20*.cfg files, matched case-insensitively,
+    /// wherever they actually live - Tedide.App's own Project Settings dialog defaults its Linker
+    /// tab's Browse button to cc65's cfg/ folder, where these all live together), not by parsing an
+    /// arbitrary custom config's MEMORY block. <paramref name="linkerConfigPath"/>
+    /// null/blank (<see cref="TedideProject.LinkerConfigPath"/>'s own "target default" meaning) or
+    /// any unrecognized file name falls back to "none" - the plain unexpanded VIC-20 cc65's own
+    /// default vic20.cfg itself targets.
+    /// </summary>
+    internal static string Vic20MemorySpecFor(string? linkerConfigPath)
+    {
+        if (string.IsNullOrEmpty(linkerConfigPath))
+            return "none";
+
+        return Path.GetFileName(linkerConfigPath).ToLowerInvariant() switch
+        {
+            // Needs block 0 (3K at $0400) - cc65's only 3K config is asm-only (no C runtime
+            // startup code), but it's matched here too in case a project's linker script is a
+            // customized copy of it that still shares the name.
+            "vic20-asm-3k.cfg" => "3k",
+            // Needs at least block 1 (8K at $2000) - vic20-tgi.cfg's own comment says "at least,
+            // 8K expansion RAM" for the vic20-hi.tgi driver; its __HIMEM__ default of $4000 only
+            // actually uses block 1, though a project could raise __HIMEM__ to use more.
+            "vic20-tgi.cfg" => "8k",
+            // Needs blocks 1-3 (8K+16K+24K at $2000-$7FFF, MAIN runs up to $8000 in both) - cc65
+            // labels these "32K" after the real RAM cartridge they model, which also populates
+            // block 0 - "all" (every block, including 0) is the closest VICE preset to that real
+            // hardware, a strict superset of what these configs' own MEMORY block actually needs.
+            "vic20-32k.cfg" or "vic20-asm-32k.cfg" => "all",
+            _ => "none",
+        };
     }
 }

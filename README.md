@@ -270,7 +270,15 @@ the link step is skipped, so a single build surfaces every file's errors at once
 Project** deletes the project's build artifacts (each source file's object file and assembler
 listing, linker map, label file, debug info file, and the linked output binary) without
 rebuilding. **F6** (or **Build > Run Project**) builds first, then launches the built output in
-the VICE emulator matching the project's target, auto-starting it.
+the VICE emulator matching the project's target, auto-starting it. For a VIC-20 project, this also
+passes xvic's own `-memory` flag matching whichever linker config is actually in effect - cc65's
+default `vic20.cfg` (or no custom config at all) launches an unexpanded VIC-20 (`-memory none`),
+while one of cc65's own RAM-expanded configs (e.g. `vic20-32k.cfg`, browseable from the Linker tab -
+see "Project Settings dialog" below) launches VICE with the matching expansion instead
+(`ViceEmulator.Vic20MemorySpecFor` maps cc65's own config names by file name; an unrecognized custom
+config is treated the same as no config at all - an unexpanded VIC-20). Explicit every launch,
+rather than relying on whatever VICE's own persisted settings last had configured, since that has
+nothing to do with which project is actually running.
 
 Two more tabs sit alongside Output/Error List: **Symbols** parses the project's `lnk.map`/`.lbl`
 (if "Generate linker map file"/"Export labels" are on - see "Project Settings dialog" below) into a
@@ -475,7 +483,11 @@ single Save/Cancel footer:
   project - see "Running" above.
 - **Linker** - *Generate linker map file* (`-m`), *Export labels* (`-Ln`), *Generate debug info*
   (`-g`/`--dbgfile` - needed for the debugger, see "Debugging" above), and a custom linker config
-  file path (`-C`).
+  file path (`-C`) - its own **Browse** button opens straight to CC65_HOME's `cfg/` folder, at the
+  current Target's own default config if that specific file exists there (e.g. `vic20.cfg` for the
+  VIC-20) - the same folder cc65 itself ships alternate configs in for e.g. a RAM-expanded VIC-20
+  (`vic20-32k.cfg`) or Plus/4 (`c16-32k.cfg`), so picking one of those is just a matter of browsing
+  rather than knowing cc65's install layout by hand.
 - **SuperCPU** - a single *Enable SuperCPU support* checkbox (`EnableSuperCpu`) - greyed out (and
   force-unchecked) unless the Settings tab's own Target is C64, since the SuperCPU is a C64-specific
   accelerator cartridge; kept in sync live if you change Target while this dialog is still open, not

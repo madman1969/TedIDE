@@ -363,7 +363,10 @@ public sealed class ProjectSettingsDialog : Dialog
 
         var linkerConfigLabel = new Label { Text = "Custom linker config (-C, blank = target default):", X = 0, Y = 16 };
         linkerConfigPathField = new TextField { X = 0, Y = 18, Width = Dim.Fill(12), Text = project.LinkerConfigPath ?? string.Empty };
-        var browseButton = FileBrowseButton.Create(linkerConfigPathField, y: 18, "Select Linker Config File", ".cfg");
+        var browseButton = FileBrowseButton.Create(
+            linkerConfigPathField, y: 18, "Select Linker Config File",
+            initialPath: DefaultLinkerConfigPath(project.Target, Environment.GetEnvironmentVariable("CC65_HOME")),
+            extensions: ".cfg");
 
         var linkerConfigHelpLabel = new Label
         {
@@ -378,6 +381,26 @@ public sealed class ProjectSettingsDialog : Dialog
             linkerConfigLabel, linkerConfigPathField, browseButton, linkerConfigHelpLabel);
         return tab;
     }
+
+    /// <summary>
+    /// Where cc65's own default linker config for <paramref name="target"/> would live (e.g.
+    /// "vic20.cfg" for the VIC-20, next to cc65's other alternate configs for it like
+    /// "vic20-32k.cfg" for a RAM-expanded machine) under <paramref name="cc65Home"/>'s own cfg/
+    /// folder - what the Linker tab's "Browse" button (see BuildLinkerTab) opens to by default, so
+    /// picking one of cc65's own bundled configs is a matter of browsing the same folder cl65
+    /// itself already resolves target defaults from, rather than hunting for cc65's install
+    /// directory by hand. A pure function (<paramref name="cc65Home"/> passed in rather than read
+    /// from the environment here) purely so it's directly unit-testable, same as
+    /// <see cref="Tedide.Build.ViceEmulator.BuildArguments"/> - BuildLinkerTab's own caller passes
+    /// <c>Environment.GetEnvironmentVariable("CC65_HOME")</c>, which is what's actually in effect
+    /// right now (<see cref="AppShell"/> applies a configured CC65_HOME to the environment at
+    /// startup and on every save, but an external CC65_HOME the user set outside Tedide is honored
+    /// too - see BuildCc65Tab's own comment - and only the environment reflects that, not
+    /// <see cref="ToolchainSettings"/> alone). Null if <paramref name="cc65Home"/> is null/blank -
+    /// nothing to point at.
+    /// </summary>
+    internal static string? DefaultLinkerConfigPath(Cc65Target target, string? cc65Home) =>
+        string.IsNullOrEmpty(cc65Home) ? null : Path.Combine(cc65Home, "cfg", $"{target.ToCl65Id()}.cfg");
 
     /// <summary>
     /// Builds the "SuperCPU" tab: a single toggle for <see cref="TedideProject.EnableSuperCpu"/> -
