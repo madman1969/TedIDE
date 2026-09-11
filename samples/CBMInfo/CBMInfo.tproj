@@ -9,7 +9,11 @@
   "ExportLabels": true,
   "SourceFiles": [
     "src/main.c",
-    "src/video.c"
+    "src/machine.c",
+    "src/cpu.c",
+    "src/memory.c",
+    "src/video.c",
+    "src/sound.c"
   ],
   "OutputFile": "bin/CBMInfo.prg",
   "LinkerConfigPath": null,

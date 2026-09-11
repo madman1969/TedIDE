@@ -128,8 +128,10 @@ samples/
   CBMInfo/             A single-screen system/hardware info utility, cross-target like HelloCBM
     CBMInfo.tsln
     CBMInfo.tproj        src/*.c, -I include for the headers
-    src/                 main.c, video.c
-    include/             main.h, video.h
+    src/                 main.c (orchestrates the modules below into one SystemInfo struct/screen),
+                         machine.c, cpu.c, memory.c, video.c, sound.c - one module per category of
+                         detail, each with its own detection logic (see "Running" below)
+    include/             main.h, machine.h, cpu.h, memory.h, video.h, sound.h
     lib/                 Empty - drop a prebuilt .lib archive here to link against it
     bin/                 Build output (CBMInfo.prg) - gitignored
 ```
@@ -182,12 +184,32 @@ From the **File** menu:
   character-fill sprite that grows and shrinks between zero and the full screen size, redrawn each
   frame from an off-screen buffer.
 - **Open Project...** and pick `samples/CBMInfo/CBMInfo.tsln` for a single-screen system/hardware
-  info utility - `main.c` reports the machine model, CPU, clock speed, address/word width, RAM,
-  text/graphics resolution and colour count via the same per-target `#if defined(__C64__)`-style
-  conditional compilation as HelloCBM, while `video.c` detects PAL vs. NTSC *live* rather than from
-  a compile-time target guess, by polling the VIC-II raster line register ($D012) for its wraparound
-  point (262 lines for NTSC, 312 for PAL) - a good small example of direct hardware register access
-  alongside the cc65 runtime library calls the other samples mostly stick to.
+  info utility, buildable for all eight non-GEOS Commodore targets Tedide offers - `main.c` itself
+  is just a thin orchestrator that calls into five small modules, each owning one category of
+  detail and calling out to a real cc65 runtime API wherever one exists, rather than assuming
+  compile-time constants for everything the way the original single-file version did:
+  - `machine.c` names the physical machine - refined with `get_ostype()` (c64.h) into the exact
+    ROM/hardware variant actually detected (e.g. an SX-64) on the one target that exposes it.
+  - `cpu.c` confirms the CPU family with `getcpu()` (6502.h, works on every target) before naming
+    the specific chip (6510/8502/6502/7501/8501/6509 all report identically as CPU_6502, since
+    they're opcode-compatible - `getcpu()` only rules out the unexpected), and reads the C128's
+    *current* clock speed live via `get_c128_speed()` (accelerator.h) rather than assuming it's
+    always in 2 MHz mode.
+  - `memory.c` reports free heap right now via `_heapmemavail()` (stdlib.h), alongside the fixed
+    total RAM installed.
+  - `video.c` detects PAL vs. NTSC *live* by polling the video chip's own raster line counter to
+    find its wraparound point (262 lines for NTSC, 312 for PAL) - properly scoped to the VIC-II/TED
+    targets that actually have such a register (a bug in the original version ran this
+    unconditionally on every target, including ones with no such chip at all), and reads back the
+    *actual* current text screen size via `screensize()` (conio.h) rather than a fixed guess, so it
+    reflects e.g. the C128's 40/80-column switch correctly.
+  - `sound.c` names each machine's sound hardware and voice count, confirmed directly against
+    cc65's own `_sid.h`/`_ted.h`/`_vic.h` register-layout headers.
+
+  Where cc65 genuinely has no runtime API for something (e.g. total installed RAM, or which exact
+  6502 variant a machine has), the value is still a per-target constant - each module's own header
+  comment says which of its own values are truly dynamic versus necessarily fixed at compile time,
+  since cc65 builds a separate binary per target rather than one binary that runs everywhere.
 - **Open Project...** and pick `samples/Nano128/Nano128.tsln` for the largest sample - Nano128, a
   nano-style full-screen text editor for the C128, running in the VDC chip's 80-column mode from
   "C128_80" above. Commodore keyboards don't have most of the Ctrl+letter combos nano uses on a PC

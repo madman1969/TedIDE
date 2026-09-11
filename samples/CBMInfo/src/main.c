@@ -1,112 +1,36 @@
 #include <main.h>
 
-static SystemInfo sys;
-
-void detect_system(void)
+/* Populates every field of *info by delegating to the machine/cpu/memory/
+ * video/sound modules - main.c itself doesn't know or care which of these
+ * are read back live at runtime versus fixed per compile-time target; see
+ * each module's own header for that distinction. */
+void detect_system(SystemInfo *info)
 {
-	VideoSystem video;
+    info->model         = machine_model();
+    info->address_bits  = machine_address_bits();
+    info->word_bits     = machine_word_bits();
 
-#if defined(__C64__)
+    info->cpu           = cpu_name();
+    info->cpu_khz       = cpu_speed_khz();
 
-    sys.model        = "Commodore 64";
-    sys.cpu          = "MOS 6510";
-    sys.cpu_khz      = 1020;
-    sys.address_bits = 16;
-    sys.word_bits    = 8;
-    sys.ram_bytes    = 65536;
-    sys.text_cols    = 40;
-    sys.text_rows    = 25;
-    sys.gfx_width	 = 320;
-    sys.gfx_height	 = 200;
-    sys.colours      = 16;
+    info->ram_installed_bytes = memory_installed_bytes();
+    info->ram_heap_free_bytes = memory_heap_free_bytes();
 
-#elif defined(__C128__)
+    info->video          = video_name(detect_video_system());
+    video_get_text_size(&info->text_cols, &info->text_rows);
+    info->gfx_width      = video_gfx_width();
+    info->gfx_height     = video_gfx_height();
+    info->colours        = video_colour_count();
 
-    sys.model        = "Commodore 128";
-    sys.cpu          = "MOS 8502";
-    sys.cpu_khz      = 2000;
-    sys.address_bits = 16;
-    sys.word_bits    = 8;
-    sys.ram_bytes    = 131072;
-    sys.text_cols    = 40;
-    sys.text_rows    = 25;
-	/*
-	* VIC-II mode
-	*/
-	sys.gfx_width = 320;
-	sys.gfx_height = 200;
-	sys.colours = 16;
-
-#elif defined(__VIC20__)
-
-    sys.model        = "VIC-20";
-    sys.cpu          = "MOS 6502";
-    sys.cpu_khz      = 1100;
-    sys.address_bits = 16;
-    sys.word_bits    = 8;
-    sys.ram_bytes    = 5120;
-    sys.text_cols    = 22;
-    sys.text_rows    = 23;
-	sys.gfx_width 	 = 176;
-	sys.gfx_height 	 = 184;
-	sys.colours 	 = 8;
-
-#elif defined(__PLUS4__)
-
-    sys.model        = "Commodore Plus/4";
-    sys.cpu          = "MOS 7501";
-    sys.cpu_khz      = 1760;
-    sys.address_bits = 16;
-    sys.word_bits    = 8;
-    sys.ram_bytes    = 65536;
-    sys.text_cols    = 40;
-    sys.text_rows    = 25;
-	sys.gfx_width    = 320;
-	sys.gfx_height   = 200;    
-    sys.colours      = 121;
-
-#elif defined(__C16__)
-
-    sys.model        = "Commodore 16";
-    sys.cpu          = "MOS 7501";
-    sys.cpu_khz      = 1760;
-    sys.address_bits = 16;
-    sys.word_bits    = 8;
-    sys.ram_bytes    = 16384;
-    sys.text_cols    = 40;
-    sys.text_rows    = 25;
-	sys.gfx_width    = 320;
-	sys.gfx_height   = 200;    
-    sys.colours      = 121;
-
-#elif defined(__PET__)
-
-    sys.model        = "Commodore PET";
-    sys.cpu          = "MOS 6502";
-    sys.cpu_khz      = 1000;
-    sys.address_bits = 16;
-    sys.word_bits    = 8;
-    sys.ram_bytes    = 32768;
-
-    sys.text_cols    = 80;
-    sys.text_rows    = 25;
-
-    sys.gfx_width    = 0;
-    sys.gfx_height   = 0;
-
-    sys.colours      = 1;
-
-    sys.video        = "Monochrome";
-    
-#endif
-
-	video = detect_video_system();
-	sys.video = video_name(video);
+    info->sound_chip     = sound_chip_name();
+    info->sound_voices   = sound_voice_count();
 }
 
 int main(void)
 {
-    detect_system();
+    static SystemInfo sys;
+
+    detect_system(&sys);
 
     clrscr();
     puts("COMMODORE SYSTEM INFORMATION");
@@ -118,14 +42,16 @@ int main(void)
     printf("Clock Speed        : %u.%03u MHz\n", sys.cpu_khz / 1000, sys.cpu_khz % 1000);
     printf("CPU Architecture   : %u-bit processor\n", sys.word_bits);
     printf("Address Bus        : %u-bit\n", sys.address_bits);
-    printf("Installed RAM      : %lu KB\n", sys.ram_bytes / 1024);
+    printf("Installed RAM      : %lu KB\n", sys.ram_installed_bytes / 1024);
+    printf("Free Heap          : %lu bytes\n", sys.ram_heap_free_bytes);
 
     printf("Video Standard     : %s\n", sys.video);
     printf("Text Resolution    : %u x %u\n", sys.text_cols, sys.text_rows);
-
-	printf("Graphics Resolution: %ux%u\n", sys.gfx_width, sys.gfx_height);
-
+    printf("Graphics Resolution: %ux%u\n", sys.gfx_width, sys.gfx_height);
     printf("Colour Capability  : %u colours\n", sys.colours);
+
+    printf("Sound Hardware     : %s\n", sys.sound_chip);
+    printf("Sound Voices       : %u\n", sys.sound_voices);
 
     return 0;
 }
