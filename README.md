@@ -276,9 +276,14 @@ default `vic20.cfg` (or no custom config at all) launches an unexpanded VIC-20 (
 while one of cc65's own RAM-expanded configs (e.g. `vic20-32k.cfg`, browseable from the Linker tab -
 see "Project Settings dialog" below) launches VICE with the matching expansion instead
 (`ViceEmulator.Vic20MemorySpecFor` maps cc65's own config names by file name; an unrecognized custom
-config is treated the same as no config at all - an unexpanded VIC-20). Explicit every launch,
-rather than relying on whatever VICE's own persisted settings last had configured, since that has
-nothing to do with which project is actually running.
+config is treated the same as no config at all - an unexpanded VIC-20). A C16 or Plus/4 project gets
+the same treatment via xplus4's own `-ramsize <16/32/64>` option instead
+(`ViceEmulator.Plus4RamSizeFor`): cc65's default `c16.cfg` (or no custom config) assumes an
+unexpanded 16K C16, `c16-32k.cfg` assumes its 32K expansion, and `plus4.cfg` assumes the Plus/4's
+stock 64K outright (it has no smaller "unexpanded" config the way the C16 does, so that's the
+fallback for it even with no custom config set). Every one of these is passed explicitly on every
+launch, rather than relying on whatever VICE's own persisted settings last had configured, since
+that has nothing to do with which project is actually running.
 
 Two more tabs sit alongside Output/Error List: **Symbols** parses the project's `lnk.map`/`.lbl`
 (if "Generate linker map file"/"Export labels" are on - see "Project Settings dialog" below) into a
@@ -487,7 +492,15 @@ single Save/Cancel footer:
   current Target's own default config if that specific file exists there (e.g. `vic20.cfg` for the
   VIC-20) - the same folder cc65 itself ships alternate configs in for e.g. a RAM-expanded VIC-20
   (`vic20-32k.cfg`) or Plus/4 (`c16-32k.cfg`), so picking one of those is just a matter of browsing
-  rather than knowing cc65's install layout by hand.
+  rather than knowing cc65's install layout by hand. Its file-type filter defaults to just the
+  current Target's own configs too (`ProjectSettingsDialog.SupportedLinkerConfigFileNames`, a
+  hand-verified list per Commodore target, not a filename guess) - switch it to "All Config Files"
+  in the dialog to browse for a genuinely custom-named one instead. Both the starting folder and the
+  filter track the Settings tab's own Target dropdown live, the same as the SuperCPU tab below - and
+  changing Target also resets this field back to blank, since a config written for one target's
+  memory map is unlikely to still be valid for a different one (blank already means "use cl65's
+  built-in target default", so this is the safe choice, not a written-out path that would go stale
+  if CC65_HOME later changed).
 - **SuperCPU** - a single *Enable SuperCPU support* checkbox (`EnableSuperCpu`) - greyed out (and
   force-unchecked) unless the Settings tab's own Target is C64, since the SuperCPU is a C64-specific
   accelerator cartridge; kept in sync live if you change Target while this dialog is still open, not

@@ -74,7 +74,7 @@ public sealed class ProjectSettingsDialog : Dialog
             out _includePathsField, out _preprocessorDefinesField);
         var optimizerTab = BuildOptimizerTab(project, out _optimizationLevelField);
         var compilerTab = BuildCompilerTab(project, out _generateListingField, out _addSourceAsCommentField);
-        var linkerTab = BuildLinkerTab(project, out _generateLinkerMapField, out _exportLabelsField, out _generateDebugInfoField, out _linkerConfigPathField);
+        var linkerTab = BuildLinkerTab(project, _targetField, out _generateLinkerMapField, out _exportLabelsField, out _generateDebugInfoField, out _linkerConfigPathField);
         var superCpuTab = BuildSuperCpuTab(project, out _enableSuperCpuField);
         var cc65Tab = BuildCc65Tab(out _cc65HomeField);
         var viceTab = BuildViceTab(out _viceBinDirectoryField);
@@ -97,6 +97,16 @@ public sealed class ProjectSettingsDialog : Dialog
             if (!supportsSuperCpu)
                 _enableSuperCpuField.Value = CheckState.UnChecked;
         };
+
+        // A linker config is written for one specific target's memory map - one target's own
+        // config (or a genuinely custom one written for it) is unlikely to still be correct after
+        // switching to a different target, so it's reset back to blank ("use cl65's built-in target
+        // default", per the field's own label) rather than silently carrying over something that
+        // may no longer even link. Not filled in with the new target's own resolved config path
+        // (e.g. "vic20.cfg") instead of blank, specifically because blank already means exactly
+        // that - and stays correct even if CC65_HOME (and so where that file actually lives) later
+        // changes, where a written-out path wouldn't.
+        _targetField.TextChanged += (_, _) => _linkerConfigPathField.Text = string.Empty;
 
         // The primary action: Accent-scheme so it visually pops against the dialog's normal
         // chrome, the same accent color the app uses for the menu bar's own highlighted items.
@@ -307,8 +317,13 @@ public sealed class ProjectSettingsDialog : Dialog
 
     /// <summary>Builds the "Linker" tab: ld65 link-time flags - the -m linker map toggle, the -Ln
     /// label file toggle, and a custom -C linker configuration file path.</summary>
+    /// <param name="targetField">The Settings tab's own target dropdown - read live (not just once,
+    /// at construction) by the Browse button's file-type filter/initial path, since the user can
+    /// change Target without closing this dialog first, same reasoning as the SuperCPU tab's own
+    /// live sync (see the constructor).</param>
     private static View BuildLinkerTab(
         TedideProject project,
+        TextField targetField,
         out CheckBox generateLinkerMapField,
         out CheckBox exportLabelsField,
         out CheckBox generateDebugInfoField,
@@ -361,12 +376,17 @@ public sealed class ProjectSettingsDialog : Dialog
             X = 0, Y = 13, Width = Dim.Fill(), Height = 2,
         };
 
+        // Falls back to the project's own Target if the Settings tab's dropdown currently holds
+        // something Cc65TargetExtensions.TryParse can't make sense of (e.g. cleared mid-edit).
+        Cc65Target CurrentTarget() =>
+            Cc65TargetExtensions.TryParse(targetField.Text, out var parsed) ? parsed : project.Target;
+
         var linkerConfigLabel = new Label { Text = "Custom linker config (-C, blank = target default):", X = 0, Y = 16 };
         linkerConfigPathField = new TextField { X = 0, Y = 18, Width = Dim.Fill(12), Text = project.LinkerConfigPath ?? string.Empty };
         var browseButton = FileBrowseButton.Create(
             linkerConfigPathField, y: 18, "Select Linker Config File",
-            initialPath: DefaultLinkerConfigPath(project.Target, Environment.GetEnvironmentVariable("CC65_HOME")),
-            extensions: ".cfg");
+            initialPath: () => DefaultLinkerConfigPath(CurrentTarget(), Environment.GetEnvironmentVariable("CC65_HOME")),
+            allowedTypes: () => LinkerConfigAllowedTypes(CurrentTarget()));
 
         var linkerConfigHelpLabel = new Label
         {
@@ -401,6 +421,58 @@ public sealed class ProjectSettingsDialog : Dialog
     /// </summary>
     internal static string? DefaultLinkerConfigPath(Cc65Target target, string? cc65Home) =>
         string.IsNullOrEmpty(cc65Home) ? null : Path.Combine(cc65Home, "cfg", $"{target.ToCl65Id()}.cfg");
+
+    /// <summary>
+    /// The exact cc65-bundled linker config file names valid for each Commodore target - a
+    /// hand-verified list (checked directly against a real cc65 install's cfg/ folder), not a
+    /// filename-prefix guess, since a loose prefix match risks either missing a config that
+    /// doesn't happen to share the target's own cl65 id as a prefix, or over-matching an unrelated
+    /// one. Covers every target in <see cref="Cc65TargetExtensions.CommodoreTargets"/> - the only
+    /// ones the Settings tab's own dropdown offers - so <see cref="LinkerConfigAllowedTypes"/> has
+    /// something to filter by for whatever it's actually set to.
+    /// </summary>
+    internal static readonly IReadOnlyDictionary<Cc65Target, string[]> SupportedLinkerConfigFileNames = new Dictionary<Cc65Target, string[]>
+    {
+        [Cc65Target.C64] = ["c64.cfg", "c64-asm.cfg", "c64-overlay.cfg"],
+        [Cc65Target.C128] = ["c128.cfg", "c128-asm.cfg", "c128-overlay.cfg"],
+        [Cc65Target.C16] = ["c16.cfg", "c16-32k.cfg", "c16-asm.cfg"],
+        [Cc65Target.Plus4] = ["plus4.cfg", "plus4-asm.cfg"],
+        [Cc65Target.Vic20] = ["vic20.cfg", "vic20-32k.cfg", "vic20-asm.cfg", "vic20-asm-32k.cfg", "vic20-asm-3k.cfg", "vic20-tgi.cfg"],
+        [Cc65Target.Pet] = ["pet.cfg", "pet-overlay.cfg"],
+        [Cc65Target.Cbm510] = ["cbm510.cfg"],
+        [Cc65Target.Cbm610] = ["cbm610.cfg"],
+        [Cc65Target.Geos_Cbm] = ["geos-cbm.cfg"],
+    };
+
+    /// <summary>
+    /// The Linker tab's Browse button file-type filters for <paramref name="target"/>: the
+    /// target's own configs (see <see cref="SupportedLinkerConfigFileNames"/>) as the default
+    /// active filter when it's a recognized Commodore target, plus an "All Config Files" filter
+    /// always offered too - so a genuinely custom-named config placed elsewhere (the whole point
+    /// of "Custom linker config" existing at all) is still reachable by switching filters, not
+    /// permanently hidden just because its name doesn't match cc65's own bundled ones.
+    /// </summary>
+    internal static IReadOnlyList<IAllowedType> LinkerConfigAllowedTypes(Cc65Target target)
+    {
+        var allFilesFilter = new AllowedType("All Config Files", ".cfg");
+        return SupportedLinkerConfigFileNames.ContainsKey(target)
+            ? [new TargetLinkerConfigFileType(target), allFilesFilter]
+            : [allFilesFilter];
+    }
+
+    /// <summary>
+    /// Matches only the .cfg files <see cref="SupportedLinkerConfigFileNames"/> lists for
+    /// <paramref name="target"/> - the Linker tab's Browse button's default filter (see
+    /// <see cref="LinkerConfigAllowedTypes"/>).
+    /// </summary>
+    private sealed class TargetLinkerConfigFileType(Cc65Target target) : IAllowedType
+    {
+        public bool IsAllowed(string path) =>
+            SupportedLinkerConfigFileNames.TryGetValue(target, out var fileNames) &&
+            fileNames.Contains(Path.GetFileName(path), StringComparer.OrdinalIgnoreCase);
+
+        public override string ToString() => $"{target.ToCl65Id()} Configs";
+    }
 
     /// <summary>
     /// Builds the "SuperCPU" tab: a single toggle for <see cref="TedideProject.EnableSuperCpu"/> -

@@ -114,15 +114,22 @@ public sealed class ViceEmulator(string binDirectory = ViceEmulator.DefaultBinDi
         if (enableBinaryMonitor)
             args.Add("-binarymonitor");
 
-        // VICE remembers whichever RAM expansion was last configured (in its own persisted
-        // settings), which has nothing to do with this project - passing -memory explicitly every
-        // time, based on which linker config this build actually used, is what makes xvic's actual
-        // memory map match what the linker already assumed instead of whatever xvic was last left
-        // in from some other project.
+        // VICE remembers whichever RAM configuration was last set (in its own persisted settings),
+        // which has nothing to do with this project - passing the matching flag explicitly every
+        // time, based on which linker config this build actually used, is what makes the emulator's
+        // actual memory map match what the linker already assumed instead of whatever it was last
+        // left in from some other project. Only the targets whose cc65-bundled configs actually
+        // vary by RAM size need this - see Vic20MemorySpecFor/Plus4RamSizeFor's own comments for
+        // why each target's own "no custom config" fallback differs.
         if (project.Target == Cc65Target.Vic20)
         {
             args.Add("-memory");
             args.Add(Vic20MemorySpecFor(project.LinkerConfigPath));
+        }
+        else if (project.Target is Cc65Target.C16 or Cc65Target.Plus4)
+        {
+            args.Add("-ramsize");
+            args.Add(Plus4RamSizeFor(project.Target, project.LinkerConfigPath).ToString());
         }
 
         return args;
@@ -161,5 +168,39 @@ public sealed class ViceEmulator(string binDirectory = ViceEmulator.DefaultBinDi
             "vic20-32k.cfg" or "vic20-asm-32k.cfg" => "all",
             _ => "none",
         };
+    }
+
+    /// <summary>
+    /// Maps a C16/Plus4 linker config to the RAM size (in KiB) xplus4's own "-ramsize &lt;RAM
+    /// size&gt;" option expects (16/32/64) - the shared emulator for both targets (see
+    /// <see cref="ExecutableNameFor"/>). Unlike the VIC-20 above, "no custom config" doesn't mean
+    /// the same fallback for both: cc65's own default c16.cfg targets an unexpanded 16K C16, while
+    /// its only plus4.cfg assumes the Plus4's stock 64K outright - the Plus4 was never sold in a
+    /// smaller configuration cc65 has a config for, so there's no "unexpanded" fallback below 64K
+    /// for it the way there is for the C16. Matched by file name only, same reasoning as
+    /// <see cref="Vic20MemorySpecFor"/>.
+    /// </summary>
+    internal static int Plus4RamSizeFor(Cc65Target target, string? linkerConfigPath)
+    {
+        if (!string.IsNullOrEmpty(linkerConfigPath))
+        {
+            switch (Path.GetFileName(linkerConfigPath).ToLowerInvariant())
+            {
+                // Unexpanded C16 - MAIN in both ends at $3000, the ceiling a stock 16K C16 allows.
+                case "c16.cfg":
+                case "c16-asm.cfg":
+                    return 16;
+                // MAIN ends around $7000 - more than 16K allows, but short of the Plus4's full 64K
+                // (__HIMEM__ $FD00) - the C16's "32K" expansion.
+                case "c16-32k.cfg":
+                    return 32;
+                // MAIN/__HIMEM__ both reach $FD00 - the Plus4's stock 64K, its only configuration.
+                case "plus4.cfg":
+                case "plus4-asm.cfg":
+                    return 64;
+            }
+        }
+
+        return target == Cc65Target.C16 ? 16 : 64;
     }
 }

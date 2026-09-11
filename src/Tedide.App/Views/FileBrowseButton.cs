@@ -20,13 +20,26 @@ internal static class FileBrowseButton
     /// its container.
     /// </summary>
     /// <param name="initialPath">
-    /// Where the dialog should start - a specific file to pre-select (e.g. the linker config the
-    /// current project's target would use by default), or just a directory. Falls back to
-    /// whichever of its own ancestor directories actually exists if <paramref name="initialPath"/>
-    /// itself doesn't (e.g. an unresolved CC65_HOME), and to the dialog's own default (wherever
-    /// Terminal.Gui starts it) if none of them do, or if this is omitted entirely.
+    /// Called fresh each time the button is clicked (not just once, at construction) to get where
+    /// the dialog should start - a specific file to pre-select (e.g. the linker config the
+    /// project's *currently selected* target would use by default), or just a directory. Deferred
+    /// like this specifically so a value that depends on another field still-open in the same
+    /// dialog (e.g. a target dropdown) reflects whatever it's actually set to at click time, not
+    /// whatever it was when this button was built. Falls back to whichever of its own ancestor
+    /// directories actually exists if the returned path itself doesn't (e.g. an unresolved
+    /// CC65_HOME), and to the dialog's own default (wherever Terminal.Gui starts it) if none of
+    /// them do, or if this is omitted entirely.
     /// </param>
-    public static Button Create(TextField targetField, int y, string title, string? initialPath = null, params string[] extensions)
+    /// <param name="allowedTypes">
+    /// Called fresh each time the button is clicked, same deferred reasoning as
+    /// <paramref name="initialPath"/> - the file-type filters to offer, first one shown by default.
+    /// Overrides <paramref name="extensions"/> when given.
+    /// </param>
+    public static Button Create(
+        TextField targetField, int y, string title,
+        Func<string?>? initialPath = null,
+        Func<IReadOnlyList<IAllowedType>>? allowedTypes = null,
+        params string[] extensions)
     {
         var button = new Button { Text = "_Browse", X = Pos.AnchorEnd(11), Y = y, Width = 10 };
         button.Accepting += (_, e) =>
@@ -36,9 +49,11 @@ internal static class FileBrowseButton
                 Title = title,
                 OpenMode = OpenMode.File,
                 AllowsMultipleSelection = false,
-                AllowedTypes = extensions.Length > 0 ? [new AllowedType(title, extensions)] : [],
+                AllowedTypes = allowedTypes is not null
+                    ? [.. allowedTypes()]
+                    : extensions.Length > 0 ? [new AllowedType(title, extensions)] : [],
             };
-            if (NearestExistingPathOrDirectory(initialPath) is { } startPath)
+            if (NearestExistingPathOrDirectory(initialPath?.Invoke()) is { } startPath)
                 dialog.Path = startPath;
             Application.Run(dialog);
             if (dialog.FilePaths.FirstOrDefault() is { } path)

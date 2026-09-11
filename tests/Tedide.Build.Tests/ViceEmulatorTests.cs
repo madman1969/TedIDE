@@ -151,6 +151,53 @@ public class ViceEmulatorTests
         Assert.DoesNotContain("-memory", args);
     }
 
+    [Theory]
+    [InlineData(Cc65Target.C16, null, 16)]
+    [InlineData(Cc65Target.C16, "", 16)]
+    [InlineData(Cc65Target.C16, "c16.cfg", 16)]
+    [InlineData(Cc65Target.C16, "c16-asm.cfg", 16)]
+    [InlineData(Cc65Target.C16, "c16-32k.cfg", 32)]
+    [InlineData(Cc65Target.C16, "C16-32K.CFG", 32)]
+    [InlineData(Cc65Target.C16, "some-custom-config.cfg", 16)]
+    [InlineData(Cc65Target.Plus4, null, 64)]
+    [InlineData(Cc65Target.Plus4, "", 64)]
+    [InlineData(Cc65Target.Plus4, "plus4.cfg", 64)]
+    [InlineData(Cc65Target.Plus4, "plus4-asm.cfg", 64)]
+    [InlineData(Cc65Target.Plus4, "some-custom-config.cfg", 64)]
+    public void Plus4RamSizeFor_MapsKnownCc65ConfigNames_ToTheMatchingViceRamSize(Cc65Target target, string? linkerConfigPath, int expectedKib)
+    {
+        Assert.Equal(expectedKib, ViceEmulator.Plus4RamSizeFor(target, linkerConfigPath));
+    }
+
+    [Fact]
+    public void Plus4RamSizeFor_MatchesByFileNameOnly_RegardlessOfDirectory()
+    {
+        Assert.Equal(32, ViceEmulator.Plus4RamSizeFor(Cc65Target.C16, @"C:\CC65\cfg\c16-32k.cfg"));
+    }
+
+    [Theory]
+    [InlineData(Cc65Target.C16)]
+    [InlineData(Cc65Target.Plus4)]
+    public void BuildArguments_IncludesRamsizeFlag_ForC16AndPlus4Projects(Cc65Target target)
+    {
+        var project = new TedideProject { Name = "Test", Target = target, LinkerConfigPath = "c16-32k.cfg" };
+
+        var args = ViceEmulator.BuildArguments(project, enableBinaryMonitor: false);
+
+        Assert.Contains("-ramsize", args);
+        Assert.DoesNotContain("-memory", args);
+    }
+
+    [Fact]
+    public void BuildArguments_OmitsRamsizeFlag_ForNonC16OrPlus4Projects()
+    {
+        var project = new TedideProject { Name = "Test", Target = Cc65Target.C64 };
+
+        var args = ViceEmulator.BuildArguments(project, enableBinaryMonitor: false);
+
+        Assert.DoesNotContain("-ramsize", args);
+    }
+
     [Fact]
     public void Launch_ThrowsNotSupportedException_WhenTargetHasNoViceEmulator()
     {
