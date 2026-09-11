@@ -19,6 +19,9 @@ typedef struct
     unsigned cpu_khz;
     unsigned sound_voices;
 
+    int fast_mode_supported;
+    const char* fast_mode_description;
+
     unsigned address_bits;
     unsigned word_bits;
 

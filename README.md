@@ -192,9 +192,15 @@ From the **File** menu:
     ROM/hardware variant actually detected (e.g. an SX-64) on the one target that exposes it.
   - `cpu.c` confirms the CPU family with `getcpu()` (6502.h, works on every target) before naming
     the specific chip (6510/8502/6502/7501/8501/6509 all report identically as CPU_6502, since
-    they're opcode-compatible - `getcpu()` only rules out the unexpected), and reads the C128's
-    *current* clock speed live via `get_c128_speed()` (accelerator.h) rather than assuming it's
-    always in 2 MHz mode.
+    they're opcode-compatible - `getcpu()` only rules out the unexpected). It also probes for (and
+    switches on) any CPU-speed accelerator this machine actually has via cc65's `accelerator.h` -
+    the C128's own built-in 1/2 MHz native switch, or an add-on C64 cartridge (SuperCPU, Turbo
+    Master, a C65/C64DX in C64 mode, Chameleon, C64DTV, checked in that order) - printing
+    "Supports Fast Mode: YES/NO" plus which one was found, and folding the result straight into the
+    reported clock speed wherever accelerator.h documents an exact rate for it (20 MHz/4 MHz/3.5
+    MHz/2 MHz respectively; Chameleon's and the C64DTV's own "fastest" tiers have no such documented
+    figure, so those two enable fast mode but leave the reported speed at its normal nominal value
+    rather than inventing a number).
   - `memory.c` reports free heap right now via `_heapmemavail()` (stdlib.h), alongside the fixed
     total RAM installed.
   - `video.c` detects PAL vs. NTSC *live* by polling the video chip's own raster line counter to

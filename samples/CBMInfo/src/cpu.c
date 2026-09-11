@@ -1,9 +1,17 @@
 #include <cpu.h>
 #include <6502.h>
 
-#if defined(__C128__)
+#if defined(__C64__) || defined(__C128__)
 #include <accelerator.h>
 #endif
+
+/* Populated by cpu_detect_fast_mode() - see cpu.h's own comment on why
+ * these three functions exist separately rather than folding straight into
+ * cpu_speed_khz() (accelerator detection is a real hardware probe worth
+ * doing exactly once, not on every call). */
+static int         s_fast_mode_supported   = 0;
+static const char *s_fast_mode_description = "Not checked yet";
+static unsigned    s_fast_khz              = 0; /* 0 = fall back to the normal per-platform figure below */
 
 const char *cpu_name(void)
 {
@@ -40,13 +48,93 @@ const char *cpu_name(void)
 #endif
 }
 
-unsigned cpu_speed_khz(void)
+void cpu_detect_fast_mode(void)
 {
 #if defined(__C128__)
-    /* Genuinely dynamic - the C128 switches between 1MHz (C64-compatible)
-     * and 2MHz (native) mode under program control, and get_c128_speed()
-     * reads back whichever mode is actually active right now rather than
-     * assuming one or the other. */
+    /* The C128's native 1/2 MHz switch is built into every C128 - not an
+     * add-on to detect, so this is unconditionally "supported" here. */
+    set_c128_speed(SPEED_FAST);
+    s_fast_mode_supported   = 1;
+    s_fast_mode_description = "C128 native speed switch (2 MHz)";
+    s_fast_khz              = 2000;
+#elif defined(__C64__)
+    /* Checked in roughly fastest-first order - only one of these would
+     * realistically be present at once, but detect_xxx() before set_xxx()
+     * is what accelerator.h's own docs require for every one of them. */
+    if (detect_scpu())
+    {
+        set_scpu_speed(SPEED_FAST);
+        s_fast_mode_supported   = 1;
+        s_fast_mode_description = "SuperCPU cartridge (20 MHz)";
+        s_fast_khz              = 20000;
+    }
+    else if (detect_turbomaster())
+    {
+        set_turbomaster_speed(SPEED_FAST);
+        s_fast_mode_supported   = 1;
+        s_fast_mode_description = "Turbo Master cartridge (4 MHz)";
+        s_fast_khz              = 4000;
+    }
+    else if (detect_c65())
+    {
+        set_c65_speed(SPEED_FAST);
+        s_fast_mode_supported   = 1;
+        s_fast_mode_description = "C65/C64DX in C64 mode (3.5 MHz)";
+        s_fast_khz              = 3500;
+    }
+    else if (detect_chameleon())
+    {
+        set_chameleon_speed(SPEED_FAST);
+        s_fast_mode_supported   = 1;
+        s_fast_mode_description = "Chameleon cartridge (maximum speed)";
+        /* Chameleon's maximum tier is configurable per-cartridge -
+         * accelerator.h documents fixed MHz figures for its individual
+         * SPEED_2X..SPEED_6X steps, but not for "maximum", so s_fast_khz
+         * is deliberately left at 0 here rather than inventing a number -
+         * cpu_speed_khz() falls back to the normal C64 nominal figure. */
+    }
+    else if (detect_c64dtv())
+    {
+        set_c64dtv_speed(SPEED_FAST);
+        s_fast_mode_supported   = 1;
+        s_fast_mode_description = "C64DTV (fast mode)";
+        /* Same caveat as Chameleon above - accelerator.h never states an
+         * absolute clock rate for the C64DTV's fast mode, only that it's
+         * faster than SPEED_SLOW. */
+    }
+    else
+    {
+        s_fast_mode_supported   = 0;
+        s_fast_mode_description = "Not available on this machine";
+    }
+#else
+    s_fast_mode_supported   = 0;
+    s_fast_mode_description = "Not available on this machine";
+#endif
+}
+
+int cpu_supports_fast_mode(void)
+{
+    return s_fast_mode_supported;
+}
+
+const char *cpu_fast_mode_description(void)
+{
+    return s_fast_mode_description;
+}
+
+unsigned cpu_speed_khz(void)
+{
+    if (s_fast_khz != 0)
+    {
+        return s_fast_khz;
+    }
+
+#if defined(__C128__)
+    /* No accelerator with a known exact rate was engaged above, but the
+     * C128's own native switch is still genuinely dynamic on its own -
+     * get_c128_speed() reads back whichever mode is actually active right
+     * now rather than assuming one or the other. */
     return (get_c128_speed() == SPEED_SLOW) ? 1000 : 2000;
 #elif defined(__C64__)
     return 1020;
