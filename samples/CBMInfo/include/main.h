@@ -21,6 +21,7 @@ typedef struct
 
     int fast_mode_supported;
     const char* fast_mode_description;
+    int supercpu_enabled;
 
     unsigned address_bits;
     unsigned word_bits;

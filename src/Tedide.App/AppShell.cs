@@ -1794,7 +1794,7 @@ public sealed class AppShell : Window
         try
         {
             _vice.Launch(project, onOutputLine: line => Application.Invoke(() => AppendOutputLine(line)));
-            AppendOutputLine($"------ Launched {ViceEmulator.ExecutableNameFor(project.Target)} ------");
+            AppendOutputLine($"------ Launched {ViceEmulator.ExecutableNameFor(project.Target, project.EnableSuperCpu)} ------");
         }
         catch (Exception ex) when (ex is NotSupportedException or FileNotFoundException or InvalidOperationException)
         {

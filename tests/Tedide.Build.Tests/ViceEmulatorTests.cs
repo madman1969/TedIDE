@@ -19,6 +19,23 @@ public class ViceEmulatorTests
         Assert.Equal(expectedExecutable, ViceEmulator.ExecutableNameFor(target));
     }
 
+    [Fact]
+    public void ExecutableNameFor_ReturnsTheSuperCpuEmulator_ForC64WhenEnableSuperCpuIsTrue()
+    {
+        Assert.Equal("xscpu64.exe", ViceEmulator.ExecutableNameFor(Cc65Target.C64, enableSuperCpu: true));
+    }
+
+    [Theory]
+    [InlineData(Cc65Target.C128)]
+    [InlineData(Cc65Target.Plus4)]
+    [InlineData(Cc65Target.Vic20)]
+    public void ExecutableNameFor_IgnoresEnableSuperCpu_ForEveryNonC64Target(Cc65Target target)
+    {
+        // The SuperCPU is a C64-specific accelerator cartridge - there's no equivalent "SuperCPU"
+        // build of any other machine's emulator to switch to, so the flag is simply a no-op here.
+        Assert.Equal(ViceEmulator.ExecutableNameFor(target), ViceEmulator.ExecutableNameFor(target, enableSuperCpu: true));
+    }
+
     [Theory]
     [InlineData(Cc65Target.Apple2)]
     [InlineData(Cc65Target.Apple2Enh)]
@@ -142,6 +159,25 @@ public class ViceEmulatorTests
             await exited.Task.WaitAsync(TimeSpan.FromSeconds(10));
 
             Assert.Contains(lines, l => l.Contains("x64sc.exe exited", StringComparison.Ordinal));
+        }
+        finally
+        {
+            dir.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Launch_LooksForTheSuperCpuEmulator_WhenTheProjectHasEnableSuperCpuSet()
+    {
+        var dir = Directory.CreateTempSubdirectory();
+        try
+        {
+            var vice = new ViceEmulator(dir.FullName);
+            var project = new TedideProject { Name = "Test", Target = Cc65Target.C64, EnableSuperCpu = true };
+
+            var ex = Assert.Throws<FileNotFoundException>(() => vice.Launch(project));
+
+            Assert.Equal(Path.Combine(dir.FullName, "xscpu64.exe"), ex.FileName);
         }
         finally
         {

@@ -9,15 +9,17 @@ using Terminal.Gui.Views;
 namespace Tedide.App.Views;
 
 /// <summary>
-/// Modal dialog for viewing/editing a loaded project's settings, as six tabs sharing one Save/
+/// Modal dialog for viewing/editing a loaded project's settings, as seven tabs sharing one Save/
 /// Cancel footer: "Settings" (display name, cc65 target, output file override, extra cl65
 /// arguments, include paths, preprocessor defines), "Optimizer" (the cc65 compiler optimization preset - see
 /// <see cref="Cc65OptimizationLevel"/>), "Compiler" (other cc65 compile-time flags: whether to
 /// emit an assembler listing file per source file, and whether to interleave C source as comments
 /// in them), "Linker" (ld65 link-time flags: whether to emit a linker map file and/or a VICE-format
-/// label file), "CC65" (the CC65_HOME environment variable), and "VICE" (the VICE emulator's bin
-/// directory). Source files aren't edited here - that's the Solution Explorer's right-click New
-/// File/Delete File job (see <see cref="SolutionExplorerTree"/>).
+/// label file), "SuperCPU" (whether to launch this project in VICE's dedicated SuperCPU emulator -
+/// only enabled while Target is C64, see <see cref="TedideProject.EnableSuperCpu"/>), "CC65" (the
+/// CC65_HOME environment variable), and "VICE" (the VICE emulator's bin directory). Source files
+/// aren't edited here - that's the Solution Explorer's right-click New File/Delete File job (see
+/// <see cref="SolutionExplorerTree"/>).
 /// On "Save", writes every field from the project-bound tabs onto the given
 /// <see cref="TedideProject"/> in one go and persists it to disk; the "CC65"/"VICE" tabs aren't
 /// project state (they're this machine's toolchain install, not any one project) so they're
@@ -42,6 +44,7 @@ public sealed class ProjectSettingsDialog : Dialog
     private readonly TextField _linkerConfigPathField;
     private readonly TextField _cc65HomeField;
     private readonly TextField _viceBinDirectoryField;
+    private readonly CheckBox _enableSuperCpuField;
 
     /// <summary>True if the user chose Save (and the project was updated and saved to disk).</summary>
     public bool Saved { get; private set; }
@@ -72,14 +75,28 @@ public sealed class ProjectSettingsDialog : Dialog
         var optimizerTab = BuildOptimizerTab(project, out _optimizationLevelField);
         var compilerTab = BuildCompilerTab(project, out _generateListingField, out _addSourceAsCommentField);
         var linkerTab = BuildLinkerTab(project, out _generateLinkerMapField, out _exportLabelsField, out _generateDebugInfoField, out _linkerConfigPathField);
+        var superCpuTab = BuildSuperCpuTab(project, out _enableSuperCpuField);
         var cc65Tab = BuildCc65Tab(out _cc65HomeField);
         var viceTab = BuildViceTab(out _viceBinDirectoryField);
         tabs.Add(settingsTab);
         tabs.Add(optimizerTab);
         tabs.Add(compilerTab);
         tabs.Add(linkerTab);
+        tabs.Add(superCpuTab);
         tabs.Add(cc65Tab);
         tabs.Add(viceTab);
+
+        // The SuperCPU toggle only makes sense while Target is C64 (see BuildSuperCpuTab's own
+        // comment) - kept in sync live as the Settings tab's own target dropdown changes, not just
+        // set once from the project's value when this dialog opened, so switching Target away from
+        // C64 (or back) during this same visit greys the checkbox out (or back in) immediately.
+        _targetField.TextChanged += (_, _) =>
+        {
+            var supportsSuperCpu = string.Equals(_targetField.Text, Cc65Target.C64.ToCl65Id(), StringComparison.OrdinalIgnoreCase);
+            _enableSuperCpuField.Enabled = supportsSuperCpu;
+            if (!supportsSuperCpu)
+                _enableSuperCpuField.Value = CheckState.UnChecked;
+        };
 
         // The primary action: Accent-scheme so it visually pops against the dialog's normal
         // chrome, the same accent color the app uses for the menu bar's own highlighted items.
@@ -126,6 +143,7 @@ public sealed class ProjectSettingsDialog : Dialog
             project.ExportLabels = _exportLabelsField.Value == CheckState.Checked;
             project.GenerateDebugInfo = _generateDebugInfoField.Value == CheckState.Checked;
             project.LinkerConfigPath = string.IsNullOrWhiteSpace(_linkerConfigPathField.Text) ? null : _linkerConfigPathField.Text.Trim();
+            project.EnableSuperCpu = _enableSuperCpuField.Value == CheckState.Checked;
             project.Save();
 
             // Not project state - this machine's toolchain install, not any one project - so it's
@@ -358,6 +376,46 @@ public sealed class ProjectSettingsDialog : Dialog
             generateLinkerMapField, mapHelpLabel, exportLabelsField, labelsHelpLabel,
             generateDebugInfoField, debugInfoHelpLabel,
             linkerConfigLabel, linkerConfigPathField, browseButton, linkerConfigHelpLabel);
+        return tab;
+    }
+
+    /// <summary>
+    /// Builds the "SuperCPU" tab: a single toggle for <see cref="TedideProject.EnableSuperCpu"/> -
+    /// whether Build/Run/Debug should launch this project in VICE's dedicated SuperCPU emulator
+    /// (xscpu64.exe) instead of the plain C64 one (see
+    /// <see cref="Tedide.Build.ViceEmulator.ExecutableNameFor"/>). The SuperCPU is a C64-specific
+    /// accelerator cartridge, so the checkbox only makes sense - and starts out enabled/disabled
+    /// accordingly - while <paramref name="project"/>'s current <see cref="TedideProject.Target"/>
+    /// is C64; the constructor keeps its <see cref="View.Enabled"/> state in sync with the Settings
+    /// tab's own target dropdown afterwards, since the user can change that without closing this
+    /// dialog first.
+    /// </summary>
+    private static View BuildSuperCpuTab(TedideProject project, out CheckBox enableSuperCpuField)
+    {
+        var tab = new View { Title = " _SuperCPU ", Width = Dim.Fill(), Height = Dim.Fill() };
+        // See BuildSettingsTab's comment on this same line - every tab needs its own Padding.
+        tab.Padding.Thickness = new Thickness(2, 1, 2, 1);
+
+        var supportsSuperCpu = project.Target == Cc65Target.C64;
+
+        enableSuperCpuField = new CheckBox
+        {
+            Text = "Enable SuperCPU support",
+            X = 0, Y = 0,
+            Value = project.EnableSuperCpu ? CheckState.Checked : CheckState.UnChecked,
+            Enabled = supportsSuperCpu,
+        };
+
+        var helpLabel = new Label
+        {
+            Text = "The SuperCPU is a C64-specific accelerator cartridge (up to 20 MHz) - only\n" +
+                   "available while Target (Settings tab) is C64; greyed out otherwise. When on,\n" +
+                   "Build > Run Project and Debug > Start Debugging launch VICE's dedicated\n" +
+                   "xscpu64.exe instead of x64sc.exe.",
+            X = 0, Y = 2, Width = Dim.Fill(1), Height = 4,
+        };
+
+        tab.Add(enableSuperCpuField, helpLabel);
         return tab;
     }
 

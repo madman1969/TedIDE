@@ -24,6 +24,7 @@ public class TedideProjectTests
                 OptimizationLevel = Cc65OptimizationLevel.Extended,
                 GenerateAssemblyListing = true,
                 AddSourceAsComment = true,
+                EnableSuperCpu = true,
             };
             project.Save(path);
 
@@ -40,6 +41,7 @@ public class TedideProjectTests
             Assert.Equal(Cc65OptimizationLevel.Extended, loaded.OptimizationLevel);
             Assert.True(loaded.GenerateAssemblyListing);
             Assert.True(loaded.AddSourceAsComment);
+            Assert.True(loaded.EnableSuperCpu);
             Assert.Equal(Path.GetFullPath(path), loaded.FilePath);
         }
         finally

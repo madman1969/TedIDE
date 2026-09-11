@@ -12,6 +12,7 @@
 static int         s_fast_mode_supported   = 0;
 static const char *s_fast_mode_description = "Not checked yet";
 static unsigned    s_fast_khz              = 0; /* 0 = fall back to the normal per-platform figure below */
+static int         s_supercpu_detected     = 0;
 
 const char *cpu_name(void)
 {
@@ -67,6 +68,7 @@ void cpu_detect_fast_mode(void)
         s_fast_mode_supported   = 1;
         s_fast_mode_description = "SuperCPU cartridge (20 MHz)";
         s_fast_khz              = 20000;
+        s_supercpu_detected     = 1;
     }
     else if (detect_turbomaster())
     {
@@ -116,6 +118,11 @@ void cpu_detect_fast_mode(void)
 int cpu_supports_fast_mode(void)
 {
     return s_fast_mode_supported;
+}
+
+int cpu_supports_supercpu(void)
+{
+    return s_supercpu_detected;
 }
 
 const char *cpu_fast_mode_description(void)

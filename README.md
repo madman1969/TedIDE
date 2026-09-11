@@ -196,11 +196,13 @@ From the **File** menu:
     switches on) any CPU-speed accelerator this machine actually has via cc65's `accelerator.h` -
     the C128's own built-in 1/2 MHz native switch, or an add-on C64 cartridge (SuperCPU, Turbo
     Master, a C65/C64DX in C64 mode, Chameleon, C64DTV, checked in that order) - printing
-    "Supports Fast Mode: YES/NO" plus which one was found, and folding the result straight into the
-    reported clock speed wherever accelerator.h documents an exact rate for it (20 MHz/4 MHz/3.5
-    MHz/2 MHz respectively; Chameleon's and the C64DTV's own "fastest" tiers have no such documented
-    figure, so those two enable fast mode but leave the reported speed at its normal nominal value
-    rather than inventing a number).
+    "SuperCPU Enabled: YES/NO" specifically (this is what turning on Tedide's own "Enable SuperCPU
+    support" project setting actually launches into - see "Project Settings dialog" below),
+    "Supports Fast Mode: YES/NO" plus which one was found for any of the five, and folding the
+    result straight into the reported clock speed wherever accelerator.h documents an exact rate for
+    it (20 MHz/4 MHz/3.5 MHz/2 MHz respectively; Chameleon's and the C64DTV's own "fastest" tiers
+    have no such documented figure, so those two enable fast mode but leave the reported speed at
+    its normal nominal value rather than inventing a number).
   - `memory.c` reports free heap right now via `_heapmemavail()` (stdlib.h), alongside the fixed
     total RAM installed.
   - `video.c` detects PAL vs. NTSC *live* by polling the video chip's own raster line counter to
@@ -443,6 +445,7 @@ an example, laid out the way GitHub's most common C project layout does (`src/`,
 | `GenerateLinkerMap` | Whether `ld65` emits a linker map (`-m`) to `lnk.map`, next to the project file - see "Symbols" under "Running" above. Defaults to `false`. |
 | `ExportLabels` | Whether `ld65` emits a VICE-format label file (`-Ln`) to `{Name}.lbl`, next to the project file. Defaults to `false`. |
 | `GenerateDebugInfo` | Whether cc65/ca65 embed debug info (`-g`) and `ld65` consolidates it into `{Name}.dbg` (`--dbgfile`, forwarded through cl65 as `-Wl --dbgfile,path` - it has no top-level flag for this). Required for the debugger - see "Debugging" above. Defaults to `false`. |
+| `EnableSuperCpu` | Whether Build > Run Project/Debug > Start Debugging launch this project in VICE's dedicated SuperCPU emulator (`xscpu64.exe`) instead of the plain C64 one (`x64sc.exe`) - see `ViceEmulator.ExecutableNameFor`. Only meaningful while `Target` is `C64` (the SuperCPU is a C64-specific accelerator cartridge); ignored for every other target. Defaults to `false`. |
 | `OutputFile` | Defaults to `<Name><platform-default-extension>` (e.g. `.prg` for C64, `.nes` for NES) in the project's own directory if not set; Tedide creates the output directory automatically if it doesn't exist yet (`ld65` itself won't). |
 | `LinkerConfigPath` | A custom `ld65` linker config file (`-C`), relative to the project directory. `null`/blank uses cl65's built-in per-target default - a custom config typically *replaces* that default rather than layering on top of it. |
 | `IncludePaths` | Directories passed to `cl65` as `-I <dir>` (compile-time only), each relative to the project directory - the first-class alternative to putting `-I` in `ExtraArguments`. |
@@ -456,7 +459,7 @@ A `.tsln` file just lists the `.tproj` files that make up a solution.
 
 ## Project Settings dialog
 
-**Project > Settings...** opens one dialog covering everything above, as six tabs sharing a
+**Project > Settings...** opens one dialog covering everything above, as seven tabs sharing a
 single Save/Cancel footer:
 
 - **Settings** - display name, target platform, output file override, extra `cl65` arguments,
@@ -473,6 +476,11 @@ single Save/Cancel footer:
 - **Linker** - *Generate linker map file* (`-m`), *Export labels* (`-Ln`), *Generate debug info*
   (`-g`/`--dbgfile` - needed for the debugger, see "Debugging" above), and a custom linker config
   file path (`-C`).
+- **SuperCPU** - a single *Enable SuperCPU support* checkbox (`EnableSuperCpu`) - greyed out (and
+  force-unchecked) unless the Settings tab's own Target is C64, since the SuperCPU is a C64-specific
+  accelerator cartridge; kept in sync live if you change Target while this dialog is still open, not
+  just from whatever it was when the dialog opened. While on, Build > Run Project and Debug > Start
+  Debugging launch VICE's dedicated `xscpu64.exe` instead of `x64sc.exe`.
 - **CC65** - the `CC65_HOME` environment variable (where cl65 finds target headers/libraries) -
   a per-machine toolchain setting, not project state, so it's saved once and applies to every
   project (see "Prerequisites" above).

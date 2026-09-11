@@ -24,8 +24,16 @@ public sealed class ViceEmulator(string binDirectory = ViceEmulator.DefaultBinDi
     /// <see cref="Cc65TargetExtensions.CommodoreTargets"/>. Returns null for a target VICE has no
     /// emulator for (any non-Commodore cc65 target).
     /// </summary>
-    public static string? ExecutableNameFor(Cc65Target target) => target switch
+    /// <param name="enableSuperCpu">
+    /// When true and <paramref name="target"/> is <see cref="Cc65Target.C64"/>, returns VICE's
+    /// dedicated SuperCPU emulator (xscpu64.exe) instead of the plain C64 one - see
+    /// <see cref="TedideProject.EnableSuperCpu"/>. Ignored for every other target: the SuperCPU is
+    /// a C64-specific accelerator cartridge, so there's no equivalent "SuperCPU" build of any other
+    /// machine's emulator to switch to.
+    /// </param>
+    public static string? ExecutableNameFor(Cc65Target target, bool enableSuperCpu = false) => target switch
     {
+        Cc65Target.C64 when enableSuperCpu => "xscpu64.exe",
         Cc65Target.C64 => "x64sc.exe",
         Cc65Target.C128 => "x128.exe",
         Cc65Target.C16 => "xplus4.exe",
@@ -60,7 +68,7 @@ public sealed class ViceEmulator(string binDirectory = ViceEmulator.DefaultBinDi
     /// </param>
     public void Launch(TedideProject project, Action<string>? onOutputLine = null, bool enableBinaryMonitor = false)
     {
-        var executableName = ExecutableNameFor(project.Target)
+        var executableName = ExecutableNameFor(project.Target, project.EnableSuperCpu)
             ?? throw new NotSupportedException($"VICE has no emulator for target '{project.Target.ToCl65Id()}'.");
 
         var executablePath = Path.Combine(BinDirectory, executableName);

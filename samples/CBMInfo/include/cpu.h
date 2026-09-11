@@ -29,6 +29,18 @@ int cpu_supports_fast_mode(void);
 /* Whether cpu_detect_fast_mode() found (and switched on) an accelerator -
  * only meaningful after calling it first. */
 
+int cpu_supports_supercpu(void);
+/* Whether cpu_detect_fast_mode() specifically found (and switched on) a
+ * SuperCPU cartridge - narrower than cpu_supports_fast_mode() above, which
+ * is true for *any* accelerator this machine has. This is what a project
+ * with Tedide's own "Enable SuperCPU support" project setting turned on
+ * (see TedideProject.EnableSuperCpu) actually launches into: enabling that
+ * setting makes Tedide start VICE's dedicated xscpu64.exe instead of
+ * x64sc.exe, and detect_scpu() (accelerator.h) is how code running inside
+ * that emulator instance confirms the SuperCPU hardware it implies is
+ * actually there. Only meaningful after calling cpu_detect_fast_mode()
+ * first. */
+
 const char *cpu_fast_mode_description(void);
 /* Short description of whichever accelerator cpu_detect_fast_mode() found,
  * or "Not available on this machine" if none was - only meaningful after

@@ -48,6 +48,13 @@ public sealed class TedideProject
     /// See <see cref="ResolvedLabelsFile"/> for its fixed name.</summary>
     public bool ExportLabels { get; set; }
 
+    /// <summary>Whether Build/Run/Debug should launch this project in VICE's dedicated SuperCPU
+    /// emulator (xscpu64.exe) instead of the target's normal one (see Tedide.Build's
+    /// ViceEmulator.ExecutableNameFor). Only meaningful when <see cref="Target"/> is
+    /// <see cref="Cc65Target.C64"/> (the SuperCPU is a C64-specific accelerator cartridge);
+    /// ignored for every other target. Defaults to off.</summary>
+    public bool EnableSuperCpu { get; set; }
+
     /// <summary>Source file paths, relative to the project file's directory.</summary>
     public List<string> SourceFiles { get; set; } = [];
 

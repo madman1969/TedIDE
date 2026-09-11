@@ -17,6 +17,7 @@ void detect_system(SystemInfo *info)
     cpu_detect_fast_mode();
     info->fast_mode_supported   = cpu_supports_fast_mode();
     info->fast_mode_description = cpu_fast_mode_description();
+    info->supercpu_enabled      = cpu_supports_supercpu();
     info->cpu_khz       = cpu_speed_khz();
 
     info->ram_installed_bytes = memory_installed_bytes();
@@ -46,6 +47,7 @@ int main(void)
     printf("Model              : %s\n", sys.model);
     printf("CPU                : %s\n", sys.cpu);
     printf("Clock Speed        : %u.%03u MHz\n", sys.cpu_khz / 1000, sys.cpu_khz % 1000);
+    printf("SuperCPU Enabled   : %s\n", sys.supercpu_enabled ? "YES" : "NO");
     printf("Supports Fast Mode : %s\n", sys.fast_mode_supported ? "YES" : "NO");
     printf("Fast Mode Hardware : %s\n", sys.fast_mode_description);
     printf("CPU Architecture   : %u-bit processor\n", sys.word_bits);
