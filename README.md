@@ -339,6 +339,8 @@ line, not just launching the emulator and watching it run.
 1. Turn on **"Generate debug info"** on Project Settings' Linker tab (`-g`, plus `--dbgfile`
    forwarded through cl65 as `-Wl --dbgfile,path` since cl65 has no top-level flag for it) - without
    this there's no `.dbg` file to resolve breakpoints/addresses against source lines.
+
+   ![Project Settings' Linker tab with "Generate linker map file", "Export labels" and "Generate debug info" all ticked, each with a short explanation, and a custom linker config field below](docs/images/debugging-linker-settings.png)
 2. Set a breakpoint with **F9** (or **Debug > Toggle Breakpoint**) on the line the cursor's on. This
    is the only way to set one - Terminal.Gui.Editor's `Editor` has no clickable gutter to click a
    margin instead. Every enabled breakpoint's line is highlighted in the editor (a persistent red
@@ -348,6 +350,10 @@ line, not just launching the emulator and watching it run.
    own build settings). **Debug > Breakpoints...** lists/toggles/deletes them all in one dialog -
    selecting a row jumps the editor straight to that breakpoint's file and line, same as the Error
    List/Symbols tabs.
+
+   ![The editor with breakpoints set on lines 24 and 26 of main.c, each line highlighted red](docs/images/debugging-breakpoint-lines.png)
+
+   ![The Breakpoints dialog listing both breakpoints - enabled, file and line - with Toggle Enabled, Delete and Close buttons](docs/images/debugging-breakpoints-dialog.png)
 3. **Debug > Start Debugging** (Shift+F5) builds, launches VICE with `-binarymonitor`, connects,
    opens (and centers the editor on) the source line containing `main()`, resolves every enabled
    breakpoint's source line to an address via the `.dbg` file, sets them, and starts running. The
@@ -362,9 +368,13 @@ line, not just launching the emulator and watching it run.
    instruction - it single-steps repeatedly until the resolved location changes to a *different* C
    line (skipping over addresses that only resolve to cl65's own generated assembly, e.g. a
    function's prologue, so it doesn't stop one instruction early), so one Step press is one C
-   statement, not one machine instruction - though stepping into a runtime library call (e.g.
-   `printf`) does step into its implementation, same as any debugger without a "step over". **Stop
-   Debugging** disconnects (leaving VICE itself running) and makes the editor editable again.
+   statement, not one machine instruction. Step Into only stops in code that's part of the project:
+   a call into cc65's own runtime library (e.g. `printf`, or the helpers the compiler calls for
+   things like pushing arguments) is run straight through to its return, since there's no source
+   to show for it. **Stop Debugging** disconnects (leaving VICE itself running) and makes the editor
+   editable again.
+
+   ![Tedide stopped in a debug session inside CBMInfo's detect_video_system: video.c open with the current line highlighted, and the Debug tab showing the status, breakpoints, two watches, the recent stops, the function's local variables and the 6502 registers](docs/images/debugging-session.png)
 4. The **Debug** tab itself shows, beyond the register table: the register values with the 6502
    status register (`FL`) decoded into its individual flags (`N V - B D I Z C`, set flags shown as
    their letter and clear ones as `.`, alongside the raw hex byte); the status line's enclosing
@@ -379,6 +389,20 @@ line, not just launching the emulator and watching it run.
    stop/step via `ViceMonitorClient.GetMemoryAsync`. Watches aren't persisted - a rebuild can shift
    where a symbol resolves to, so **Debug > Clear Watches** (or simply stopping the session) drops
    them rather than risk showing a stale address.
+
+   ![The Add Watch dialog with $d020 entered as the address, and a checkbox to read it as a 2-byte word](docs/images/debugging-add-watch.png)
+5. Beside the registers, a **Locals** table lists the parameters and local variables of the C
+   function execution stopped in, with each one's type and value (`i : unsigned int = 1 ($0001)`),
+   refreshed on every stop. cc65 keeps C locals on a software stack and its debug info records only
+   each variable's offset in the function's stack frame - no types, and nothing about how far the
+   stack has moved by a given line - so Tedide works out where each one is from the assembly cl65
+   generates for the file (`obj/src/*.c.s`, following every push and pop), and reads its type from
+   its declaration in the C source. Pointers show as an address, numbers in decimal with the hex
+   alongside, and `char`s with their character. A variable whose declaration hasn't run yet shows
+   as "not yet on the stack". Variables declared inside an inner block (a loop body's own locals,
+   say) aren't shown - cc65 leaves them out of its debug info.
+
+   ![The Debug tab: status, breakpoints and watches lines ($d020 = $FE, $d012 = $EB), the recent stops history, the Locals table (max_raster : unsigned = 229, i : unsigned int = 1) and the register table](docs/images/debugging-debug-tab.png)
 
 The binary monitor's own protocol details (header layout, command bytes, how a checkpoint hit is
 reported, which register names VICE reports for the 6502) were confirmed against a real VICE 3.9
