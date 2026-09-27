@@ -121,6 +121,17 @@ public class ProjectRenameTests : IDisposable
         Assert.Equal(expected, AppShell.IsFileError((Exception)Activator.CreateInstance(exceptionType)!));
     }
 
+    [Theory]
+    [InlineData(@"C:\Games\Game", @"C:\Games\Game", true)]
+    [InlineData(@"C:\Games\Game\src", @"C:\Games\Game", true)]
+    [InlineData(@"C:\Games\game\SRC", @"C:\Games\Game\", true)]
+    [InlineData(@"C:\Games\GameTools\src", @"C:\Games\Game", false)] // shares the name as a prefix - the old bug
+    [InlineData(@"C:\Games", @"C:\Games\Game", false)]
+    public void IsSameOrInsideDirectory_MatchesWholeFolderNames_NotPrefixes(string path, string directory, bool expected)
+    {
+        Assert.Equal(expected, AppShell.IsSameOrInsideDirectory(path, directory));
+    }
+
     private (TedideProject Project, TedideSolution? Solution) CreateProject(string name, bool solutionBeside, string? folderName = null)
     {
         var directory = Path.Combine(_root.FullName, folderName ?? name);

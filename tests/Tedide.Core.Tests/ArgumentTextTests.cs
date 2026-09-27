@@ -28,6 +28,30 @@ public class ArgumentTextTests
     }
 
     [Fact]
+    public void Split_ReadsADoubledQuoteInsideQuotes_AsOneLiteralQuote()
+    {
+        // How a define gets a C string value - previously impossible to express.
+        Assert.Equal(["-DMSG=\"hi there\""], ArgumentText.Split("\"-DMSG=\"\"hi there\"\"\""));
+    }
+
+    [Fact]
+    public void Split_KeepsBackslashesLiteral_EvenBeforeAClosingQuote()
+    {
+        // Unlike the Windows \" convention, which would read this trailing \" as an escaped quote.
+        Assert.Equal([@"C:\My Libs\", "next"], ArgumentText.Split(@"""C:\My Libs\"" next"));
+    }
+
+    [Theory]
+    [InlineData("-DMSG=\"hi\"")]
+    [InlineData("say \"hi\"")]
+    [InlineData("\"")]
+    [InlineData(@"C:\My Libs\")]
+    public void Join_RoundTripsArgumentsContainingQuotes(string argument)
+    {
+        Assert.Equal([argument, "x"], ArgumentText.Split(ArgumentText.Join([argument, "x"])));
+    }
+
+    [Fact]
     public void Split_ReturnsNothing_ForBlankText()
     {
         Assert.Empty(ArgumentText.Split("   "));

@@ -243,6 +243,38 @@ public class ViceMonitorClientTests
         Assert.Equal(1, availableRequests);
     }
 
+    [Fact]
+    public async Task Disconnected_FiresWhenVICEClosesTheConnection()
+    {
+        var server = new FakeViceMonitorServer();
+        await server.StartAsync();
+        await using var client = new ViceMonitorClient();
+        var disconnected = new TaskCompletionSource();
+        client.Disconnected += () => disconnected.TrySetResult();
+        await client.ConnectAsync("127.0.0.1", server.Port);
+        await Task.Delay(200); // Let the server accept before it's torn down.
+
+        server.Dispose();
+
+        await disconnected.Task.WaitAsync(TimeSpan.FromSeconds(5));
+    }
+
+    [Fact]
+    public async Task Disconnected_DoesNotFire_WhenTheClientIsDisposedOnPurpose()
+    {
+        using var server = new FakeViceMonitorServer();
+        await server.StartAsync();
+        var client = new ViceMonitorClient();
+        var fired = false;
+        client.Disconnected += () => fired = true;
+        await client.ConnectAsync("127.0.0.1", server.Port);
+
+        await client.DisposeAsync();
+        await Task.Delay(200);
+
+        Assert.False(fired);
+    }
+
     private sealed class FakeViceMonitorServer : IDisposable
     {
         private readonly TcpListener _listener = new(IPAddress.Loopback, 0);

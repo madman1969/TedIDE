@@ -177,9 +177,9 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
     }
 
     /// <summary>
-    /// Deletes build artifacts without invoking cl65: the whole obj/ directory
-    /// (<see cref="TedideProject.ResolvedObjectDirectory"/> - every object file, assembler listing
-    /// and generated assembly), the final linked output binary, the ld65 linker map, label file and
+    /// Deletes build artifacts without invoking cl65: every object file, assembler listing and
+    /// generated assembly in obj/ (<see cref="TedideProject.ResolvedObjectDirectory"/> - only those,
+    /// see <see cref="BuildOutputExtensions"/>, with folders left empty removed), the final linked output binary, the ld65 linker map, label file and
     /// debug info file, plus any .o/.lst left beside a source file by builds from before obj/
     /// existed. Skips whatever doesn't exist (e.g. a project that's never been built, or one that
     /// failed to compile some of its sources). Returns the full paths actually deleted.
@@ -198,9 +198,15 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
 
         if (Directory.Exists(project.ResolvedObjectDirectory))
         {
+            // Only what a build writes there (.o, generated .s, .lst) - not the whole folder: a
+            // project may already have had an obj/ of its own with something else in it, and Clean
+            // mustn't silently destroy that. Folders left empty afterward are removed.
             foreach (var file in Directory.EnumerateFiles(project.ResolvedObjectDirectory, "*", SearchOption.AllDirectories).ToList())
-                Remove(file);
-            Directory.Delete(project.ResolvedObjectDirectory, recursive: true);
+            {
+                if (BuildOutputExtensions.Contains(Path.GetExtension(file), StringComparer.OrdinalIgnoreCase))
+                    Remove(file);
+            }
+            RemoveEmptyDirectories(project.ResolvedObjectDirectory);
         }
 
         // Where older builds put each source's object file and listing - removed so upgrading a
@@ -218,6 +224,19 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
         Remove(project.ResolvedLabelsFile);
         Remove(project.ResolvedDebugInfoFile);
         return removed;
+    }
+
+    /// <summary>What a build writes into obj/ - see <see cref="BuildCompileSteps"/>.</summary>
+    private static readonly string[] BuildOutputExtensions = [".o", ".s", ".lst"];
+
+    /// <summary>Deletes <paramref name="directory"/> and its subdirectories bottom-up, but only
+    /// the ones that are (by then) empty - anything still holding a file stays.</summary>
+    private static void RemoveEmptyDirectories(string directory)
+    {
+        foreach (var subdirectory in Directory.EnumerateDirectories(directory))
+            RemoveEmptyDirectories(subdirectory);
+        if (!Directory.EnumerateFileSystemEntries(directory).Any())
+            Directory.Delete(directory);
     }
 
     /// <summary>

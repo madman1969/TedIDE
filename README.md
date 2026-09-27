@@ -493,8 +493,8 @@ single Save/Cancel footer:
   source's own extension kept (`foo.c` -> `obj/src/foo.c.o`, `foo.s` -> `obj/src/foo.s.o`): a C
   file is compiled to assembly there first (`cl65 -S -o obj/...`) and then assembled, never with a
   bare `cl65 -c src/foo.c` - that writes its intermediate `foo.s` beside the source and deletes it
-  afterward, silently destroying a hand-written `src/foo.s`. **Clean Project** deletes `obj/`
-  outright, plus any `.o`/`.lst` older builds left beside the sources.
+  afterward, silently destroying a hand-written `src/foo.s`. **Clean Project** deletes those
+  build outputs from `obj/` (anything else in it is left alone), plus any `.o`/`.lst` older builds left beside the sources.
 - **Linker** - *Generate linker map file* (`-m`), *Export labels* (`-Ln`), *Generate debug info*
   (`-g`/`--dbgfile` - needed for the debugger, see "Debugging" above), and a custom linker config
   file path (`-C`) - its own **Browse** button opens straight to CC65_HOME's `cfg/` folder, at the

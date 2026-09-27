@@ -575,7 +575,7 @@ public class Cc65ToolchainTests
     }
 
     [Fact]
-    public void Clean_RemovesTheWholeObjDirectory_AndTheOutputBinary()
+    public void Clean_RemovesTheBuildOutputsInObj_AndTheNowEmptyObjDirectory_AndTheOutputBinary()
     {
         var dir = Directory.CreateTempSubdirectory();
         try
@@ -605,6 +605,35 @@ public class Cc65ToolchainTests
                 removed.Order());
             Assert.False(Directory.Exists(project.ResolvedObjectDirectory));
             Assert.False(File.Exists(project.ResolvedOutputFile));
+        }
+        finally
+        {
+            dir.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Clean_LeavesAnythingInObjThatTheBuildDidNotWrite()
+    {
+        // obj/ may have existed before Tedide used it - Clean must not destroy what's in it.
+        var dir = Directory.CreateTempSubdirectory();
+        try
+        {
+            var project = new TedideProject { Name = "Test", Target = Cc65Target.C64, SourceFiles = ["src/main.c"] };
+            project.Save(Path.Combine(dir.FullName, "Test.tproj"));
+
+            var objectFile = project.ResolvedObjectFileFor("src/main.c");
+            var notes = Path.Combine(project.ResolvedObjectDirectory, "notes.txt");
+            Directory.CreateDirectory(Path.GetDirectoryName(objectFile)!);
+            File.WriteAllText(objectFile, "");
+            File.WriteAllText(notes, "mine");
+
+            var removed = new Cc65Toolchain().Clean(project);
+
+            Assert.Equal([objectFile], removed);
+            Assert.True(File.Exists(notes));
+            // The src/ subfolder only held build output, so it's gone; obj/ itself still holds notes.txt.
+            Assert.False(Directory.Exists(Path.GetDirectoryName(objectFile)));
         }
         finally
         {

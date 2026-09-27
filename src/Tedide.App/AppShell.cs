@@ -447,11 +447,9 @@ public sealed class AppShell : Window
         // until it was reported and fixed here alongside F9/Ctrl+G.
         statusBar.Add(new Shortcut(Key.F6, "Run", () => _ = RunActiveProjectAsync()));
         statusBar.Add(new Shortcut(Key.F9, "Breakpoint", ToggleBreakpointAtCursor));
-        // Debug > Step's own MenuItem key (BindKeyToApplication = true) never actually fired in a
-        // live test even after removing MenuBar's competing F10 HotKeyBinding above - unclear why
-        // (possibly the same App-not-yet-set-at-construction-time risk noted elsewhere for that
-        // mechanism), but a status-bar Shortcut is proven to work for every other debugging hotkey
-        // here, so use it rather than keep chasing the object-initializer path for this one key.
+        // These status-bar Shortcuts are what make F10/F7 work at all: the Debug menu's own items
+        // show the keys but don't bind them, because BindKeyToApplication never fires for that
+        // menu's items (see OnKeyDown for the confirmed cause).
         statusBar.Add(new Shortcut(Key.F10, "Step", () => _ = StepDebuggingAsync(stepInto: false)));
         statusBar.Add(new Shortcut(Key.F7, "Into", () => _ = StepDebuggingAsync(stepInto: true)));
         statusBar.Add(new Shortcut(Key.S.WithCtrl, "Save", () => SaveAll()));
@@ -609,7 +607,7 @@ public sealed class AppShell : Window
     private void NewFileCore(string directory)
     {
         var project = _workspace.Projects.FirstOrDefault(p =>
-            directory.StartsWith(p.Directory, StringComparison.OrdinalIgnoreCase));
+            IsSameOrInsideDirectory(directory, p.Directory));
         if (project is null)
             return;
 
@@ -689,7 +687,7 @@ public sealed class AppShell : Window
     private void AddExistingItemCore(string directory)
     {
         var project = _workspace.Projects.FirstOrDefault(p =>
-            directory.StartsWith(p.Directory, StringComparison.OrdinalIgnoreCase));
+            IsSameOrInsideDirectory(directory, p.Directory));
         if (project is null)
             return;
 
@@ -770,7 +768,10 @@ public sealed class AppShell : Window
             return;
 
         var newPath = Path.Combine(Path.GetDirectoryName(path)!, newFileName);
-        if (File.Exists(newPath))
+        // A case-only rename (main.c -> Main.c) names the same file on Windows, so File.Exists is
+        // true for it - that's not a collision, and File.Move handles it fine.
+        var isCaseOnlyRename = string.Equals(Path.GetFullPath(newPath), Path.GetFullPath(path), StringComparison.OrdinalIgnoreCase);
+        if (File.Exists(newPath) && !isCaseOnlyRename)
         {
             TedideMessageBox.ErrorQuery("File Exists", $"'{newFileName}' already exists.", ["OK"]);
             return;
@@ -797,6 +798,7 @@ public sealed class AppShell : Window
             if (wasTracked)
                 project.Save();
         }
+        MoveBreakpoints(path, newPath);
 
         _solutionExplorer.Rebuild(_workspace);
         if (isOpen)
@@ -840,8 +842,29 @@ public sealed class AppShell : Window
             if (project.SourceFiles.RemoveAll(f => string.Equals(f, relativePath, StringComparison.OrdinalIgnoreCase)) > 0)
                 project.Save();
         }
+        MoveBreakpoints(path, newPath: null);
 
         _solutionExplorer.Rebuild(_workspace);
+    }
+
+    /// <summary>
+    /// Keeps the active project's breakpoints attached to a file that was just renamed to
+    /// <paramref name="newPath"/>, or drops them if it was deleted (<paramref name="newPath"/> null).
+    /// Breakpoints are stored by relative path, so before this a rename silently orphaned them -
+    /// they vanished from the file, and a debug session then reported them as unresolvable.
+    /// </summary>
+    private void MoveBreakpoints(string oldPath, string? newPath)
+    {
+        if (_workspace.ActiveProject is not { } project)
+            return;
+
+        var newRelative = newPath is null ? null : RelativeSourcePath(project, newPath);
+        if (!_breakpoints.RenameSourceFile(RelativeSourcePath(project, oldPath), newRelative))
+            return;
+
+        _breakpoints.Save(project.ResolvedBreakpointsFile);
+        RefreshBreakpointHighlights();
+        _ = SyncCheckpointsWithViceAsync();
     }
 
     /// <summary>
@@ -851,6 +874,17 @@ public sealed class AppShell : Window
     /// one) are authored, since <see cref="Path.GetRelativePath(string, string)"/> alone returns
     /// "\"-separated paths on Windows, which would silently fail to match/dedupe against those.
     /// </summary>
+    /// <summary>Whether <paramref name="path"/> is <paramref name="directory"/> itself or somewhere
+    /// inside it. Not a bare StartsWith, which also matched a sibling that merely shares the name
+    /// as a prefix - "Game" would claim files in "GameTools".</summary>
+    internal static bool IsSameOrInsideDirectory(string path, string directory)
+    {
+        var fullPath = Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));
+        var fullDirectory = Path.TrimEndingDirectorySeparator(Path.GetFullPath(directory));
+        return string.Equals(fullPath, fullDirectory, StringComparison.OrdinalIgnoreCase)
+            || fullPath.StartsWith(fullDirectory + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+    }
+
     private static string RelativeSourcePath(TedideProject project, string path) =>
         Path.GetRelativePath(project.Directory, path).Replace('\\', '/');
 
@@ -1468,6 +1502,16 @@ public sealed class AppShell : Window
         var client = new ViceMonitorClient();
         client.CheckpointHit += OnCheckpointHit;
         client.EventHandlerFailed += ex => Log.Error(ex, "Debug event handler failed");
+        // VICE closed (or crashed) under a live session: end it, so the editor becomes editable
+        // again and the Debug panel stops claiming a session exists. Checked on the UI thread
+        // against the *current* client, so a stale client from an earlier session does nothing.
+        client.Disconnected += () => Application.Invoke(() =>
+        {
+            if (_debugClient != client || !_isDebugging)
+                return;
+            AppendOutputLine("VICE closed the debugging connection - debug session ended.");
+            _ = EndDebugSessionAsync();
+        });
         client.Resumed += pc => Application.Invoke(() =>
         {
             Log.Debug("Resumed event: PC={PC:X4}, _isStepping={IsStepping}", pc, _isStepping);

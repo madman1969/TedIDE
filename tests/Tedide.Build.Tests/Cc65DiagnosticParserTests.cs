@@ -30,6 +30,34 @@ public class Cc65DiagnosticParserTests
         Assert.Null(Cc65DiagnosticParser.TryParse(line));
     }
 
+    // Real cl65 2.19 output that used to be missed entirely - a link failing on a memory-area
+    // overflow reported "Build FAILED (0 error(s))" with an empty Error List.
+    [Theory]
+    [InlineData(@"C:\Libs\inc\bad.h:1: Error: Undeclared identifier 'undefined_thing'", @"C:\Libs\inc\bad.h", 1, DiagnosticSeverity.Error, "Undeclared identifier 'undefined_thing'")]
+    [InlineData(@"C:\Libs\inc/bad.h(7): Warning: Unused variable 'x'", @"C:\Libs\inc/bad.h", 7, DiagnosticSeverity.Warning, "Unused variable 'x'")]
+    [InlineData(@"ld65: Error: C:\CC65\CFG/c64.cfg:15: Size of memory area 'BSS' is negative: -182005", @"C:\CC65\CFG/c64.cfg", 15, DiagnosticSeverity.Error, "Size of memory area 'BSS' is negative: -182005")]
+    [InlineData(@"ld65: Warning: C:\CC65\CFG/c64.cfg:14: Segment 'CODE' overflows memory area 'MAIN' by 179888 bytes", @"C:\CC65\CFG/c64.cfg", 14, DiagnosticSeverity.Warning, "Segment 'CODE' overflows memory area 'MAIN' by 179888 bytes")]
+    [InlineData("ld65: Error: 1 unresolved external(s) found - cannot create output file", "", 0, DiagnosticSeverity.Error, "1 unresolved external(s) found - cannot create output file")]
+    public void TryParse_RecognisesAbsolutePaths_AndToolsOwnMessages(string line, string expectedFile, int expectedLine, DiagnosticSeverity expectedSeverity, string expectedMessage)
+    {
+        var diagnostic = Cc65DiagnosticParser.TryParse(line);
+
+        Assert.NotNull(diagnostic);
+        Assert.Equal(expectedFile, diagnostic.FilePath);
+        Assert.Equal(expectedLine, diagnostic.Line);
+        Assert.Equal(expectedSeverity, diagnostic.Severity);
+        Assert.Equal(expectedMessage, diagnostic.Message);
+    }
+
+    [Theory]
+    [InlineData("In file included from src/main2.c:1:")]
+    [InlineData("1 errors and 0 warnings generated.")]
+    [InlineData("ld65: creating output file")]
+    public void TryParse_StillIgnoresNonDiagnosticLines_ThatLookSimilar(string line)
+    {
+        Assert.Null(Cc65DiagnosticParser.TryParse(line));
+    }
+
     [Fact]
     public void ParseAll_FiltersOutNonDiagnosticLines()
     {

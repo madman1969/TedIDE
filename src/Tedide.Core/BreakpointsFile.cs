@@ -42,5 +42,27 @@ public sealed class BreakpointsFile
     public static BreakpointsFile LoadOrRecover(string path, out string? problem) =>
         SidecarFile.LoadOrSetAside(path, Load, () => new BreakpointsFile(), out problem);
 
+    /// <summary>
+    /// Points every breakpoint on <paramref name="oldSourceFile"/> at <paramref name="newSourceFile"/>
+    /// instead (the file was renamed), or removes them if <paramref name="newSourceFile"/> is null
+    /// (it was deleted). Paths are project-relative, matched case-insensitively. Returns whether
+    /// anything changed, i.e. whether this needs saving.
+    /// </summary>
+    public bool RenameSourceFile(string oldSourceFile, string? newSourceFile)
+    {
+        var changed = false;
+        for (var i = Breakpoints.Count - 1; i >= 0; i--)
+        {
+            if (!string.Equals(Breakpoints[i].SourceFile, oldSourceFile, StringComparison.OrdinalIgnoreCase))
+                continue;
+            if (newSourceFile is null)
+                Breakpoints.RemoveAt(i);
+            else
+                Breakpoints[i] = Breakpoints[i] with { SourceFile = newSourceFile };
+            changed = true;
+        }
+        return changed;
+    }
+
     public void Save(string path) => File.WriteAllText(path, JsonSerializer.Serialize(this, JsonOptions));
 }

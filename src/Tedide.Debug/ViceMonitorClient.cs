@@ -50,6 +50,14 @@ public sealed class ViceMonitorClient : IAsyncDisposable
     /// pending request over what's only a bug in one subscriber - so this is how it gets reported.</summary>
     public event Action<Exception>? EventHandlerFailed;
 
+    /// <summary>Raised (on the read-loop thread) when the connection drops on VICE's side - most
+    /// often the user simply closing the emulator. Not raised by <see cref="DisposeAsync"/>, which
+    /// closes it on purpose. Without this, nothing noticed: the IDE stayed in debug mode, editor
+    /// read-only, until Stop Debugging was chosen by hand.</summary>
+    public event Action? Disconnected;
+
+    private volatile bool _disposing;
+
     public async Task ConnectAsync(string host = "127.0.0.1", int port = 6502, CancellationToken cancellationToken = default)
     {
         await _tcpClient.ConnectAsync(host, port, cancellationToken);
@@ -247,6 +255,12 @@ public sealed class ViceMonitorClient : IAsyncDisposable
             foreach (var pending in _pending.Values)
                 pending.TrySetException(closed);
             Volatile.Read(ref _pendingStop)?.TrySetException(closed);
+
+            if (!_disposing)
+            {
+                try { Disconnected?.Invoke(); }
+                catch (Exception handlerEx) { try { EventHandlerFailed?.Invoke(handlerEx); } catch { /* see RaiseSafely */ } }
+            }
         }
     }
 
@@ -303,6 +317,7 @@ public sealed class ViceMonitorClient : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        _disposing = true; // Before closing the stream, so the read loop doesn't report Disconnected.
         if (_readLoop is not null)
         {
             _stream?.Close();

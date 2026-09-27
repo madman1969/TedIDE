@@ -101,8 +101,8 @@ public sealed class TedideProject
     /// file next to wherever that assembly is going, so building src/foo.c straight to src/foo.o
     /// overwrote and then deleted a hand-written src/foo.s beside it (confirmed against a real
     /// cl65 2.19); and keeping the source's own extension in the name stops foo.c and foo.s from
-    /// both compiling to the same foo.o/foo.lst. Tedide owns this directory outright - Clean
-    /// deletes it wholesale - so nothing hand-written belongs in it.
+    /// both compiling to the same foo.o/foo.lst. Clean removes only those build
+    /// outputs (.o, .s, .lst) from it, so anything else placed in obj/ is left alone.
     /// </summary>
     [JsonIgnore]
     public string ResolvedObjectDirectory => Path.Combine(Directory, "obj");

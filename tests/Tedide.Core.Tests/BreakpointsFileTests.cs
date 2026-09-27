@@ -93,4 +93,35 @@ public class BreakpointsFileTests
             dir.Delete(recursive: true);
         }
     }
+
+    [Fact]
+    public void RenameSourceFile_MovesThatFilesBreakpoints_AndLeavesOthersAlone()
+    {
+        var file = new BreakpointsFile
+        {
+            Breakpoints = [new("src/main.c", 3), new("src/other.c", 4), new("SRC/Main.c", 9, false)],
+        };
+
+        var changed = file.RenameSourceFile("src/main.c", "src/game.c");
+
+        Assert.True(changed);
+        Assert.Equal([new("src/game.c", 3), new("src/other.c", 4), new("src/game.c", 9, false)], file.Breakpoints);
+    }
+
+    [Fact]
+    public void RenameSourceFile_WithNoNewName_RemovesThatFilesBreakpoints()
+    {
+        var file = new BreakpointsFile { Breakpoints = [new("src/main.c", 3), new("src/other.c", 4)] };
+
+        Assert.True(file.RenameSourceFile("src/main.c", null));
+        Assert.Equal([new BreakpointEntry("src/other.c", 4)], file.Breakpoints);
+    }
+
+    [Fact]
+    public void RenameSourceFile_ReportsNoChange_WhenNoBreakpointIsOnThatFile()
+    {
+        var file = new BreakpointsFile { Breakpoints = [new("src/other.c", 4)] };
+
+        Assert.False(file.RenameSourceFile("src/main.c", "src/game.c"));
+    }
 }
