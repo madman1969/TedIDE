@@ -60,7 +60,8 @@ public static class Cc65ListingHighlighting
         			<Begin>'</Begin>
         			<End>'</End>
         		</Span>
-        		<Rule color="Label">\b[A-Za-z_@][A-Za-z0-9_]*:</Rule>
+        		<Rule color="Label">@?\b[A-Za-z_][A-Za-z0-9_]*:</Rule>
+        		<Rule color="Label">@[A-Za-z_][A-Za-z0-9_]*</Rule>
         		<Rule color="Directive">\.[A-Za-z_][A-Za-z0-9_]*</Rule>
         		<Rule color="Number">\$[0-9A-Fa-f]+|%[01]+|\b[0-9]+\b</Rule>
         		<Rule color="Punctuation">[#,()\[\]:+\-*/=~&lt;&gt;!&amp;|^]+</Rule>
@@ -77,6 +78,8 @@ public static class Cc65ListingHighlighting
         			<Word>sed</Word><Word>sei</Word><Word>sta</Word><Word>stx</Word><Word>sty</Word>
         			<Word>tax</Word><Word>tay</Word><Word>tsx</Word><Word>txa</Word><Word>txs</Word>
         			<Word>tya</Word>
+        			<Word>bra</Word><Word>phx</Word><Word>phy</Word><Word>plx</Word><Word>ply</Word>
+        			<Word>stz</Word><Word>trb</Word><Word>tsb</Word><Word>wai</Word><Word>stp</Word>
         		</Keywords>
         	</RuleSet>
         </SyntaxDefinition>

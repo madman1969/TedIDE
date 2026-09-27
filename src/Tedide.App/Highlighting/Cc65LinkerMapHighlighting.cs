@@ -47,6 +47,7 @@ public static class Cc65LinkerMapHighlighting
         		<Rule color="LinkerGenerated">\[linker\ generated\]</Rule>
         		<Rule color="Path">[A-Za-z0-9_./\\]+\.[A-Za-z]+:[0-9]+</Rule>
         		<Rule color="Field">\b(Offs|Size|Align|Fill)=</Rule>
+        		<Rule color="Address">(?&lt;=\b(?:Offs|Size|Align|Fill)=)[0-9A-Fa-f]+</Rule>
         		<Rule color="Address">\b[0-9A-Fa-f]{6}\b</Rule>
         		<Rule color="Flag">\b[A-Z]{3}\b</Rule>
         		<Keywords color="SegmentName">

@@ -49,10 +49,14 @@ public static class Cc65CfgHighlighting
         			<Word>offset</Word><Word>optional</Word><Word>fill</Word><Word>fillval</Word>
         			<Word>export</Word><Word>import</Word><Word>condes</Word><Word>bank</Word>
         			<Word>banksize</Word><Word>name</Word>
+        			<Word>default</Word><Word>value</Word><Word>addrsize</Word><Word>segment</Word><Word>label</Word>
+        			<Word>count</Word><Word>order</Word><Word>align_load</Word><Word>format</Word><Word>os</Word><Word>version</Word>
         		</Keywords>
         		<Keywords color="AttributeValue">
         			<Word>ro</Word><Word>rw</Word><Word>bss</Word><Word>overwrite</Word>
         			<Word>yes</Word><Word>no</Word><Word>weak</Word><Word>import</Word><Word>expr</Word>
+        			<Word>constructor</Word><Word>destructor</Word><Word>interruptor</Word><Word>zp</Word><Word>abs</Word><Word>far</Word>
+        			<Word>binary</Word><Word>o65</Word><Word>atari</Word>
         		</Keywords>
         	</RuleSet>
         </SyntaxDefinition>

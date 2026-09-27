@@ -111,11 +111,139 @@ public static class ThemeSwitcher
     /// themes use one accent color for both hotkeys and the focus highlight, which made a focused
     /// item's hotkey letter vanish into its own background (Solarized Light/Dark and Dracula menus,
     /// several themes' error/warning boxes - seen live as "ile" for File, "ookmarks", "emove").
+    /// A hot color that differs in hue but is too close in brightness to read (Borland's bright red
+    /// on gray, 1.01:1) has its lightness nudged to <see cref="MutedContrast"/> first; only if that
+    /// can't be reached while staying distinct does it fall back to the underline.
     /// </summary>
-    private static GuiAttribute HotkeyAttribute(GuiAttribute hot, GuiAttribute text) =>
-        Indistinguishable(hot.Foreground, text.Background) || Indistinguishable(hot.Foreground, text.Foreground)
-            ? new GuiAttribute(text.Foreground, text.Background, text.Style | TextStyle.Underline)
-            : new GuiAttribute(hot.Foreground, text.Background, hot.Style);
+    private static GuiAttribute HotkeyAttribute(GuiAttribute hot, GuiAttribute text)
+    {
+        var underlined = new GuiAttribute(text.Foreground, text.Background, text.Style | TextStyle.Underline);
+        if (Indistinguishable(hot.Foreground, text.Background) || Indistinguishable(hot.Foreground, text.Foreground))
+            return underlined;
+
+        var (hotForeground, reached) = AdjustLightness(hot.Foreground, text.Background, MutedContrast);
+        return reached && !Indistinguishable(hotForeground, text.Background) && !Indistinguishable(hotForeground, text.Foreground)
+            ? new GuiAttribute(hotForeground, text.Background, hot.Style)
+            : underlined;
+    }
+
+    /// <summary>WCAG AA contrast for body text - the level every Normal/Focus pair must reach.</summary>
+    internal const double TextContrast = 4.5;
+
+    /// <summary>WCAG's lower bar (large text / UI components), applied to what is meant to look
+    /// muted or secondary: hotkey letters, disabled and read-only text, comments.</summary>
+    internal const double MutedContrast = 3.0;
+
+    /// <summary>
+    /// <paramref name="attribute"/> with its text readable against its background (at least
+    /// <paramref name="target"/>:1). Several themes' authored colors fell short - Commodore 64's
+    /// light blue on blue text 2.3:1, Monokai's white on yellow warning highlight 1.4:1, the
+    /// Solarized themes' white on blue selection 3.7:1. Rather than hand-tuning each color, the
+    /// lightness of the text or of its background is nudged - whichever reaches the target with
+    /// the smaller visible change - keeping the hue, so each theme keeps its look. Pairs that
+    /// already pass are returned unchanged.
+    /// </summary>
+    private static GuiAttribute Readable(GuiAttribute attribute, double target)
+    {
+        var (foreground, background) = (attribute.Foreground, attribute.Background);
+        if (ContrastRatio(foreground, background) >= target)
+            return attribute;
+
+        var textMoved = AdjustLightness(foreground, background, target);
+        var backgroundMoved = AdjustLightness(background, foreground, target);
+        (foreground, background) = (textMoved.Reached, backgroundMoved.Reached) switch
+        {
+            (true, true) => DeltaE(foreground, textMoved.Color) <= DeltaE(background, backgroundMoved.Color)
+                ? (textMoved.Color, background)
+                : (foreground, backgroundMoved.Color),
+            (true, false) => (textMoved.Color, background),
+            (false, true) => (foreground, backgroundMoved.Color),
+            // Neither alone gets there: take the text as far as it goes, then the background.
+            _ => (textMoved.Color, AdjustLightness(background, textMoved.Color, target).Color),
+        };
+        return new GuiAttribute(foreground, background, attribute.Style);
+    }
+
+    /// <summary><paramref name="attribute"/> with only its text color adjusted to reach
+    /// <paramref name="target"/>:1 - for roles drawn on another role's background, which they
+    /// mustn't change.</summary>
+    private static GuiAttribute WithReadableForeground(GuiAttribute attribute, double target) =>
+        new(AdjustLightness(attribute.Foreground, attribute.Background, target).Color, attribute.Background, attribute.Style);
+
+    /// <summary>Moves <paramref name="attribute"/>'s background along with the Normal background it
+    /// was authored against, if Readable changed that.</summary>
+    private static GuiAttribute Follow(GuiAttribute attribute, Color authoredBackground, Color adjustedBackground) =>
+        SameColor(attribute.Background, authoredBackground)
+            ? new GuiAttribute(attribute.Foreground, adjustedBackground, attribute.Style)
+            : attribute;
+
+    private static bool SameColor(Color a, Color b) => a.R == b.R && a.G == b.G && a.B == b.B;
+
+    /// <summary>
+    /// Lightens or darkens <paramref name="color"/> - away from <paramref name="against"/>'s own
+    /// lightness, keeping its hue and chroma - one CIELAB L* step at a time until it reaches
+    /// <paramref name="target"/>:1 contrast with it or runs out of room at white/black. Reached
+    /// says which. Already-passing colors come back unchanged.
+    /// </summary>
+    private static (Color Color, bool Reached) AdjustLightness(Color color, Color against, double target)
+    {
+        if (ContrastRatio(color, against) >= target)
+            return (color, true);
+
+        var (l, a, b) = ToLab(color);
+        var step = RelativeLuminance(color) >= RelativeLuminance(against) ? 1.0 : -1.0;
+        var candidate = color;
+        for (var lightness = l + step; lightness is >= 0 and <= 100; lightness += step)
+        {
+            candidate = FromLab(lightness, a, b);
+            if (ContrastRatio(candidate, against) >= target)
+                return (candidate, true);
+        }
+        return (candidate, false);
+    }
+
+    /// <summary>WCAG 2 contrast ratio between two colors, from 1:1 (identical brightness) to 21:1.</summary>
+    internal static double ContrastRatio(Color a, Color b)
+    {
+        var (l1, l2) = (RelativeLuminance(a), RelativeLuminance(b));
+        return (Math.Max(l1, l2) + 0.05) / (Math.Min(l1, l2) + 0.05);
+    }
+
+    private static double RelativeLuminance(Color c)
+    {
+        static double Channel(int v)
+        {
+            var s = v / 255.0;
+            return s <= 0.03928 ? s / 12.92 : Math.Pow((s + 0.055) / 1.055, 2.4);
+        }
+        return 0.2126 * Channel(c.R) + 0.7152 * Channel(c.G) + 0.0722 * Channel(c.B);
+    }
+
+    private static double DeltaE(Color x, Color y)
+    {
+        var (l1, a1, b1) = ToLab(x);
+        var (l2, a2, b2) = ToLab(y);
+        return Math.Sqrt((l1 - l2) * (l1 - l2) + (a1 - a2) * (a1 - a2) + (b1 - b2) * (b1 - b2));
+    }
+
+    /// <summary>CIELAB (D65) back to sRGB, clamped into gamut.</summary>
+    private static Color FromLab(double l, double a, double b)
+    {
+        var fy = (l + 16) / 116;
+        var (fx, fz) = (fy + a / 500, fy - b / 200);
+        static double Inverse(double t) => t * t * t > 0.008856 ? t * t * t : (t - 16.0 / 116) / 7.787;
+        var (x, y, z) = (Inverse(fx) * 0.95047, Inverse(fy), Inverse(fz) * 1.08883);
+        static int Channel(double linear)
+        {
+            linear = Math.Clamp(linear, 0, 1);
+            var s = linear <= 0.0031308 ? 12.92 * linear : 1.055 * Math.Pow(linear, 1 / 2.4) - 0.055;
+            return (int)Math.Round(Math.Clamp(s, 0, 1) * 255);
+        }
+        return new Color(
+            Channel(3.2406 * x - 1.5372 * y - 0.4986 * z),
+            Channel(-0.9689 * x + 1.8758 * y + 0.0415 * z),
+            Channel(0.0557 * x - 0.2040 * y + 1.0570 * z));
+    }
 
     /// <summary>
     /// Whether two colors are too alike to tell apart: a perceptual (CIELAB ΔE76) difference under
@@ -124,12 +252,7 @@ public static class ThemeSwitcher
     /// Solarized's accent blue on its gray text is close in RGB yet obviously a different color
     /// (ΔE about 38), while Amber Phosphor's light amber on amber really is hard to see (about 19).
     /// </summary>
-    internal static bool Indistinguishable(Color a, Color b)
-    {
-        var (l1, a1, b1) = ToLab(a);
-        var (l2, a2, b2) = ToLab(b);
-        return Math.Sqrt((l1 - l2) * (l1 - l2) + (a1 - a2) * (a1 - a2) + (b1 - b2) * (b1 - b2)) < 20;
-    }
+    internal static bool Indistinguishable(Color a, Color b) => DeltaE(a, b) < 20;
 
     /// <summary>sRGB to CIELAB (D65 white point).</summary>
     private static (double L, double A, double B) ToLab(Color c)
@@ -156,6 +279,15 @@ public static class ThemeSwitcher
     /// </summary>
     private static Scheme BuildScheme(GuiAttribute normal, GuiAttribute focus, GuiAttribute hot, GuiAttribute disabled, GuiAttribute? codeNumber = null)
     {
+        // Readability first, so everything below is derived from the adjusted colors - see
+        // Readable/WithReadableForeground. A theme whose colors already pass is left untouched.
+        var authoredNormalBackground = normal.Background;
+        normal = Readable(normal, TextContrast);
+        focus = Readable(focus, TextContrast);
+        disabled = WithReadableForeground(Follow(disabled, authoredNormalBackground, normal.Background), MutedContrast);
+        if (codeNumber is { } number)
+            codeNumber = WithReadableForeground(Follow(number, authoredNormalBackground, normal.Background), MutedContrast);
+
         var hotNormal = HotkeyAttribute(hot, normal);
         var hotFocus = HotkeyAttribute(hot, focus);
 

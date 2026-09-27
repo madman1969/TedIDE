@@ -14,8 +14,9 @@ namespace Tedide.App.Highlighting;
 /// Uses the same XSHD (AvalonEdit/SharpDevelop) XML format the bundled definitions are authored
 /// in - see <see cref="HighlightingLoader"/> - covering: line comments (";"), string/character
 /// literals, ca65 directives (".proc", ".export", etc. - matched generically by a leading "."
-/// rather than an exhaustive list, since ca65 has 100+ pseudo-ops), labels ("name:"), hex/binary/
-/// decimal numeric literals ("$d020", "%1010", "10"), the 56 official 6502 mnemonics, and common
+/// rather than an exhaustive list, since ca65 has 100+ pseudo-ops), labels ("name:", plus ca65's
+/// cheap local "@name:" and its uses), hex/binary/decimal numeric literals ("$d020", "%1010",
+/// "10"), the 56 official 6502 mnemonics plus the 65C02 additions (bra, phx, stz, ...), and common
 /// assembly punctuation. Like the bundled definitions, colors are literal values baked into the
 /// XML rather than resolved through Tedide's own Scheme-based themes (see ThemeSwitcher) - so
 /// switching app themes restyles the editor's background/chrome but not these token colors,
@@ -46,7 +47,8 @@ public static class Cc65AssemblyHighlighting
         			<Begin>'</Begin>
         			<End>'</End>
         		</Span>
-        		<Rule color="Label">\b[A-Za-z_@][A-Za-z0-9_]*:</Rule>
+        		<Rule color="Label">@?\b[A-Za-z_][A-Za-z0-9_]*:</Rule>
+        		<Rule color="Label">@[A-Za-z_][A-Za-z0-9_]*</Rule>
         		<Rule color="Directive">\.[A-Za-z_][A-Za-z0-9_]*</Rule>
         		<Rule color="Number">\$[0-9A-Fa-f]+|%[01]+|\b[0-9]+\b</Rule>
         		<Rule color="Punctuation">[#,()\[\]:+\-*/=~&lt;&gt;!&amp;|^]+</Rule>
@@ -63,6 +65,8 @@ public static class Cc65AssemblyHighlighting
         			<Word>sed</Word><Word>sei</Word><Word>sta</Word><Word>stx</Word><Word>sty</Word>
         			<Word>tax</Word><Word>tay</Word><Word>tsx</Word><Word>txa</Word><Word>txs</Word>
         			<Word>tya</Word>
+        			<Word>bra</Word><Word>phx</Word><Word>phy</Word><Word>plx</Word><Word>ply</Word>
+        			<Word>stz</Word><Word>trb</Word><Word>tsb</Word><Word>wai</Word><Word>stp</Word>
         		</Keywords>
         	</RuleSet>
         </SyntaxDefinition>

@@ -49,12 +49,43 @@ public class ThemeSchemeTests
         Assert.True(problems.Count == 0, $"{theme}: {string.Join("; ", problems)}");
     }
 
+    [Theory]
+    [MemberData(nameof(AllThemes))]
+    public void EveryRole_IsReadableAgainstItsBackground(AppTheme theme)
+    {
+        // WCAG AA for text; the lower 3:1 bar for what's meant to look muted. An underlined hotkey
+        // is drawn in its (already checked) text color, so it passes by construction.
+        var problems = new List<string>();
+        foreach (var (slot, scheme) in ThemeSwitcher.SchemesFor(theme))
+        {
+            foreach (var (role, attribute, target) in new[]
+            {
+                ("Normal", scheme.Normal, ThemeSwitcher.TextContrast),
+                ("Focus", scheme.Focus, ThemeSwitcher.TextContrast),
+                ("HotNormal", scheme.HotNormal, ThemeSwitcher.MutedContrast),
+                ("HotFocus", scheme.HotFocus, ThemeSwitcher.MutedContrast),
+                ("Disabled", scheme.Disabled, ThemeSwitcher.MutedContrast),
+            })
+            {
+                var ratio = ThemeSwitcher.ContrastRatio(attribute.Foreground, attribute.Background);
+                if (ratio < target)
+                    problems.Add($"{slot}.{role}: {attribute.Foreground} on {attribute.Background} = {ratio:F2}:1");
+            }
+        }
+
+        Assert.True(problems.Count == 0, $"{theme}: {string.Join("; ", problems)}");
+    }
+
     [Fact]
     public void BorlandTurboC_KeepsItsRedHotkeys()
     {
-        // Red on gray is nearly equal in brightness but obvious by hue - the "indistinguishable"
-        // rule must not flatten it into underlined text.
-        Assert.Equal(new Color(ColorName16.Red), ThemeSwitcher.SchemesFor(AppTheme.BorlandTurboC)["Menu"].HotNormal.Foreground);
+        // Bright red on gray is obvious by hue but 1.01:1 in brightness - it's darkened to a
+        // readable red (as the original's dark red on light gray was), not flattened into
+        // underlined gray text.
+        var hot = ThemeSwitcher.SchemesFor(AppTheme.BorlandTurboC)["Menu"].HotNormal;
+
+        Assert.True(hot.Foreground.R > 0x60 && hot.Foreground.G == 0 && hot.Foreground.B == 0, hot.Foreground.ToString());
+        Assert.Equal(TextStyle.None, hot.Style & TextStyle.Underline);
     }
 
     [Fact]
