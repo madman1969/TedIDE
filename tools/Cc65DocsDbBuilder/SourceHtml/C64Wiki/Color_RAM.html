@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<!-- From C64-Wiki (https://www.c64-wiki.com/wiki/Color_RAM), revision 33207, last edited 1 December 2019, at 18:54.
+     Content is available under the GNU Free Documentation License - see c64wiki/licence.
+     Only the article body is kept; retrieved 2026-09-27 for Tedide's Doc Viewer. -->
+<html><head><meta charset="utf-8"><title>Color RAM</title>
+<meta name="c64wiki-page" content="Color_RAM"><meta name="c64wiki-revision" content="33207"><meta name="c64wiki-edited" content="1 December 2019, at 18:54">
+</head><body>
+<div class="mw-content-ltr mw-parser-output" lang="en" dir="ltr"><table width="100%" style="background-color: #99CCFF; border: 1px solid #0099FF; padding: 5px 5px 5px 5px; position:relative; font-size: 95%; margin-top: 2px; margin-bottom: 2px">
+<tbody><tr>
+<td><span class="mw-default-size" typeof="mw:File"><a href="/wiki/File:Schild_stub.png" class="mw-file-description" title="Stub"><img alt="Stub" src="https://www.c64-wiki.com/images/6/68/Schild_stub.png" decoding="async" loading="lazy" width="51" height="51" class="mw-file-element" /></a></span>
+</td>
+<td><b>This article is very short and not very detailed. Please help to improve it.</b>
+</td></tr></tbody></table>
+<figure class="mw-halign-right" typeof="mw:File/Thumb"><a href="/wiki/File:C64_Farbram.jpg" class="mw-file-description"><img src="https://www.c64-wiki.com/images/thumb/3/36/C64_Farbram.jpg/250px-C64_Farbram.jpg" decoding="async" loading="lazy" width="250" height="129" class="mw-file-element" srcset="https://www.c64-wiki.com/images/thumb/3/36/C64_Farbram.jpg/375px-C64_Farbram.jpg 1.5x, https://www.c64-wiki.com/images/thumb/3/36/C64_Farbram.jpg/500px-C64_Farbram.jpg 2x" /></a><figcaption>The chip of the color RAM (MM2114N-3 4Kb Static RAM) on a C64 motherboard.</figcaption></figure>
+<p>The <b>color RAM</b> or <b>color memory</b> of the <a href="/wiki/C64" title="C64">C64</a> starts in the memory address 55296 ($D800) and ends in 56295 ($DBE7). 
+</p><p>For each <b><a href="/wiki/Char" class="mw-redirect" title="Char">character</a></b> in every row (40 chars per row; 0-39) and column (25 columns; 0-24) one of 16 colors (see <a href="/wiki/Color" title="Color">color table</a>) can be assigned.  The color values ​​0-15 are only used in the lower nibbles.  The upper nibbles are undefined and are purely random values​​.
+</p><p>The <a href="/wiki/BASIC" title="BASIC">BASIC</a> command <a href="/wiki/POKE" title="POKE">POKE</a> is used for coloring, for example: <code>POKE 55296,1</code> sets the 8x8 pixel block in the upper left corner to white.
+</p>
+<h3><span class="mw-headline" id="Addresses">Addresses</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Color_RAM&amp;veaction=edit&amp;section=1" title="Edit section: Addresses" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Color_RAM&amp;action=edit&amp;section=1" title="Edit section&#39;s source code: Addresses">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<table class="wikitable">
+
+
+<tbody><tr>
+<th>Hex Address
+</th>
+<th>Dec Address
+</th>
+<th>Type
+</th>
+<th>Purpose
+</th></tr>
+<tr>
+<td>$D800-$DBE7</td>
+<td>55296-56295</td>
+<td></td>
+<td>1/2 kB (1000 nibbles) of color memory.
+</td></tr>
+<tr>
+<td>$DBE8-$DBFF</td>
+<td>56296-56319</td>
+<td></td>
+<td>Unused
+</td></tr>
+</tbody></table>
+<h3><span class="mw-headline" id="See_also">See also</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Color_RAM&amp;veaction=edit&amp;section=2" title="Edit section: See also" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Color_RAM&amp;action=edit&amp;section=2" title="Edit section&#39;s source code: See also">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<ul><li><a href="/wiki/Screen_RAM" title="Screen RAM">Screen RAM</a> for printing chars</li></ul>
+<div style="margin-top:24px; text-align:center; padding:5px 0px 5px 0px; background-color:#eeeeee; border:1px solid #bbbbbb;">
+<p><b><a href="/wiki/Hardware_internals_of_the_C64" title="Hardware internals of the C64">Hardware internals of the C64</a> · <a href="/wiki/Portal:Hardware" title="Portal:Hardware">Hardware portal</a></b><br />
+<b>Components of the C64: <a href="/wiki/MOS_6510" class="mw-redirect" title="MOS 6510">CPU</a> · <a href="/wiki/VIC" title="VIC">VIC</a> · <a href="/wiki/SID" title="SID">SID</a> · <a href="/wiki/CIA" title="CIA">CIA</a> · <a href="/wiki/PLA_(C64_chip)" title="PLA (C64 chip)">PLA</a> · <a href="/wiki/RAM" title="RAM">RAM</a> · <a href="/wiki/ROM" title="ROM">ROM</a> · <a class="mw-selflink selflink">Color RAM</a></b><br />
+</p>
+<b>Interfaces of the C64: <a href="/wiki/Control_Port" title="Control Port">Control Port</a> · <a href="/wiki/Expansion_Port" title="Expansion Port">Expansion Port</a> · <a href="/wiki/Userport" class="mw-redirect" title="Userport">Userport</a> · <a href="/wiki/Cassette_Port" title="Cassette Port">Cassette Port</a> · <a href="/wiki/Power_Supply_Connector" title="Power Supply Connector">Power Supply Connector</a> · <a href="/wiki/A/V_Jack" title="A/V Jack">A/V Jack</a> · <a href="/wiki/RF_Jack" title="RF Jack">RF Jack</a> · <a href="/wiki/Serial_Port" title="Serial Port">Serial Port</a></b></div>
+<!-- 
+NewPP limit report
+Cached time: 20260927034645
+Cache expiry: 86400
+Reduced expiry: false
+Complications: []
+CPU time usage: 0.014 seconds
+Real time usage: 0.016 seconds
+Preprocessor visited node count: 24/1000000
+Post‐expand include size: 905/2097152 bytes
+Template argument size: 0/2097152 bytes
+Highest expansion depth: 2/100
+Expensive parser function count: 0/100
+Unstrip recursion depth: 0/20
+Unstrip post‐expand size: 0/5000000 bytes
+-->
+<!--
+Transclusion expansion time report (%,ms,calls,template)
+100.00%    1.853      1 -total
+ 37.18%    0.689      1 Template:Stub1
+ 28.76%    0.533      1 Template:Hardware_Assembly_of_the_C64
+ 27.52%    0.510      1 Template:Wikitable
+-->
+
+<!-- Saved in parser cache with key c64?hwiki?hen-wiki_:pcache:idhash:3298-0!canonical!svUser=0!asDate=20260927 and timestamp 20260927034645 and revision id 33207. Rendering was triggered because: page-view
+ -->
+</div>
+</div>
+</body></html>

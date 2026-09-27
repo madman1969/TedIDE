@@ -421,10 +421,15 @@ trace. Worth checking first if the app ever closes unexpectedly.
 dotnet run --project src/Tedide.DocViewer
 ```
 
-A single window: a category/page tree of every cc65 manual on the left, and the selected page's
-rendered Markdown on the right (via Terminal.Gui's own `Markdown` view). Both panes' content comes
-from `Docs.db`, an embedded SQLite database built once ahead of time by `tools/Cc65DocsDbBuilder`
-from cc65's own HTML manuals - regenerate it (and rebuild) if that tool's `SourceHtml/` changes.
+A single window: a category/page tree on the left, and the selected page's rendered Markdown on the
+right (via Terminal.Gui's own `Markdown` view). The tree holds three books: every **cc65 manual**,
+**The C Book** (Banahan, Brady & Doran, under its own free-redistribution licence), and a curated
+set of 26 **C64-Wiki** articles - the machine and its CPU, the VIC-II/SID/CIA chips, the memory map
+and bank switching, graphics modes, sprites, raster interrupts, the KERNAL, BASIC, opcodes,
+PETSCII and input - under the GNU Free Documentation License, with a Licence page listing each
+article's source and revision alongside the licence text. All of it comes from `Docs.db`, an
+embedded SQLite database built once ahead of time by `tools/Cc65DocsDbBuilder` from the sources'
+own HTML (checked in under its `SourceHtml/`) - regenerate it (and rebuild) if any of them change.
 
 ![The Doc Viewer showing the cc65 manual's "coding" page: the contents tree on the left with the page selected, and on the right its rendered text with themed headings and syntax-highlighted C and 6502 code blocks](docs/images/docviewer.png)
 

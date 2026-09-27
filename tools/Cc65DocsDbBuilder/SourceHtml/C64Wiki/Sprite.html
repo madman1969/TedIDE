@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<!-- From C64-Wiki (https://www.c64-wiki.com/wiki/Sprite), revision 41729, last edited 8 April 2024, at 00:19.
+     Content is available under the GNU Free Documentation License - see c64wiki/licence.
+     Only the article body is kept; retrieved 2026-09-27 for Tedide's Doc Viewer. -->
+<html><head><meta charset="utf-8"><title>Sprite</title>
+<meta name="c64wiki-page" content="Sprite"><meta name="c64wiki-revision" content="41729"><meta name="c64wiki-edited" content="8 April 2024, at 00:19">
+</head><body>
+<div class="mw-content-ltr mw-parser-output" lang="en" dir="ltr"><table cellspacing="8" cellpadding="0" style="background-color:#F9F9F9;" class="noprint">
+<tbody><tr>
+<td style="width: 25px; vertical-align: top"><span class="mw-default-size" typeof="mw:File"><a href="/wiki/File:disambig_30px.png" class="mw-file-description" title="Disambiguation"><img alt="Disambiguation" src="https://www.c64-wiki.com/images/d/d2/disambig_30px.png" decoding="async" loading="lazy" width="30" height="23" class="mw-file-element" /></a></span>
+</td>
+<td>The title of this article is ambiguous. Other definitions are listed on <a href="/wiki/Sprite_(Disambiguation)" title="Sprite (Disambiguation)">Sprite (Disambiguation)</a>.
+</td></tr></tbody></table>
+<p>A <b>sprite</b>, also referred to as a <b>Movable Object Block</b> (abbreviated to <b>MOB</b>) in <a href="/wiki/Commodore" title="Commodore">Commodore</a> literature, is a piece of graphics that can move and be assigned attributes independent of other graphics or text on the screen. The <a href="/wiki/VIC-II" class="mw-redirect" title="VIC-II">VIC-II</a>, which is responsible for this feature of the <a href="/wiki/C-64" class="mw-redirect" title="C-64">C-64</a>, supports up to eight sprites, but through the use of <a href="/wiki/Raster_interrupt" title="Raster interrupt">raster interrupt</a> programming more than eight sprites may be displayed simultaneously.
+</p><p>While managing sprites is notorious for the flurry of <a href="/wiki/POKE" title="POKE">POKEs</a> necessary to set them up, their big strength lie in the ability to quickly and easily move a graphical object and change its shape, merely by specifying coordinates and setting a pointer &#8211; eliminating the need to constantly draw and erase graphical objects pixel-by-pixel.
+</p>
+<figure class="mw-halign-right" typeof="mw:File/Frame"><a href="/wiki/File:Sprite_Entwurfsblatt.png" class="mw-file-description"><img src="https://www.c64-wiki.com/images/8/82/Sprite_Entwurfsblatt.png" decoding="async" loading="lazy" width="507" height="400" class="mw-file-element" /></a><figcaption>Sprite developing help (German; Reihe = line and Bitwert = bit value).</figcaption></figure>
+<div id="toc" class="toc" role="navigation" aria-labelledby="mw-toc-heading"><input type="checkbox" role="button" id="toctogglecheckbox" class="toctogglecheckbox" style="display:none" /><div class="toctitle" lang="en" dir="ltr"><h2 id="mw-toc-heading">Contents</h2><span class="toctogglespan"><label class="toctogglelabel" for="toctogglecheckbox"></label></span></div>
+<ul>
+<li class="toclevel-1 tocsection-1"><a href="#Sprite_graphics"><span class="tocnumber">1</span> <span class="toctext">Sprite graphics</span></a>
+<ul>
+<li class="toclevel-2 tocsection-2"><a href="#High_resolution_sprite_pattern"><span class="tocnumber">1.1</span> <span class="toctext">High resolution sprite pattern</span></a></li>
+<li class="toclevel-2 tocsection-3"><a href="#Multicolor_sprite_pattern"><span class="tocnumber">1.2</span> <span class="toctext">Multicolor sprite pattern</span></a></li>
+<li class="toclevel-2 tocsection-4"><a href="#Construction"><span class="tocnumber">1.3</span> <span class="toctext">Construction</span></a></li>
+<li class="toclevel-2 tocsection-5"><a href="#Programming_sprites_in_BASIC"><span class="tocnumber">1.4</span> <span class="toctext">Programming sprites in BASIC</span></a></li>
+</ul>
+</li>
+<li class="toclevel-1 tocsection-6"><a href="#Settings"><span class="tocnumber">2</span> <span class="toctext">Settings</span></a>
+<ul>
+<li class="toclevel-2 tocsection-7"><a href="#Sprite_enable"><span class="tocnumber">2.1</span> <span class="toctext">Sprite enable</span></a>
+<ul>
+<li class="toclevel-3"><a href="#General"><span class="tocnumber">2.1.1</span> <span class="toctext">General</span></a></li>
+<li class="toclevel-3"><a href="#Examples"><span class="tocnumber">2.1.2</span> <span class="toctext">Examples</span></a></li>
+</ul>
+</li>
+<li class="toclevel-2 tocsection-8"><a href="#Sprite_pointers"><span class="tocnumber">2.2</span> <span class="toctext">Sprite pointers</span></a></li>
+<li class="toclevel-2 tocsection-9"><a href="#Sprite_locations"><span class="tocnumber">2.3</span> <span class="toctext">Sprite locations</span></a>
+<ul>
+<li class="toclevel-3"><a href="#Examples_2"><span class="tocnumber">2.3.1</span> <span class="toctext">Examples</span></a></li>
+</ul>
+</li>
+<li class="toclevel-2 tocsection-10"><a href="#High_resolution_or_multicolor_mode"><span class="tocnumber">2.4</span> <span class="toctext">High resolution or multicolor mode</span></a></li>
+<li class="toclevel-2 tocsection-11"><a href="#Color_settings"><span class="tocnumber">2.5</span> <span class="toctext">Color settings</span></a>
+<ul>
+<li class="toclevel-3"><a href="#Examples_3"><span class="tocnumber">2.5.1</span> <span class="toctext">Examples</span></a></li>
+</ul>
+</li>
+<li class="toclevel-2 tocsection-12"><a href="#Double_height_and/or_width"><span class="tocnumber">2.6</span> <span class="toctext">Double height and/or width</span></a>
+<ul>
+<li class="toclevel-3"><a href="#Examples_4"><span class="tocnumber">2.6.1</span> <span class="toctext">Examples</span></a></li>
+</ul>
+</li>
+<li class="toclevel-2 tocsection-13"><a href="#Sprite_priority"><span class="tocnumber">2.7</span> <span class="toctext">Sprite priority</span></a>
+<ul>
+<li class="toclevel-3"><a href="#Examples_5"><span class="tocnumber">2.7.1</span> <span class="toctext">Examples</span></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toclevel-1 tocsection-14"><a href="#Collision_detection"><span class="tocnumber">3</span> <span class="toctext">Collision detection</span></a>
+<ul>
+<li class="toclevel-2 tocsection-15"><a href="#Polling_for_collisions"><span class="tocnumber">3.1</span> <span class="toctext">Polling for collisions</span></a></li>
+<li class="toclevel-2 tocsection-16"><a href="#Interrupt_on_collision"><span class="tocnumber">3.2</span> <span class="toctext">Interrupt on collision</span></a></li>
+</ul>
+</li>
+<li class="toclevel-1 tocsection-17"><a href="#Animation_of_sprites"><span class="tocnumber">4</span> <span class="toctext">Animation of sprites</span></a></li>
+<li class="toclevel-1 tocsection-18"><a href="#Examples_6"><span class="tocnumber">5</span> <span class="toctext">Examples</span></a></li>
+<li class="toclevel-1 tocsection-19"><a href="#Links"><span class="tocnumber">6</span> <span class="toctext">Links</span></a></li>
+</ul>
+</div>
+
+<p><br clear="all" />
+</p>
+<h2><span class="mw-headline" id="Sprite_graphics">Sprite graphics</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Sprite&amp;veaction=edit&amp;section=1" title="Edit section: Sprite graphics" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Sprite&amp;action=edit&amp;section=1" title="Edit section&#39;s source code: Sprite graphics">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<figure class="mw-halign-right" typeof="mw:File/Frame"><a href="/wiki/File:Hires_sprite_pattern.gif" class="mw-file-description"><img src="https://www.c64-wiki.com/images/8/83/Hires_sprite_pattern.gif" decoding="async" loading="lazy" width="337" height="259" class="mw-file-element" /></a><figcaption>Data for a high resolution sprite</figcaption></figure>
+<p>The "pattern" or "design" of both multicolor and high-res sprites always fits in to a "grid" of 24 bits in width, and 21 bits in height; a total of 504 bits, which in turn fit into 63 bytes. These 63 bytes are stored in <a href="/wiki/RAM" title="RAM">RAM</a> within the current <a href="/wiki/VIC_bank" title="VIC bank">VIC bank</a>, beginning at an address divisible by 64; i.e. 0, 64, 128, 192, 256, etc.
+</p><p>This arrangement "interleaves" one unused byte in each avaliable 64-byte "block"; the contents of this "64th byte" has no influence on the sprite's appearance. In theory, one VIC-bank with no ROM charset mirror can hold 256 sprite patterns, but allowing for a text screen and a character set, the practical number is no larger than 208 different patterns.
+</p><p>Each byte contains eight bits (7-0), which have these values: 128, 64, 32, 16, 8, 4, 2 and 1. If a value is used, a pixel (bit) is set (also look to the example picture on the rigt side). For setting all pixels the sum of values is 255. For different pixel patterns the values must sum together - like 170 for setting bit 1 (value 2), 3 (value 8), 5 (value 32) and 7 (value 128) . A sprite data block is setup like:  
+</p>
+<table border="2" cellspacing="0" cellpadding="4" rules="all" style="border-color:#aaaaaa; background-color:#f9f9f9; margin:1em 1em 1em 0; border-style:solid; border-width:1px; border-collapse:collapse; empty-cells:show">
+
+
+<tbody><tr>
+<td>Byte 1</td>
+<td>Byte 2</td>
+<td>Byte 3
+</td></tr>
+<tr>
+<td>Byte 4</td>
+<td>Byte 5</td>
+<td>Byte 6
+</td></tr>
+<tr>
+<td>...</td>
+<td>...</td>
+<td>...
+</td></tr>
+<tr>
+<td>...</td>
+<td>...</td>
+<td>...
+</td></tr>
+<tr>
+<td>Byte 61</td>
+<td>Byte 62</td>
+<td>Byte 63
+</td></tr></tbody></table>
+<p><br />
+</p>
+<h3><span class="mw-headline" id="High_resolution_sprite_pattern">High resolution sprite pattern</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Sprite&amp;veaction=edit&amp;section=2" title="Edit section: High resolution sprite pattern" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Sprite&amp;action=edit&amp;section=2" title="Edit section&#39;s source code: High resolution sprite pattern">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<p>To the right is a 24&#215;21 raster image depicting a solid circle: The grid is divided into "strips" of 8 pixels, or bits, i.e. into individual bytes. Each byte is read with the leftmost bit as the most significant, and the rightmost bit as the least significant one. The bytes are read from left to right, row by row (just like reading ordinary text), and converting the bit pattern for this example into decimal byte values yield the figures indicated to the right of the grid. The 63-byte sequence forming this sprite thus begins with 0, 126, 0, 3, 255, 192, 7, ...
+</p><p>Since a bit can assume one of two states, each pixel in a high resolution sprite can do one of two things:
+</p>
+<ul><li>For bits set to "0" in the sprite data set, the corresponding pixel will be <i>transparent</i>, i.e. whatever graphics or color is <i>behind</i> the sprite, will show through these pixels.</li>
+<li>Bits set to "1" will cause the corresponding pixels in the sprite to assume the individual color set for each sprite (see the section <a href="#Color_settings">color settings</a> below). Such pixels can appear either in front of or "hide" behind other sprites or other graphics; see the section on <a href="#Sprite_priority">sprite priority</a> below.</li></ul>
+<h3><span class="mw-headline" id="Multicolor_sprite_pattern">Multicolor sprite pattern</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Sprite&amp;veaction=edit&amp;section=3" title="Edit section: Multicolor sprite pattern" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Sprite&amp;action=edit&amp;section=3" title="Edit section&#39;s source code: Multicolor sprite pattern">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<p>In multicolor sprites the bits are grouped in pairs, forming pixels that are twice the width of high resolution pixels. Since each such multicolor pixel is defined by two bits of data rather than one, each pixel can do one of four things:
+</p>
+<ul><li>Pixels with a bit pair of "00" appear transparent, like "0" bits do in high resolution mode.</li>
+<li>Pixels with a bit pair of "01" will have the color specified in address <a href="/index.php?title=53285&amp;action=edit&amp;redlink=1" class="new" title="53285 (page does not exist)">53285</a>/$D025.</li>
+<li>Pixels with a bit pair of "11" will have the color specified in address <a href="/index.php?title=53286&amp;action=edit&amp;redlink=1" class="new" title="53286 (page does not exist)">53286</a>/$D026.</li>
+<li>Pixels with a bit pair of "10" will have the color specified assigned to the sprite in question in the range 53287&#8211;53294/$D027&#8211;D02E.</li></ul>
+<p>Note that two of the three "visible" (non-transparent) colors will be common for all eight sprites, whereas the third visible color may be set individually for each sprite.
+</p><p><br />
+</p>
+<h3><span class="mw-headline" id="Construction">Construction</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Sprite&amp;veaction=edit&amp;section=4" title="Edit section: Construction" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Sprite&amp;action=edit&amp;section=4" title="Edit section&#39;s source code: Construction">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<p>The construction of sprites by hand is very hard, so you should use a <a href="/index.php?title=sprite_editor&amp;action=edit&amp;redlink=1" class="new" title="sprite editor (page does not exist)">sprite editor</a>. There are tools and help in some <a href="/wiki/BASIC_expansion" class="mw-redirect" title="BASIC expansion">BASIC expansions</a>, like <a href="/wiki/Super_Expander_64" title="Super Expander 64">Super Expander 64</a>, <a href="/index.php?title=Supergrafik&amp;action=edit&amp;redlink=1" class="new" title="Supergrafik (page does not exist)">Supergrafik</a>, <a href="/wiki/Simons%27_BASIC" title="Simons&#39; BASIC">Simons' BASIC</a> or in <a href="/wiki/BASIC_7.0" class="mw-redirect" title="BASIC 7.0">BASIC 7.0</a>, for developing and programming sprites. For example, the BASIC command <a href="/wiki/SPRDEF" title="SPRDEF">SPRDEF</a> in BASIC 7 of a <a href="/wiki/C128" class="mw-redirect" title="C128">C128</a> or in Super Expander 64 runs the sprite editor.
+</p>
+<h3><span class="mw-headline" id="Programming_sprites_in_BASIC">Programming sprites in BASIC</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Sprite&amp;veaction=edit&amp;section=5" title="Edit section: Programming sprites in BASIC" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Sprite&amp;action=edit&amp;section=5" title="Edit section&#39;s source code: Programming sprites in BASIC">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<p>By programming sprites in a BASIC program, the sprite datas should also put into <a href="/wiki/DATA" title="DATA">DATA</a> lines and read into the RAM with a <a href="/wiki/FOR" title="FOR">FOR</a>-<a href="/wiki/NEXT" title="NEXT">NEXT</a> <a href="/wiki/loop" class="mw-redirect" title="loop">loop</a> and the BASIC commands <a href="/wiki/READ" title="READ">READ</a> and <a href="/wiki/POKE" title="POKE">POKE</a> - for example:
+</p>
+<pre>10 SZ = 12288: <a href="/wiki/REM" title="REM">REM</a> Sprite block 192
+20 FOR X=0 TO 62: READ Y: POKE SZ+X,Y: NEXT X
+30 DATA 255, 128, 16: REM 1st data line
+...<i>(insert in this line 19 other DATA lines with 3 data values!)</i>
+50 DATA 255, 128, 16: REM 21st data line
+</pre>
+<h2><span class="mw-headline" id="Settings">Settings</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Sprite&amp;veaction=edit&amp;section=6" title="Edit section: Settings" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Sprite&amp;action=edit&amp;section=6" title="Edit section&#39;s source code: Settings">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p>Besides setting up data for the pattern in RAM, using sprites involves some further initialization work. In the following discussion of the sprite-related VIC-II registers, the eight sprites are consequently referred to as sprite #0 thru sprite #7.
+</p>
+<h3><span class="mw-headline" id="Sprite_enable">Sprite enable</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Sprite&amp;veaction=edit&amp;section=7" title="Edit section: Sprite enable" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Sprite&amp;action=edit&amp;section=7" title="Edit section&#39;s source code: Sprite enable">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<p>Each bit in address <a href="/index.php?title=53269&amp;action=edit&amp;redlink=1" class="new" title="53269 (page does not exist)">53269</a>/$D015 acts like a "switch" that turns one of the eight sprites "on" or "off"; set the bit to "1" to enable the corresponding sprite, or "0" to hide it. The least significant bit refers to sprite #0, and the most sigificant bit to sprite #7.
+</p>
+<h4><span class="mw-headline" id="General"> General </span></h4>
+<p>For a few sprite options like dis-/enable (53269/$D015), x and y size (53277/$D01D; 53271/$D017) and background sprite priority (53275/$D01B) or collision registers (53278/$D01E; 53279/$D01F), the VIC-II uses only one register for all sprites. For each sprite that uses these options (enable bit for sprite #7-#0), the bit values must be summed together.
+</p>
+<table class="wikitable" style="text-align:center;">
+<tbody><tr>
+<td align="right"><b>Sprite number:</b></td>
+<td style="width:10%">#7</td>
+<td style="width:10%">#6</td>
+<td style="width:10%">#5</td>
+<td style="width:10%">#4</td>
+<td style="width:10%">#3</td>
+<td style="width:10%">#2</td>
+<td style="width:10%">#1</td>
+<td style="width:10%">#0
+</td></tr>
+<tr>
+<td align="right"><b>Bit value:</b></td>
+<td>128</td>
+<td>64</td>
+<td>32</td>
+<td>16</td>
+<td>8</td>
+<td>4</td>
+<td>2</td>
+<td>1
+</td></tr></tbody></table>
+<h4><span class="mw-headline" id="Examples"> Examples </span></h4>
+<p>Switching:
+</p>
+<ul><li>all sprites on - you set the sum of bit values of 255: <code>POKE 53269,255</code></li>
+<li>only sprite #0 (bit value 1) on: <code>POKE 53269,1</code></li>
+<li>only sprite #0 (bit value 1) and #1 (bit value 2) on: <code>POKE 53269,3</code></li>
+<li>only sprite #3 (bit value 8) and #5 (bit value 32) on: <code>POKE 53269,40</code></li>
+<li>all sprites off you set the value of 0: <code>POKE 53269,0</code></li></ul>
+<p><br clear="all" />
+</p>
+<h3><span class="mw-headline" id="Sprite_pointers">Sprite pointers</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Sprite&amp;veaction=edit&amp;section=8" title="Edit section: Sprite pointers" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Sprite&amp;action=edit&amp;section=8" title="Edit section&#39;s source code: Sprite pointers">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<table class="wikitable" style="float:right; font-size:90%; text-align:center;">
+<tbody><tr>
+<th>Sprite</th>
+<th>Sprite pointer
+</th></tr>
+<tr>
+<td>#0</td>
+<td>2040 / $07F8
+</td></tr>
+<tr>
+<td>#1</td>
+<td>2041 / $07F9
+</td></tr>
+<tr>
+<td>#2</td>
+<td>2042 / $07FA
+</td></tr>
+<tr>
+<td>#3</td>
+<td>2043 / $07FB
+</td></tr>
+<tr>
+<td>#4</td>
+<td>2044 / $07FC
+</td></tr>
+<tr>
+<td>#5</td>
+<td>2045 / $07FD
+</td></tr>
+<tr>
+<td>#6</td>
+<td>2046 / $07FE
+</td></tr>
+<tr>
+<td>#7</td>
+<td>2047 / $07FF
+</td></tr></tbody></table>
+<p>The location of the sprite pointers follow that of the text screen, so that if the VIC-II has been "told" (through address <a href="/wiki/53272" title="53272">53272</a>/$D018) that the text screen RAM begins at address <i>S</i>, the sprite pointers reside at addresses <i>S</i>+1016 thru <i>S</i>+1023. Since the default text screen RAM address is 1024, this puts the sprite pointers at addresses 2040 (for sprite #0) thru 2047 (for sprite #7), or $07F8&#8211;07FF in <a href="/wiki/Hexadecimal" title="Hexadecimal">hexadecimal</a>.
+</p><p>To make a given sprite show the pattern that's stored in RAM at an address A (which must be divisible with 64), set the contents of the corresponding sprite pointer address to A divided by 64. For instance, if the sprite pattern begins at address 704, the pointer value will be 704 / 64 = 11.
+<br clear="all" />
+</p>
+<h3><span class="mw-headline" id="Sprite_locations">Sprite locations</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Sprite&amp;veaction=edit&amp;section=9" title="Edit section: Sprite locations" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Sprite&amp;action=edit&amp;section=9" title="Edit section&#39;s source code: Sprite locations">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<table class="wikitable" style="float:right; font-size:90%; text-align:center;">
+<tbody><tr>
+<th>Sprite</th>
+<th><i>x</i> coordinate</th>
+<th><i>y</i> coordinate
+</th></tr>
+<tr>
+<td>#0</td>
+<td>53248/$D000</td>
+<td>53249/$D001
+</td></tr>
+<tr>
+<td>#1</td>
+<td>53250/$D002</td>
+<td>53251/$D003
+</td></tr>
+<tr>
+<td>#2</td>
+<td>53252/$D004</td>
+<td>53253/$D005
+</td></tr>
+<tr>
+<td>#3</td>
+<td>53254/$D006</td>
+<td>53255/$D007
+</td></tr>
+<tr>
+<td>#4</td>
+<td>53256/$D008</td>
+<td>53257/$D009
+</td></tr>
+<tr>
+<td>#5</td>
+<td>53258/$D00A</td>
+<td>53259/$D00B
+</td></tr>
+<tr>
+<td>#6</td>
+<td>53260/$D00C</td>
+<td>53261/$D00D
+</td></tr>
+<tr>
+<td>#7</td>
+<td>53262/$D00E</td>
+<td>53263/$D00F
+</td></tr></tbody></table>
+<p>Each sprite has its own set of coordinate registers, which determine where on the screen the sprite appears, as indicated in the table to the right. However, the sprites can move across more than 256 pixels in the horizontal direction, and so their x coordinates require nine bits; one more than the eight available in each of the addresses shown.
+</p><p>Because of this, the x coordinate addresses given in the table only holds the eight least significant bits of the <i>x</i> coordinates for the respective sprites. The ninth and most significant bit for each of the eight sprites are "gathered" in address <a href="/index.php?title=53264&amp;action=edit&amp;redlink=1" class="new" title="53264 (page does not exist)">53264</a>/$D010; the least significant bit here corresponds to sprite #0, and the most significant bit to sprite #7.
+<br clear="all" />
+</p>
+<h4><span class="mw-headline" id="Examples_2"> Examples </span></h4>
+<ul><li>Sprite #5 should be positioned at X=300 (256+44).</li>
+<li>The other sprites should stay on your actual x position.</li></ul>
+<dl><dt>BASIC</dt>
+<dd></dd></dl>
+<pre>10 POKE 53258,44                :REM X POSITION SPRITE #5 = 44
+20 POKE 53264,<a href="/wiki/PEEK" title="PEEK">PEEK</a>(53264) <a href="/wiki/OR" title="OR">OR</a> 32 :REM ENABLE EXTRA BIT FOR SPRITE #5
+</pre>
+<dl><dt>Assembler</dt>
+<dd></dd></dl>
+<pre><a href="/index.php?title=LDA_(RAUTE)$nn&amp;action=edit&amp;redlink=1" class="new" title="LDA (RAUTE)$nn (page does not exist)">LDA</a> #44
+<a href="/index.php?title=STA_$hhll&amp;action=edit&amp;redlink=1" class="new" title="STA $hhll (page does not exist)">STA</a> $D00A      &#160;; X position sprite #5 set on 44
+
+<a href="/index.php?title=LDA_$hhll&amp;action=edit&amp;redlink=1" class="new" title="LDA $hhll (page does not exist)">LDA</a> $D010      &#160;; load X-MSB
+<a href="/index.php?title=ORA_(RAUTE)$nn&amp;action=edit&amp;redlink=1" class="new" title="ORA (RAUTE)$nn (page does not exist)">ORA</a> #%00100000 &#160;; set extra bit for sprite #5
+STA $D010      &#160;; write X-MSB register
+</pre>
+<h3><span class="mw-headline" id="High_resolution_or_multicolor_mode">High resolution or multicolor mode</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Sprite&amp;veaction=edit&amp;section=10" title="Edit section: High resolution or multicolor mode" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Sprite&amp;action=edit&amp;section=10" title="Edit section&#39;s source code: High resolution or multicolor mode">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<p>In address <a href="/index.php?title=53276&amp;action=edit&amp;redlink=1" class="new" title="53276 (page does not exist)">53276</a>/$D01C, each bit is set to "tell" VIC-II which sprites are to be in high resolution mode (bit set to "0"), and which to display in multicolor mode (bit set to "1"). The least significant bit controls sprite #0, and the most significant bit sprite #7.
+</p>
+<h3><span class="mw-headline" id="Color_settings">Color settings</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Sprite&amp;veaction=edit&amp;section=11" title="Edit section: Color settings" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Sprite&amp;action=edit&amp;section=11" title="Edit section&#39;s source code: Color settings">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<figure class="mw-halign-right" typeof="mw:File/Frame"><a href="/wiki/File:C64_Farbpalette.png" class="mw-file-description"><img src="https://www.c64-wiki.com/images/5/5c/C64_Farbpalette.png" decoding="async" loading="lazy" width="256" height="64" class="mw-file-element" /></a><figcaption>All 16 sprite color on a C64.</figcaption></figure>
+<table class="wikitable" style="float:right; font-size:90%; text-align:center;">
+<tbody><tr>
+<th>Sprite</th>
+<th>Color register (normal/uni-color)
+</th></tr>
+<tr>
+<td>#0</td>
+<td>53287/$D027
+</td></tr>
+<tr>
+<td>#1</td>
+<td>53288/$D028
+</td></tr>
+<tr>
+<td>#2</td>
+<td>53289/$D029
+</td></tr>
+<tr>
+<td>#3</td>
+<td>53290/$D02A
+</td></tr>
+<tr>
+<td>#4</td>
+<td>53291/$D02B
+</td></tr>
+<tr>
+<td>#5</td>
+<td>53292/$D02C
+</td></tr>
+<tr>
+<td>#6</td>
+<td>53293/$D02D
+</td></tr>
+<tr>
+<td>#7</td>
+<td>53294/$D02E
+</td></tr></tbody></table>
+<p>Both multicolor and high resolution sprites have one "transparent" color, and one "solid" color that can be individually set for each sprite, using the addresses specified in the table at right.
+</p><p>Besides these two, multicolor mode offers two more colors which are common for all eight sprites:
+</p>
+<ul><li><a href="/index.php?title=53285&amp;action=edit&amp;redlink=1" class="new" title="53285 (page does not exist)">53285</a>/$D025 is the common color displayed for "01" bit pairs in the sprite data, and</li>
+<li><a href="/index.php?title=53286&amp;action=edit&amp;redlink=1" class="new" title="53286 (page does not exist)">53286</a>/$D026 is the common color displayed for "11" bit pairs in the sprite data.</li></ul>
+<table border="2" cellspacing="0" cellpadding="4" rules="all" style="border-color:#aaaaaa; background-color:#f9f9f9; margin:1em 1em 1em 0; border-style:solid; border-width:1px; border-collapse:collapse; empty-cells:show">
+
+
+<tbody><tr>
+<th>Bit couple</th>
+<th>Color
+</th></tr>
+<tr>
+<td>%00</td>
+<td>transparency
+</td></tr>
+<tr>
+<td>%10</td>
+<td>Sprite color register (normal/uni color; $D027-$D02E)
+</td></tr>
+<tr>
+<td>%01</td>
+<td>Multicolor register #0 ($D025)
+</td></tr>
+<tr>
+<td>%11</td>
+<td>Multicolor register #1 ($D026)
+</td></tr></tbody></table>
+<p><br clear="all" />
+</p><p><br />
+</p>
+<h4><span class="mw-headline" id="Examples_3"> Examples </span></h4>
+<pre>Bit         | 7 | 6 | 5 | 4 | 3 | 2 | 1 | 0 | (for a standard or normal/uni-color sprite)
+            |---|---|---|---|---|---|---|---| 
+Bit         | <b>7 + 6</b> | <b>5 + 4</b> | <b>3 + 2</b> | <b>1 + 0</b> | (for multicolor sprite)
+            |---|---|---|---|---|---|---|---|
+Bit values  |128|064|032|016|008|004|002|001|
+            |---|---|---|---|---|---|---|---|
+1. Example  |   |   |   |   |   |   |   |   | (background color), value 0
+            |---|---|---|---|---|---|---|---|
+2. Example  |   | X |   | X |   | X |   | X | (multicolor 0), value 85
+            |---|---|---|---|---|---|---|---|
+3. Example  | X |   | X |   | X |   | X |   | (sprite normal/uni-color), value 170
+            |---|---|---|---|---|---|---|---|
+4. Example  | X | X | X | X | X | X | X | X | (multicolor 1), value 255
+            |---|---|---|---|---|---|---|---|
+            <i>This example sprites and data values demonstrate a sprite line!</i>  
+
+            |---|---|---|---|---|---|---|---|
+5. Example  | X | X |   | X |   |   | X |   | data value 146
+            |---|---|---|---|---|---|---|---|
+            <i>All color options mixed into a sprite line</i>
+</pre>
+<h3><span id="Double_height_and.2For_width"></span><span class="mw-headline" id="Double_height_and/or_width">Double height and/or width</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Sprite&amp;veaction=edit&amp;section=12" title="Edit section: Double height and/or width" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Sprite&amp;action=edit&amp;section=12" title="Edit section&#39;s source code: Double height and/or width">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<figure class="mw-halign-right" typeof="mw:File/Frame"><a href="/wiki/File:Sprite_Vergroesserung.png" class="mw-file-description"><img src="https://www.c64-wiki.com/images/1/12/Sprite_Vergroesserung.png" decoding="async" loading="lazy" width="240" height="50" class="mw-file-element" /></a><figcaption>Sprite examples for standard height, 2*Y, 2*X and double size.</figcaption></figure>
+<p>By default, i.e. without the use of this feature, a sprite will cover an area 24 (high resolution) pixels wide and 21 pixels high, but by setting bits in registers <a href="/index.php?title=53277&amp;action=edit&amp;redlink=1" class="new" title="53277 (page does not exist)">53277</a>/$D01D and <a href="/index.php?title=53271&amp;action=edit&amp;redlink=1" class="new" title="53271 (page does not exist)">53271</a>/$D017, each sprite may be individually "stretched" to twice the width and/or twice the height. In both registers, the least significant bit affects sprite #0, and the most sigificant bit sprite #7.
+</p><p>Notice that regardles of whether the sprite has been "doubled" in either or both directions, the graphic pattern displayed by the sprite still comes from the same 63 bytes: The expanded size comes at the cost of more coarse, "blocky" graphics.
+</p>
+<h4><span class="mw-headline" id="Examples_4"> Examples </span></h4>
+<dl><dt>BASIC</dt>
+<dd></dd></dl>
+<pre>10 POKE 53277,15  :REM SPRITE #0-#3 double size in x position (1+2+4+8=15)  / sprite #4-#7 standard
+</pre>
+<dl><dt>Assembler</dt>
+<dd></dd></dl>
+<pre>LDA #%00001111
+STA $D01D      &#160;; Sprite #0-#3 double size in x position / sprite #4-#7 standard
+</pre>
+<h3><span class="mw-headline" id="Sprite_priority">Sprite priority</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Sprite&amp;veaction=edit&amp;section=13" title="Edit section: Sprite priority" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Sprite&amp;action=edit&amp;section=13" title="Edit section&#39;s source code: Sprite priority">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<figure class="mw-halign-right" typeof="mw:File/Frame"><a href="/wiki/File:Sprite_Sprite.Prioritaet.png" class="mw-file-description"><img src="https://www.c64-wiki.com/images/4/4b/Sprite_Sprite.Prioritaet.png" decoding="async" loading="lazy" width="140" height="60" class="mw-file-element" /></a><figcaption>The sprite-sprite priority is fixed! Here sprite 0 (white color) is always in the front of all other sprites. By using different colors a 3D effect is achieved.</figcaption></figure>
+<p>In the context of sprites, "background" refers to the text screen or other "non-sprite" graphics shown on the screen along with the sprites: Through manipulating the bits in address <a href="/index.php?title=53275&amp;action=edit&amp;redlink=1" class="new" title="53275 (page does not exist)">53275</a>/$D01B, sprites can be set to appear "behind" (bits set to "1") or "in front of" (bits set to "0") such background graphics. The least significant bit affects sprite #0, and the most sigificant bit sprite #7.
+</p><p>Note that the priority amongst the sprites themselves are "hardwired": A sprite with a lower number will always overlap, or appear "in front of" a sprite with a higher number; e.g. sprite #3 will appear in front of #5, should they happen to overlap.
+</p>
+<figure class="mw-halign-right" typeof="mw:File/Frame"><a href="/wiki/File:Sprite_Hintergrund_Prioritaet.gif" class="mw-file-description"><img src="https://www.c64-wiki.com/images/7/72/Sprite_Hintergrund_Prioritaet.gif" decoding="async" loading="lazy" width="124" height="32" class="mw-file-element" /></a><figcaption>Bit=0, sprite runs right. <br /> Bit=1, sprite runs left.</figcaption></figure>
+<h4><span class="mw-headline" id="Examples_5"> Examples </span></h4>
+<p>Sprite #7 should appear in the front - all other sprites, #0 to #6, aren't changed.
+</p>
+<dl><dt>BASIC</dt>
+<dd></dd></dl>
+<pre>10 POKE 53275, PEEK(53275) <a href="/wiki/AND" title="AND">AND</a> 127 :REM DISABLE BIT #7 IN PRIORITY REGISTER
+</pre>
+<dl><dt>Assembler</dt>
+<dd></dd></dl>
+<pre>LDA $D01B      &#160;; read priority register  
+<a href="/index.php?title=AND_(RAUTE)$nn&amp;action=edit&amp;redlink=1" class="new" title="AND (RAUTE)$nn (page does not exist)">AND</a> #%01111111 &#160;; disable Bit7, Bit #0-#6 aren't changed
+STA $D01B      &#160;; write priority register
+</pre>
+<p><br clear="all" />
+</p>
+<h2><span class="mw-headline" id="Collision_detection">Collision detection</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Sprite&amp;veaction=edit&amp;section=14" title="Edit section: Collision detection" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Sprite&amp;action=edit&amp;section=14" title="Edit section&#39;s source code: Collision detection">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p>The VIC-II provides hardware-supported collision detection between sprites and other graphics: "Collision" in this context means that one or more visible pixels in one visible sprite actually overlap one or more visible pixels in either another sprite, or in the background graphics.
+</p>
+<h3><span class="mw-headline" id="Polling_for_collisions">Polling for collisions</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Sprite&amp;veaction=edit&amp;section=15" title="Edit section: Polling for collisions" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Sprite&amp;action=edit&amp;section=15" title="Edit section&#39;s source code: Polling for collisions">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<p>There are two VIC registers that can be <a href="/index.php?title=Polling&amp;action=edit&amp;redlink=1" class="new" title="Polling (page does not exist)">polled</a> to see if a collision involving sprites have occured:
+</p>
+<ul><li>Sprites involved in a collision with other sprites will have their respective bits set to "1" in address <a href="/index.php?title=53278&amp;action=edit&amp;redlink=1" class="new" title="53278 (page does not exist)">53278</a>/$D01E &#8211; all other sprites will have a "0" bit here.</li>
+<li>Sprites involved in a collision with background graphics will have their respective bits set to "1" in address <a href="/index.php?title=53279&amp;action=edit&amp;redlink=1" class="new" title="53279 (page does not exist)">53279</a>/$D01F &#8211; all other sprites will report a "0".</li></ul>
+<p>As with all other "one bit per sprite" registers, the least significant bit affects sprite #0, and the most sigificant bit sprite #7.
+</p>
+<h3><span class="mw-headline" id="Interrupt_on_collision">Interrupt on collision</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Sprite&amp;veaction=edit&amp;section=16" title="Edit section: Interrupt on collision" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Sprite&amp;action=edit&amp;section=16" title="Edit section&#39;s source code: Interrupt on collision">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<p>Both the interrupt event register (at address <a href="/index.php?title=53273&amp;action=edit&amp;redlink=1" class="new" title="53273 (page does not exist)">53273</a>/$D019) and interrupt enable register (at address <a href="/index.php?title=53274&amp;action=edit&amp;redlink=1" class="new" title="53274 (page does not exist)">53274</a>/$D01A) have provisions for raising <a href="/wiki/IRQ" class="mw-redirect" title="IRQ">IRQ</a>-type <a href="/wiki/Interrupt" title="Interrupt">interrupts</a> at the <a href="/wiki/CPU" title="CPU">CPU</a> whenever collisions occur:
+</p>
+<ul><li>Bit 2 (weight 4) in both registers concern sprite-to-sprite collisions, and</li>
+<li>Bit 1 (weight 2) in both registers concern sprite-to-background collisions.</li></ul>
+<h2><span class="mw-headline" id="Animation_of_sprites">Animation of sprites</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Sprite&amp;veaction=edit&amp;section=17" title="Edit section: Animation of sprites" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Sprite&amp;action=edit&amp;section=17" title="Edit section&#39;s source code: Animation of sprites">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<table align="left">
+<tbody><tr>
+<td><span class="mw-default-size" typeof="mw:File"><a href="/wiki/File:Sprite_Animation.png" class="mw-file-description"><img src="https://www.c64-wiki.com/images/7/7d/Sprite_Animation.png" decoding="async" loading="lazy" width="201" height="21" class="mw-file-element" /></a></span></td>
+<td>&#160;</td>
+<td><span class="mw-default-size" typeof="mw:File"><a href="/wiki/File:Sprite_Animation.gif" class="mw-file-description"><img src="https://www.c64-wiki.com/images/6/65/Sprite_Animation.gif" decoding="async" loading="lazy" width="24" height="21" class="mw-file-element" /></a></span>
+</td></tr>
+<tr>
+<td colspan="2">This animation contains 8 single images (sprites) - the sprite animation at the side.
+</td></tr></tbody></table>
+<ul><li>For a sprite animation are required two matched images (sprites).</li>
+<li>The sprite blocks should insert in the play order into the RAM.</li>
+<li>The sprite data pointer will increased until the end of the animation is reached and then set on the start value.</li></ul>
+<p><br clear="all" />
+</p>
+<h2><span class="mw-headline" id="Examples_6">Examples</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Sprite&amp;veaction=edit&amp;section=18" title="Edit section: Examples" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Sprite&amp;action=edit&amp;section=18" title="Edit section&#39;s source code: Examples">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<pre>POKE 2040,13: POKE 53248,255: POKE 53249, 100: POKE 53287,1
+</pre>
+<p>Enables sprite #0 with random shape in white color.
+</p>
+<pre>PRINT PEEK (53278): PRINT PEEK (53279)
+</pre>
+<p>Reading out the sprite collisions bits.
+</p><p><br />
+This BASIC program demonstrate a few sprite options of three sprites (multicolor and standard/uni-color). The <a href="/wiki/REM" title="REM">REM</a>-lines are only used for remarks (also with the REM command the BASIC lines are too long!). The variable <code>V</code> contains the start address of <a href="/wiki/VIC-II" class="mw-redirect" title="VIC-II">VIC-II</a>.
+</p>
+<pre> 1 <a href="/wiki/PRINT" title="PRINT">PRINT</a> <a href="/wiki/CHR$" title="CHR$">CHR$</a>(147): V=53248: <a href="/wiki/POKE" title="POKE">POKE</a> V+33,0: REM clear screen
+ 2 <a href="/wiki/FOR" title="FOR">FOR</a> X=12800 <a href="/wiki/TO" title="TO">TO</a> 12927: POKE X,0: <a href="/wiki/NEXT" title="NEXT">NEXT</a> X: REM Clear RAM for sprites
+
+10 FOR X=12800 TO 12881: <a href="/wiki/READ" title="READ">READ</a> Y: POKE X,Y: NEXT X: REM sprite generation
+11 POKE 2040,200: POKE 2041,201: POKE 2042,201: POKE V+21,7
+12 POKE V+28,6: POKE V+37,15: POKE V+38,2: REM multicolor for sprite 1&amp;2
+13 POKE V+39,7: POKE V+40,8: POKE V+41,6: REM sprite color sprite 0&amp;1&amp;2
+15 POKE V+23,7: POKE V+29,7: POKE V+16,1: REM sprite properties height, width, x position
+16 POKE V+1,133: POKE V+2,170: POKE V+5,115: REM x/y positions
+
+19 REM moving and changing colors
+20 FOR X=200 TO 1 <a href="/wiki/STEP" title="STEP">STEP</a> -1: POKE V,X: Z=Z+0.61: POKE V+3,Z
+21 POKE V+4,(201-X)/2: NEXT X
+22 POKE V+16,0: POKE V,255: M=PEEK(V+4)
+23 FOR X=255 TO 170 STEP -1: POKE V,X: Z=Z+0.66: POKE V+3,Z
+24 POKE V+4,M+(256-X)/1.2: NEXT X
+25 FOR X=0 TO 5: FOR Y=1 TO 255: POKE V+37+X,Y: NEXT Y,X
+26 POKE V+38,2: POKE V+39,7: POKE V+41,6
+27 FOR Y=1 TO 65: POKE V+40,Y: POKE V+37,Y+10
+28 FOR Z=0 TO 15: POKE V+39,Y: NEXT Z, Y
+
+29 REM waiting, deleting sprite 0 and fade off 
+30 FOR X=0 TO 3000: NEXT X
+31 FOR X=0 TO 32: POKE 12832+X,0: POKE 12832-X,0
+32 FOR Y=0 TO 100: NEXT Y,X: POKE V+21,0
+
+39 REM SPRITE C64-WIKI.DE (unicolor; sprite 0)
+40 <a href="/wiki/DATA" title="DATA">DATA</a> 239,81,85,139,81,20,137,81,28,137,81,89,137,213,89,142,85,93,138   
+41 DATA 95,85,138,91,85,238,91,85,0,0,0,0,0,0,0,0,0
+42 DATA 0,199,0,0,231,0,0,164,0,0,180,0,0,151,0,0,180,0,0,164,0,0,231,0,0,199,0
+
+44 REM multicolor sprite lines (sprite 1&amp;2)
+45 DATA 0,255,255,255,170,85,170,170,85,170,85,170,85,85,170,85,255,255,255
+</pre>
+<h2><span class="mw-headline" id="Links">Links</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Sprite&amp;veaction=edit&amp;section=19" title="Edit section: Links" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Sprite&amp;action=edit&amp;section=19" title="Edit section&#39;s source code: Links">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<table border="0" cellspacing="1" style="background-color:transparent">
+<tbody><tr>
+<td><span class="mw-default-size" typeof="mw:File"><span><img src="https://www.c64-wiki.com/images/5/52/WP-W11.png" decoding="async" loading="lazy" width="18" height="11" class="mw-file-element" /></span></span>
+</td>
+<td align="left"><b><a rel="nofollow" class="external text" href="http://en.wikipedia.org/wiki/Sprite_(computer_graphics)">Wikipedia: Sprite_(computer_graphics)</a></b>
+</td></tr></tbody></table>
+<ul><li><a rel="nofollow" class="external text" href="http://www.anigators.com/projekte/7up/"><b>C64 Sprite Painter</b> for Win32</a></li>
+<li><a rel="nofollow" class="external text" href="http://www.coder.myby.co.uk/spritepad.htm"><b>SpritePad V1.8.1</b> for Windows (website of developer)</a></li>
+<li><a rel="nofollow" class="external text" href="http://noname.c64.org/csdb/release/?id=100657">CSDb - Release No. 100657</a> <b>SpritePad V1.8.1</b> for Windows at <a href="/wiki/CSDb" title="CSDb">CSDb</a></li></ul>
+<!-- 
+NewPP limit report
+Cached time: 20260927034525
+Cache expiry: 86400
+Reduced expiry: false
+Complications: [show‐toc]
+CPU time usage: 0.073 seconds
+Real time usage: 0.097 seconds
+Preprocessor visited node count: 180/1000000
+Post‐expand include size: 1268/2097152 bytes
+Template argument size: 64/2097152 bytes
+Highest expansion depth: 3/100
+Expensive parser function count: 0/100
+Unstrip recursion depth: 0/20
+Unstrip post‐expand size: 0/5000000 bytes
+-->
+<!--
+Transclusion expansion time report (%,ms,calls,template)
+100.00%   27.887      1 -total
+ 31.57%    8.805      7 Template:-
+ 27.98%    7.803      1 Template:Disambiguationnote
+ 16.57%    4.620      2 Template:prettytable
+ 14.16%    3.948      1 Template:CSDb
+  4.93%    1.374      1 Template:Wikipedia
+-->
+
+<!-- Saved in parser cache with key c64?hwiki?hen-wiki_:pcache:idhash:1657-0!canonical!svUser=0!asDate=20260927 and timestamp 20260927034525 and revision id 41729. Rendering was triggered because: page-view
+ -->
+</div>
+</div>
+</body></html>

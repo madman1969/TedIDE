@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<!-- From C64-Wiki (https://www.c64-wiki.com/wiki/Interrupt), revision 37083, last edited 9 June 2021, at 14:24.
+     Content is available under the GNU Free Documentation License - see c64wiki/licence.
+     Only the article body is kept; retrieved 2026-09-27 for Tedide's Doc Viewer. -->
+<html><head><meta charset="utf-8"><title>Interrupt</title>
+<meta name="c64wiki-page" content="Interrupt"><meta name="c64wiki-revision" content="37083"><meta name="c64wiki-edited" content="9 June 2021, at 14:24">
+</head><body>
+<div class="mw-content-ltr mw-parser-output" lang="en" dir="ltr"><p><b>Interrupt</b> is a hardware feature where external signals may cause the CPU to temporarily "pause" whatever it is doing in order to perform specific tasks. Once the interruption process is done the CPU returns to the interrupted process and continues working as if "nothing had happened". Countless programs for the 64 make use of the interrupt system for a host of different purposes. Even the 64's <a href="/wiki/KERNAL" class="mw-redirect" title="KERNAL">KERNAL</a> system uses one type of interrupt to make RUN/STOP+RESTORE work, another to blink the <a href="/index.php?title=Cursor&amp;action=edit&amp;redlink=1" class="new" title="Cursor (page does not exist)">cursor</a>.
+</p>
+<div id="toc" class="toc" role="navigation" aria-labelledby="mw-toc-heading"><input type="checkbox" role="button" id="toctogglecheckbox" class="toctogglecheckbox" style="display:none" /><div class="toctitle" lang="en" dir="ltr"><h2 id="mw-toc-heading">Contents</h2><span class="toctogglespan"><label class="toctogglelabel" for="toctogglecheckbox"></label></span></div>
+<ul>
+<li class="toclevel-1 tocsection-1"><a href="#In_the_C-64"><span class="tocnumber">1</span> <span class="toctext">In the C-64</span></a></li>
+<li class="toclevel-1 tocsection-2"><a href="#Interrupt_Request_(IRQ)"><span class="tocnumber">2</span> <span class="toctext">Interrupt Request (IRQ)</span></a></li>
+<li class="toclevel-1 tocsection-3"><a href="#Non-Maskable_Interrupt_(NMI)"><span class="tocnumber">3</span> <span class="toctext">Non-Maskable Interrupt (NMI)</span></a></li>
+<li class="toclevel-1 tocsection-4"><a href="#Tricks"><span class="tocnumber">4</span> <span class="toctext">Tricks</span></a></li>
+</ul>
+</div>
+
+<h2><span class="mw-headline" id="In_the_C-64">In the C-64</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Interrupt&amp;veaction=edit&amp;section=1" title="Edit section: In the C-64" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Interrupt&amp;action=edit&amp;section=1" title="Edit section&#39;s source code: In the C-64">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p>The 64 with its 6510 CPU supports two different types of interrupt; <i>Interrupt ReQuest</i> (IRQ) and <i>Non-Maskable Interrupt</i> (NMI). Each type has a host of hardware devices in the C64 that may supply the prompting signal to the CPU. The "official" difference is that the CPU has the option of ignoring the IRQ type, whereas it is forced to respond to an NMI. Unofficially, there are ways to disable the NMI systems as well!
+</p><p>The first thing the CPU does in response to both types of interrupts is to save the <a href="/wiki/Program_counter" class="mw-redirect" title="Program counter">program counter</a> and the <a href="/wiki/Status_Register" class="mw-redirect" title="Status Register">status register</a> onto the <a href="/wiki/Stack" title="Stack">stack</a> for retrieval after servicing the interrupt. For both types of interrupt, along with the <a href="/wiki/Cold_start" class="mw-redirect" title="Cold start">cold start</a>, the CPU is hardwired to perform what amounts to an indirect <a href="/wiki/JMP" title="JMP">JMP</a> via one of three <a href="/wiki/Vector" title="Vector">vectors</a> stored in the very last six bytes of KERNAL <a href="/wiki/ROM" title="ROM">ROM</a>:
+</p>
+<ul><li><a href="/index.php?title=65530-65531&amp;action=edit&amp;redlink=1" class="new" title="65530-65531 (page does not exist)">65530&#8211;65531</a>/$FFFA&#8211;$FFFB is the vector for NMI handling; it points to 65091/$FE43</li>
+<li><a href="/index.php?title=65532-65533&amp;action=edit&amp;redlink=1" class="new" title="65532-65533 (page does not exist)">65532&#8211;65533</a>/$FFFC&#8211;$FFFD is the vector for handling cold start, pointing to 64738/$FCE2</li>
+<li><a href="/index.php?title=65534-65535&amp;action=edit&amp;redlink=1" class="new" title="65534-65535 (page does not exist)">65534&#8211;65535</a>/$FFFE&#8211;$FFFF is the vector for handling both IRQ and <a href="/wiki/BRK" title="BRK">BRK</a>-instructions; it points to 65352/$FF48</li></ul>
+<p>All three vectors point to routines in KERNAL ROM, but the interrupt service routines in ROM end up taking a jump through a vector in RAM, which can be re-directed towards a user-supplied <a href="/index.php?title=Interrupt_service_routine&amp;action=edit&amp;redlink=1" class="new" title="Interrupt service routine (page does not exist)">interrupt service routines</a>.
+</p>
+<h2><span id="Interrupt_Request_.28IRQ.29"></span><span class="mw-headline" id="Interrupt_Request_(IRQ)">Interrupt Request (IRQ)</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Interrupt&amp;veaction=edit&amp;section=2" title="Edit section: Interrupt Request (IRQ)" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Interrupt&amp;action=edit&amp;section=2" title="Edit section&#39;s source code: Interrupt Request (IRQ)">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p>The 65xx CPUs have an internal <a href="/wiki/Interrupt_flag" class="mw-redirect" title="Interrupt flag">interrupt flag</a> which can be manipulated through the use of the <a href="/wiki/SEI" title="SEI">SEI</a> and <a href="/wiki/CLI" title="CLI">CLI</a> machine code commands: This interrupt flag determines whether to respond to IRQs or not; when the bit is set, interrupts are ignored; when the bit is clear, the CPU responds to IRQs.
+</p><p>When responding to an IRQ the CPU ends up in the interrupt service routine at 65352/$FF48, which pushes the <a href="/wiki/Accumulator" title="Accumulator">accumulator</a>, the X and Y index registers onto the stack (see asm below) &#8211; notice that this happens after the CPU has already pushed the contents of its program counter and status register onto the stack on its own "initiative".  
+</p><p><br />
+The interrupt service routine is not only responsible for IRQ handling but also for the use of BRK commands (used as part of debugging machine language programs). Therefore the routine proceeds to check the status register byte now stored on the stack to see if the <a href="/wiki/BREAK_flag" class="mw-redirect" title="BREAK flag">BREAK flag</a> was set, i.e. if the call to the routine was caused by a BRK command (BREAK flag set) or a "real" IRQ (BREAK flag clear). Then it performs an indirect JMP via either the <a href="/index.php?title=788-789&amp;action=edit&amp;redlink=1" class="new" title="788-789 (page does not exist)">IRQ vector at 788&#8211;789/$0314&#8211;0315</a> or the <a href="/index.php?title=790-791&amp;action=edit&amp;redlink=1" class="new" title="790-791 (page does not exist)">BREAK vector at 790&#8211;791/$0316&#8211;$0317</a>.
+</p><p>By default the IRQ vector points to 59953/$EA31 where the "actual" IRQ service routine resides in ROM: It maintains the <a href="/wiki/Jiffy_clock" class="mw-redirect" title="Jiffy clock">jiffy clock</a>, scans the <a href="/wiki/Keyboard" title="Keyboard">keyboard</a> (particularly the RUN/STOP key), blinks the cursor and performs a few other functions. Finally (at 60033/$EA81) it pulls back the items stored from the stack (all those the CPU won't restore itself) and "hands" the system back to the interrupted process.
+</p>
+<pre>.C:ff48   48         PHA		;push A onto stack
+.C:ff49   8A         TXA		;load X into A
+.C:ff4a   48         PHA		;push A onto stack (X register)
+.C:ff4b   98         TYA		;load Y into A
+.C:ff4c   48         PHA		;push A onto stack (Y register)
+					;*****NOTE*******
+					;now the stack contains:
+					;...
+					;--return address high byte
+					;--return address low byte
+					;--processor status at time of IRQ
+					;--A register at time of IRQ
+					;--X register at time of IRQ
+					;--Y register at time of IRQ
+.C:ff4d   BA         TSX		;transfer stack pointer to X
+.C:ff4e   BD 04 01   LDA $0104,X	;load processor status into A&#160;?
+.C:ff51   29 10      AND #$10		;check for break condition
+.C:ff53   F0 03      BEQ $FF58		;vector to ISR if break flag is set
+.C:ff55   6C 16 03   JMP ($0316)	;vector to break ISR
+.C:ff58   6C 14 03   JMP ($0314)	;vector	to ISR
+</pre>
+<p><br />
+</p>
+<h2><span id="Non-Maskable_Interrupt_.28NMI.29"></span><span class="mw-headline" id="Non-Maskable_Interrupt_(NMI)">Non-Maskable Interrupt (NMI)</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Interrupt&amp;veaction=edit&amp;section=3" title="Edit section: Non-Maskable Interrupt (NMI)" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Interrupt&amp;action=edit&amp;section=3" title="Edit section&#39;s source code: Non-Maskable Interrupt (NMI)">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p>When responding to NMI-type interrupts the corresponding ROM routine first locks out IRQs by setting the interrupt flag and then takes an indirect JMP via the <a href="/wiki/NMI" class="mw-redirect" title="NMI">NMI</a> vector at <a href="/index.php?title=792-793&amp;action=edit&amp;redlink=1" class="new" title="792-793 (page does not exist)">792&#8211;793</a>/$0318&#8211;$0319. This means that both the default ROM routine it points to (at 65095/$FE47) <i>and</i> any user-supplied NMI service routine must first save the accumulator and X and Y index registers (the ROM routine uses the stack just like the IRQ routine does).
+</p><p>The NMI routine checks if a <a href="/wiki/Cartridge" title="Cartridge">cartridge</a> is present. If there is, it hands over the system to cartridge code via a vector at 32770&#8211;32771/$8002&#8211;$8003. If the RUN-STOP key is pressed, the system assumes the NMI was caused as the user pressed the RUN-STOP and RESTORE key combination and handles it as a <a href="/wiki/Reset_(Process)#Soft_Reset" title="Reset (Process)">warm start</a>, i.e. restoring default screen settings, quieting the <a href="/wiki/SID" title="SID">SID</a>, and returning command to the <a href="/wiki/BASIC" title="BASIC">BASIC</a> system.
+</p>
+<h2><span class="mw-headline" id="Tricks">Tricks</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Interrupt&amp;veaction=edit&amp;section=4" title="Edit section: Tricks" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Interrupt&amp;action=edit&amp;section=4" title="Edit section&#39;s source code: Tricks">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<ul><li>Interrupt shut down in BASIC: <code> <a href="/wiki/POKE" title="POKE">POKE</a> 56334, <a href="/wiki/PEEK" title="PEEK">PEEK</a>(56334) <a href="/wiki/AND_(BASIC)" title="AND (BASIC)">AND</a> 254 </code><br /></li></ul>
+<p><i><b>Remark:</b> The keyboard is shut down during this time. The C64 can't be used normally. This method should be used only in BASIC-Programs which are working without any errors. When the BASIC-Program is done, it should restart the interrupt.</i>
+</p>
+<ul><li>Activate Interrupt in BASIC: <code> POKE 56334, PEEK(56334) <a href="/wiki/OR" title="OR">OR</a> 1 </code><br /></li>
+<li>Activate Interrupt with key-combination via keyboard: &lt;RUN/STOP&gt;+&lt;RESTORE&gt;</li></ul>
+<!-- 
+NewPP limit report
+Cached time: 20260927064211
+Cache expiry: 86400
+Reduced expiry: false
+Complications: [show‐toc]
+CPU time usage: 0.012 seconds
+Real time usage: 0.013 seconds
+Preprocessor visited node count: 43/1000000
+Post‐expand include size: 0/2097152 bytes
+Template argument size: 0/2097152 bytes
+Highest expansion depth: 2/100
+Expensive parser function count: 0/100
+Unstrip recursion depth: 0/20
+Unstrip post‐expand size: 0/5000000 bytes
+-->
+<!--
+Transclusion expansion time report (%,ms,calls,template)
+100.00%    0.000      1 -total
+-->
+
+<!-- Saved in parser cache with key c64?hwiki?hen-wiki_:pcache:idhash:1611-0!canonical!svUser=0!asDate=20260927 and timestamp 20260927064211 and revision id 37083. Rendering was triggered because: page-view
+ -->
+</div>
+</div>
+</body></html>

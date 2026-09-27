@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<!-- From C64-Wiki (https://www.c64-wiki.com/wiki/VIC), revision 44578, last edited 16 March 2026, at 18:28.
+     Content is available under the GNU Free Documentation License - see c64wiki/licence.
+     Only the article body is kept; retrieved 2026-09-27 for Tedide's Doc Viewer. -->
+<html><head><meta charset="utf-8"><title>VIC</title>
+<meta name="c64wiki-page" content="VIC"><meta name="c64wiki-revision" content="44578"><meta name="c64wiki-edited" content="16 March 2026, at 18:28">
+</head><body>
+<div class="mw-content-ltr mw-parser-output" lang="en" dir="ltr"><p><b>VIC</b> is an acronym for <b>V</b>ideo <b>I</b>nterface <b>C</b>hip and is the collective name for a number of microchips. The VIC controls the graphics routines (<a href="/wiki/Char" class="mw-redirect" title="Char">chars</a>, <a href="/wiki/Sprite" title="Sprite">sprites</a>, <a href="/wiki/Graphic_mode" class="mw-redirect" title="Graphic mode">graphic modes</a>) for many computers manufactured by <a href="/wiki/Commodore" title="Commodore">Commodore</a>. The microchips were produced by the semiconductor manufacturer <a href="/wiki/MOS_Technology" title="MOS Technology">MOS Technology</a>, which <a href="/wiki/Commodore" title="Commodore">Commodore</a> took over in 1976.
+</p>
+<div id="toc" class="toc" role="navigation" aria-labelledby="mw-toc-heading"><input type="checkbox" role="button" id="toctogglecheckbox" class="toctogglecheckbox" style="display:none" /><div class="toctitle" lang="en" dir="ltr"><h2 id="mw-toc-heading">Contents</h2><span class="toctogglespan"><label class="toctogglelabel" for="toctogglecheckbox"></label></span></div>
+<ul>
+<li class="toclevel-1 tocsection-1"><a href="#VIC-I"><span class="tocnumber">1</span> <span class="toctext">VIC-I</span></a></li>
+<li class="toclevel-1 tocsection-2"><a href="#VIC-II"><span class="tocnumber">2</span> <span class="toctext">VIC-II</span></a>
+<ul>
+<li class="toclevel-2 tocsection-3"><a href="#Memory_addresses_of_the_VIC-II"><span class="tocnumber">2.1</span> <span class="toctext">Memory addresses of the VIC-II</span></a></li>
+<li class="toclevel-2 tocsection-4"><a href="#VIC-II_Technical_Details"><span class="tocnumber">2.2</span> <span class="toctext">VIC-II Technical Details</span></a></li>
+</ul>
+</li>
+<li class="toclevel-1 tocsection-5"><a href="#VIC-III"><span class="tocnumber">3</span> <span class="toctext">VIC-III</span></a></li>
+<li class="toclevel-1 tocsection-6"><a href="#Microprocessor_Identification"><span class="tocnumber">4</span> <span class="toctext">Microprocessor Identification</span></a>
+<ul>
+<li class="toclevel-2 tocsection-7"><a href="#Notes"><span class="tocnumber">4.1</span> <span class="toctext">Notes</span></a></li>
+</ul>
+</li>
+<li class="toclevel-1 tocsection-8"><a href="#References"><span class="tocnumber">5</span> <span class="toctext">References</span></a></li>
+</ul>
+</div>
+
+<h2><span class="mw-headline" id="VIC-I">VIC-I</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=VIC&amp;veaction=edit&amp;section=1" title="Edit section: VIC-I" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=VIC&amp;action=edit&amp;section=1" title="Edit section&#39;s source code: VIC-I">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<figure class="mw-halign-right" typeof="mw:File/Thumb"><a href="/wiki/File:MOS6560R101_VIC-I_Wk44Yr81.jpg" class="mw-file-description"><img src="https://www.c64-wiki.com/images/thumb/d/d7/MOS6560R101_VIC-I_Wk44Yr81.jpg/150px-MOS6560R101_VIC-I_Wk44Yr81.jpg" decoding="async" loading="lazy" width="150" height="55" class="mw-file-element" srcset="https://www.c64-wiki.com/images/thumb/d/d7/MOS6560R101_VIC-I_Wk44Yr81.jpg/225px-MOS6560R101_VIC-I_Wk44Yr81.jpg 1.5x, https://www.c64-wiki.com/images/thumb/d/d7/MOS6560R101_VIC-I_Wk44Yr81.jpg/300px-MOS6560R101_VIC-I_Wk44Yr81.jpg 2x" /></a><figcaption>VIC-I, MOS 6560 Revision 101, Manufactured in week 44 of 1981</figcaption></figure>
+<figure class="mw-halign-right" typeof="mw:File/Thumb"><a href="/wiki/File:MOS6561RE_VIC-I_Wk44Yr81.jpg" class="mw-file-description"><img src="https://www.c64-wiki.com/images/thumb/7/72/MOS6561RE_VIC-I_Wk44Yr81.jpg/150px-MOS6561RE_VIC-I_Wk44Yr81.jpg" decoding="async" loading="lazy" width="150" height="51" class="mw-file-element" srcset="https://www.c64-wiki.com/images/thumb/7/72/MOS6561RE_VIC-I_Wk44Yr81.jpg/225px-MOS6561RE_VIC-I_Wk44Yr81.jpg 1.5x, https://www.c64-wiki.com/images/thumb/7/72/MOS6561RE_VIC-I_Wk44Yr81.jpg/300px-MOS6561RE_VIC-I_Wk44Yr81.jpg 2x" /></a><figcaption>VIC-I, MOS 6561 Revision E, Manufactured in week 44 of 1981</figcaption></figure>
+<figure class="mw-halign-right" typeof="mw:File/Thumb"><a href="/wiki/File:MOS6561R101_VIC-I_Wk10Yr83.jpg" class="mw-file-description"><img src="https://www.c64-wiki.com/images/thumb/2/26/MOS6561R101_VIC-I_Wk10Yr83.jpg/150px-MOS6561R101_VIC-I_Wk10Yr83.jpg" decoding="async" loading="lazy" width="150" height="50" class="mw-file-element" srcset="https://www.c64-wiki.com/images/thumb/2/26/MOS6561R101_VIC-I_Wk10Yr83.jpg/225px-MOS6561R101_VIC-I_Wk10Yr83.jpg 1.5x, https://www.c64-wiki.com/images/thumb/2/26/MOS6561R101_VIC-I_Wk10Yr83.jpg/300px-MOS6561R101_VIC-I_Wk10Yr83.jpg 2x" /></a><figcaption>VIC-I, MOS 6561 Revision 101, Manufactured in week 10 of 1983</figcaption></figure>
+<p>The <b>VIC-I</b> (cardinality added retrospectively) was designed for <a href="/wiki/Commodore" title="Commodore">Commodore</a> <a href="/wiki/VIC-20" title="VIC-20">VIC-20</a> colour video graphics applications such as that required by low cost CRT terminals, biomedical monitors, control systems displays and arcade or home video games.  It provides all of the circuitry necessary for generating colour programmable character graphics with high screen resolution.  The VIC-I also incorporates sound effects and A/D converters for use in a video game environment.  Its features are:
+</p>
+<ul><li>Fully expandable system with a 16K byte address space.</li>
+<li>System uses industry standard 8 bit wide ROMS and 4 bit wide RAMS</li>
+<li>Mask programmable sync generation (NTSC-6560, PAL-6561)</li>
+<li>On-chip colour generation (16 colours)</li>
+<li>Up to 600 independently programmable and movable background locations on a standard TV.</li>
+<li>Screen centering capability</li>
+<li>Screen grid size up to 192 Horizontal by 200 Vertical dots</li>
+<li>Two selectable graphic character sizes.</li>
+<li>On-chip sound system including:
+<ul><li>White noise generator</li>
+<li>Amplitude modulator</li>
+<li>Two on-chip 8 bit A/D converters</li></ul></li>
+<li>On-chip DMA and address generation</li>
+<li>No CPU wait states or screen hash during screen refresh</li>
+<li>Interlaced/Non-Interlaced registers</li>
+<li>Light gun/pen for target games</li>
+<li>2 modes of colour operation</li></ul>
+<h2><span class="mw-headline" id="VIC-II">VIC-II</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=VIC&amp;veaction=edit&amp;section=2" title="Edit section: VIC-II" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=VIC&amp;action=edit&amp;section=2" title="Edit section&#39;s source code: VIC-II">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<figure class="mw-halign-right" typeof="mw:File/Thumb"><a href="/wiki/File:Vic6569_gold.jpg" class="mw-file-description"><img src="https://www.c64-wiki.com/images/thumb/0/09/Vic6569_gold.jpg/150px-Vic6569_gold.jpg" decoding="async" loading="lazy" width="150" height="117" class="mw-file-element" srcset="https://www.c64-wiki.com/images/thumb/0/09/Vic6569_gold.jpg/225px-Vic6569_gold.jpg 1.5x, https://www.c64-wiki.com/images/thumb/0/09/Vic6569_gold.jpg/300px-Vic6569_gold.jpg 2x" /></a><figcaption>VIC-II, MOS 6569 Revision 1, Manufactured in week 24 of 1983</figcaption></figure>
+<figure class="mw-halign-right" typeof="mw:File/Thumb"><a href="/wiki/File:VIC6569.jpg" class="mw-file-description"><img src="https://www.c64-wiki.com/images/thumb/b/b9/VIC6569.jpg/150px-VIC6569.jpg" decoding="async" loading="lazy" width="150" height="102" class="mw-file-element" srcset="https://www.c64-wiki.com/images/thumb/b/b9/VIC6569.jpg/225px-VIC6569.jpg 1.5x, https://www.c64-wiki.com/images/thumb/b/b9/VIC6569.jpg/300px-VIC6569.jpg 2x" /></a><figcaption>VIC-II, MOS 6569 Revision 3, Manufactured in week 43 of 1984</figcaption></figure>
+<figure class="mw-halign-right" typeof="mw:File/Thumb"><a href="/wiki/File:MOS6569R3_VIC-II_Wk05Yr86.jpg" class="mw-file-description"><img src="https://www.c64-wiki.com/images/thumb/3/3c/MOS6569R3_VIC-II_Wk05Yr86.jpg/150px-MOS6569R3_VIC-II_Wk05Yr86.jpg" decoding="async" loading="lazy" width="150" height="62" class="mw-file-element" srcset="https://www.c64-wiki.com/images/thumb/3/3c/MOS6569R3_VIC-II_Wk05Yr86.jpg/225px-MOS6569R3_VIC-II_Wk05Yr86.jpg 1.5x, https://www.c64-wiki.com/images/thumb/3/3c/MOS6569R3_VIC-II_Wk05Yr86.jpg/300px-MOS6569R3_VIC-II_Wk05Yr86.jpg 2x" /></a><figcaption>VIC-II, MOS 6569 Revision 3, Manufactured in week 05 of 1986</figcaption></figure>
+<figure class="mw-halign-right" typeof="mw:File/Thumb"><a href="/wiki/File:MOS6569R5_VIC-II_Wk33Yr86.jpg" class="mw-file-description"><img src="https://www.c64-wiki.com/images/thumb/8/87/MOS6569R5_VIC-II_Wk33Yr86.jpg/150px-MOS6569R5_VIC-II_Wk33Yr86.jpg" decoding="async" loading="lazy" width="150" height="56" class="mw-file-element" srcset="https://www.c64-wiki.com/images/thumb/8/87/MOS6569R5_VIC-II_Wk33Yr86.jpg/225px-MOS6569R5_VIC-II_Wk33Yr86.jpg 1.5x, https://www.c64-wiki.com/images/thumb/8/87/MOS6569R5_VIC-II_Wk33Yr86.jpg/300px-MOS6569R5_VIC-II_Wk33Yr86.jpg 2x" /></a><figcaption>VIC-II, MOS 6569 Revision 5, Manufactured in week 33 of 1986</figcaption></figure>
+<p>The <b>VIC-II</b> is the <a href="/index.php?title=integrated_circuit&amp;action=edit&amp;redlink=1" class="new" title="integrated circuit (page does not exist)">microchip</a> tasked with generating <a href="/index.php?title=S-Video&amp;action=edit&amp;redlink=1" class="new" title="S-Video (page does not exist)">Y/C</a> video signals (combined to <a href="/index.php?title=composite_video&amp;action=edit&amp;redlink=1" class="new" title="composite video (page does not exist)">composite video</a> in the RF modulator) and <a href="/wiki/dynamic_random_access_memory" class="mw-redirect" title="dynamic random access memory">DRAM</a> <a href="/index.php?title=memory_refresh&amp;action=edit&amp;redlink=1" class="new" title="memory refresh (page does not exist)">refresh</a> signals in the <a href="/wiki/C64" title="C64">C64</a> and <a href="/wiki/C128" class="mw-redirect" title="C128">C128</a> range of <a href="/wiki/home_computer" class="mw-redirect" title="home computer">home computers</a>.  The VIC-II typically accesses the memory alternately with the CPU. However, it can also freeze the CPU briefly and access the memory with higher bandwidth during that time. This happens in the so-called "<a href="/index.php?title=Badlines&amp;action=edit&amp;redlink=1" class="new" title="Badlines (page does not exist)">Badlines</a>" and is necessary since the bandwidth would otherwise be insufficient.  The VIC-II is connected to the <a href="/wiki/Color_RAM" title="Color RAM">Color RAM</a> via a dedicated four bits data bus.  Its features are:
+</p>
+<ul><li>16 kB <a href="/index.php?title=address_space&amp;action=edit&amp;redlink=1" class="new" title="address space (page does not exist)">address space</a> for screen, character and <a href="/wiki/sprite" class="mw-redirect" title="sprite">sprite</a> memory</li>
+<li>320 × 200 pixels video resolution (160 × 200 in multi-color mode)</li>
+<li>40 × 25 characters text resolution</li>
+<li>Three character display modes and two bitmap modes</li>
+<li>16 colors</li>
+<li>Concurrent handling of 8 <a href="/wiki/sprite" class="mw-redirect" title="sprite">sprites</a> per <a href="/index.php?title=scanline&amp;action=edit&amp;redlink=1" class="new" title="scanline (page does not exist)">scanline</a>, each of 24 × 21 pixels (12 × 21 multicolor)</li>
+<li><a href="/wiki/Raster_interrupt" title="Raster interrupt">Raster interrupt</a> (see details, below)</li>
+<li>Smooth <a href="/wiki/scrolling" class="mw-redirect" title="scrolling">scrolling</a></li>
+<li>Independent dynamic <a href="/index.php?title=Memory_refresh&amp;action=edit&amp;redlink=1" class="new" title="Memory refresh (page does not exist)">RAM refresh</a> (an unusual feature for a graphics processor)</li>
+<li><a href="/index.php?title=Bus_mastering&amp;action=edit&amp;redlink=1" class="new" title="Bus mastering (page does not exist)">Bus mastering</a> for a 6502-style <a href="/index.php?title=computer_bus&amp;action=edit&amp;redlink=1" class="new" title="computer bus (page does not exist)">system bus</a>; CPU and VIC-II accessing the bus during alternating half-<a href="/index.php?title=clock_cycle&amp;action=edit&amp;redlink=1" class="new" title="clock cycle (page does not exist)">clock cycles</a> (the VIC-II will halt the CPU when it needs extra cycles)</li></ul>
+<p>Succeeding MOS's original VIC, the VIC-II was one of the two chips mainly responsible for the C64's success; the other microchip being the MOS 6581 <a href="/wiki/SID" title="SID">SID</a>).
+</p>
+<h3><span class="mw-headline" id="Memory_addresses_of_the_VIC-II">Memory addresses of the VIC-II</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=VIC&amp;veaction=edit&amp;section=3" title="Edit section: Memory addresses of the VIC-II" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=VIC&amp;action=edit&amp;section=3" title="Edit section&#39;s source code: Memory addresses of the VIC-II">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<table class="wikitable">
+
+
+<tbody><tr>
+<th>Hex Address
+</th>
+<th>Dec Address
+</th>
+<th>Page
+</th>
+<th>Contents
+</th></tr>
+<tr>
+<td>$D000-$D3FF</td>
+<td>53248-54271</td>
+<td><a href="/wiki/Page_208-211" title="Page 208-211">Page 208-211</a></td>
+<td><a href="/wiki/Page_208-211" title="Page 208-211">VIC-II registers</a>
+</td></tr>
+<tr>
+<td>$D800-$DBE7</td>
+<td>55296-56295</td>
+<td><a href="/wiki/Color_RAM" title="Color RAM">Page 216-219</a></td>
+<td><a href="/wiki/Color_RAM" title="Color RAM">Color RAM</a>
+</td></tr></tbody></table>
+<ul><li><a href="/wiki/Sprite" title="Sprite">Sprites</a> lie at address MEM(Start of screen mem + $03F8 + sprite number)*64</li>
+<li>The start of the <a href="/wiki/Screen_RAM" title="Screen RAM">Screen RAM</a> is set by $DD00 (the VIC bank, see <a href="/wiki/CIA#CIA_2" title="CIA">CIA 2</a>) and $D018.</li></ul>
+<h3><span class="mw-headline" id="VIC-II_Technical_Details">VIC-II Technical Details</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=VIC&amp;veaction=edit&amp;section=4" title="Edit section: VIC-II Technical Details" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=VIC&amp;action=edit&amp;section=4" title="Edit section&#39;s source code: VIC-II Technical Details">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<p>The operation of the VIC-II is thoroughly described in the document "<a rel="nofollow" class="external text" href="https://www.cebix.net/VIC-Article.txt">The MOS 6567/6569 video controller (VIC-II) and its application in the Commodore 64</a>" (1996) by Christian Bauer. <b>A slightly more readable timing overview can be found <a href="/wiki/File:vic-ii-timing.pdf" title="File:vic-ii-timing.pdf">here</a>.</b>
+</p><p>Notes on the document:
+</p>
+<ul><li>The cycle count starts at 1; for example, <a href="/wiki/VICE" class="mw-redirect" title="VICE">VICE</a> starts counting at 0.</li>
+<li>The document refers to ø0; in other sources, Phi1 (ø0 low) and Phi2 (ø0 high) are often mentioned.</li>
+<li>Writing to $D011/$D012 can immediately trigger a raster IRQ, provided no raster IRQ has yet been triggered in the current line.</li>
+<li>The vertical "expansion flip-flop" is somewhat misleadingly named; its state actually indicates whether a line in the sprite data should currently be skipped or not (MCBASE, +3 in two steps: +2 in cycle 15, +1 in cycle 16). For standard-size sprites, this flag is always set. For vertically double-sized sprites, it is cleared in the first line, then alternates each raster line.</li>
+<li>Sprite crunch/sprite stretching by clearing bits in $D017 shifts MC(BASE) in a slightly different manner than stated in the document.<sup id="cite&#95;ref-1" class="reference"><a href="#cite_note-1"><span class="cite-bracket">&#91;</span>1<span class="cite-bracket">&#93;</span></a></sup></li>
+<li>VCBASE and MCBASE are used to reset VC and MC to their initial values. VCBASE is the offset into the screen memory (in standard text mode: 0 for raster lines 51-58, 40 for raster lines 59-66, and so on), while MCBASE is the byte offset within the sprite data (0, 3, 6, 9, etc. for standard-size sprites; 0, 0, 3, 3, 6, 6, 9, 9, etc. for vertically double-height sprites). Each line for a sprite data is comprised of three bytes.</li>
+<li>VMLI is not a pointer but rather a 40-bit shift register that controls the 40 enable bits of the VIC-II’s internal "40×12 bit video matrix/color line." When switching from idle to display mode, a "1" is shifted into the register and then continues to shift after each C/G access.</li>
+<li>A Badline triggered as early as cycle 15 results in a VSP offset of 1. Presumably, the transition from idle to display mode does not occur on the falling edge of ø0 but rather on the rising edge.<sup id="cite&#95;ref-2" class="reference"><a href="#cite_note-2"><span class="cite-bracket">&#91;</span>2<span class="cite-bracket">&#93;</span></a></sup></li>
+<li>Example of access timing (in standard text mode) for the <b>second</b> line of the character in the top left corner ($0400):
+<ul><li>The character and its color are determined by the C-access on line 51 (a Badline) in the second half of cycle 15.</li>
+<li>The character pixels displayed are determined by the G-access on line 52 in the first half of cycle 16.</li>
+<li>The background color for the character is determined by the state of $D021 on line 52 at the end of cycle 17.<sup id="cite&#95;ref-3" class="reference"><a href="#cite_note-3"><span class="cite-bracket">&#91;</span>3<span class="cite-bracket">&#93;</span></a></sup></li></ul></li></ul>
+<h2><span class="mw-headline" id="VIC-III">VIC-III</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=VIC&amp;veaction=edit&amp;section=5" title="Edit section: VIC-III" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=VIC&amp;action=edit&amp;section=5" title="Edit section&#39;s source code: VIC-III">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<figure class="mw-halign-right" typeof="mw:File/Thumb"><a href="/wiki/File:CSG4567_VIC-III_microprocessor.jpg" class="mw-file-description"><img src="https://www.c64-wiki.com/images/thumb/5/5f/CSG4567_VIC-III_microprocessor.jpg/150px-CSG4567_VIC-III_microprocessor.jpg" decoding="async" loading="lazy" width="150" height="132" class="mw-file-element" srcset="https://www.c64-wiki.com/images/thumb/5/5f/CSG4567_VIC-III_microprocessor.jpg/225px-CSG4567_VIC-III_microprocessor.jpg 1.5x, https://www.c64-wiki.com/images/thumb/5/5f/CSG4567_VIC-III_microprocessor.jpg/300px-CSG4567_VIC-III_microprocessor.jpg 2x" /></a><figcaption>VIC-III, CSG 4567 Revision 5, Manufactured in Week 50 of 1990</figcaption></figure>
+<p>Graphics in the <a href="/wiki/C65" title="C65">C65</a> (also known as the <a href="/wiki/C64DX" class="mw-redirect" title="C64DX">C64DX</a>) were to be provided by the <b>VIC-III</b> (designated the CSG 4567, and named as the "Bill" chip for designer Bill Gardei).  Its features are:
+</p>
+<ul><li>Support of standard <a href="/wiki/C64" title="C64">C64</a> video modes.</li>
+<li>Textmode with 40/80 × 25 characters (featuring blink, bold, and underline).</li>
+<li>True bitplane VGA-style graphics:
+<ul><li>320x200x256</li>
+<li>640x200x256</li>
+<li>640x400x16</li>
+<li>1280x200x16</li>
+<li>1280x400x4</li></ul></li>
+<li>Palette of 4096 colours.</li>
+<li>Special facility for address resolution (Display Address Translator [DAT]) of the C64 pixel coordinate system.</li>
+<li>PAL only, no NTSC (but the RGB output works just fine with the 1084S).</li>
+<li>Synchronizable with external video source (Genlock).</li>
+<li>Integrated DMA-Controller (Bit blit).</li>
+<li>Reportedly can display Amiga OCS IFF.</li></ul>
+<h2><span class="mw-headline" id="Microprocessor_Identification">Microprocessor Identification</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=VIC&amp;veaction=edit&amp;section=6" title="Edit section: Microprocessor Identification" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=VIC&amp;action=edit&amp;section=6" title="Edit section&#39;s source code: Microprocessor Identification">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<ul><li><a href="/wiki/MOS_Technology_6560" title="MOS Technology 6560">MOS Technology 6560</a> &#8211; VIC-I for (<a href="/wiki/NTSC" title="NTSC">NTSC</a>) VIC-20</li>
+<li><a href="/index.php?title=MOS_Technology_6561&amp;action=edit&amp;redlink=1" class="new" title="MOS Technology 6561 (page does not exist)">MOS Technology 6561</a> &#8211; VIC-I for (<a href="/wiki/PAL" title="PAL">PAL</a>) VIC-20. Revision: -101/E</li>
+<li><a href="/wiki/MOS_Technology_6564" title="MOS Technology 6564">MOS Technology 6564</a> &#8211; VIC-I for Colour PET</li>
+<li><a href="/wiki/MOS_Technology_6566" title="MOS Technology 6566">MOS Technology 6566</a> &#8211; VIC-II for <a href="/index.php?title=MAX_Machine&amp;action=edit&amp;redlink=1" class="new" title="MAX Machine (page does not exist)">MAX Machine</a></li>
+<li><a href="/wiki/MOS_Technology_6567" title="MOS Technology 6567">MOS Technology 6567</a> &#8211; VIC-II for (NTSC) C64, SX-64, PET 64, C64GS. Revision: R56A/R7/R8/R9</li>
+<li><a href="/wiki/MOS_Technology_6569" title="MOS Technology 6569">MOS Technology 6569</a> &#8211; VIC-II for (PAL) C64, SX-64, PET 64, C64GS, MAX Machine. Revision: R1/R3/R4/R5 (R1 = only 5 lumas)</li>
+<li><a href="/wiki/MOS_Technology_6572" title="MOS Technology 6572">MOS Technology 6572</a> &#8211; VIC-II (PAL-N)</li>
+<li><a href="/wiki/MOS_Technology_6573" title="MOS Technology 6573">MOS Technology 6573</a> &#8211; VIC-II (PAL-M)</li>
+<li><a href="/wiki/MOS_Technology_8562" title="MOS Technology 8562">MOS Technology 8562</a> &#8211; VIC-II (NTSC)</li>
+<li><a href="/wiki/MOS_Technology_8564" title="MOS Technology 8564">MOS Technology 8564</a> &#8211; VIC-II for (NTSC) C128, C128D, C128DCR</li>
+<li><a href="/wiki/MOS_Technology_8565" title="MOS Technology 8565">MOS Technology 8565</a> &#8211; VIC-II for (PAL-B) C64. Revision: R2</li>
+<li><a href="/wiki/MOS_Technology_8566" title="MOS Technology 8566">MOS Technology 8566</a> &#8211; VIC-II for (PAL-B) C128, C128D, C128DCR</li>
+<li><a href="/wiki/MOS_Technology_8569" title="MOS Technology 8569">MOS Technology 8569</a> &#8211; VIC-II for (PAL-N) C128, C128D, C128DCR</li></ul>
+<h3><span class="mw-headline" id="Notes">Notes</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=VIC&amp;veaction=edit&amp;section=7" title="Edit section: Notes" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=VIC&amp;action=edit&amp;section=7" title="Edit section&#39;s source code: Notes">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<ul><li>The NMOS variants 6566/67/69 require +12V on Pin 13/Vdd; the HMOS-II variants (8562/65) require only +5V DC.</li>
+<li>The 856x variants exhibit the <a rel="nofollow" class="external text" href="http://www.csdb.dk/forums/index.php?roomid=11&amp;topicid=78186">Grey Dots</a> problem.</li></ul>
+<h2><span class="mw-headline" id="References">References</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=VIC&amp;veaction=edit&amp;section=8" title="Edit section: References" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=VIC&amp;action=edit&amp;section=8" title="Edit section&#39;s source code: References">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<div class="mw-references-wrap"><ol class="references">
+<li id="cite&#95;note-1"><span class="mw-cite-backlink"><a href="#cite_ref-1">↑</a></span> <span class="reference-text">See <a rel="nofollow" class="external text" href="https://github.com/VICE-Team/svn-mirror/blob/1508c9d55202867ca9843e230f1a984cfefcb350/vice/src/viciisc/vicii-mem.c#L194">Sprite Crunch handling code in VICE</a>.</span>
+</li>
+<li id="cite&#95;note-2"><span class="mw-cite-backlink"><a href="#cite_ref-2">↑</a></span> <span class="reference-text">x64sc in VICE performs the G access <i>first</i> in <code>vicii-cycle.c/vicii_cycle()</code>, <i>then</i> checks for a badline condition in <code>check_badline()</code> and switches to Display Mode if necessary. Kawari checks for a badline condition first <a rel="nofollow" class="external autonumber" href="https://github.com/randyrossi/vicii-kawari/blob/39bcdae7c2767042bee44f0c2ea37a1b40f8f96f/hdl/vicii.v#L444">[1]</a> but doesn't change the mode, then increments VC in the next half cycle (if in Display Mode), <i>then</i> switches from Idle to Display Mode (on a badline condition) <a rel="nofollow" class="external autonumber" href="https://github.com/randyrossi/vicii-kawari/blob/39bcdae7c2767042bee44f0c2ea37a1b40f8f96f/hdl/matrix.v#L49">[2]</a>.</span>
+</li>
+<li id="cite&#95;note-3"><span class="mw-cite-backlink"><a href="#cite_ref-3">↑</a></span> <span class="reference-text">See the 12 pixel delay remark in section 3.6.1. of the VIC article.</span>
+</li>
+</ol></div>
+<div style="margin-top:24px; text-align:center; padding:5px 0px 5px 0px; background-color:#eeeeee; border:1px solid #bbbbbb;">
+<p><b><a href="/wiki/Hardware_internals_of_the_C64" title="Hardware internals of the C64">Hardware internals of the C64</a> · <a href="/wiki/Portal:Hardware" title="Portal:Hardware">Hardware portal</a></b><br />
+<b>Components of the C64: <a href="/wiki/MOS_6510" class="mw-redirect" title="MOS 6510">CPU</a> · <a class="mw-selflink selflink">VIC</a> · <a href="/wiki/SID" title="SID">SID</a> · <a href="/wiki/CIA" title="CIA">CIA</a> · <a href="/wiki/PLA_(C64_chip)" title="PLA (C64 chip)">PLA</a> · <a href="/wiki/RAM" title="RAM">RAM</a> · <a href="/wiki/ROM" title="ROM">ROM</a> · <a href="/wiki/Color_RAM" title="Color RAM">Color RAM</a></b><br />
+</p>
+<b>Interfaces of the C64: <a href="/wiki/Control_Port" title="Control Port">Control Port</a> · <a href="/wiki/Expansion_Port" title="Expansion Port">Expansion Port</a> · <a href="/wiki/Userport" class="mw-redirect" title="Userport">Userport</a> · <a href="/wiki/Cassette_Port" title="Cassette Port">Cassette Port</a> · <a href="/wiki/Power_Supply_Connector" title="Power Supply Connector">Power Supply Connector</a> · <a href="/wiki/A/V_Jack" title="A/V Jack">A/V Jack</a> · <a href="/wiki/RF_Jack" title="RF Jack">RF Jack</a> · <a href="/wiki/Serial_Port" title="Serial Port">Serial Port</a></b></div>
+<!-- 
+NewPP limit report
+Cached time: 20260927052250
+Cache expiry: 86400
+Reduced expiry: false
+Complications: [show‐toc]
+CPU time usage: 0.035 seconds
+Real time usage: 0.041 seconds
+Preprocessor visited node count: 139/1000000
+Post‐expand include size: 572/2097152 bytes
+Template argument size: 0/2097152 bytes
+Highest expansion depth: 2/100
+Expensive parser function count: 0/100
+Unstrip recursion depth: 0/20
+Unstrip post‐expand size: 1973/5000000 bytes
+-->
+<!--
+Transclusion expansion time report (%,ms,calls,template)
+100.00%    4.406      1 -total
+ 15.12%    0.666      1 Template:Hardware_Assembly_of_the_C64
+ 14.20%    0.626      1 Template:Wikitable
+-->
+
+<!-- Saved in parser cache with key c64?hwiki?hen-wiki_:pcache:idhash:3302-0!canonical!svUser=0!asDate=20260927 and timestamp 20260927052250 and revision id 44578. Rendering was triggered because: page-view
+ -->
+</div>
+</div>
+</body></html>

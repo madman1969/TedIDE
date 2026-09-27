@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<!-- From C64-Wiki (https://www.c64-wiki.com/wiki/Joystick), revision 43064, last edited 9 July 2025, at 18:34.
+     Content is available under the GNU Free Documentation License - see c64wiki/licence.
+     Only the article body is kept; retrieved 2026-09-27 for Tedide's Doc Viewer. -->
+<html><head><meta charset="utf-8"><title>Joystick</title>
+<meta name="c64wiki-page" content="Joystick"><meta name="c64wiki-revision" content="43064"><meta name="c64wiki-edited" content="9 July 2025, at 18:34">
+</head><body>
+<div class="mw-content-ltr mw-parser-output" lang="en" dir="ltr"><figure class="mw-halign-right" typeof="mw:File/Thumb"><a href="/wiki/File:Commodore_C1342.jpg" class="mw-file-description"><img src="https://www.c64-wiki.com/images/thumb/1/19/Commodore_C1342.jpg/200px-Commodore_C1342.jpg" decoding="async" loading="lazy" width="200" height="257" class="mw-file-element" srcset="https://www.c64-wiki.com/images/thumb/1/19/Commodore_C1342.jpg/300px-Commodore_C1342.jpg 1.5x, https://www.c64-wiki.com/images/1/19/Commodore_C1342.jpg 2x" /></a><figcaption><a href="/wiki/Commodore" title="Commodore">Commodore</a> <a href="/index.php?title=C-1342&amp;action=edit&amp;redlink=1" class="new" title="C-1342 (page does not exist)">C-1342</a></figcaption></figure>
+<p>A <b>joystick</b> is a gaming control device. The C64 is compatible with an old standard first used in the <a href="/wiki/Atari_2600" class="mw-redirect" title="Atari 2600">Atari 2600</a> gaming console; the same standard used on the <a href="/wiki/VIC-20" title="VIC-20">VIC-20</a>, the <a href="/wiki/C128" class="mw-redirect" title="C128">C128</a> and the <a href="/wiki/Amiga" title="Amiga">Amigas</a>.
+</p><p>Joysticks that are compatible with the 64 have a stick that the user may push in one of eight directions, and a "fire" button. The control stick is mechanically connected to four switches; "up", "down", "left", and "right". Pushing the stick in a direction in between two of these "cardinal directions" activates two of the four switches. 
+</p><p>Some Commodore compatible joysticks may have more than one such fire button, but in those cases both buttons will "do" the same things in a game; the software has no way of determining which fire button is used. Together with the directional switches for the control stick, a standard joystick requires five connections and a common ground wire. 
+</p>
+<div id="toc" class="toc" role="navigation" aria-labelledby="mw-toc-heading"><input type="checkbox" role="button" id="toctogglecheckbox" class="toctogglecheckbox" style="display:none" /><div class="toctitle" lang="en" dir="ltr"><h2 id="mw-toc-heading">Contents</h2><span class="toctogglespan"><label class="toctogglelabel" for="toctogglecheckbox"></label></span></div>
+<ul>
+<li class="toclevel-1 tocsection-1"><a href="#Autofire"><span class="tocnumber">1</span> <span class="toctext">Autofire</span></a></li>
+<li class="toclevel-1 tocsection-2"><a href="#Joysticks_as_seen_from_the_C64"><span class="tocnumber">2</span> <span class="toctext">Joysticks as seen from the C64</span></a></li>
+<li class="toclevel-1 tocsection-3"><a href="#Analog_lines_in_the_control_ports"><span class="tocnumber">3</span> <span class="toctext">Analog lines in the control ports</span></a></li>
+<li class="toclevel-1 tocsection-4"><a href="#Programming"><span class="tocnumber">4</span> <span class="toctext">Programming</span></a>
+<ul>
+<li class="toclevel-2 tocsection-5"><a href="#Assembler"><span class="tocnumber">4.1</span> <span class="toctext">Assembler</span></a></li>
+<li class="toclevel-2 tocsection-6"><a href="#BASIC"><span class="tocnumber">4.2</span> <span class="toctext">BASIC</span></a></li>
+</ul>
+</li>
+<li class="toclevel-1 tocsection-7"><a href="#Example_Listing"><span class="tocnumber">5</span> <span class="toctext">Example Listing</span></a></li>
+<li class="toclevel-1 tocsection-8"><a href="#Pictures"><span class="tocnumber">6</span> <span class="toctext">Pictures</span></a></li>
+<li class="toclevel-1 tocsection-9"><a href="#Links"><span class="tocnumber">7</span> <span class="toctext">Links</span></a></li>
+</ul>
+</div>
+
+<h2><span class="mw-headline" id="Autofire">Autofire</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Joystick&amp;veaction=edit&amp;section=1" title="Edit section: Autofire" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Joystick&amp;action=edit&amp;section=1" title="Edit section&#39;s source code: Autofire">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p>Some joysticks have a feature known as "auto-fire", to help out in those games where the best strategy is to shoot, shoot, shoot all the time: An oscillator delivers fast repeating pulses to the line normally connected to the fire button(s). Some people have made hardware "add-ons" that adds auto-fire capability to any joystick.
+</p>
+<h2><span class="mw-headline" id="Joysticks_as_seen_from_the_C64">Joysticks as seen from the C64</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Joystick&amp;veaction=edit&amp;section=2" title="Edit section: Joysticks as seen from the C64" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Joystick&amp;action=edit&amp;section=2" title="Edit section&#39;s source code: Joysticks as seen from the C64">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p>Joysticks connect to the two <a href="/wiki/Control_port" class="mw-redirect" title="Control port">control ports</a> at the rightmost end of the C64. Inside the machine, the five switch lines from the joysticks connect to ports A and B in <a href="/wiki/CIA" title="CIA">CIA</a> #1; in parallel with the keyboard matrix. This is the reason why a joystick, especially one connected to control port #1, causes the machine to "type" characters when the joystick is operated.
+</p><p>A joystick on port #1 is read through address 56321/$DC01, and one on control port #2 are read via address 56320/$DC00. In each byte,
+</p>
+<ul><li>Bit 0 (weight 1) goes low if the "up" switch is activated,</li>
+<li>Bit 1 (weight 2) goes low if the "down" switch is activated,</li>
+<li>Bit 2 (weight 4) goes low if the "left" switch is activated,</li>
+<li>Bit 3 (weight 8) goes low if the "right" switch is activated,</li>
+<li>Bit 4 (weight 16) goes low if the fire button is pressed.</li></ul>
+<h2><span class="mw-headline" id="Analog_lines_in_the_control_ports">Analog lines in the control ports</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Joystick&amp;veaction=edit&amp;section=3" title="Edit section: Analog lines in the control ports" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Joystick&amp;action=edit&amp;section=3" title="Edit section&#39;s source code: Analog lines in the control ports">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p>Besides ground and five inputs for the switches and buttons, the control ports also provides +5V (the aforementioned auto-fire feature is "fed" from this supply line) and two analog inputs, designed as "ohmmeters": These analog lines are mostly used for <a href="/wiki/Paddle" title="Paddle">paddles</a>, but despite the possibility to use these lines for an analog joystick (which can sense much more subtle movements to the stick than the four directional switches), such joysticks have never seen much use on the 64.
+</p>
+<h2><span class="mw-headline" id="Programming">Programming</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Joystick&amp;veaction=edit&amp;section=4" title="Edit section: Programming" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Joystick&amp;action=edit&amp;section=4" title="Edit section&#39;s source code: Programming">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<h3><span class="mw-headline" id="Assembler">Assembler</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Joystick&amp;veaction=edit&amp;section=5" title="Edit section: Assembler" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Joystick&amp;action=edit&amp;section=5" title="Edit section&#39;s source code: Assembler">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<p>Programming joystick routines in <a href="/wiki/Assembler" title="Assembler">Assembler</a>:
+</p>
+<ul><li>Method: <a href="/wiki/BIT_$hhll#Example_1" title="BIT $hhll">Bit test</a></li></ul>
+<h3><span class="mw-headline" id="BASIC">BASIC</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Joystick&amp;veaction=edit&amp;section=6" title="Edit section: BASIC" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Joystick&amp;action=edit&amp;section=6" title="Edit section&#39;s source code: BASIC">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<p>The memory addresses 56321 (Control Port 1) and  56320 (Control Port 2) contain the exact position of the joystick.
+These positions can be read with the BASIC-Command <a href="/wiki/PEEK" title="PEEK">PEEK</a>.
+</p>
+<pre>10 <a href="/wiki/PRINT" title="PRINT">PRINT</a> <a href="/wiki/PEEK" title="PEEK">PEEK</a>(56320): <a href="/wiki/GOTO" title="GOTO">GOTO</a> 10
+<a href="/wiki/RUN" title="RUN">RUN</a>
+</pre>
+<p>Break with <span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">RUN/STOP</span>&#160;.
+</p><p>Some values generated by pressed keys from the keyboard and the output of the joystick match (e.g. pressing space in some programs can be substituted for pressing fire), so the keyboard must be deactivated while the addresses of the joysticks are read. That can be achieved with <code><a href="/wiki/POKE" title="POKE">POKE</a> 56322,224</code>. With <code>POKE 56322,255</code> or with the key-combination <span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">RUN/STOP</span>&#160;+<span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">RESTORE</span>&#160; can activate the keyboard again.
+</p>
+<table border="2" cellspacing="0" cellpadding="4" rules="all" class="hintergrundfarbe1 rahmenfarbe1" style="margin:1em 1em 1em 0; border-style:solid; border-width:1px; border-collapse:collapse; empty-cells:show">
+<tbody><tr>
+<th>Position</th>
+<th>56321 Port 1</th>
+<th>56320 Port 2</th>
+<th>56321 Port 1<br />Fire pushed</th>
+<th>56320 Port 2<br />Fire pushed
+</th></tr>
+<tr>
+<td align="center">middle (no move)</td>
+<td align="center">255</td>
+<td align="center">127</td>
+<td align="center">239</td>
+<td align="center">111
+</td></tr>
+<tr>
+<td align="center">up</td>
+<td align="center">254</td>
+<td align="center">126</td>
+<td align="center">238</td>
+<td align="center">110
+</td></tr>
+<tr>
+<td align="center">down</td>
+<td align="center">253</td>
+<td align="center">125</td>
+<td align="center">237</td>
+<td align="center">109
+</td></tr>
+<tr>
+<td align="center">left</td>
+<td align="center">251</td>
+<td align="center">123</td>
+<td align="center">235</td>
+<td align="center">107
+</td></tr>
+<tr>
+<td align="center">right</td>
+<td align="center">247</td>
+<td align="center">119</td>
+<td align="center">231</td>
+<td align="center">103
+</td></tr>
+<tr>
+<td align="center">up left</td>
+<td align="center">250</td>
+<td align="center">122</td>
+<td align="center">234</td>
+<td align="center">106
+</td></tr>
+<tr>
+<td align="center">up right</td>
+<td align="center">246</td>
+<td align="center">118</td>
+<td align="center">230</td>
+<td align="center">102
+</td></tr>
+<tr>
+<td align="center">down left</td>
+<td align="center">249</td>
+<td align="center">121</td>
+<td align="center">233</td>
+<td align="center">105
+</td></tr>
+<tr>
+<td align="center">down right</td>
+<td align="center">245</td>
+<td align="center">117</td>
+<td align="center">229</td>
+<td align="center">101
+</td></tr></tbody></table>
+<p>Which means that Joystick at Port 2 can be simulated by holding space and pressing:<br />
+M for Fire<br />
+F1/F2 for Up<br />
+Z for Down<br />
+C for Left<br />
+B for Right<br />
+Combination (eg. Up+Left+Fire) works fine, although it is rather bothersome to punch that in.<br />
+Tested on Commodore 128D original keyboard<br />
+</p><p>Starting with the <a href="/wiki/Commodore_128" title="Commodore 128">Commodore 128</a> (<a href="/wiki/BASIC" title="BASIC">BASIC</a> v7), the <a href="/wiki/JOY" class="mw-redirect" title="JOY">JOY</a> command was introduced.
+</p>
+<h2><span class="mw-headline" id="Example_Listing">Example Listing</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Joystick&amp;veaction=edit&amp;section=7" title="Edit section: Example Listing" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Joystick&amp;action=edit&amp;section=7" title="Edit section&#39;s source code: Example Listing">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<dl><dt>Example 1</dt>
+<dd></dd></dl>
+<p>This BASIC-program uses the joystick (port 2) to move an arrow on the screen. 
+</p>
+<pre> 10 S=2: X=150: Y=150: V=53248: <a href="/wiki/GOTO" title="GOTO">GOTO</a> 100
+ 15 J=<a href="/wiki/PEEK" title="PEEK">PEEK</a>(56320): <a href="/wiki/IF" title="IF">IF</a> J=127 <a href="/wiki/THEN" title="THEN">THEN</a> 15
+ 20 IF J=111 THEN POKE 56322,255:END
+ 25 IF J=123 THEN X=X-S
+ 30 IF J=119 THEN X=X+S
+ 35 IF J=125 THEN Y=Y+S
+ 40 IF J=126 THEN Y=Y-S
+ 45 IF J=122 THEN Y=Y-S: IF J=122 THEN X=X-S
+ 50 IF J=118 THEN Y=Y-S: IF J=118 THEN X=X+S
+ 55 IF J=117 THEN Y=Y+S: IF J=117 THEN X=X+S
+ 60 IF J=121 THEN Y=Y+S: IF J=121 THEN X=X-S
+ 65 IF X=&gt;252 THEN X=10
+ 70 IF X=&lt;10 THEN X=252
+ 75 IF Y&gt;254 THEN Y=44
+ 80 IF Y&lt;44 THEN Y=254
+ 85 <a href="/wiki/PRINT" title="PRINT">PRINT</a> <a href="/wiki/CHR$" title="CHR$">CHR$</a>(147);CHR$(158);CHR$(17);"X-POS:";X;" Y-POS";Y
+ 90 <a href="/wiki/POKE" title="POKE">POKE</a> V,X:POKE V+1,Y: GOTO 15
+100 <a href="/wiki/FOR" title="FOR">FOR</a> Z=832 <a href="/wiki/TO" title="TO">TO</a> 853&#160;: POKE Z,0: <a href="/wiki/NEXT" title="NEXT">NEXT</a> Z
+105 FOR Z=832 TO 853 <a href="/wiki/STEP" title="STEP">STEP</a> 3: <a href="/wiki/READ" title="READ">READ</a> J: POKE Z,J: NEXT Z
+110 POKE V+21,1: POKE  V+39,7: POKE V+33,0: POKE V+29,1
+115 POKE 56322,224: POKE 2040,13: GOTO 85
+120 <a href="/wiki/DATA" title="DATA">DATA</a> 240, 224, 224, 144, 8, 4, 2, 1
+</pre>
+<p>Hint: Replace the lines 51-58 with this code for bit wise joystick input handling.
+</p>
+<pre>51 IF (J <a href="/wiki/AND" title="AND">AND</a> 1)=0 THEN Y=Y-S
+52 IF (J AND 2)=0 THEN Y=Y+S
+53 IF (J AND 4)=0 THEN X=X-S
+54 IF (J AND 8)=0 THEN X=X+S
+</pre>
+<p><br />
+</p>
+<dl><dt>Example 2</dt>
+<dd></dd></dl>
+<p>This BASIC program reads out both joystick ports and shows the pushed joystick arm (method: bit test).
+</p>
+<pre>10 J=<a href="/wiki/NOT" title="NOT">NOT</a> PEEK(56321)
+15 B=NOT PEEK(56320)
+20 PRINT CHR$(147);"JOYSTICKTEST 2012"
+30 IF (J <a href="/wiki/AND" title="AND">AND</a>1) THEN PRINT "1-V ";
+35 IF (B AND1) THEN PRINT "2-V ";
+40 IF (J AND2) THEN PRINT "1-Z ";
+45 IF (B AND2) THEN PRINT "2-Z ";
+50 IF (J AND4) THEN PRINT "1-L ";
+55 IF (B AND4) THEN PRINT "2-L ";
+60 IF (J AND8) THEN PRINT "1-R ";
+65 IF (B AND8) THEN PRINT "2-R ";
+70 IF (J AND16)THEN PRINT "1-F ";
+75 IF (B AND16)THEN PRINT "2-F ";
+80 GOTO 10
+</pre>
+<h2><span class="mw-headline" id="Pictures">Pictures</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Joystick&amp;veaction=edit&amp;section=8" title="Edit section: Pictures" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Joystick&amp;action=edit&amp;section=8" title="Edit section&#39;s source code: Pictures">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p><a href="/wiki/Commodore" title="Commodore">Commodore</a>:
+</p>
+<ul class="gallery mw-gallery-traditional" style="max-width: 978px;">
+		<li class="gallerybox" style="width: 155px">
+			<div class="thumb" style="width: 150px; height: 130px;"><span typeof="mw:File"><a href="/wiki/File:Commodore_C1311.jpg" class="mw-file-description" title="C-1311"><img alt="C-1311" src="https://www.c64-wiki.com/images/thumb/6/68/Commodore_C1311.jpg/98px-Commodore_C1311.jpg" decoding="async" loading="lazy" width="98" height="100" class="mw-file-element" srcset="https://www.c64-wiki.com/images/thumb/6/68/Commodore_C1311.jpg/146px-Commodore_C1311.jpg 1.5x, https://www.c64-wiki.com/images/thumb/6/68/Commodore_C1311.jpg/195px-Commodore_C1311.jpg 2x" /></a></span></div>
+			<div class="gallerytext"><a href="/index.php?title=C-1311&amp;action=edit&amp;redlink=1" class="new" title="C-1311 (page does not exist)">C-1311</a></div>
+		</li>
+		<li class="gallerybox" style="width: 155px">
+			<div class="thumb" style="width: 150px; height: 130px;"><span typeof="mw:File"><a href="/wiki/File:Commodore_C1342.jpg" class="mw-file-description" title="T-1341 / C-1342"><img alt="T-1341 / C-1342" src="https://www.c64-wiki.com/images/thumb/1/19/Commodore_C1342.jpg/78px-Commodore_C1342.jpg" decoding="async" loading="lazy" width="78" height="100" class="mw-file-element" srcset="https://www.c64-wiki.com/images/thumb/1/19/Commodore_C1342.jpg/117px-Commodore_C1342.jpg 1.5x, https://www.c64-wiki.com/images/thumb/1/19/Commodore_C1342.jpg/156px-Commodore_C1342.jpg 2x" /></a></span></div>
+			<div class="gallerytext"><a href="/index.php?title=T-1341&amp;action=edit&amp;redlink=1" class="new" title="T-1341 (page does not exist)">T-1341</a> / <a href="/index.php?title=C-1342&amp;action=edit&amp;redlink=1" class="new" title="C-1342 (page does not exist)">C-1342</a></div>
+		</li>
+</ul>
+<p><a href="/index.php?title=Competition_Pro&amp;action=edit&amp;redlink=1" class="new" title="Competition Pro (page does not exist)">Competition Pro</a>:
+</p>
+<ul class="gallery mw-gallery-traditional" style="max-width: 978px;">
+		<li class="gallerybox" style="width: 155px">
+			<div class="thumb" style="width: 150px; height: 130px;"><span typeof="mw:File"><a href="/wiki/File:Competition_pro.jpg" class="mw-file-description" title="Competition Pro 5000"><img alt="Competition Pro 5000" src="https://www.c64-wiki.com/images/thumb/1/14/Competition_pro.jpg/88px-Competition_pro.jpg" decoding="async" loading="lazy" width="88" height="100" class="mw-file-element" srcset="https://www.c64-wiki.com/images/thumb/1/14/Competition_pro.jpg/133px-Competition_pro.jpg 1.5x, https://www.c64-wiki.com/images/thumb/1/14/Competition_pro.jpg/177px-Competition_pro.jpg 2x" /></a></span></div>
+			<div class="gallerytext"><a href="/index.php?title=Competition_Pro&amp;action=edit&amp;redlink=1" class="new" title="Competition Pro (page does not exist)">Competition Pro</a> 5000</div>
+		</li>
+		<li class="gallerybox" style="width: 155px">
+			<div class="thumb" style="width: 150px; height: 130px;"><span typeof="mw:File"><a href="/wiki/File:Competition_pro_blau.jpg" class="mw-file-description" title="Competition Pro 5000 Star"><img alt="Competition Pro 5000 Star" src="https://www.c64-wiki.com/images/thumb/a/aa/Competition_pro_blau.jpg/96px-Competition_pro_blau.jpg" decoding="async" loading="lazy" width="96" height="100" class="mw-file-element" srcset="https://www.c64-wiki.com/images/thumb/a/aa/Competition_pro_blau.jpg/145px-Competition_pro_blau.jpg 1.5x, https://www.c64-wiki.com/images/thumb/a/aa/Competition_pro_blau.jpg/193px-Competition_pro_blau.jpg 2x" /></a></span></div>
+			<div class="gallerytext">Competition Pro 5000 Star</div>
+		</li>
+		<li class="gallerybox" style="width: 155px">
+			<div class="thumb" style="width: 150px; height: 130px;"><span typeof="mw:File"><a href="/wiki/File:Competition_pro_acryl.jpg" class="mw-file-description" title="Competition Pro 5000 Extra"><img alt="Competition Pro 5000 Extra" src="https://www.c64-wiki.com/images/thumb/9/9c/Competition_pro_acryl.jpg/87px-Competition_pro_acryl.jpg" decoding="async" loading="lazy" width="87" height="100" class="mw-file-element" srcset="https://www.c64-wiki.com/images/thumb/9/9c/Competition_pro_acryl.jpg/130px-Competition_pro_acryl.jpg 1.5x, https://www.c64-wiki.com/images/thumb/9/9c/Competition_pro_acryl.jpg/173px-Competition_pro_acryl.jpg 2x" /></a></span></div>
+			<div class="gallerytext">Competition Pro 5000 Extra</div>
+		</li>
+		<li class="gallerybox" style="width: 155px">
+			<div class="thumb" style="width: 150px; height: 130px;"><span typeof="mw:File"><a href="/wiki/File:Competition_Pro_5000_Spezial.jpg" class="mw-file-description" title="Competition Pro 5000 Spezial"><img alt="Competition Pro 5000 Spezial" src="https://www.c64-wiki.com/images/thumb/8/83/Competition_Pro_5000_Spezial.jpg/84px-Competition_Pro_5000_Spezial.jpg" decoding="async" loading="lazy" width="84" height="100" class="mw-file-element" srcset="https://www.c64-wiki.com/images/thumb/8/83/Competition_Pro_5000_Spezial.jpg/127px-Competition_Pro_5000_Spezial.jpg 1.5x, https://www.c64-wiki.com/images/thumb/8/83/Competition_Pro_5000_Spezial.jpg/169px-Competition_Pro_5000_Spezial.jpg 2x" /></a></span></div>
+			<div class="gallerytext">Competition Pro 5000 Spezial</div>
+		</li>
+		<li class="gallerybox" style="width: 155px">
+			<div class="thumb" style="width: 150px; height: 130px;"><span typeof="mw:File"><a href="/wiki/File:Competition_pro_usb.jpg" class="mw-file-description" title="USB / Retro"><img alt="USB / Retro" src="https://www.c64-wiki.com/images/thumb/3/39/Competition_pro_usb.jpg/82px-Competition_pro_usb.jpg" decoding="async" loading="lazy" width="82" height="100" class="mw-file-element" srcset="https://www.c64-wiki.com/images/thumb/3/39/Competition_pro_usb.jpg/123px-Competition_pro_usb.jpg 1.5x, https://www.c64-wiki.com/images/thumb/3/39/Competition_pro_usb.jpg/164px-Competition_pro_usb.jpg 2x" /></a></span></div>
+			<div class="gallerytext">USB / <a href="/index.php?title=Retro&amp;action=edit&amp;redlink=1" class="new" title="Retro (page does not exist)">Retro</a></div>
+		</li>
+</ul>
+<p><a href="/wiki/Quickshot" title="Quickshot">Quickshot</a>:
+</p>
+<ul class="gallery mw-gallery-traditional" style="max-width: 978px;">
+		<li class="gallerybox" style="width: 155px">
+			<div class="thumb" style="width: 150px; height: 130px;"><span typeof="mw:File"><a href="/wiki/File:Quickshot_I.jpg" class="mw-file-description" title="Quickshot I"><img alt="Quickshot I" src="https://www.c64-wiki.com/images/thumb/1/15/Quickshot_I.jpg/69px-Quickshot_I.jpg" decoding="async" loading="lazy" width="69" height="100" class="mw-file-element" srcset="https://www.c64-wiki.com/images/thumb/1/15/Quickshot_I.jpg/104px-Quickshot_I.jpg 1.5x, https://www.c64-wiki.com/images/thumb/1/15/Quickshot_I.jpg/139px-Quickshot_I.jpg 2x" /></a></span></div>
+			<div class="gallerytext"><a href="/wiki/Quickshot" title="Quickshot">Quickshot I</a></div>
+		</li>
+		<li class="gallerybox" style="width: 155px">
+			<div class="thumb" style="width: 150px; height: 130px;"><span typeof="mw:File"><a href="/wiki/File:Quickshot_II.jpg" class="mw-file-description" title="Quickshot II"><img alt="Quickshot II" src="https://www.c64-wiki.com/images/thumb/8/86/Quickshot_II.jpg/72px-Quickshot_II.jpg" decoding="async" loading="lazy" width="72" height="100" class="mw-file-element" srcset="https://www.c64-wiki.com/images/thumb/8/86/Quickshot_II.jpg/109px-Quickshot_II.jpg 1.5x, https://www.c64-wiki.com/images/thumb/8/86/Quickshot_II.jpg/145px-Quickshot_II.jpg 2x" /></a></span></div>
+			<div class="gallerytext">Quickshot II</div>
+		</li>
+		<li class="gallerybox" style="width: 155px">
+			<div class="thumb" style="width: 150px; height: 130px;"><span typeof="mw:File"><a href="/wiki/File:Quickshot_II_Plus.jpg" class="mw-file-description" title="Quickshot II plus"><img alt="Quickshot II plus" src="https://www.c64-wiki.com/images/thumb/e/ec/Quickshot_II_Plus.jpg/73px-Quickshot_II_Plus.jpg" decoding="async" loading="lazy" width="73" height="100" class="mw-file-element" srcset="https://www.c64-wiki.com/images/thumb/e/ec/Quickshot_II_Plus.jpg/110px-Quickshot_II_Plus.jpg 1.5x, https://www.c64-wiki.com/images/thumb/e/ec/Quickshot_II_Plus.jpg/146px-Quickshot_II_Plus.jpg 2x" /></a></span></div>
+			<div class="gallerytext">Quickshot II plus</div>
+		</li>
+		<li class="gallerybox" style="width: 155px">
+			<div class="thumb" style="width: 150px; height: 130px;"><span typeof="mw:File"><a href="/wiki/File:Quickshot_II_Turbo.jpg" class="mw-file-description" title="Quickshot II Turbo"><img alt="Quickshot II Turbo" src="https://www.c64-wiki.com/images/thumb/2/23/Quickshot_II_Turbo.jpg/77px-Quickshot_II_Turbo.jpg" decoding="async" loading="lazy" width="77" height="100" class="mw-file-element" srcset="https://www.c64-wiki.com/images/thumb/2/23/Quickshot_II_Turbo.jpg/115px-Quickshot_II_Turbo.jpg 1.5x, https://www.c64-wiki.com/images/thumb/2/23/Quickshot_II_Turbo.jpg/154px-Quickshot_II_Turbo.jpg 2x" /></a></span></div>
+			<div class="gallerytext">Quickshot II Turbo</div>
+		</li>
+		<li class="gallerybox" style="width: 155px">
+			<div class="thumb" style="width: 150px; height: 130px;"><span typeof="mw:File"><a href="/wiki/File:Quickshot_VII.jpg" class="mw-file-description" title="Quickshot VII"><img alt="Quickshot VII" src="https://www.c64-wiki.com/images/thumb/f/f3/Quickshot_VII.jpg/60px-Quickshot_VII.jpg" decoding="async" loading="lazy" width="60" height="100" class="mw-file-element" srcset="https://www.c64-wiki.com/images/thumb/f/f3/Quickshot_VII.jpg/90px-Quickshot_VII.jpg 1.5x, https://www.c64-wiki.com/images/thumb/f/f3/Quickshot_VII.jpg/120px-Quickshot_VII.jpg 2x" /></a></span></div>
+			<div class="gallerytext">Quickshot VII</div>
+		</li>
+</ul>
+<h2><span class="mw-headline" id="Links">Links</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Joystick&amp;veaction=edit&amp;section=9" title="Edit section: Links" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Joystick&amp;action=edit&amp;section=9" title="Edit section&#39;s source code: Links">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<table border="0" cellspacing="1" style="background-color:transparent">
+<tbody><tr>
+<td><span class="mw-default-size" typeof="mw:File"><span><img src="https://www.c64-wiki.com/images/5/52/WP-W11.png" decoding="async" loading="lazy" width="18" height="11" class="mw-file-element" /></span></span>
+</td>
+<td align="left"><b><a rel="nofollow" class="external text" href="http://en.wikipedia.org/wiki/Joystick">Wikipedia: Joystick</a></b>
+</td></tr></tbody></table>
+<ul><li><a rel="nofollow" class="external text" href="http://www.retrogamescollector.com/build-your-own-commodore-64-arcade-stick-a-guide/">retrogamescollector.com: "Build your own Commodore 64 arcade stick – a guide"</a></li>
+<li><a rel="nofollow" class="external text" href="http://codebase64.net/doku.php?id=base:joystick_input_handling">codebase64.net: "Joystick Input Handling - general info and examples"</a></li></ul>
+<!-- 
+NewPP limit report
+Cached time: 20260927041419
+Cache expiry: 86400
+Reduced expiry: false
+Complications: [show‐toc]
+CPU time usage: 0.053 seconds
+Real time usage: 0.068 seconds
+Preprocessor visited node count: 126/1000000
+Post‐expand include size: 2014/2097152 bytes
+Template argument size: 23/2097152 bytes
+Highest expansion depth: 3/100
+Expensive parser function count: 0/100
+Unstrip recursion depth: 0/20
+Unstrip post‐expand size: 8875/5000000 bytes
+-->
+<!--
+Transclusion expansion time report (%,ms,calls,template)
+100.00%   47.889      1 -total
+  3.47%    1.662      3 Template:Key
+  2.97%    1.423      1 Template:Wikipedia
+-->
+
+<!-- Saved in parser cache with key c64?hwiki?hen-wiki_:pcache:idhash:1555-0!canonical!svUser=0!asDate=20260927 and timestamp 20260927041419 and revision id 43064. Rendering was triggered because: page-view
+ -->
+</div>
+</div>
+</body></html>

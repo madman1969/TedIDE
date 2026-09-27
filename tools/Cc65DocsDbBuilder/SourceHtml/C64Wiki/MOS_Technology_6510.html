@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<!-- From C64-Wiki (https://www.c64-wiki.com/wiki/MOS_Technology_6510), revision 43457, last edited 15 August 2025, at 16:19.
+     Content is available under the GNU Free Documentation License - see c64wiki/licence.
+     Only the article body is kept; retrieved 2026-09-27 for Tedide's Doc Viewer. -->
+<html><head><meta charset="utf-8"><title>MOS Technology 6510</title>
+<meta name="c64wiki-page" content="MOS_Technology_6510"><meta name="c64wiki-revision" content="43457"><meta name="c64wiki-edited" content="15 August 2025, at 16:19">
+</head><body>
+<div class="mw-content-ltr mw-parser-output" lang="en" dir="ltr"><table width="100%" style="background-color: #99CCFF; border: 1px solid #0099FF; padding: 5px 5px 5px 5px; position:relative; font-size: 95%; margin-top: 2px; margin-bottom: 2px">
+<tbody><tr>
+<td><span class="mw-default-size" typeof="mw:File"><a href="/wiki/File:Schild_stub.png" class="mw-file-description" title="Stub"><img alt="Stub" src="https://www.c64-wiki.com/images/6/68/Schild_stub.png" decoding="async" loading="lazy" width="51" height="51" class="mw-file-element" /></a></span>
+</td>
+<td><b>This article is very short and not very detailed. Please help to improve it.</b>
+</td></tr></tbody></table>
+<table border="2" cellspacing="0" cellpadding="4" style="float:right; clear:right; width:300px; margin:5px 0 1em 1em; border:solid 1px black; border-collapse:collapse; background-color:#F9F9F9; font-size:95%; empty-cells:show">
+
+<tbody><tr style="background-color:#0066cc; color:#ffffff">
+<td colspan="2" align="center" style="border-color:black; background-color:#0066cc; color:#ffffff">MOS Technology 6510
+</td></tr>
+<tr style="background:#ffffff; text-align:center;">
+<td colspan="2" align="center">
+</td></tr>
+
+<tr>
+<td width="50px" style="background-color:#ddeeff"><b>Chip Name: </b>
+</td>
+<td width="228px" style="background-color:#E7EBF5">MOS 6510
+</td></tr>
+
+<tr>
+<td style="background-color:#ddeeff"><b>Clock Speed: </b>
+</td>
+<td style="background-color:#E7EBF5"><ul><li>0.985MHz (PAL)</li><li>1.023MHz (NTSC)</li></ul>
+</td></tr>
+
+<tr>
+<td style="background-color:#ddeeff"><b>Manufacturer: </b>
+</td>
+<td style="background-color:#E7EBF5">MOS Technologies
+</td></tr>
+
+<tr>
+<td style="background-color:#ddeeff"><b>Designer: </b>
+</td>
+<td style="background-color:#E7EBF5">Commodore Semiconductor Group
+</td></tr>
+
+<tr>
+<td style="background-color:#ddeeff"><b>Board: </b>
+</td>
+<td style="background-color:#E7EBF5"><ul><li>Commodore 64</li><li>Commodore 128</li></ul>
+</td></tr>
+
+<tr>
+<td style="background-color:#ddeeff"><b>Socket: </b>
+</td>
+<td style="background-color:#E7EBF5"><ul><li>C64 U7</li><li>C64G U6</li><li>C128 U6</li></ul>
+</td></tr>
+
+<tr>
+<td style="background-color:#ddeeff"><b>Function: </b>
+</td>
+<td style="background-color:#E7EBF5">CPU
+</td></tr>
+
+<tr>
+<td style="background-color:#ddeeff"><b>Released: </b>
+</td>
+<td style="background-color:#E7EBF5">1982
+</td></tr>
+
+<tr>
+<td style="background-color:#ddeeff"><b>Discontinued: </b>
+</td>
+<td style="background-color:#E7EBF5">1994
+</td></tr>
+
+<tr>
+<td style="background-color:#ddeeff"><b>Package: </b>
+</td>
+<td style="background-color:#E7EBF5">DIP-40
+</td></tr>
+
+<tr>
+<td style="background-color:#ddeeff"><b>License: </b>
+</td>
+<td style="background-color:#E7EBF5"><ul><li>Proprietary</li><li>Open source reimplementations</li></ul>
+</td></tr>
+
+<tr>
+<td style="background-color:#ddeeff"><b>Datasheet: </b>
+</td>
+<td style="background-color:#E7EBF5"><a rel="nofollow" class="external text" href="http://archive.6502.org/datasheets/mos_6510_mpu.pdf">MOS 6510 MPU</a>
+</td></tr>
+
+<tr class="hiddenStructure">
+<td style="background-color:#ddeeff"><b>Revisions: </b>
+</td>
+<td style="background-color:#E7EBF5">
+</td></tr>
+
+<tr>
+<td style="background-color:#ddeeff"><b>Predecessor: </b>
+</td>
+<td style="background-color:#E7EBF5">MOS 6502
+</td></tr>
+
+<tr>
+<td style="background-color:#ddeeff"><b>Successor: </b>
+</td>
+<td style="background-color:#E7EBF5">WDC 65C816
+</td></tr>
+
+<tr class="hiddenStructure">
+<td style="background-color:#ddeeff"><b>Info: </b>
+</td>
+<td style="background-color:#E7EBF5">
+</td></tr></tbody></table>
+<p><br />
+The <b>MOS 6510</b> works on the <a href="/wiki/Motherboard" title="Motherboard">mainboard</a> of a <a href="/wiki/C64" title="C64">C64</a> as the <a href="/wiki/CPU" title="CPU">CPU</a>. The 6510 is a modified version of the MOS <a href="/wiki/MOS_Technology_6502" title="MOS Technology 6502">6502</a>, distinguished primarily by the addition of an 8-bit general-purpose I/O port. In the most common implementation, six of these I/O pins are available. The chip also introduces support for tri-state operation on the address bus and allows the CPU to be halted cleanly.
+</p>
+<h2><span class="mw-headline" id="C64_MOS_6510_Failure_Symptoms">C64 MOS 6510 Failure Symptoms</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=MOS_Technology_6510&amp;veaction=edit&amp;section=1" title="Edit section: C64 MOS 6510 Failure Symptoms" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=MOS_Technology_6510&amp;action=edit&amp;section=1" title="Edit section&#39;s source code: C64 MOS 6510 Failure Symptoms">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<ul><li>Blank screen, no border.</li>
+<li>Cartridge doesn't work.</li></ul>
+<h2><span class="mw-headline" id="Links">Links</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=MOS_Technology_6510&amp;veaction=edit&amp;section=2" title="Edit section: Links" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=MOS_Technology_6510&amp;action=edit&amp;section=2" title="Edit section&#39;s source code: Links">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<table border="0" cellspacing="1" style="background-color:transparent">
+<tbody><tr>
+<td><span class="mw-default-size" typeof="mw:File"><span><img src="https://www.c64-wiki.com/images/5/52/WP-W11.png" decoding="async" loading="lazy" width="18" height="11" class="mw-file-element" /></span></span>
+</td>
+<td align="left"><b><a rel="nofollow" class="external text" href="http://en.wikipedia.org/wiki/MOS_Technology_6510">Wikipedia: MOS 6510 CPU family</a></b>
+</td></tr></tbody></table>
+<table border="0" cellspacing="1" style="background-color:transparent">
+<tbody><tr>
+<td><span class="mw-default-size" typeof="mw:File"><span><img src="https://www.c64-wiki.com/images/5/52/WP-W11.png" decoding="async" loading="lazy" width="18" height="11" class="mw-file-element" /></span></span>
+</td>
+<td align="left"><b><a rel="nofollow" class="external text" href="http://en.wikipedia.org/wiki/MOS_Technology">Wikipedia: The company MOS</a></b>
+</td></tr></tbody></table>
+<ul><li><a rel="nofollow" class="external text" href="http://www.6502.org/documents/datasheets/mos/mos_6510_mpu.pdf">MOS 6510</a> Datasheet</li>
+<li><a rel="nofollow" class="external text" href="http://viceteam.org/plain/64doc.txt">Documentation for the NMOS 65xx/85xx Instruction Set</a></li></ul>
+<div style="margin-top:24px; text-align:center; padding:5px 0px 5px 0px; background-color:#eeeeee; border:1px solid #bbbbbb;">
+<p><b><a href="/wiki/Hardware_internals_of_the_C64" title="Hardware internals of the C64">Hardware internals of the C64</a> · <a href="/wiki/Portal:Hardware" title="Portal:Hardware">Hardware portal</a></b><br />
+<b>Components of the C64: <a href="/wiki/MOS_6510" class="mw-redirect" title="MOS 6510">CPU</a> · <a href="/wiki/VIC" title="VIC">VIC</a> · <a href="/wiki/SID" title="SID">SID</a> · <a href="/wiki/CIA" title="CIA">CIA</a> · <a href="/wiki/PLA_(C64_chip)" title="PLA (C64 chip)">PLA</a> · <a href="/wiki/RAM" title="RAM">RAM</a> · <a href="/wiki/ROM" title="ROM">ROM</a> · <a href="/wiki/Color_RAM" title="Color RAM">Color RAM</a></b><br />
+</p>
+<b>Interfaces of the C64: <a href="/wiki/Control_Port" title="Control Port">Control Port</a> · <a href="/wiki/Expansion_Port" title="Expansion Port">Expansion Port</a> · <a href="/wiki/Userport" class="mw-redirect" title="Userport">Userport</a> · <a href="/wiki/Cassette_Port" title="Cassette Port">Cassette Port</a> · <a href="/wiki/Power_Supply_Connector" title="Power Supply Connector">Power Supply Connector</a> · <a href="/wiki/A/V_Jack" title="A/V Jack">A/V Jack</a> · <a href="/wiki/RF_Jack" title="RF Jack">RF Jack</a> · <a href="/wiki/Serial_Port" title="Serial Port">Serial Port</a></b></div>
+<!-- 
+NewPP limit report
+Cached time: 20260927034520
+Cache expiry: 86400
+Reduced expiry: false
+Complications: []
+CPU time usage: 0.030 seconds
+Real time usage: 0.044 seconds
+Preprocessor visited node count: 103/1000000
+Post‐expand include size: 4468/2097152 bytes
+Template argument size: 837/2097152 bytes
+Highest expansion depth: 3/100
+Expensive parser function count: 0/100
+Unstrip recursion depth: 0/20
+Unstrip post‐expand size: 0/5000000 bytes
+-->
+<!--
+Transclusion expansion time report (%,ms,calls,template)
+100.00%   14.940      1 -total
+ 28.91%    4.319      1 Template:Hardware_Assembly_of_the_C64
+ 27.35%    4.086      1 Template:Infobox_Chip
+ 22.39%    3.345      2 Template:Wikipedia
+ 18.99%    2.837      1 Template:Stub1
+-->
+
+<!-- Saved in parser cache with key c64?hwiki?hen-wiki_:pcache:idhash:2824-0!canonical!svUser=0!asDate=20260927 and timestamp 20260927034520 and revision id 43457. Rendering was triggered because: page-view
+ -->
+</div>
+</div>
+</body></html>

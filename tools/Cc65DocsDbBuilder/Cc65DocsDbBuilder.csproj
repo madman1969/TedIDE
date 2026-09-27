@@ -20,6 +20,8 @@
     <!-- The C Book's own source tree (see CBookPageCatalog) - recursive, since it mirrors the
          site's own chapterN/page.html directory layout rather than cc65's flat one. -->
     <None Include="SourceHtml\CBook\**\*.html" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Curated C64-Wiki articles (see C64WikiPageCatalog) and the GNU FDL text they're under. -->
+    <None Include="SourceHtml\C64Wiki\*.html;SourceHtml\C64Wiki\*.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

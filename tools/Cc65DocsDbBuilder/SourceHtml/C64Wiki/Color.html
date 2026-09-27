@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<!-- From C64-Wiki (https://www.c64-wiki.com/wiki/Color), revision 38690, last edited 18 February 2022, at 04:42.
+     Content is available under the GNU Free Documentation License - see c64wiki/licence.
+     Only the article body is kept; retrieved 2026-09-27 for Tedide's Doc Viewer. -->
+<html><head><meta charset="utf-8"><title>Color</title>
+<meta name="c64wiki-page" content="Color"><meta name="c64wiki-revision" content="38690"><meta name="c64wiki-edited" content="18 February 2022, at 04:42">
+</head><body>
+<div class="mw-content-ltr mw-parser-output" lang="en" dir="ltr"><figure class="mw-halign-right" typeof="mw:File/Thumb"><a href="/wiki/File:c64_16farben.png" class="mw-file-description"><img src="https://www.c64-wiki.com/images/thumb/2/2c/c64_16farben.png/300px-c64_16farben.png" decoding="async" loading="lazy" width="300" height="211" class="mw-file-element" srcset="https://www.c64-wiki.com/images/thumb/2/2c/c64_16farben.png/450px-c64_16farben.png 1.5x, https://www.c64-wiki.com/images/thumb/2/2c/c64_16farben.png/600px-c64_16farben.png 2x" /></a><figcaption>The 16 colors of the C64.</figcaption></figure>
+<p>The <a href="/wiki/C64" title="C64">C64</a> has 16 different <b>colors</b>. These 16 colors can be used in all possible screen modes, for <a href="/wiki/Character_set" title="Character set">chars</a>, the screen (background or frame) or for <a href="/wiki/sprite" class="mw-redirect" title="sprite">sprites</a> (<a href="/wiki/multicolor" class="mw-redirect" title="multicolor">multicolor</a>, <a href="/wiki/HiRes" class="mw-redirect" title="HiRes">HiRes</a>), etc.
+</p><p>The colors of the text can be changed directly with a key combination or with <code><a href="/wiki/PRINT" title="PRINT">PRINT</a> <a href="/wiki/CHR$" title="CHR$">CHR$</a>(value)</code> alternative <a href="/wiki/control_character" title="control character">control characters</a>. To change colors of sprites or HiRes-graphics in BASIC  the <a href="/wiki/C64-Commands" title="C64-Commands">command</a> <code><a href="/wiki/POKE" title="POKE">POKE</a> memory address, color code</code> must be used.
+</p><p><br clear="all" />
+</p>
+<table class="wikitable">
+
+
+<tbody><tr>
+<th>Color
+</th>
+<th>Name of color
+</th>
+<th><br />for <a href="/wiki/POKE" title="POKE">POKE</a>
+</th>
+<th>Hex
+</th>
+<th>Directly<br />keycombination
+</th>
+<th>In programs:<br />PRINT <a href="/wiki/CHR$" title="CHR$">CHR$</a>(X)<br />values of X:
+</th>
+<th>Or PRINT "Control character"<br />(in quotes!)
+</th>
+<th>RGB Value
+</th>
+<th>Web Colour
+</th></tr>
+<tr>
+<td><figure class="mw-default-size mw-halign-center" typeof="mw:File"><a href="/wiki/File:C64_Farbbalken_0_schwarz.gif" class="mw-file-description" title="Black"><img alt="Black" src="https://www.c64-wiki.com/images/7/77/C64_Farbbalken_0_schwarz.gif" decoding="async" loading="lazy" width="40" height="20" class="mw-file-element" /></a><figcaption>Black</figcaption></figure></td>
+<td>Black</td>
+<td>0</td>
+<td>0</td>
+<td align="center"><span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">CTRL</span>&#160; + <span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">1</span>&#160;</td>
+<td align="right">144</td>
+<td><span class="mw-default-size" typeof="mw:File"><a href="/wiki/File:Zeichensatz1_208.png" class="mw-file-description"><img src="https://www.c64-wiki.com/images/6/65/Zeichensatz1_208.png" decoding="async" loading="lazy" width="16" height="16" class="mw-file-element" /></a></span> small square left down</td>
+<td>0, 0, 0</td>
+<td style="text-align:center; background-color:#000000; color:#ffffff">#000000
+</td></tr>
+<tr>
+<td><figure class="mw-default-size mw-halign-center" typeof="mw:File"><a href="/wiki/File:C64_Farbbalken_1_weiss.gif" class="mw-file-description" title="White"><img alt="White" src="https://www.c64-wiki.com/images/3/39/C64_Farbbalken_1_weiss.gif" decoding="async" loading="lazy" width="40" height="20" class="mw-file-element" /></a><figcaption>White</figcaption></figure></td>
+<td>White</td>
+<td>1</td>
+<td>1</td>
+<td align="center"><span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">CTRL</span>&#160; + <span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">2</span>&#160;</td>
+<td align="right">5</td>
+<td><span class="mw-default-size" typeof="mw:File"><a href="/wiki/File:Zeichensatz1_133.png" class="mw-file-description"><img src="https://www.c64-wiki.com/images/1/10/Zeichensatz1_133.png" decoding="async" loading="lazy" width="16" height="16" class="mw-file-element" /></a></span>  inverted E</td>
+<td>255, 255, 255</td>
+<td style="text-align:center; background-color:#FFFFFF; color:#000000">#FFFFFF
+</td></tr>
+<tr>
+<td><figure class="mw-default-size mw-halign-center" typeof="mw:File"><a href="/wiki/File:C64_Farbbalken_2_rot.gif" class="mw-file-description" title="Red"><img alt="Red" src="https://www.c64-wiki.com/images/7/77/C64_Farbbalken_2_rot.gif" decoding="async" loading="lazy" width="40" height="20" class="mw-file-element" /></a><figcaption>Red</figcaption></figure></td>
+<td>Red</td>
+<td>2</td>
+<td>2</td>
+<td align="center"><span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">CTRL</span>&#160; + <span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">3</span>&#160;</td>
+<td align="right">28</td>
+<td><span class="mw-default-size" typeof="mw:File"><a href="/wiki/File:Zeichensatz1_156.png" class="mw-file-description"><img src="https://www.c64-wiki.com/images/c/c7/Zeichensatz1_156.png" decoding="async" loading="lazy" width="16" height="16" class="mw-file-element" /></a></span> inverted pound</td>
+<td>136, 0, 0</td>
+<td style="text-align:center; background-color:#880000; color:#ffffff">#880000
+</td></tr>
+<tr>
+<td><figure class="mw-default-size mw-halign-center" typeof="mw:File"><a href="/wiki/File:C64_Farbbalken_3_cyan.gif" class="mw-file-description" title="Cyan"><img alt="Cyan" src="https://www.c64-wiki.com/images/4/42/C64_Farbbalken_3_cyan.gif" decoding="async" loading="lazy" width="40" height="20" class="mw-file-element" /></a><figcaption>Cyan</figcaption></figure></td>
+<td>Cyan</td>
+<td>3</td>
+<td>3</td>
+<td align="center"><span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">CTRL</span>&#160; + <span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">4</span>&#160;</td>
+<td align="right">159</td>
+<td><span class="mw-default-size" typeof="mw:File"><a href="/wiki/File:Zeichensatz1_223.png" class="mw-file-description"><img src="https://www.c64-wiki.com/images/9/9d/Zeichensatz1_223.png" decoding="async" loading="lazy" width="16" height="16" class="mw-file-element" /></a></span> Triangle left down</td>
+<td>170, 255, 238</td>
+<td style="text-align:center; background-color:#AAFFEE; color:#000000">#AAFFEE
+</td></tr>
+<tr>
+<td><figure class="mw-default-size mw-halign-center" typeof="mw:File"><a href="/wiki/File:C64_Farbbalken_4_purpur.gif" class="mw-file-description" title="Violet"><img alt="Violet" src="https://www.c64-wiki.com/images/0/03/C64_Farbbalken_4_purpur.gif" decoding="async" loading="lazy" width="40" height="20" class="mw-file-element" /></a><figcaption>Violet</figcaption></figure></td>
+<td>Violet / purple</td>
+<td>4</td>
+<td>4</td>
+<td align="center"><span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">CTRL</span>&#160; + <span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">5</span>&#160;</td>
+<td align="right">156</td>
+<td><span class="mw-default-size" typeof="mw:File"><a href="/wiki/File:Zeichensatz1_220.png" class="mw-file-description"><img src="https://www.c64-wiki.com/images/7/7c/Zeichensatz1_220.png" decoding="async" loading="lazy" width="16" height="16" class="mw-file-element" /></a></span> inverted halfchess</td>
+<td>204, 68, 204</td>
+<td style="text-align:center; background-color:#CC44CC; color:#ffffff">#CC44CC
+</td></tr>
+<tr>
+<td><figure class="mw-default-size mw-halign-center" typeof="mw:File"><a href="/wiki/File:C64_Farbbalken_5_gruen.gif" class="mw-file-description" title="Green"><img alt="Green" src="https://www.c64-wiki.com/images/5/5c/C64_Farbbalken_5_gruen.gif" decoding="async" loading="lazy" width="40" height="20" class="mw-file-element" /></a><figcaption>Green</figcaption></figure></td>
+<td>Green</td>
+<td>5</td>
+<td>5</td>
+<td align="center"><span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">CTRL</span>&#160; + <span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">6</span>&#160;</td>
+<td align="right">30</td>
+<td><span class="mw-default-size" typeof="mw:File"><a href="/wiki/File:Zeichensatz1_158.png" class="mw-file-description"><img src="https://www.c64-wiki.com/images/a/a0/Zeichensatz1_158.png" decoding="async" loading="lazy" width="16" height="16" class="mw-file-element" /></a></span> inverted arrow up</td>
+<td>0, 204, 85</td>
+<td style="text-align:center; background-color:#00CC55; color:#000000">#00CC55
+</td></tr>
+<tr>
+<td><figure class="mw-default-size mw-halign-center" typeof="mw:File"><a href="/wiki/File:C64_Farbbalken_6_blau.gif" class="mw-file-description" title="Blue"><img alt="Blue" src="https://www.c64-wiki.com/images/b/b2/C64_Farbbalken_6_blau.gif" decoding="async" loading="lazy" width="40" height="20" class="mw-file-element" /></a><figcaption>Blue</figcaption></figure></td>
+<td>Blue</td>
+<td>6</td>
+<td>6</td>
+<td align="center"><span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">CTRL</span>&#160; + <span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">7</span>&#160;</td>
+<td align="right">31</td>
+<td><span class="mw-default-size" typeof="mw:File"><a href="/wiki/File:Zeichensatz1_159.png" class="mw-file-description"><img src="https://www.c64-wiki.com/images/c/cf/Zeichensatz1_159.png" decoding="async" loading="lazy" width="16" height="16" class="mw-file-element" /></a></span> inverted arrow left</td>
+<td>0, 0, 170</td>
+<td style="text-align:center; background-color:#0000AA; color:#ffffff">#0000AA
+</td></tr>
+<tr>
+<td><figure class="mw-default-size mw-halign-center" typeof="mw:File"><a href="/wiki/File:C64_Farbbalken_7_gelb.gif" class="mw-file-description" title="Yellow"><img alt="Yellow" src="https://www.c64-wiki.com/images/6/67/C64_Farbbalken_7_gelb.gif" decoding="async" loading="lazy" width="40" height="20" class="mw-file-element" /></a><figcaption>Yellow</figcaption></figure></td>
+<td>Yellow</td>
+<td>7</td>
+<td>7</td>
+<td align="center"><span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">CTRL</span>&#160; + <span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">8</span>&#160;</td>
+<td align="right">158</td>
+<td><span class="mw-default-size" typeof="mw:File"><a href="/wiki/File:Zeichensatz1_222.png" class="mw-file-description"><img src="https://www.c64-wiki.com/images/7/72/Zeichensatz1_222.png" decoding="async" loading="lazy" width="16" height="16" class="mw-file-element" /></a></span> inverted π</td>
+<td>238, 238, 119</td>
+<td style="text-align:center; background-color:#EEEE77; color:#000000">#EEEE77
+</td></tr>
+<tr>
+<td><figure class="mw-default-size mw-halign-center" typeof="mw:File"><a href="/wiki/File:C64_Farbbalken_8_orange.gif" class="mw-file-description" title="Orange"><img alt="Orange" src="https://www.c64-wiki.com/images/4/40/C64_Farbbalken_8_orange.gif" decoding="async" loading="lazy" width="40" height="20" class="mw-file-element" /></a><figcaption>Orange</figcaption></figure></td>
+<td>Orange</td>
+<td>8</td>
+<td>8</td>
+<td align="center"><span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">C=</span>&#160; + <span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">1</span>&#160;</td>
+<td align="right">129</td>
+<td><span class="mw-default-size" typeof="mw:File"><a href="/wiki/File:Zeichensatz1_193.png" class="mw-file-description"><img src="https://www.c64-wiki.com/images/5/5a/Zeichensatz1_193.png" decoding="async" loading="lazy" width="16" height="16" class="mw-file-element" /></a></span> inverted spade</td>
+<td>221, 136, 85</td>
+<td style="text-align:center; background-color:#DD8855; color:#000000">#DD8855
+</td></tr>
+<tr>
+<td><figure class="mw-default-size mw-halign-center" typeof="mw:File"><a href="/wiki/File:C64_Farbbalken_9_braun.gif" class="mw-file-description" title="Brown"><img alt="Brown" src="https://www.c64-wiki.com/images/2/2d/C64_Farbbalken_9_braun.gif" decoding="async" loading="lazy" width="40" height="20" class="mw-file-element" /></a><figcaption>Brown</figcaption></figure></td>
+<td>Brown</td>
+<td>9</td>
+<td>9</td>
+<td align="center"><span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">C=</span>&#160; + <span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">2</span>&#160;</td>
+<td align="right">149</td>
+<td><span class="mw-default-size" typeof="mw:File"><a href="/wiki/File:Zeichensatz1_213.png" class="mw-file-description"><img src="https://www.c64-wiki.com/images/7/74/Zeichensatz1_213.png" decoding="async" loading="lazy" width="16" height="16" class="mw-file-element" /></a></span> inverted 1/4-circle right down</td>
+<td>102, 68, 0</td>
+<td style="text-align:center; background-color:#664400; color:#ffffff">#664400
+</td></tr>
+<tr>
+<td><figure class="mw-default-size mw-halign-center" typeof="mw:File"><a href="/wiki/File:C64_Farbbalken_10_hellrot.gif" class="mw-file-description" title="Lightred"><img alt="Lightred" src="https://www.c64-wiki.com/images/2/29/C64_Farbbalken_10_hellrot.gif" decoding="async" loading="lazy" width="40" height="20" class="mw-file-element" /></a><figcaption>Lightred</figcaption></figure></td>
+<td>Light red</td>
+<td>10</td>
+<td>A</td>
+<td align="center"><span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">C=</span>&#160; + <span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">3</span>&#160;</td>
+<td align="right">150</td>
+<td><span class="mw-default-size" typeof="mw:File"><a href="/wiki/File:Zeichensatz1_214.png" class="mw-file-description"><img src="https://www.c64-wiki.com/images/f/f0/Zeichensatz1_214.png" decoding="async" loading="lazy" width="16" height="16" class="mw-file-element" /></a></span> inverted graphic-X</td>
+<td>255, 119, 119</td>
+<td style="text-align:center; background-color:#FF7777; color:#000000">#FF7777
+</td></tr>
+<tr>
+<td><figure class="mw-default-size mw-halign-center" typeof="mw:File"><a href="/wiki/File:C64_Farbbalken_11_dunkelgrau.gif" class="mw-file-description" title="Darkgrey"><img alt="Darkgrey" src="https://www.c64-wiki.com/images/9/9d/C64_Farbbalken_11_dunkelgrau.gif" decoding="async" loading="lazy" width="40" height="20" class="mw-file-element" /></a><figcaption>Darkgrey</figcaption></figure></td>
+<td>Dark grey / grey 1</td>
+<td>11</td>
+<td>B</td>
+<td align="center"><span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">C=</span>&#160; + <span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">4</span>&#160;</td>
+<td align="right">151</td>
+<td><span class="mw-default-size" typeof="mw:File"><a href="/wiki/File:Zeichensatz1_215.png" class="mw-file-description"><img src="https://www.c64-wiki.com/images/2/27/Zeichensatz1_215.png" decoding="async" loading="lazy" width="16" height="16" class="mw-file-element" /></a></span> inverted annulus</td>
+<td>51, 51, 51</td>
+<td style="text-align:center; background-color:#333333; color:#ffffff">#333333
+</td></tr>
+<tr>
+<td><figure class="mw-default-size mw-halign-center" typeof="mw:File"><a href="/wiki/File:C64_Farbbalken_12_mittelgrau.gif" class="mw-file-description" title="Grey"><img alt="Grey" src="https://www.c64-wiki.com/images/7/7f/C64_Farbbalken_12_mittelgrau.gif" decoding="async" loading="lazy" width="40" height="20" class="mw-file-element" /></a><figcaption>Grey</figcaption></figure></td>
+<td>Grey 2</td>
+<td>12</td>
+<td>C</td>
+<td align="center"><span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">C=</span>&#160; + <span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">5</span>&#160;</td>
+<td align="right">152</td>
+<td><span class="mw-default-size" typeof="mw:File"><a href="/wiki/File:Zeichensatz1_216.png" class="mw-file-description"><img src="https://www.c64-wiki.com/images/2/25/Zeichensatz1_216.png" decoding="async" loading="lazy" width="16" height="16" class="mw-file-element" /></a></span> inverted club</td>
+<td>119, 119, 119</td>
+<td style="text-align:center; background-color:#777777; color:#ffffff">#777777
+</td></tr>
+<tr>
+<td><figure class="mw-default-size mw-halign-center" typeof="mw:File"><a href="/wiki/File:C64_Farbbalken_13_hellgruen.gif" class="mw-file-description" title="Lightgreen"><img alt="Lightgreen" src="https://www.c64-wiki.com/images/4/42/C64_Farbbalken_13_hellgruen.gif" decoding="async" loading="lazy" width="40" height="20" class="mw-file-element" /></a><figcaption>Lightgreen</figcaption></figure></td>
+<td>Light green</td>
+<td>13</td>
+<td>D</td>
+<td align="center"><span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">C=</span>&#160; + <span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">6</span>&#160;</td>
+<td align="right">153</td>
+<td><span class="mw-default-size" typeof="mw:File"><a href="/wiki/File:Zeichensatz1_217.png" class="mw-file-description"><img src="https://www.c64-wiki.com/images/c/ce/Zeichensatz1_217.png" decoding="async" loading="lazy" width="16" height="16" class="mw-file-element" /></a></span> inverted line right</td>
+<td>170, 255, 102</td>
+<td style="text-align:center; background-color:#AAFF66; color:#000000">#AAFF66
+</td></tr>
+<tr>
+<td><figure class="mw-default-size mw-halign-center" typeof="mw:File"><a href="/wiki/File:C64_Farbbalken_14_hellblau.gif" class="mw-file-description" title="Lightblue"><img alt="Lightblue" src="https://www.c64-wiki.com/images/4/4b/C64_Farbbalken_14_hellblau.gif" decoding="async" loading="lazy" width="40" height="20" class="mw-file-element" /></a><figcaption>Lightblue</figcaption></figure></td>
+<td>Light blue</td>
+<td>14</td>
+<td>E</td>
+<td align="center"><span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">C=</span>&#160; + <span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">7</span>&#160;</td>
+<td align="right">154</td>
+<td><span class="mw-default-size" typeof="mw:File"><a href="/wiki/File:Zeichensatz1_218.png" class="mw-file-description"><img src="https://www.c64-wiki.com/images/6/6c/Zeichensatz1_218.png" decoding="async" loading="lazy" width="16" height="16" class="mw-file-element" /></a></span> inverted diamonds</td>
+<td>0, 136, 255</td>
+<td style="text-align:center; background-color:#0088FF; color:#ffffff">#0088FF
+</td></tr>
+<tr>
+<td><figure class="mw-default-size mw-halign-center" typeof="mw:File"><a href="/wiki/File:C64_Farbbalken_15_hellgrau.gif" class="mw-file-description" title="Lightgrey"><img alt="Lightgrey" src="https://www.c64-wiki.com/images/c/ce/C64_Farbbalken_15_hellgrau.gif" decoding="async" loading="lazy" width="40" height="20" class="mw-file-element" /></a><figcaption>Lightgrey</figcaption></figure></td>
+<td>Light  grey / grey 3</td>
+<td>15</td>
+<td>F</td>
+<td align="center"><span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">C=</span>&#160; + <span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">8</span>&#160;</td>
+<td align="right">155</td>
+<td><span class="mw-default-size" typeof="mw:File"><a href="/wiki/File:Zeichensatz1_219.png" class="mw-file-description"><img src="https://www.c64-wiki.com/images/0/0c/Zeichensatz1_219.png" decoding="async" loading="lazy" width="16" height="16" class="mw-file-element" /></a></span> inverted clubs</td>
+<td>187, 187, 187</td>
+<td style="text-align:center; background-color:#BBBBBB; color:#000000">#BBBBBB
+</td></tr></tbody></table>
+<p>The <span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">C=</span>&#160; is the Commodore-key
+</p>
+<h2><span class="mw-headline" id="Memory_Addresses_for_Colors">Memory Addresses for Colors</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Color&amp;veaction=edit&amp;section=1" title="Edit section: Memory Addresses for Colors" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Color&amp;action=edit&amp;section=1" title="Edit section&#39;s source code: Memory Addresses for Colors">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p>A little <a href="/wiki/memory_map" class="mw-redirect" title="memory map">memory map</a> overview for addresses, which can change colors using the <a href="/wiki/BASIC" title="BASIC">BASIC</a>-command POKE:
+</p>
+<ul><li><a href="/wiki/646" title="646">646</a> Textcolor</li>
+<li><a href="/index.php?title=647&amp;action=edit&amp;redlink=1" class="new" title="647 (page does not exist)">647</a> Color under position of cursor</li></ul>
+<ul><li><a href="/wiki/53280" title="53280">53280</a> Color of <a href="/wiki/screenframe" class="mw-redirect" title="screenframe">screenframe</a> (value of colors 0-15, higher numbers result in repeating)</li>
+<li><a href="/wiki/53281" title="53281">53281</a> Color of <a href="/wiki/screenbackground" class="mw-redirect" title="screenbackground">screenbackground</a> (normal mode)</li>
+<li>53282 Color of screenbackground 1 (used in multicolor &amp; <a href="/wiki/Extended_color_mode" title="Extended color mode">extended color mode</a>)</li>
+<li>53283 Color of screenbackground 2 (used in multicolor &amp; <a href="/wiki/Extended_color_mode" title="Extended color mode">extended color mode</a>)</li>
+<li>53284 Color of screenbackground 3 (<a href="/wiki/Extended_color_mode" title="Extended color mode">extended color mode</a>)</li>
+<li>53285 Sprite multicolor 1 (only in <a href="/index.php?title=Mulitcolor_Mode&amp;action=edit&amp;redlink=1" class="new" title="Mulitcolor Mode (page does not exist)">multicolor mode</a>)</li>
+<li>53286 Sprite multicolor 2 (only in multicolor mode)</li>
+<li><a href="/wiki/53287" title="53287">53287</a> Color of <a href="/wiki/sprite" class="mw-redirect" title="sprite">sprite</a> 0</li>
+<li>53288 Color of sprite 1</li>
+<li>53289 Color of sprite 2</li>
+<li>53290 Color of sprite 3</li>
+<li>53291 Color of sprite 4</li>
+<li>53292 Color of sprite 5</li>
+<li>53293 Color of sprite 6</li>
+<li>53294 Color of sprite 7</li>
+<li>55296-56295 <a href="/wiki/Color-RAM" class="mw-redirect" title="Color-RAM">Color-RAM</a> - With these memory addresses the individual color of all 1000 chars within the screen matrix (25 lines by 40 columns) can be controlled; for example: <code>POKE 55296,1</code> sets the first char at line 0 and column 0 with the color white.</li></ul>
+<!-- 
+NewPP limit report
+Cached time: 20260927040737
+Cache expiry: 86400
+Reduced expiry: false
+Complications: []
+CPU time usage: 0.151 seconds
+Real time usage: 0.205 seconds
+Preprocessor visited node count: 654/1000000
+Post‐expand include size: 20728/2097152 bytes
+Template argument size: 410/2097152 bytes
+Highest expansion depth: 6/100
+Expensive parser function count: 0/100
+Unstrip recursion depth: 0/20
+Unstrip post‐expand size: 0/5000000 bytes
+-->
+<!--
+Transclusion expansion time report (%,ms,calls,template)
+100.00%   14.607      1 -total
+ 60.82%    8.883     16 Template:CHR$
+ 12.22%    1.785     33 Template:Key
+  7.76%    1.134      1 Template:-
+  4.91%    0.717      1 Template:Wikitable
+-->
+
+<!-- Saved in parser cache with key c64?hwiki?hen-wiki_:pcache:idhash:1584-0!canonical!svUser=0!asDate=20260927 and timestamp 20260927040737 and revision id 38690. Rendering was triggered because: page-view
+ -->
+</div>
+</div>
+</body></html>

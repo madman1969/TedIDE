@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<!-- From C64-Wiki (https://www.c64-wiki.com/wiki/CIA), revision 43997, last edited 19 February 2026, at 23:17.
+     Content is available under the GNU Free Documentation License - see c64wiki/licence.
+     Only the article body is kept; retrieved 2026-09-27 for Tedide's Doc Viewer. -->
+<html><head><meta charset="utf-8"><title>CIA</title>
+<meta name="c64wiki-page" content="CIA"><meta name="c64wiki-revision" content="43997"><meta name="c64wiki-edited" content="19 February 2026, at 23:17">
+</head><body>
+<div class="mw-content-ltr mw-parser-output" lang="en" dir="ltr"><figure class="mw-halign-right" typeof="mw:File/Thumb"><a href="/wiki/File:CIA6526.jpg" class="mw-file-description"><img src="https://www.c64-wiki.com/images/thumb/b/b2/CIA6526.jpg/350px-CIA6526.jpg" decoding="async" loading="lazy" width="350" height="239" class="mw-file-element" srcset="https://www.c64-wiki.com/images/thumb/b/b2/CIA6526.jpg/525px-CIA6526.jpg 1.5x, https://www.c64-wiki.com/images/thumb/b/b2/CIA6526.jpg/700px-CIA6526.jpg 2x" /></a><figcaption>Production year/date of this CIA: 1985 - calendar week 13</figcaption></figure>
+<div id="toc" class="toc" role="navigation" aria-labelledby="mw-toc-heading"><input type="checkbox" role="button" id="toctogglecheckbox" class="toctogglecheckbox" style="display:none" /><div class="toctitle" lang="en" dir="ltr"><h2 id="mw-toc-heading">Contents</h2><span class="toctogglespan"><label class="toctogglelabel" for="toctogglecheckbox"></label></span></div>
+<ul>
+<li class="toclevel-1 tocsection-1"><a href="#Description"><span class="tocnumber">1</span> <span class="toctext">Description</span></a></li>
+<li class="toclevel-1 tocsection-2"><a href="#Details_of_the_CIA_6526"><span class="tocnumber">2</span> <span class="toctext">Details of the CIA 6526</span></a></li>
+<li class="toclevel-1 tocsection-3"><a href="#Memory_addresses_of_the_CIAs"><span class="tocnumber">3</span> <span class="toctext">Memory addresses of the CIAs</span></a>
+<ul>
+<li class="toclevel-2 tocsection-4"><a href="#CIA_1"><span class="tocnumber">3.1</span> <span class="toctext">CIA 1</span></a></li>
+<li class="toclevel-2 tocsection-5"><a href="#CIA_2"><span class="tocnumber">3.2</span> <span class="toctext">CIA 2</span></a></li>
+<li class="toclevel-2 tocsection-6"><a href="#Pinout"><span class="tocnumber">3.3</span> <span class="toctext">Pinout</span></a></li>
+</ul>
+</li>
+<li class="toclevel-1 tocsection-7"><a href="#Failure_Symptoms"><span class="tocnumber">4</span> <span class="toctext">Failure Symptoms</span></a></li>
+<li class="toclevel-1 tocsection-8"><a href="#Links"><span class="tocnumber">5</span> <span class="toctext">Links</span></a></li>
+</ul>
+</div>
+
+<h2><span class="mw-headline" id="Description">Description</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=CIA&amp;veaction=edit&amp;section=1" title="Edit section: Description" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=CIA&amp;action=edit&amp;section=1" title="Edit section&#39;s source code: Description">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p>The <b>CIA</b> (<b>C</b>omplex <b>I</b>nterface <b>A</b>dapter) is an interface chip used in the <a href="/wiki/Commodore" title="Commodore">Commodore</a> <a href="/wiki/Homecomputer" class="mw-redirect" title="Homecomputer">homecomputer</a>. It controls most of the I/O processes and contains as well the internal timer (clock). The CIA was developed from the Semiconductor manufacturer <a href="/wiki/MOS_Technology" title="MOS Technology">MOS Technology</a>, which was taken over in 1976 by Commodore. Inside the <a href="/wiki/C64" title="C64">C64</a> there are two CIA 6526 chips used; later C64-versions may also use the 6526A or the 8521.
+</p>
+<h2><span class="mw-headline" id="Details_of_the_CIA_6526">Details of the CIA 6526</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=CIA&amp;veaction=edit&amp;section=2" title="Edit section: Details of the CIA 6526" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=CIA&amp;action=edit&amp;section=2" title="Edit section&#39;s source code: Details of the CIA 6526">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<ul><li>16 single programmable In- and Output lines
+<ul><li>The lines are lead through open collector with internal pullups.</li>
+<li>In the C64 some of these lines are used to monitor/control the I/O devices (keyboard, joystick, iec, etc.), some are connected with the <a href="/wiki/VIC" title="VIC">VIC</a> to define which area of memory it can address, others are for free disposition and are available at the <a href="/wiki/Userport" class="mw-redirect" title="Userport">userport</a>.</li></ul></li>
+<li>8- or 16-Bit data transport (reading or writing) with handshaking.</li>
+<li>2 independent 16-bit interval timers
+<ul><li>each timer consists of a 16 bit-latch (start value) and the actual 16 bit-timer</li>
+<li>the latch can be set directly, the timer can only be read indirectly via the latch.</li></ul></li>
+<li>24-h-timeclock (AM/PM) with programmable alarm</li>
+<li>8-bit shift register for serial In- and Output.</li>
+<li>2 TTL-inputs</li>
+<li>CMOS-compatible</li>
+<li>Pulsing: 1 MHz (6526) or 2 MHz (6526A)</li></ul>
+<h2><span class="mw-headline" id="Memory_addresses_of_the_CIAs">Memory addresses of the CIAs</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=CIA&amp;veaction=edit&amp;section=3" title="Edit section: Memory addresses of the CIAs" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=CIA&amp;action=edit&amp;section=3" title="Edit section&#39;s source code: Memory addresses of the CIAs">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p>The following memory addresses are used from the two CIA-Chips in the C64:
+</p>
+<h3><span class="mw-headline" id="CIA_1">CIA 1</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=CIA&amp;veaction=edit&amp;section=4" title="Edit section: CIA 1" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=CIA&amp;action=edit&amp;section=4" title="Edit section&#39;s source code: CIA 1">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+
+
+Paddles, 
+<table class="wikitable"><tbody><tr>
+<td colspan="5"><b>Address area:</b> $DC00-$DCFF, 56320-56575 <b>Tasks:</b> Keyboard, Joystick, Paddles, Datasette, IRQ control
+</td></tr>
+<tr>
+<th>Address<br />Hex
+</th>
+<th>Address<br />Dec
+</th>
+<th>Register
+</th>
+<th>Function
+</th>
+<th>Remark
+</th></tr>
+<tr>
+<td>$DC00</td>
+<td>56320</td>
+<td align="center">0<br />PRA</td>
+<td>Data Port A</td>
+<td>Monitoring/control of the 8 data lines of Port A. The lines are used for multiple purposes:<br />
+<p>Read/Write: Bit 0..7 <a href="/wiki/Keyboard#Hardware" title="Keyboard">keyboard matrix</a> columns<br />
+Read: <a href="/wiki/Joystick" title="Joystick">Joystick</a> Port 2: Bit 0..3 Direction (Up/Down/Left/Right), Bit 4 Fire button. 0 = activated.<br />
+Read: <a href="/wiki/Lightpen" class="mw-redirect" title="Lightpen">Lightpen</a>: Bit 4 (as fire button), connected also with "/LP" (Pin 9) of the <a href="/wiki/VIC" title="VIC">VIC</a><br />
+Read: <a href="/wiki/Paddles" class="mw-redirect" title="Paddles">Paddles</a>: Bit 2..3 Fire buttons, Bit 6..7 Switch control port 1 (%01=Paddles A) or 2 (%10=Paddles B)
+</p>
+</td></tr>
+<tr>
+<td>$DC01</td>
+<td>56321</td>
+<td align="center">1<br />PRB</td>
+<td>Data Port B</td>
+<td>Monitoring/control of the 8 data lines of Port B. The lines are used for multiple purposes:<br />
+<p>Read/Write: Bit 0..7 <a href="/wiki/Keyboard#Hardware" title="Keyboard">keyboard matrix</a> rows<br />
+Read: <a href="/wiki/Joystick" title="Joystick">Joystick</a> Port 1: Bit 0..3 Direction (Up/Down/Left/Right), Bit 4 Fire button. 0 = activated.<br />
+Read: Bit 6: Timer A: Toggle/Impulse output (see register 14 bit 2)<br />
+Read: Bit 7: Timer B: Toggle/Impulse output (see register 15 bit 2)
+</p>
+</td></tr>
+<tr>
+<td>$DC02</td>
+<td>56322</td>
+<td align="center">2<br />DDRA</td>
+<td>Data Direction<br />Port A</td>
+<td>Bit X: 0=Input (read only), 1=Output (read and write)
+</td></tr>
+<tr>
+<td>$DC03</td>
+<td>56323</td>
+<td align="center">3<br />DDRB</td>
+<td>Data Direction<br />Port B</td>
+<td>Bit X: 0=Input (read only), 1=Output (read and write)
+</td></tr>
+<tr>
+<td>$DC04</td>
+<td>56324</td>
+<td align="center">4<br />TA LO</td>
+<td>Timer A<br />Low Byte</td>
+<td>Read: actual value Timer A (Low Byte)<br />
+<p>Writing: Set latch of Timer A (Low Byte)
+</p>
+</td></tr>
+<tr>
+<td>$DC05</td>
+<td>56325</td>
+<td align="center">5<br />TA HI</td>
+<td>Timer A<br />High Byte</td>
+<td>Read: actual value Timer A (High Byte)<br />
+<p>Writing: Set latch of timer A (High Byte) - if the timer is stopped, the high-byte will automatically be re-set as well
+</p>
+</td></tr>
+<tr>
+<td>$DC06</td>
+<td>56326</td>
+<td align="center">6<br />TB LO</td>
+<td>Timer B<br />Low Byte</td>
+<td>Read: actual value Timer B (Low Byte)<br />
+<p>Writing: Set latch of Timer B (Low Byte)
+</p>
+</td></tr>
+<tr>
+<td>$DC07</td>
+<td>56327</td>
+<td align="center">7<br />TB HI</td>
+<td>Timer B<br />High Byte</td>
+<td>Read: actual value Timer B (High Byte)<br />
+<p>Writing: Set latch of timer B (High Byte) - if the timer is stopped, the high-byte will automatically be re-set as well
+</p>
+</td></tr>
+<tr>
+<td>$DC08</td>
+<td>56328</td>
+<td align="center">8<br />TOD 10THS</td>
+<td>Real Time Clock<br />1/10s</td>
+<td><b>Read:</b><br />
+<p>Bit 0..3: Tenth seconds in BCD-format ($0-$9)<br />
+Bit 4..7: always 0<br />
+<b>Writing:</b><br />
+Bit 0..3: if CRB-Bit7=0: Set the tenth seconds in BCD-format<br />
+Bit 0..3: if CRB-Bit7=1: Set the tenth seconds of the alarm time in BCD-format
+</p>
+</td></tr>
+<tr>
+<td>$DC09</td>
+<td>56329</td>
+<td align="center">9<br />TOD SEC</td>
+<td>Real Time Clock<br />Seconds</td>
+<td>Bit 0..3: Single seconds in BCD-format ($0-$9)<br />
+<p>Bit 4..6: Ten seconds in BCD-format ($0-$5)<br />
+Bit 7: always 0
+</p>
+</td></tr>
+<tr>
+<td>$DC0A</td>
+<td>56330</td>
+<td align="center">10<br />TOD MIN</td>
+<td>Real Time Clock<br />Minutes</td>
+<td>Bit 0..3: Single minutes in BCD-format( $0-$9)<br />
+<p>Bit 4..6: Ten minutes in BCD-format ($0-$5)<br />
+Bit 7: always 0
+</p>
+</td></tr>
+<tr>
+<td>$DC0B</td>
+<td>56331</td>
+<td align="center">11<br />TOD HR</td>
+<td>Real Time Clock<br />Hours</td>
+<td>Bit 0..3: Single hours in BCD-format ($0-$9)<br />
+<p>Bit 4..6: Ten hours in BCD-format ($0-$5)<br />
+Bit 7: Differentiation AM/PM, 0=AM, 1=PM<br />
+Writing into this register stops TOD, until register 8 (<i>TOD 10THS</i>) will be read.
+</p>
+</td></tr>
+<tr>
+<td>$DC0C</td>
+<td>56332</td>
+<td align="center">12<br />SDR</td>
+<td>Serial<br />shift register</td>
+<td>The byte within this register will be shifted bitwise to or from the SP-pin with every positive slope at the CNT-pin.
+</td></tr>
+<tr>
+<td>$DC0D</td>
+<td>56333</td>
+<td align="center">13<br />ICR</td>
+<td>Interrupt Control<br />and status</td>
+<td>CIA1 is connected to the <a href="/wiki/IRQ" class="mw-redirect" title="IRQ">IRQ</a>-Line.<br />
+<p><b>Read:</b> (Bit0..4 = INT DATA, Origin of the interrupt)<br />
+Bit 0: 1 = Underflow Timer A<br />
+Bit 1: 1 = Underflow Timer B<br />
+Bit 2: 1 = Time of day and alarm time is equal<br />
+Bit 3: 1 = SDR full or empty, so full byte was transferred, depending of operating mode <a href="/wiki/Serial_Bus" class="mw-redirect" title="Serial Bus">serial bus</a><br />
+Bit 4: 1 = <b>IRQ</b> Signal occured at FLAG-pin (<a href="/wiki/Cassette_port" class="mw-redirect" title="Cassette port">cassette port</a> Data input, <a href="/wiki/Serial_Bus" class="mw-redirect" title="Serial Bus">serial bus</a> SRQ IN)<br />
+Bit 5..6: always 0<br />
+Bit 7: 1 = <b>IRQ</b> An interrupt occured, so at least one bit of INT MASK and INT DATA is set in both registers.<br />
+Flags will be cleared after reading the register!<br />
+<b>Write:</b> (Bit 0..4 = INT MASK, Interrupt mask)<br />
+Bit 0: 1 = Interrupt release through timer A underflow<br />
+Bit 1: 1 = Interrupt release through timer B underflow<br />
+Bit 2: 1 = Interrupt release if clock=alarmtime<br />
+Bit 3: 1 = Interrupt release if a complete byte has been received/sent.<br />
+Bit 4: 1 = Interrupt release if a positive slope occurs at the FLAG-Pin.<br />
+Bit 5..6: unused<br />
+Bit 7: Source bit. 0 = set bits 0..4 are <i>clearing</i> the according mask bit. 1 = set bits 0..4 are <i>setting</i> the according mask bit. If all bits 0..4 are cleared, there will be no change to the mask.<br />
+</p>
+</td></tr>
+<tr>
+<td>$DC0E</td>
+<td>56334</td>
+<td align="center">14<br />CRA</td>
+<td>Control Timer A</td>
+<td>Bit 0: 0 = Stop timer; 1 = Start timer<br />
+<p>Bit 1: 1 = Indicates a timer underflow at port B in bit 6.<br />
+Bit 2: 0 = Through a timer overflow, bit 6 of port B will get high for one cycle , 1 = Through a timer underflow, bit 6 of port B will be inverted<br />
+Bit 3: 0 = Timer-restart after underflow (latch will be reloaded), 1 = Timer stops after underflow.<br />
+Bit 4: 1 = Load latch into the timer once.<br />
+Bit 5: 0 = Timer counts system cycles, 1 = Timer counts positive slope at CNT-pin<br />
+Bit 6: Direction of the serial shift register, 0 = SP-pin is input (read), 1 = SP-pin is output (write)<br />
+Bit 7: Real Time Clock, 0 = 60 Hz, 1 = 50 Hz<br />
+</p>
+</td></tr>
+<tr>
+<td>$DC0F</td>
+<td>56335</td>
+<td align="center">15<br />CRB</td>
+<td>Control Timer B</td>
+<td>Bit 0: 0 = Stop timer; 1 = Start timer<br />
+<p>Bit 1: 1 = Indicates a timer underflow at port B in bit 7.<br />
+Bit 2: 0 = Through a timer overflow, bit 7 of port B will get high for one cycle , 1 = Through a timer underflow, bit 7 of port B will be inverted<br />
+Bit 3: 0 = Timer-restart after underflow (latch will be reloaded), 1 = Timer stops after underflow.<br />
+Bit 4: 1 = Load latch into the timer once.<br />
+Bit 5..6:<br />
+</p>
+<ul><li>%00 = Timer counts System cycle<br /></li>
+<li>%01 = Timer counts positive slope on CNT-pin<br /></li>
+<li>%10 = Timer counts underflow of timer A<br /></li>
+<li>%11 = Timer counts underflow of timer A if the CNT-pin is high<br /></li></ul>
+<p>Bit 7: 0 = Writing into the TOD register sets the clock time, 1 = Writing into the TOD register sets the alarm time.
+</p>
+</td></tr>
+<tr>
+<td>$DC10-$DCFF</td>
+<td>56336-56575</td>
+<td>-</td>
+<td>-</td>
+<td>The CIA 1 register are mirrored each 16 Bytes
+</td></tr></tbody></table>
+<h3><span class="mw-headline" id="CIA_2">CIA 2</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=CIA&amp;veaction=edit&amp;section=5" title="Edit section: CIA 2" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=CIA&amp;action=edit&amp;section=5" title="Edit section&#39;s source code: CIA 2">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<p>The second CIA-chip is identical to the first. Therefore in the following table are only entries which are specific to the usage in the C64.
+</p>
+<table class="wikitable">
+
+
+<tbody><tr>
+<td colspan="5"><b>Address range:</b> $DD00-$DDFF, 56576-56831 <b>Tasks:</b> Serial bus, RS-232, VIC memory, NMI control
+</td></tr>
+<tr>
+<th>Address<br />Hex
+</th>
+<th>Address<br />Dec
+</th>
+<th>Register
+</th>
+<th>Function
+</th>
+<th>Remark
+</th></tr>
+<tr>
+<td>$DD00</td>
+<td>56576</td>
+<td align="center">0<br />PRA</td>
+<td>Data Port A</td>
+<td>Bit 0..1: Select the position of the <a href="/wiki/VIC" title="VIC">VIC</a>-memory<br />
+<ul><li>%00, 0: Bank 3: $C000-$FFFF, 49152-65535<br /></li>
+<li>%01, 1: Bank 2: $8000-$BFFF, 32768-49151<br /></li>
+<li>%10, 2: Bank 1: $4000-$7FFF, 16384-32767<br /></li>
+<li>%11, 3: Bank 0: $0000-$3FFF, 0-16383 (standard)<br /></li></ul>
+<p>Bit 2: <a href="/wiki/RS-232" title="RS-232">RS-232</a>: TXD Output, <a href="/wiki/Userport" class="mw-redirect" title="Userport">userport</a>: Data PA 2 (pin M)<br />
+Bit 3..5: <a href="/wiki/serial_bus" class="mw-redirect" title="serial bus">serial bus</a> Output (0=High/Inactive, 1=Low/Active)<br />
+</p>
+<ul><li>Bit 3: ATN OUT<br /></li>
+<li>Bit 4: CLOCK OUT<br /></li>
+<li>Bit 5: DATA OUT<br /></li></ul>
+<p>Bit 6..7: <a href="/wiki/serial_bus" class="mw-redirect" title="serial bus">serial bus</a> Input (0=Low/Active, 1=High/Inactive)<br />
+</p>
+<ul><li>Bit 6: CLOCK IN<br /></li>
+<li>Bit 7: DATA IN</li></ul>
+</td></tr>
+<tr>
+<td>$DD01</td>
+<td>56577</td>
+<td align="center">1<br />PRB</td>
+<td>Data Port B</td>
+<td>Bit 0..7: <a href="/wiki/Userport" class="mw-redirect" title="Userport">userport</a> Data PB 0-7 (Pins C,D,E,F,H,J,K,L)<br />
+<p>The <a href="/wiki/KERNAL" class="mw-redirect" title="KERNAL">KERNAL</a> offers several RS232-Routines, which use the pins as followed:<br />
+Bit 0, 3..7: <a href="/wiki/RS-232" title="RS-232">RS-232</a>: <b>reading</b><br />
+</p>
+<ul><li>Bit 0: RXD<br /></li>
+<li>Bit 3: RI<br /></li>
+<li>Bit 4: DCD<br /></li>
+<li>Bit 5: User port pin J<br /></li>
+<li>Bit 6: CTS<br /></li>
+<li>Bit 7: DSR<br /></li></ul>
+<p>Bit 1..5: <a href="/wiki/RS-232" title="RS-232">RS-232</a>: <b>writing</b><br />
+</p>
+<ul><li>Bit 1: RTS<br /></li>
+<li>Bit 2: DTR<br /></li>
+<li>Bit 3: RI<br /></li>
+<li>Bit 4: DCD<br /></li>
+<li>Bit 5: User port pin J</li></ul>
+</td></tr>
+<tr>
+<td>$DD02</td>
+<td>56578</td>
+<td align="center">2<br />DDRA</td>
+<td>Data direction<br />Port A</td>
+<td>see CIA 1
+</td></tr>
+<tr>
+<td>$DD03</td>
+<td>56579</td>
+<td align="center">3<br />DDRB</td>
+<td>Data direction<br />Port B</td>
+<td>see CIA 1
+</td></tr>
+<tr>
+<td>$DD04</td>
+<td>56580</td>
+<td align="center">4<br />TA LO</td>
+<td>Timer A<br />Low Byte</td>
+<td>see CIA 1
+</td></tr>
+<tr>
+<td>$DD05</td>
+<td>56581</td>
+<td align="center">5<br />TA HI</td>
+<td>Timer A<br />High Byte</td>
+<td>see CIA 1
+</td></tr>
+<tr>
+<td>$DD06</td>
+<td>56582</td>
+<td align="center">6<br />TB LO</td>
+<td>Timer B<br />Low Byte</td>
+<td>see CIA 1
+</td></tr>
+<tr>
+<td>$DD07</td>
+<td>56583</td>
+<td align="center">7<br />TB HI</td>
+<td>Timer B<br />High Byte</td>
+<td>see CIA 1
+</td></tr>
+<tr>
+<td>$DD08</td>
+<td>56584</td>
+<td align="center">8<br />TOD 10THS</td>
+<td>Real Time Clock<br />1/10s</td>
+<td>see CIA 1
+</td></tr>
+<tr>
+<td>$DD09</td>
+<td>56585</td>
+<td align="center">9<br />TOD SEC</td>
+<td>Real Time Clock<br />Seconds</td>
+<td>see CIA 1
+</td></tr>
+<tr>
+<td>$DD0A</td>
+<td>56586</td>
+<td align="center">10<br />TOD MIN</td>
+<td>Real Time Clock<br />Minutes</td>
+<td>see CIA 1
+</td></tr>
+<tr>
+<td>$DD0B</td>
+<td>56587</td>
+<td align="center">11<br />TOD HR</td>
+<td>Real Time Clock<br />Hours</td>
+<td>see CIA 1
+</td></tr>
+<tr>
+<td>$DD0C</td>
+<td>56588</td>
+<td align="center">12<br />SDR</td>
+<td>Serial<br />shift register</td>
+<td>see CIA 1
+</td></tr>
+<tr>
+<td>$DD0D</td>
+<td>56589</td>
+<td align="center">13<br />ICR</td>
+<td>Interrupt control<br />and status</td>
+<td>CIA2 is connected to the <a href="/wiki/NMI" class="mw-redirect" title="NMI">NMI</a>-Line.<br />
+<p>Bit 4: 1 = <b>NMI</b> Signal occured at FLAG-pin (<a href="/wiki/RS-232" title="RS-232">RS-232</a> data received)<br />
+Bit 7: 1 = <b>NMI</b> An interrupt occured, so at least one bit of INT MASK and INT DATA is set in both registers.<br />
+</p>
+</td></tr>
+<tr>
+<td>$DD0E</td>
+<td>56590</td>
+<td align="center">14<br />CRA</td>
+<td>Control Timer A</td>
+<td>see CIA 1
+</td></tr>
+<tr>
+<td>$DD0F</td>
+<td>56591</td>
+<td align="center">15<br />CRB</td>
+<td>Control Timer B</td>
+<td>see CIA 1
+</td></tr></tbody></table>
+<h3><span class="mw-headline" id="Pinout">Pinout</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=CIA&amp;veaction=edit&amp;section=6" title="Edit section: Pinout" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=CIA&amp;action=edit&amp;section=6" title="Edit section&#39;s source code: Pinout">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<table border="2" cellspacing="0" cellpadding="4" rules="all" style="border-color:#aaaaaa; background-color:#f9f9f9; margin:1em 1em 1em 0; border-style:solid; border-width:1px; border-collapse:collapse; empty-cells:show">
+
+
+<tbody><tr>
+<th>
+</th>
+<th>Pin
+</th>
+<th>Description
+</th></tr>
+<tr>
+<td rowspan="16"><span class="mw-default-size" typeof="mw:File"><a href="/wiki/File:CIA_6526_-_Pinbelegung.png" class="mw-file-description"><img src="https://www.c64-wiki.com/images/9/9f/CIA_6526_-_Pinbelegung.png" decoding="async" loading="lazy" width="265" height="413" class="mw-file-element" /></a></span>
+</td>
+<td>V<sub>ss</sub>
+</td>
+<td>Ground connection 0V
+</td></tr>
+<tr>
+<td>PA0 - PA7
+</td>
+<td>I/O-Port A Bit0-7 Bidirectional parallel port
+</td></tr>
+<tr>
+<td>PB0 - PB7
+</td>
+<td>I/O-Port B Bit0-7 Bidirectional parallel port
+</td></tr>
+<tr>
+<td>/PC
+</td>
+<td>Port Control - Handshake output, Low pulse after read/write on port B.
+</td></tr>
+<tr>
+<td>TOD
+</td>
+<td>Time Of Day clock input, either 50Hz or 60Hz input.
+</td></tr>
+<tr>
+<td>V<sub>cc</sub>
+</td>
+<td>5VDC input
+</td></tr>
+<tr>
+<td>/IRQ
+</td>
+<td>Interrupt Request, output to CPU's IRQ input
+</td></tr>
+<tr>
+<td>R/W
+</td>
+<td>High-level = Read (Move data from CIA), Low-level = Write (Move data to CIA)
+</td></tr>
+<tr>
+<td>/CS
+</td>
+<td>Chip Select - low level means active CIA.
+</td></tr>
+<tr>
+<td>/FLAG
+</td>
+<td>Negative edge IRQ input, can be used as handshake for either parallel port.
+</td></tr>
+<tr>
+<td>/phi2
+</td>
+<td>Processor Φ2 clock, data transfers occur only on high signal level.
+</td></tr>
+<tr>
+<td>DB0 - DB7
+</td>
+<td>Bidirectional data bus Bits 0 - 7
+</td></tr>
+<tr>
+<td>/RES
+</td>
+<td>Reset input, low signal initiates CIA.
+</td></tr>
+<tr>
+<td>RS0 - RS3
+</td>
+<td>Register Select -  Used to interface internal registers with bidirectional ports.
+</td></tr>
+<tr>
+<td>SP
+</td>
+<td>Serial Port - bidirectional, internal shift register converts CPU parallel data into serial data and vice-versa.
+</td></tr>
+<tr>
+<td>CNT
+</td>
+<td>Count - Internal timers can count pulses to this input. Can be used for frequency dependent operations.
+</td></tr></tbody></table>
+<h2><span class="mw-headline" id="Failure_Symptoms">Failure Symptoms</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=CIA&amp;veaction=edit&amp;section=7" title="Edit section: Failure Symptoms" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=CIA&amp;action=edit&amp;section=7" title="Edit section&#39;s source code: Failure Symptoms">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p><b>CIA 1</b>
+</p>
+<ul><li>Startup screen normal, but no cursor.</li>
+<li>No keyboard or control port access but cartridge works.</li>
+<li>Partial failure: some keys or joystick positions don't work, one character appears ahead of startup cursor or random characters appear at startup. Blank screen if chip is shorted (remove to check) and chip may get hot to the touch.</li></ul>
+<p><b>CIA 2</b>
+</p>
+<ul><li>Startup screen normal.</li>
+<li>No serial or user port access.</li>
+<li>"File not found" error when drive accessed.</li>
+<li>Cartridge works.</li>
+<li>Characters may show as blocks on startup screen.</li></ul>
+<h2><span class="mw-headline" id="Links">Links</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=CIA&amp;veaction=edit&amp;section=8" title="Edit section: Links" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=CIA&amp;action=edit&amp;section=8" title="Edit section&#39;s source code: Links">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<table border="0" cellspacing="1" style="background-color:transparent">
+<tbody><tr>
+<td><span class="mw-default-size" typeof="mw:File"><span><img src="https://www.c64-wiki.com/images/5/52/WP-W11.png" decoding="async" loading="lazy" width="18" height="11" class="mw-file-element" /></span></span>
+</td>
+<td align="left"><b><a rel="nofollow" class="external text" href="http://en.wikipedia.org/wiki/MOS_Technology_CIA">Wikipedia: MOS_Technology_CIA</a></b>
+</td></tr></tbody></table>
+<ul><li><a rel="nofollow" class="external text" href="http://www.6502.org/documents/datasheets/mos/mos_6526_cia.pdf">MOS 6526 CIA data sheet (PDF Format)</a></li>
+<li><a rel="nofollow" class="external text" href="http://www.unusedino.de/ec64/technical/project64/mapping_c64.html">Mapping the C64</a> - e.g. details about programming the CIA</li>
+<li><a rel="nofollow" class="external text" href="http://cbmmuseum.kuto.de/zusatz_6526_cia.html">The CIA 6526 in the Commodore Computer Online Museum</a> <span class="mw-default-size" typeof="mw:File"><a href="/wiki/File:flag_de_18px.gif" class="mw-file-description" title="Language German"><img alt="Language German" src="https://www.c64-wiki.com/images/c/cf/flag_de_18px.gif" decoding="async" loading="lazy" width="18" height="11" class="mw-file-element" /></a></span></li></ul>
+<div style="margin-top:24px; text-align:center; padding:5px 0px 5px 0px; background-color:#eeeeee; border:1px solid #bbbbbb;">
+<p><b><a href="/wiki/Hardware_internals_of_the_C64" title="Hardware internals of the C64">Hardware internals of the C64</a> · <a href="/wiki/Portal:Hardware" title="Portal:Hardware">Hardware portal</a></b><br />
+<b>Components of the C64: <a href="/wiki/MOS_6510" class="mw-redirect" title="MOS 6510">CPU</a> · <a href="/wiki/VIC" title="VIC">VIC</a> · <a href="/wiki/SID" title="SID">SID</a> · <a class="mw-selflink selflink">CIA</a> · <a href="/wiki/PLA_(C64_chip)" title="PLA (C64 chip)">PLA</a> · <a href="/wiki/RAM" title="RAM">RAM</a> · <a href="/wiki/ROM" title="ROM">ROM</a> · <a href="/wiki/Color_RAM" title="Color RAM">Color RAM</a></b><br />
+</p>
+<b>Interfaces of the C64: <a href="/wiki/Control_Port" title="Control Port">Control Port</a> · <a href="/wiki/Expansion_Port" title="Expansion Port">Expansion Port</a> · <a href="/wiki/Userport" class="mw-redirect" title="Userport">Userport</a> · <a href="/wiki/Cassette_Port" title="Cassette Port">Cassette Port</a> · <a href="/wiki/Power_Supply_Connector" title="Power Supply Connector">Power Supply Connector</a> · <a href="/wiki/A/V_Jack" title="A/V Jack">A/V Jack</a> · <a href="/wiki/RF_Jack" title="RF Jack">RF Jack</a> · <a href="/wiki/Serial_Port" title="Serial Port">Serial Port</a></b></div>
+<!-- 
+NewPP limit report
+Cached time: 20260927045315
+Cache expiry: 86400
+Reduced expiry: false
+Complications: [show‐toc]
+CPU time usage: 0.032 seconds
+Real time usage: 0.034 seconds
+Preprocessor visited node count: 81/1000000
+Post‐expand include size: 1063/2097152 bytes
+Template argument size: 36/2097152 bytes
+Highest expansion depth: 3/100
+Expensive parser function count: 0/100
+Unstrip recursion depth: 0/20
+Unstrip post‐expand size: 0/5000000 bytes
+-->
+<!--
+Transclusion expansion time report (%,ms,calls,template)
+100.00%    4.275      1 -total
+ 22.88%    0.978      2 Template:Wikitable
+ 20.00%    0.855      1 Template:Hardware_Assembly_of_the_C64
+ 16.84%    0.720      1 Template:Wikipedia
+ 16.70%    0.714      1 Template:DE
+ 16.40%    0.701      1 Template:prettytable
+-->
+
+<!-- Saved in parser cache with key c64?hwiki?hen-wiki_:pcache:idhash:2477-0!canonical!svUser=0!asDate=20260927 and timestamp 20260927045315 and revision id 43997. Rendering was triggered because: page-view
+ -->
+</div>
+</div>
+</body></html>

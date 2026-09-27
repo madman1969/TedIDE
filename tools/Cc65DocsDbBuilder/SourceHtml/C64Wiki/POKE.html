@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<!-- From C64-Wiki (https://www.c64-wiki.com/wiki/POKE), revision 37086, last edited 11 June 2021, at 13:33.
+     Content is available under the GNU Free Documentation License - see c64wiki/licence.
+     Only the article body is kept; retrieved 2026-09-27 for Tedide's Doc Viewer. -->
+<html><head><meta charset="utf-8"><title>POKE</title>
+<meta name="c64wiki-page" content="POKE"><meta name="c64wiki-revision" content="37086"><meta name="c64wiki-edited" content="11 June 2021, at 13:33">
+</head><body>
+<div class="mw-content-ltr mw-parser-output" lang="en" dir="ltr"><table border="2" cellspacing="0" cellpadding="4" rules="all" style="float:right; clear:right; margin:1em 1em 1em 2em; border-style:solid; border-width:1px; border-collapse:collapse; empty-cells:show">
+
+
+<tbody><tr>
+<td colspan="2" align="center" bgcolor="#ccccff"><b>BASIC keyword</b>
+</td></tr>
+<tr>
+<td bgcolor="#ffffff">Keyword:</td>
+<td bgcolor="#ffffff"><b>POKE</b>
+</td></tr>
+<tr>
+<td bgcolor="#ffffff"><a href="/wiki/BASIC_keyword_abbreviation" title="BASIC keyword abbreviation">Abbreviation</a>:</td>
+<td bgcolor="#ffffff"><b>P Shift+O</b>
+</td></tr>
+<tr>
+<td bgcolor="#ffffff">Type:</td>
+<td bgcolor="#ffffff">Command
+</td></tr>
+<tr>
+<td bgcolor="#ffffff"><a href="/wiki/BASIC_token" title="BASIC token">Token code</a>:</td>
+<td bgcolor="#ffffff">151/$97
+</td></tr>
+<tr>
+<td bgcolor="#ffffff">Handling routine<br />in <a href="/wiki/BASIC_ROM" title="BASIC ROM">BASIC ROM</a>:</td>
+<td bgcolor="#ffffff">47140&#8211;47148<br />$B824&#8211;B82C
+</td></tr>
+<tr>
+<td bgcolor="#ffffff" colspan="2" align="center"><a href="/wiki/Category:BASIC-Command" title="Category:BASIC-Command">List of all BASIC keywords</a>
+</td></tr></tbody></table>
+<p><br />
+<i>Remark: This article describes the BASIC command <b>POKE</b> in <a href="/wiki/BASIC" title="BASIC">BASIC</a> V2 at the <a href="/wiki/C64" title="C64">Commodore 64</a>.</i>
+</p>
+<pre><b>Typ</b>: Command
+General <a href="/wiki/Programming-Syntax" class="mw-redirect" title="Programming-Syntax">Programming-Syntax</a>: <b>POKE &lt;Memory address&gt;,&lt;number&gt;</b>
+</pre>
+<p>The BASIC command <b>POKE</b> changes the content of any address in the <a href="/wiki/memory_map" class="mw-redirect" title="memory map">memory address</a>, ranging from 0 to 65535, to the given byte value in the range 0 through 255. If either number is outside these limits, the 64 will display the error message <b>?ILLEGAL QUANTITY &#160;ERROR IN line</b>.
+</p><p><b>Caution:</b> A misplaced POKE may cause the C-64 to lock up, or garble or delete the program currently in memory. To restore a locked-up C-64 without a <a href="/wiki/Reset" class="mw-redirect" title="Reset">reset</a> button fitted, one <i>has</i> to momentarily turn off the power, thereby losing any program or data in RAM!
+</p>
+<h2><span class="mw-headline" id="Examples">Examples</span></h2>
+<p><code>POKE 53280,1</code> <i>The <a href="/wiki/screen_frame" class="mw-redirect" title="screen frame">screen frame</a> color will be changed into white</i><br />
+<code>F1=53281: W=1: POKE F1,W</code> <i>The <a href="/wiki/background_color" class="mw-redirect" title="background color">background color</a> will be changed into white over variables</i><br />
+<code>POKE 53281, <a href="/wiki/PEEK" title="PEEK">PEEK</a> (53280)</code> <i>The background color is set to the same color as the screenframe color</i><br />
+<code>POKE 788,52</code> <i>Deactivate &lt;<a href="/wiki/RUN/STOP" title="RUN/STOP">RUN/STOP</a>&gt; and also halts TI$</i><br />
+<code>POKE 808,225</code> <i>Deactivated the key combination &lt;RUN/STOP&gt;+&lt;RESTORE&gt; and makes TI$ unusable</i><br />
+<code>POKE 775,119</code> <i>LIST-Command will be blocked</i>
+</p>
+<h2><span class="mw-headline" id="ROM_details">ROM details</span></h2>
+<p>POKE is handled in BASIC ROM at 47140&#8211;47148/$B824&#8211;B82C: It uses another subroutine, <a href="/index.php?title=GETPAR&amp;action=edit&amp;redlink=1" class="new" title="GETPAR (page does not exist)">GETPAR</a>, to read the two parameters of the POKE command as a 16-bit unsigned integer and a byte, respectively. The 16-bit address comes out in a <a href="/wiki/Zeropage" title="Zeropage">zeropage</a> <a href="/index.php?title=Pointer&amp;action=edit&amp;redlink=1" class="new" title="Pointer (page does not exist)">pointer</a>, and so the short POKE handling routine (a mere 9 bytes long) simply sets the <a href="/wiki/Y_index_register" class="mw-redirect" title="Y index register">Y index register</a> to zero and uses an <a href="/wiki/Indirect-indexed_addressing" title="Indirect-indexed addressing">indirect indexed</a> STA to store the given byte in the designated address.
+</p><p>If POKE given a parameter to the BASIC ROM region, the write will instead be redirected to the underlying RAM. This may be used to copy the ROM into RAM in order to a user's own version.
+</p><p>Also see the BASIC-Command <a href="/wiki/PEEK" title="PEEK">PEEK</a>.
+</p>
+<div style="margin: 0px; padding: 2px; border: 1px solid #aaaaaa; text-align: center; border-collapse: collapse; font-size: 95%; clear:both">
+<div style="height: 1.6em; font-weight: bold; font-size: 100%; background-color: #efefef"><a href="/wiki/BASIC" title="BASIC">BASIC</a> V2.0 (second release) Commands</div>
+<div style="font-size: 100%">
+<p><a href="/wiki/ABS" title="ABS">ABS</a>&#160;&#124; <a href="/wiki/AND_(BASIC)" title="AND (BASIC)">AND</a>&#160;&#124; <a href="/wiki/ASC" title="ASC">ASC</a>&#160;&#124; <a href="/wiki/ATN" title="ATN">ATN</a>&#160;&#124; <a href="/wiki/CHR$" title="CHR$">CHR$</a>&#160;&#124; <a href="/wiki/CLOSE" title="CLOSE">CLOSE</a>&#160;&#124; <a href="/wiki/CLR" title="CLR">CLR</a>&#160;&#124; <a href="/wiki/CMD" title="CMD">CMD</a>&#160;&#124; <a href="/wiki/CONT" title="CONT">CONT</a>&#160;&#124; <a href="/wiki/COS" title="COS">COS</a>&#160;&#124; <a href="/wiki/DATA" title="DATA">DATA</a>&#160;&#124; <a href="/wiki/DEF" title="DEF">DEF</a>&#160;&#124; <a href="/wiki/DIM" title="DIM">DIM</a>&#160;&#124; <a href="/wiki/END" title="END">END</a>&#160;&#124; <a href="/wiki/EXP" title="EXP">EXP</a>&#160;&#124; <a href="/wiki/FN" title="FN">FN</a>&#160;&#124; <a href="/wiki/FOR" title="FOR">FOR</a>&#160;&#124; <a href="/wiki/FRE" title="FRE">FRE</a>&#160;&#124; <a href="/wiki/GET" title="GET">GET</a>&#160;&#124; <a href="/wiki/GET(hash)" title="GET(hash)">GET#</a>&#160;&#124; <a href="/wiki/GOSUB" title="GOSUB">GOSUB</a>&#160;&#124; <a href="/wiki/GOTO" title="GOTO">GOTO</a>&#160;&#124; <a href="/wiki/IF" title="IF">IF</a>&#160;&#124; <a href="/wiki/INPUT" title="INPUT">INPUT</a>&#160;&#124; <a href="/wiki/INPUT(hash)" title="INPUT(hash)">INPUT#</a>&#160;&#124; <a href="/wiki/INT" title="INT">INT</a>&#160;&#124; <a href="/wiki/LEFT$" title="LEFT$">LEFT$</a>&#160;&#124; <a href="/wiki/LEN" title="LEN">LEN</a>&#160;&#124; <a href="/wiki/LET" title="LET">LET</a>&#160;&#124; <a href="/wiki/LIST" title="LIST">LIST</a>&#160;&#124; <a href="/wiki/LOAD" title="LOAD">LOAD</a>&#160;&#124; <a href="/wiki/LOG" title="LOG">LOG</a>&#160;&#124; <a href="/wiki/MID$" title="MID$">MID$</a>&#160;&#124; <a href="/wiki/NEW" title="NEW">NEW</a>&#160;&#124; <a href="/wiki/NEXT" title="NEXT">NEXT</a>&#160;&#124; <a href="/wiki/NOT" title="NOT">NOT</a>&#160;&#124; <a href="/wiki/ON" title="ON">ON</a>&#160;&#124; <a href="/wiki/OPEN" title="OPEN">OPEN</a>&#160;&#124; <a href="/wiki/OR" title="OR">OR</a>&#160;&#124; <a href="/wiki/PEEK" title="PEEK">PEEK</a>&#160;&#124; <a href="/wiki/%CF%80" class="mw-redirect" title="π">π</a>&#160;&#124; <a class="mw-selflink selflink">POKE</a>&#160;&#124; <a href="/wiki/POS" title="POS">POS</a>&#160;&#124; <a href="/wiki/PRINT" title="PRINT">PRINT</a>&#160;&#124; <a href="/wiki/PRINT(hash)" title="PRINT(hash)">PRINT#</a>&#160;&#124; <a href="/wiki/READ" title="READ">READ</a>&#160;&#124; <a href="/wiki/REM" title="REM">REM</a>&#160;&#124; <a href="/wiki/RESTORE_(BASIC)" title="RESTORE (BASIC)">RESTORE</a>&#160;&#124; <a href="/wiki/RETURN" title="RETURN">RETURN</a>&#160;&#124; <a href="/wiki/RIGHT$" title="RIGHT$">RIGHT$</a>&#160;&#124; <a href="/wiki/RND" title="RND">RND</a>&#160;&#124; <a href="/wiki/RUN_(BASIC)" title="RUN (BASIC)">RUN</a>&#160;&#124; <a href="/wiki/SAVE" title="SAVE">SAVE</a>&#160;&#124; <a href="/wiki/SGN" title="SGN">SGN</a>&#160;&#124; <a href="/wiki/SIN" title="SIN">SIN</a>&#160;&#124; <a href="/wiki/SPC" class="mw-redirect" title="SPC">SPC</a>&#160;&#124; <a href="/wiki/SQR" title="SQR">SQR</a>&#160;&#124; <a href="/wiki/STATUS" title="STATUS">STATUS/ST</a>&#160;&#124; <a href="/wiki/STEP" title="STEP">STEP</a>&#160;&#124; <a href="/wiki/STOP" title="STOP">STOP</a>&#160;&#124; <a href="/wiki/STR$" title="STR$">STR$</a>&#160;&#124; <a href="/wiki/SYS" title="SYS">SYS</a>&#160;&#124; <a href="/wiki/TAB" class="mw-redirect" title="TAB">TAB</a>&#160;&#124; <a href="/wiki/TAN" title="TAN">TAN</a>&#160;&#124; <a href="/wiki/THEN" title="THEN">THEN</a>&#160;&#124; <a href="/wiki/TIME" title="TIME">TIME/TI</a>&#160;&#124; <a href="/wiki/TIME$" title="TIME$">TIME$/TI$</a>&#160;&#124; <a href="/wiki/TO" title="TO">TO</a>&#160;&#124; <a href="/wiki/USR" title="USR">USR</a>&#160;&#124; <a href="/wiki/VAL" title="VAL">VAL</a>&#160;&#124; <a href="/wiki/VERIFY" title="VERIFY">VERIFY</a>&#160;&#124; <a href="/wiki/WAIT" title="WAIT">WAIT</a>
+</p>
+</div>
+<div style="margin: 0px; padding: 0px; line-height: 1px; clear: both">&#160;</div>
+</div> 
+<!-- 
+NewPP limit report
+Cached time: 20260927050554
+Cache expiry: 86400
+Reduced expiry: false
+Complications: []
+CPU time usage: 0.017 seconds
+Real time usage: 0.018 seconds
+Preprocessor visited node count: 52/1000000
+Post‐expand include size: 4830/2097152 bytes
+Template argument size: 1681/2097152 bytes
+Highest expansion depth: 4/100
+Expensive parser function count: 0/100
+Unstrip recursion depth: 0/20
+Unstrip post‐expand size: 0/5000000 bytes
+-->
+<!--
+Transclusion expansion time report (%,ms,calls,template)
+100.00%    2.993      1 -total
+ 61.55%    1.842      1 Template:Navigation_BASIC
+ 32.80%    0.982      1 Template:BASIC_keyword
+ 27.87%    0.834      1 Template:Navigation_without_Image
+-->
+
+<!-- Saved in parser cache with key c64?hwiki?hen-wiki_:pcache:idhash:1595-0!canonical!svUser=0!asDate=20260927 and timestamp 20260927050554 and revision id 37086. Rendering was triggered because: page-view
+ -->
+</div>
+</div>
+</body></html>

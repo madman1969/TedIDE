@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<!-- From C64-Wiki (https://www.c64-wiki.com/wiki/Memory_Map), revision 45322, last edited 1 July 2026, at 02:00.
+     Content is available under the GNU Free Documentation License - see c64wiki/licence.
+     Only the article body is kept; retrieved 2026-09-27 for Tedide's Doc Viewer. -->
+<html><head><meta charset="utf-8"><title>Memory Map</title>
+<meta name="c64wiki-page" content="Memory_Map"><meta name="c64wiki-revision" content="45322"><meta name="c64wiki-edited" content="1 July 2026, at 02:00">
+</head><body>
+<div class="mw-content-ltr mw-parser-output" lang="en" dir="ltr"><p>The following article shows a short overview of the <a href="/wiki/C64" title="C64">C64</a> <b>memory map</b> (pages and memory addresses) as seen by its <a href="/wiki/MOS_6510" class="mw-redirect" title="MOS 6510">CPU</a>.
+The address space may look different from the view of other chips such as the <a href="/wiki/VIC" title="VIC">VIC</a>.
+</p><p>This overview shows the status after power on of the C64 in the standard memory configuration ($37/55 in memory address $01, no cartridge).
+</p><p>Detailed descriptions of every memory area can be found in the associated articles.
+</p><p>The memory management is implemented mostly by the C64 <a href="/wiki/PLA_(C64-Chip)" class="mw-redirect" title="PLA (C64-Chip)">PLA</a>.
+</p>
+<div id="toc" class="toc" role="navigation" aria-labelledby="mw-toc-heading"><input type="checkbox" role="button" id="toctogglecheckbox" class="toctogglecheckbox" style="display:none" /><div class="toctitle" lang="en" dir="ltr"><h2 id="mw-toc-heading">Contents</h2><span class="toctogglespan"><label class="toctogglelabel" for="toctogglecheckbox"></label></span></div>
+<ul>
+<li class="toclevel-1 tocsection-1"><a href="#Overview"><span class="tocnumber">1</span> <span class="toctext">Overview</span></a>
+<ul>
+<li class="toclevel-2 tocsection-2"><a href="#Configurations"><span class="tocnumber">1.1</span> <span class="toctext">Configurations</span></a></li>
+<li class="toclevel-2 tocsection-3"><a href="#ROM_vs_RAM"><span class="tocnumber">1.2</span> <span class="toctext">ROM vs RAM</span></a></li>
+<li class="toclevel-2 tocsection-4"><a href="#Cartridge_ROM"><span class="tocnumber">1.3</span> <span class="toctext">Cartridge ROM</span></a></li>
+<li class="toclevel-2 tocsection-5"><a href="#BASIC_RAM"><span class="tocnumber">1.4</span> <span class="toctext">BASIC RAM</span></a></li>
+<li class="toclevel-2 tocsection-6"><a href="#Memory_Details"><span class="tocnumber">1.5</span> <span class="toctext">Memory Details</span></a></li>
+</ul>
+</li>
+<li class="toclevel-1 tocsection-7"><a href="#RAM_Table"><span class="tocnumber">2</span> <span class="toctext">RAM Table</span></a></li>
+<li class="toclevel-1 tocsection-8"><a href="#ROM_Table"><span class="tocnumber">3</span> <span class="toctext">ROM Table</span></a></li>
+<li class="toclevel-1 tocsection-9"><a href="#I/O_Table"><span class="tocnumber">4</span> <span class="toctext">I/O Table</span></a></li>
+<li class="toclevel-1 tocsection-10"><a href="#Links"><span class="tocnumber">5</span> <span class="toctext">Links</span></a></li>
+</ul>
+</div>
+
+<h2><span class="mw-headline" id="Overview">Overview</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Memory_Map&amp;veaction=edit&amp;section=1" title="Edit section: Overview" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Memory_Map&amp;action=edit&amp;section=1" title="Edit section&#39;s source code: Overview">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<figure class="mw-halign-right" typeof="mw:File/Thumb"><a href="/wiki/File:Memory_Map.png" class="mw-file-description"><img src="https://www.c64-wiki.com/images/thumb/5/51/Memory_Map.png/500px-Memory_Map.png" decoding="async" loading="lazy" width="500" height="347" class="mw-file-element" srcset="https://www.c64-wiki.com/images/thumb/5/51/Memory_Map.png/750px-Memory_Map.png 1.5x, https://www.c64-wiki.com/images/thumb/5/51/Memory_Map.png/1000px-Memory_Map.png 2x" /></a><figcaption>Commodore 64 Memory Map Overview</figcaption></figure>
+<p>The diagram on the right displays the addressable locations, and therefore the likely layout, of all memory within the C64. The following notes are meant to be cursory and provide direction to more detailed accounts.
+</p>
+<h3><span class="mw-headline" id="Configurations">Configurations</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Memory_Map&amp;veaction=edit&amp;section=2" title="Edit section: Configurations" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Memory_Map&amp;action=edit&amp;section=2" title="Edit section&#39;s source code: Configurations">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<p>The default configuration is for KERNAL ROM, I/O, BASIC ROM and the remaining RAM banks to be visible to the CPU. All configurations depend upon the state of latch bits set in the <a href="/wiki/PLA_(C64_chip)" title="PLA (C64 chip)">Programmable Logic Unit (PLA)</a>. The 7 distinct RAM banks are the smallest zones which can be <a href="/wiki/Bank_Switching" title="Bank Switching">bank switched</a>.
+</p>
+<h3><span class="mw-headline" id="ROM_vs_RAM">ROM vs RAM</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Memory_Map&amp;veaction=edit&amp;section=3" title="Edit section: ROM vs RAM" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Memory_Map&amp;action=edit&amp;section=3" title="Edit section&#39;s source code: ROM vs RAM">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<p>If <a href="/wiki/ROM" title="ROM">ROM</a> is visible to the CPU during a write procedure, the <a href="/wiki/ROM" title="ROM">ROM</a> will be read but, any data is written to the underlying <a href="/wiki/RAM" title="RAM">RAM</a>. This principle is particularly significant to understanding how the I/O registers are addressed.
+</p>
+<h3><span class="mw-headline" id="Cartridge_ROM">Cartridge ROM</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Memory_Map&amp;veaction=edit&amp;section=4" title="Edit section: Cartridge ROM" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Memory_Map&amp;action=edit&amp;section=4" title="Edit section&#39;s source code: Cartridge ROM">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<p>If cartridge ROM is present it can be located in up to three addressable locations. However, only two 8 kByte banks can be seen by the CPU at any time.
+</p>
+<h3><span class="mw-headline" id="BASIC_RAM">BASIC RAM</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Memory_Map&amp;veaction=edit&amp;section=5" title="Edit section: BASIC RAM" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Memory_Map&amp;action=edit&amp;section=5" title="Edit section&#39;s source code: BASIC RAM">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<p>The <a href="/wiki/BASIC" title="BASIC">BASIC</a> program storage space crosses the boundaries of RAM zones, sitting between $0800-$9FFF (38911 BASIC bytes)
+</p>
+<h3><span class="mw-headline" id="Memory_Details">Memory Details</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Memory_Map&amp;veaction=edit&amp;section=6" title="Edit section: Memory Details" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Memory_Map&amp;action=edit&amp;section=6" title="Edit section&#39;s source code: Memory Details">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<p>The exact content and purpose of each memory bank can be found in the <a href="#RAM_Table">RAM Table</a>, <a href="#ROM_Table">ROM Table</a> and <a href="#I/O_Table">I/O Table</a> below.
+</p>
+<h2><span class="mw-headline" id="RAM_Table">RAM Table</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Memory_Map&amp;veaction=edit&amp;section=7" title="Edit section: RAM Table" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Memory_Map&amp;action=edit&amp;section=7" title="Edit section&#39;s source code: RAM Table">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<table class="wikitable">
+
+
+<tbody><tr>
+<th>Hex Address
+</th>
+<th>Dec Address
+</th>
+<th>Page
+</th>
+<th>Contents
+</th></tr>
+<tr>
+<td>$0000-$00FF</td>
+<td>0-255</td>
+<td><a href="/wiki/Zeropage" title="Zeropage">Page 0</a></td>
+<td><a href="/wiki/Zeropage" title="Zeropage">Zeropage</a> addressing
+</td></tr>
+<tr>
+<td>$0100-$01FF</td>
+<td>256-511</td>
+<td><a href="/wiki/Page_1" title="Page 1">Page 1</a></td>
+<td><a href="/wiki/Page_1" title="Page 1">Enhanced Zeropage</a> contains the <a href="/wiki/stack" class="mw-redirect" title="stack">stack</a>
+</td></tr>
+<tr>
+<td>$0200-$02FF</td>
+<td>512-767</td>
+<td><a href="/wiki/Page_2" title="Page 2">Page 2</a></td>
+<td>Operating System and <a href="/wiki/BASIC" title="BASIC">BASIC</a> pointers
+</td></tr>
+<tr>
+<td>$0300-$03FF</td>
+<td>768-1023</td>
+<td><a href="/wiki/Page_3" title="Page 3">Page 3</a></td>
+<td>Operating System and <a href="/wiki/BASIC" title="BASIC">BASIC</a> pointers
+</td></tr>
+<tr>
+<td>$0400-$07FF</td>
+<td>1024-2047</td>
+<td><a href="/wiki/Page_4-7" title="Page 4-7">Page 4-7</a></td>
+<td><a href="/wiki/Screen_RAM" title="Screen RAM">Screen Memory</a>
+</td></tr>
+<tr>
+<td>$0800-$9FFF</td>
+<td>2048-40959</td>
+<td><a href="/wiki/BASIC" title="BASIC">Page 8-159</a></td>
+<td>Free <a href="/wiki/BASIC" title="BASIC">BASIC</a> program storage area (38911 bytes)
+</td></tr>
+<tr>
+<td>$A000-$BFFF</td>
+<td>40960-49151</td>
+<td>Page 160-191</td>
+<td>Free <a href="/wiki/machine_language" class="mw-redirect" title="machine language">machine language</a> program storage area (when switched-out with ROM)
+</td></tr>
+<tr>
+<td>$C000-$CFFF</td>
+<td>49152-53247</td>
+<td>Page 192-207</td>
+<td>Free <a href="/wiki/machine_language" class="mw-redirect" title="machine language">machine language</a> program storage area
+</td></tr>
+<tr>
+<td>$D000-$D3FF</td>
+<td>53248-54271</td>
+<td><a href="/wiki/Page_208-211" title="Page 208-211">Page 208-211</a></td>
+<td>
+</td></tr>
+<tr>
+<td>$D400-$D7FF</td>
+<td>54272-54527</td>
+<td>Page 212-215</td>
+<td>
+</td></tr>
+<tr>
+<td>$D800-$DBFF</td>
+<td>55296-56319</td>
+<td>Page 216-219</td>
+<td>
+</td></tr>
+<tr>
+<td>$DC00-$DCFF</td>
+<td>56320-56575</td>
+<td>Page 220</td>
+<td>
+</td></tr>
+<tr>
+<td>$DD00-$DDFF</td>
+<td>56576-56831</td>
+<td>Page 221</td>
+<td>
+</td></tr>
+<tr>
+<td>$DE00-$DFFF</td>
+<td>56832-57343</td>
+<td>Page 222-223</td>
+<td>Reserved for interface extensions
+</td></tr>
+<tr>
+<td>$E000-$FFFF</td>
+<td>57344-65535</td>
+<td>Page 224-255</td>
+<td>Free <a href="/wiki/machine_language" class="mw-redirect" title="machine language">machine language</a> program storage area (when switched-out with ROM)
+</td></tr>
+</tbody></table>
+<h2><span class="mw-headline" id="ROM_Table">ROM Table</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Memory_Map&amp;veaction=edit&amp;section=8" title="Edit section: ROM Table" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Memory_Map&amp;action=edit&amp;section=8" title="Edit section&#39;s source code: ROM Table">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p>Cartridge ROM only becomes resident if attached to the <a href="/wiki/expansion_port" class="mw-redirect" title="expansion port">expansion port</a> on power-up.  It is included for completeness as a record of the addresses it occupies as a <a href="/wiki/ROM" title="ROM">ROM</a> bank.
+</p>
+<table class="wikitable">
+
+
+<tbody><tr>
+<th>Hex Address
+</th>
+<th>Dec Address
+</th>
+<th>Page
+</th>
+<th>Contents
+</th></tr>
+<tr>
+<td>$8000-$9FFF</td>
+<td>32768-40959</td>
+<td>Page 128-159</td>
+<td>Cartridge ROM (low)
+</td></tr>
+<tr>
+<td>$A000-$BFFF</td>
+<td>40960-49151</td>
+<td>Page 160-191</td>
+<td>BASIC interpretor ROM or cartridge ROM (high)
+</td></tr>
+<tr>
+<td>$D000-$DFFF</td>
+<td>53248-57343</td>
+<td>Page 208-223</td>
+<td>Character generator ROM
+</td></tr>
+<tr>
+<td>$E000-$FFFF</td>
+<td>57344-65535</td>
+<td>Page 224-255</td>
+<td><a href="/wiki/KERNAL" class="mw-redirect" title="KERNAL">KERNAL</a> ROM or cartridge ROM (high)
+</td></tr>
+</tbody></table>
+<h2><span id="I.2FO_Table"></span><span class="mw-headline" id="I/O_Table">I/O Table</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Memory_Map&amp;veaction=edit&amp;section=9" title="Edit section: I/O Table" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Memory_Map&amp;action=edit&amp;section=9" title="Edit section&#39;s source code: I/O Table">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<table class="wikitable">
+
+
+<tbody><tr>
+<th>Hex Address
+</th>
+<th>Dec Address
+</th>
+<th>Page
+</th>
+<th>Contents
+</th></tr>
+<tr>
+<td>$0000-$0001</td>
+<td>0-1</td>
+<td>-</td>
+<td><a href="/wiki/MOS_6510" class="mw-redirect" title="MOS 6510">CPU</a> I/O port - see <a href="/wiki/Zeropage" title="Zeropage">Zeropage</a>
+</td></tr>
+<tr>
+<td>$D000-$D3FF</td>
+<td>53248-54271</td>
+<td><a href="/wiki/Page_208-211" title="Page 208-211">Page 208-211</a></td>
+<td><a href="/wiki/Page_208-211" title="Page 208-211">VIC-II registers</a>
+</td></tr>
+<tr>
+<td>$D400-$D7FF</td>
+<td>54272-55295</td>
+<td>Page 212-215</td>
+<td><a href="/wiki/SID" title="SID">SID</a> registers
+</td></tr>
+<tr>
+<td>$D800-$DBFF</td>
+<td>55296-56319</td>
+<td>Page 216-219</td>
+<td><a href="/wiki/Color_RAM" title="Color RAM">Color Memory</a>
+</td></tr>
+<tr>
+<td>$DC00-$DCFF</td>
+<td>56320-56575</td>
+<td>Page 220</td>
+<td><a href="/wiki/CIA" title="CIA">CIA</a> 1
+</td></tr>
+<tr>
+<td>$DD00-$DDFF</td>
+<td>56576-56831</td>
+<td>Page 221</td>
+<td><a href="/wiki/CIA" title="CIA">CIA</a> 2
+</td></tr>
+<tr>
+<td>$DE00-$DEFF</td>
+<td>56832-57087</td>
+<td>Page 222</td>
+<td>I/O 1
+</td></tr>
+<tr>
+<td>$DF00-$DFFF</td>
+<td>57088-57343</td>
+<td>Page 223</td>
+<td>I/O 2
+</td></tr>
+</tbody></table>
+<h2><span class="mw-headline" id="Links">Links</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Memory_Map&amp;veaction=edit&amp;section=10" title="Edit section: Links" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Memory_Map&amp;action=edit&amp;section=10" title="Edit section&#39;s source code: Links">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<ul><li><a rel="nofollow" class="external text" href="http://www.zimmers.net/anonftp/pub/cbm/c64/manuals/mapping-c64.txt">Mapping the Commodore 64</a> on  <a rel="nofollow" class="external text" href="http://www.zimmers.net/commie/index.html">Bo Zimmer's Commodore web pages</a></li>
+<li><a rel="nofollow" class="external text" href="http://unusedino.de/ec64/technical/aay/c64/">All About Your 64</a> texts including complete ROM disassembly and memory map</li></ul>
+<!-- 
+NewPP limit report
+Cached time: 20260927042150
+Cache expiry: 86400
+Reduced expiry: false
+Complications: [show‐toc]
+CPU time usage: 0.022 seconds
+Real time usage: 0.025 seconds
+Preprocessor visited node count: 82/1000000
+Post‐expand include size: 57/2097152 bytes
+Template argument size: 0/2097152 bytes
+Highest expansion depth: 2/100
+Expensive parser function count: 0/100
+Unstrip recursion depth: 0/20
+Unstrip post‐expand size: 0/5000000 bytes
+-->
+<!--
+Transclusion expansion time report (%,ms,calls,template)
+100.00%    1.937      1 -total
+ 90.10%    1.745      3 Template:Wikitable
+-->
+
+<!-- Saved in parser cache with key c64?hwiki?hen-wiki_:pcache:idhash:1562-0!canonical!svUser=0!asDate=20260927 and timestamp 20260927042150 and revision id 45322. Rendering was triggered because: page-view
+ -->
+</div>
+</div>
+</body></html>

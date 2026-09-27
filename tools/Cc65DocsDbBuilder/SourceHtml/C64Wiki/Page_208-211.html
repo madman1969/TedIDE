@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<!-- From C64-Wiki (https://www.c64-wiki.com/wiki/Page_208-211), revision 35310, last edited 2 November 2020, at 15:50.
+     Content is available under the GNU Free Documentation License - see c64wiki/licence.
+     Only the article body is kept; retrieved 2026-09-27 for Tedide's Doc Viewer. -->
+<html><head><meta charset="utf-8"><title>Page 208-211</title>
+<meta name="c64wiki-page" content="Page_208-211"><meta name="c64wiki-revision" content="35310"><meta name="c64wiki-edited" content="2 November 2020, at 15:50">
+</head><body>
+<div class="mw-content-ltr mw-parser-output" lang="en" dir="ltr"><p><b>Page 208-211</b> covers the memory locations <b>53248-54271</b> ($D000-D3FF). This area is wholly reserved for the <a href="/wiki/VIC-II" class="mw-redirect" title="VIC-II">VIC-II</a> Registers.
+</p>
+<h2><span class="mw-headline" id="Addresses">Addresses</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Page_208-211&amp;veaction=edit&amp;section=1" title="Edit section: Addresses" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Page_208-211&amp;action=edit&amp;section=1" title="Edit section&#39;s source code: Addresses">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<table class="wikitable">
+
+    
+<tbody><tr>
+<th>Hex Address
+</th>
+<th>Dec Address
+</th>
+<th>Type
+</th>
+<th>Bit 7
+</th>
+<th>Bit 6
+</th>
+<th>Bit 5
+</th>
+<th>Bit 4
+</th>
+<th>Bit 3
+</th>
+<th>Bit 2
+</th>
+<th>Bit 1
+</th>
+<th>Bit 0
+</th>
+<th>Contents
+</th></tr>
+<tr>
+<td>$D000</td>
+<td>53248</td>
+<td>Register
+</td>
+<td rowspan="1" colspan="8" style="text-align: center;">M0X</td>
+<td>X Coordinate Sprite 0
+</td></tr>
+<tr>
+<td>$D001</td>
+<td>53249</td>
+<td>Register
+</td>
+<td rowspan="1" colspan="8" style="text-align: center;">M0Y</td>
+<td>Y Coordinate Sprite 0
+</td></tr>
+<tr>
+<td>$D002</td>
+<td>53250</td>
+<td>Register
+</td>
+<td rowspan="1" colspan="8" style="text-align: center;">M1X</td>
+<td>X Coordinate Sprite 1
+</td></tr>
+<tr>
+<td>$D003</td>
+<td>53251</td>
+<td>Register
+</td>
+<td rowspan="1" colspan="8" style="text-align: center;">M1Y</td>
+<td>Y Coordinate Sprite 1
+</td></tr>
+<tr>
+<td>$D004</td>
+<td>53252</td>
+<td>Register
+</td>
+<td rowspan="1" colspan="8" style="text-align: center;">M2X</td>
+<td>X Coordinate Sprite 2
+</td></tr>
+<tr>
+<td>$D005</td>
+<td>53253</td>
+<td>Register
+</td>
+<td rowspan="1" colspan="8" style="text-align: center;">M2Y</td>
+<td>Y Coordinate Sprite 2
+</td></tr>
+<tr>
+<td>$D006</td>
+<td>53254</td>
+<td>Register
+</td>
+<td rowspan="1" colspan="8" style="text-align: center;">M3X</td>
+<td>X Coordinate Sprite 3
+</td></tr>
+<tr>
+<td>$D007</td>
+<td>53255</td>
+<td>Register
+</td>
+<td rowspan="1" colspan="8" style="text-align: center;">M3Y</td>
+<td>Y Coordinate Sprite 3
+</td></tr>
+<tr>
+<td>$D008</td>
+<td>53256</td>
+<td>Register
+</td>
+<td rowspan="1" colspan="8" style="text-align: center;">M4X</td>
+<td>X Coordinate Sprite 4
+</td></tr>
+<tr>
+<td>$D009</td>
+<td>53257</td>
+<td>Register
+</td>
+<td rowspan="1" colspan="8" style="text-align: center;">M4Y</td>
+<td>Y Coordinate Sprite 4
+</td></tr>
+<tr>
+<td>$D00A</td>
+<td>53258</td>
+<td>Register
+</td>
+<td rowspan="1" colspan="8" style="text-align: center;">M5X</td>
+<td>X Coordinate Sprite 5
+</td></tr>
+<tr>
+<td>$D00B</td>
+<td>53259</td>
+<td>Register
+</td>
+<td rowspan="1" colspan="8" style="text-align: center;">M5Y</td>
+<td>Y Coordinate Sprite 5
+</td></tr>
+<tr>
+<td>$D00C</td>
+<td>53260</td>
+<td>Register
+</td>
+<td rowspan="1" colspan="8" style="text-align: center;">M6X</td>
+<td>X Coordinate Sprite 6
+</td></tr>
+<tr>
+<td>$D00D</td>
+<td>53261</td>
+<td>Register
+</td>
+<td rowspan="1" colspan="8" style="text-align: center;">M6Y</td>
+<td>Y Coordinate Sprite 6
+</td></tr>
+<tr>
+<td>$D00E</td>
+<td>53262</td>
+<td>Register
+</td>
+<td rowspan="1" colspan="8" style="text-align: center;">M7X</td>
+<td>X Coordinate Sprite 7
+</td></tr>
+<tr>
+<td>$D00F</td>
+<td>53263</td>
+<td>Register
+</td>
+<td rowspan="1" colspan="8" style="text-align: center;">M7Y</td>
+<td>Y Coordinate Sprite 7
+</td></tr>
+<tr>
+<td>$D010</td>
+<td>53264</td>
+<td>Register</td>
+<td>M7X8</td>
+<td>M6X8</td>
+<td>M5X8</td>
+<td>M4X8</td>
+<td>M3X8</td>
+<td>M2X8</td>
+<td>M1X8</td>
+<td>M0X8</td>
+<td>MSBs of X coordinates
+</td></tr>
+<tr>
+<td>$D011</td>
+<td>53265</td>
+<td>Register</td>
+<td>RST8</td>
+<td>ECM</td>
+<td>BMM</td>
+<td>DEN</td>
+<td>RSEL
+</td>
+<td rowspan="1" colspan="3" style="text-align: center;">YSCROLL</td>
+<td>Control register 1
+</td></tr>
+<tr>
+<td>$D012</td>
+<td>53266</td>
+<td>Register
+</td>
+<td rowspan="1" colspan="8" style="text-align: center;">RASTER</td>
+<td>Raster counter
+</td></tr>
+<tr>
+<td>$D013</td>
+<td>53267</td>
+<td>Register
+</td>
+<td rowspan="1" colspan="8" style="text-align: center;">LPX</td>
+<td>Light pen X
+</td></tr>
+<tr>
+<td>$D014</td>
+<td>53268</td>
+<td>Register
+</td>
+<td rowspan="1" colspan="8" style="text-align: center;">LPY</td>
+<td>Light pen Y
+</td></tr>
+<tr>
+<td>$D015</td>
+<td>53269</td>
+<td>Register</td>
+<td>M7E</td>
+<td>M6E</td>
+<td>M5E</td>
+<td>M4E</td>
+<td>M3E</td>
+<td>M2E</td>
+<td>M1E</td>
+<td>M0E</td>
+<td>Sprite enabled
+</td></tr>
+<tr>
+<td>$D016</td>
+<td>53270</td>
+<td>Register</td>
+<td>-</td>
+<td>-</td>
+<td>RES</td>
+<td>MCM</td>
+<td>CSEL
+</td>
+<td rowspan="1" colspan="3" style="text-align: center;">XSCROLL</td>
+<td>Control register 2
+</td></tr>
+<tr>
+<td>$D017</td>
+<td>53271</td>
+<td>Register</td>
+<td>M7YE</td>
+<td>M6YE</td>
+<td>M5YE</td>
+<td>M4YE</td>
+<td>M3YE</td>
+<td>M2YE</td>
+<td>M1YE</td>
+<td>M0YE</td>
+<td>Sprite Y expansion
+</td></tr>
+<tr>
+<td>$D018</td>
+<td>53272</td>
+<td>Register</td>
+<td>VM13</td>
+<td>VM12</td>
+<td>VM11</td>
+<td>VM10</td>
+<td>CB13</td>
+<td>CB12</td>
+<td>CB11</td>
+<td>-</td>
+<td>Memory pointers
+</td></tr>
+<tr>
+<td>$D019</td>
+<td>53273</td>
+<td>Register</td>
+<td>IRQ</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>ILP</td>
+<td>IMMC</td>
+<td>IMBC</td>
+<td>IRST</td>
+<td>Interrupt register
+</td></tr>
+<tr>
+<td>$D01A</td>
+<td>53274</td>
+<td>Register</td>
+<td>IRQ</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>ELP</td>
+<td>EMMC</td>
+<td>EMBC</td>
+<td>ERST</td>
+<td>Interrupt enabled
+</td></tr>
+<tr>
+<td>$D01B</td>
+<td>53275</td>
+<td>Register</td>
+<td>M7DP</td>
+<td>M6DP</td>
+<td>M5DP</td>
+<td>M4DP</td>
+<td>M3DP</td>
+<td>M2DP</td>
+<td>M1DP</td>
+<td>M0DP</td>
+<td>Sprite data priority
+</td></tr>
+<tr>
+<td>$D01C</td>
+<td>53276</td>
+<td>Register</td>
+<td>M7MC</td>
+<td>M6MC</td>
+<td>M5MC</td>
+<td>M4MC</td>
+<td>M3MC</td>
+<td>M2MC</td>
+<td>M1MC</td>
+<td>M0MC</td>
+<td>Sprite multicolour
+</td></tr>
+<tr>
+<td>$D01D</td>
+<td>53277</td>
+<td>Register</td>
+<td>M7XE</td>
+<td>M6XE</td>
+<td>M5XE</td>
+<td>M4XE</td>
+<td>M3XE</td>
+<td>M2XE</td>
+<td>M1XE</td>
+<td>M0XE</td>
+<td>Sprite X expansion
+</td></tr>
+<tr>
+<td>$D01E</td>
+<td>53278</td>
+<td>Register</td>
+<td>M7M</td>
+<td>M6M</td>
+<td>M5M</td>
+<td>M4M</td>
+<td>M3M</td>
+<td>M2M</td>
+<td>M1M</td>
+<td>M0M</td>
+<td>Sprite-sprite collision
+</td></tr>
+<tr>
+<td>$D01F</td>
+<td>53279</td>
+<td>Register</td>
+<td>M7D</td>
+<td>M6D</td>
+<td>M5D</td>
+<td>M4D</td>
+<td>M3D</td>
+<td>M2D</td>
+<td>M1D</td>
+<td>M0D</td>
+<td>Sprite-data collision
+</td></tr>
+<tr>
+<td>$D020</td>
+<td>53280</td>
+<td>Register</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>-
+</td>
+<td rowspan="1" colspan="4" style="text-align: center;">EC</td>
+<td>Border colour
+</td></tr>
+<tr>
+<td>$D021</td>
+<td>53281</td>
+<td>Register</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>-
+</td>
+<td rowspan="1" colspan="4" style="text-align: center;">B0C</td>
+<td>Background colour 0
+</td></tr>
+<tr>
+<td>$D022</td>
+<td>53282</td>
+<td>Register</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>-
+</td>
+<td rowspan="1" colspan="4" style="text-align: center;">B1C</td>
+<td>Background colour 1
+</td></tr>
+<tr>
+<td>$D023</td>
+<td>53283</td>
+<td>Register</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>-
+</td>
+<td rowspan="1" colspan="4" style="text-align: center;">B2C</td>
+<td>Background colour 2
+</td></tr>
+<tr>
+<td>$D024</td>
+<td>53284</td>
+<td>Register</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>-
+</td>
+<td rowspan="1" colspan="4" style="text-align: center;">B3C</td>
+<td>Background colour 3
+</td></tr>
+<tr>
+<td>$D025</td>
+<td>53285</td>
+<td>Register</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>-
+</td>
+<td rowspan="1" colspan="4" style="text-align: center;">MM0</td>
+<td>Sprite multicolour 0
+</td></tr>
+<tr>
+<td>$D026</td>
+<td>53286</td>
+<td>Register</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>-
+</td>
+<td rowspan="1" colspan="4" style="text-align: center;">MM1</td>
+<td>Sprite multicolour 1
+</td></tr>
+<tr>
+<td>$D027</td>
+<td>53287</td>
+<td>Register</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>-
+</td>
+<td rowspan="1" colspan="4" style="text-align: center;">M0C</td>
+<td>Sprite 0 colour
+</td></tr>
+<tr>
+<td>$D028</td>
+<td>53288</td>
+<td>Register</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>-
+</td>
+<td rowspan="1" colspan="4" style="text-align: center;">M1C</td>
+<td>Sprite 1 colour
+</td></tr>
+<tr>
+<td>$D029</td>
+<td>53289</td>
+<td>Register</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>-
+</td>
+<td rowspan="1" colspan="4" style="text-align: center;">M2C</td>
+<td>Sprite 2 colour
+</td></tr>
+<tr>
+<td>$D02A</td>
+<td>53290</td>
+<td>Register</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>-
+</td>
+<td rowspan="1" colspan="4" style="text-align: center;">M3C</td>
+<td>Sprite 3 colour
+</td></tr>
+<tr>
+<td>$D02B</td>
+<td>53291</td>
+<td>Register</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>-
+</td>
+<td rowspan="1" colspan="4" style="text-align: center;">M4C</td>
+<td>Sprite 4 colour
+</td></tr>
+<tr>
+<td>$D02C</td>
+<td>53292</td>
+<td>Register</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>-
+</td>
+<td rowspan="1" colspan="4" style="text-align: center;">M5C</td>
+<td>Sprite 5 colour
+</td></tr>
+<tr>
+<td>$D02D</td>
+<td>53293</td>
+<td>Register</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>-
+</td>
+<td rowspan="1" colspan="4" style="text-align: center;">M6C</td>
+<td>Sprite 6 colour
+</td></tr>
+<tr>
+<td>$D02E</td>
+<td>53294</td>
+<td>Register</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>-
+</td>
+<td rowspan="1" colspan="4" style="text-align: center;">M7C</td>
+<td>Sprite 7 colour
+</td></tr>
+<tr>
+<td>$D02F</td>
+<td>53295</td>
+<td>Register
+</td>
+<td rowspan="1" colspan="8" style="text-align: center;">$FF on reading, write access ignored</td>
+<td>Unused
+</td></tr>
+<tr>
+<td>$D030</td>
+<td>53296</td>
+<td>Register
+</td>
+<td rowspan="1" colspan="8" style="text-align: center;">$FF on reading, write access ignored</td>
+<td>Unused
+</td></tr>
+<tr>
+<td>$D031</td>
+<td>53297</td>
+<td>Register
+</td>
+<td rowspan="1" colspan="8" style="text-align: center;">$FF on reading, write access ignored</td>
+<td>Unused
+</td></tr>
+<tr>
+<td>$D032</td>
+<td>53298</td>
+<td>Register
+</td>
+<td rowspan="1" colspan="8" style="text-align: center;">$FF on reading, write access ignored</td>
+<td>Unused
+</td></tr>
+<tr>
+<td>$D033</td>
+<td>53299</td>
+<td>Register
+</td>
+<td rowspan="1" colspan="8" style="text-align: center;">$FF on reading, write access ignored</td>
+<td>Unused
+</td></tr>
+<tr>
+<td>$D034</td>
+<td>53300</td>
+<td>Register
+</td>
+<td rowspan="1" colspan="8" style="text-align: center;">$FF on reading, write access ignored</td>
+<td>Unused
+</td></tr>
+<tr>
+<td>$D035</td>
+<td>53301</td>
+<td>Register
+</td>
+<td rowspan="1" colspan="8" style="text-align: center;">$FF on reading, write access ignored</td>
+<td>Unused
+</td></tr>
+<tr>
+<td>$D036</td>
+<td>53302</td>
+<td>Register
+</td>
+<td rowspan="1" colspan="8" style="text-align: center;">$FF on reading, write access ignored</td>
+<td>Unused
+</td></tr>
+<tr>
+<td>$D037</td>
+<td>53303</td>
+<td>Register
+</td>
+<td rowspan="1" colspan="8" style="text-align: center;">$FF on reading, write access ignored</td>
+<td>Unused
+</td></tr>
+<tr>
+<td>$D038</td>
+<td>53304</td>
+<td>Register
+</td>
+<td rowspan="1" colspan="8" style="text-align: center;">$FF on reading, write access ignored</td>
+<td>Unused
+</td></tr>
+<tr>
+<td>$D039</td>
+<td>53305</td>
+<td>Register
+</td>
+<td rowspan="1" colspan="8" style="text-align: center;">$FF on reading, write access ignored</td>
+<td>Unused
+</td></tr>
+<tr>
+<td>$D03A</td>
+<td>53306</td>
+<td>Register
+</td>
+<td rowspan="1" colspan="8" style="text-align: center;">$FF on reading, write access ignored</td>
+<td>Unused
+</td></tr>
+<tr>
+<td>$D03B</td>
+<td>53307</td>
+<td>Register
+</td>
+<td rowspan="1" colspan="8" style="text-align: center;">$FF on reading, write access ignored</td>
+<td>Unused
+</td></tr>
+<tr>
+<td>$D03C</td>
+<td>53308</td>
+<td>Register
+</td>
+<td rowspan="1" colspan="8" style="text-align: center;">$FF on reading, write access ignored</td>
+<td>Unused
+</td></tr>
+<tr>
+<td>$D03D</td>
+<td>53309</td>
+<td>Register
+</td>
+<td rowspan="1" colspan="8" style="text-align: center;">$FF on reading, write access ignored</td>
+<td>Unused
+</td></tr>
+<tr>
+<td>$D03E</td>
+<td>53310</td>
+<td>Register
+</td>
+<td rowspan="1" colspan="8" style="text-align: center;">$FF on reading, write access ignored</td>
+<td>Unused
+</td></tr>
+<tr>
+<td>$D03F</td>
+<td>53311</td>
+<td>Register
+</td>
+<td rowspan="1" colspan="8" style="text-align: center;">$FF on reading, write access ignored</td>
+<td>Unused
+</td></tr>
+<tr>
+<td>$D040-$D07F</td>
+<td>53312-53375</td>
+<td>
+</td>
+<td rowspan="1" colspan="9" style="text-align: center;">Same as $D000-$D03F (53248-53311)
+</td></tr>
+<tr>
+<td>$D080-$D0BF</td>
+<td>53376-53439</td>
+<td>
+</td>
+<td rowspan="1" colspan="9" style="text-align: center;">Same as $D000-$D03F (53248-53311)
+</td></tr>
+<tr>
+<td>$D0C0-$D0FF</td>
+<td>53440-53503</td>
+<td>
+</td>
+<td rowspan="1" colspan="9" style="text-align: center;">Same as $D000-$D03F (53248-53311)
+</td></tr>
+<tr>
+<td>$D100-$D13F</td>
+<td>53504-53567</td>
+<td>
+</td>
+<td rowspan="1" colspan="9" style="text-align: center;">Same as $D000-$D03F (53248-53311)
+</td></tr>
+<tr>
+<td>$D140-$D17F</td>
+<td>53568-53631</td>
+<td>
+</td>
+<td rowspan="1" colspan="9" style="text-align: center;">Same as $D000-$D03F (53248-53311)
+</td></tr>
+<tr>
+<td>$D180-$D1BF</td>
+<td>53632-53695</td>
+<td>
+</td>
+<td rowspan="1" colspan="9" style="text-align: center;">Same as $D000-$D03F (53248-53311)
+</td></tr>
+<tr>
+<td>$D1C0-$D1FF</td>
+<td>53696-53759</td>
+<td>
+</td>
+<td rowspan="1" colspan="9" style="text-align: center;">Same as $D000-$D03F (53248-53311)
+</td></tr>
+<tr>
+<td>$D200-$D23F</td>
+<td>53760-53823</td>
+<td>
+</td>
+<td rowspan="1" colspan="9" style="text-align: center;">Same as $D000-$D03F (53248-53311)
+</td></tr>
+<tr>
+<td>$D240-$D27F</td>
+<td>53824-53887</td>
+<td>
+</td>
+<td rowspan="1" colspan="9" style="text-align: center;">Same as $D000-$D03F (53248-53311)
+</td></tr>
+<tr>
+<td>$D280-$D2BF</td>
+<td>53888-53951</td>
+<td>
+</td>
+<td rowspan="1" colspan="9" style="text-align: center;">Same as $D000-$D03F (53248-53311)
+</td></tr>
+<tr>
+<td>$D2C0-$D2FF</td>
+<td>53952-54015</td>
+<td>
+</td>
+<td rowspan="1" colspan="9" style="text-align: center;">Same as $D000-$D03F (53248-53311)
+</td></tr>
+<tr>
+<td>$D300-$D33F</td>
+<td>54016-54079</td>
+<td>
+</td>
+<td rowspan="1" colspan="9" style="text-align: center;">Same as $D000-$D03F (53248-53311)
+</td></tr>
+<tr>
+<td>$D340-$D37F</td>
+<td>54080-54143</td>
+<td>
+</td>
+<td rowspan="1" colspan="9" style="text-align: center;">Same as $D000-$D03F (53248-53311)
+</td></tr>
+<tr>
+<td>$D380-$D3BF</td>
+<td>54144-54207</td>
+<td>
+</td>
+<td rowspan="1" colspan="9" style="text-align: center;">Same as $D000-$D03F (53248-53311)
+</td></tr>
+<tr>
+<td>$D3C0-$D3FF</td>
+<td>54208-54271</td>
+<td>
+</td>
+<td rowspan="1" colspan="9" style="text-align: center;">Same as $D000-$D03F (53248-53311)
+</td></tr>
+</tbody></table>
+<h3><span class="mw-headline" id="Notes">Notes</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Page_208-211&amp;veaction=edit&amp;section=2" title="Edit section: Notes" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Page_208-211&amp;action=edit&amp;section=2" title="Edit section&#39;s source code: Notes">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<ul><li>The bits marked with '-' are not connected and give "1" on reading.</li>
+<li>The registers $d01e and $d01f cannot be written and are automatically cleared on reading.</li>
+<li>The RES bit (bit 5) of register $d016 has no function on the VIC 6567/6569 examined as yet. On the 6566, this bit is used to stop the VIC.</li>
+<li>Bit 7 in register $d011 (RST8) is bit 8 of register $d012. Together they are called "RASTER" in the following. A write access to these bits sets the comparison line for the raster interrupt.</li></ul>
+<!-- 
+NewPP limit report
+Cached time: 20260927071228
+Cache expiry: 86400
+Reduced expiry: false
+Complications: []
+CPU time usage: 0.018 seconds
+Real time usage: 0.019 seconds
+Preprocessor visited node count: 11/1000000
+Post‐expand include size: 19/2097152 bytes
+Template argument size: 0/2097152 bytes
+Highest expansion depth: 2/100
+Expensive parser function count: 0/100
+Unstrip recursion depth: 0/20
+Unstrip post‐expand size: 0/5000000 bytes
+-->
+<!--
+Transclusion expansion time report (%,ms,calls,template)
+100.00%    0.713      1 Template:Wikitable
+100.00%    0.713      1 -total
+-->
+
+<!-- Saved in parser cache with key c64?hwiki?hen-wiki_:pcache:idhash:3914-0!canonical!svUser=0!asDate=20260927 and timestamp 20260927071228 and revision id 35310. Rendering was triggered because: page-view
+ -->
+</div>
+</div>
+</body></html>

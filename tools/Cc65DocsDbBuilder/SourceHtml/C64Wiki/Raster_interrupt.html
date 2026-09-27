@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<!-- From C64-Wiki (https://www.c64-wiki.com/wiki/Raster_interrupt), revision 41551, last edited 6 March 2024, at 11:16.
+     Content is available under the GNU Free Documentation License - see c64wiki/licence.
+     Only the article body is kept; retrieved 2026-09-27 for Tedide's Doc Viewer. -->
+<html><head><meta charset="utf-8"><title>Raster interrupt</title>
+<meta name="c64wiki-page" content="Raster_interrupt"><meta name="c64wiki-revision" content="41551"><meta name="c64wiki-edited" content="6 March 2024, at 11:16">
+</head><body>
+<div class="mw-content-ltr mw-parser-output" lang="en" dir="ltr"><figure class="mw-halign-right" typeof="mw:File/Thumb"><a href="/wiki/File:Intro_afl1970_19011989.jpg" class="mw-file-description"><img src="https://www.c64-wiki.com/images/thumb/2/22/Intro_afl1970_19011989.jpg/300px-Intro_afl1970_19011989.jpg" decoding="async" loading="lazy" width="300" height="211" class="mw-file-element" srcset="https://www.c64-wiki.com/images/thumb/2/22/Intro_afl1970_19011989.jpg/450px-Intro_afl1970_19011989.jpg 1.5x, https://www.c64-wiki.com/images/thumb/2/22/Intro_afl1970_19011989.jpg/600px-Intro_afl1970_19011989.jpg 2x" /></a><figcaption>AFL 1970 intro (19.01.1989): In the middle of the screen a white and blue raster bar is shown.</figcaption></figure>
+<p><b>Raster interrupt</b> is an <a href="/wiki/Interrupt" title="Interrupt">interrupt</a> trigger signal that the <a href="/wiki/VIC-II" class="mw-redirect" title="VIC-II">VIC-II</a> can supply, if desired, to the <a href="/wiki/CPU" title="CPU">CPU</a> whenever the raster in the VIC's video signal reaches a specific line. With a bit of (<a href="/wiki/Machine_code" class="mw-redirect" title="Machine code">machine code</a>) programming, this mechanism can be exploited to perform many kinds of VIC "trickery", like having both text and <a href="/wiki/High-resolution_graphics" class="mw-redirect" title="High-resolution graphics">high-res graphics</a> on screen simultaneously, and displaying more than the eight hardware-supported <a href="/wiki/Sprite" title="Sprite">sprites</a> at once. This method is often used on the <a href="/wiki/C64" title="C64">C64</a>/<a href="/wiki/C128" class="mw-redirect" title="C128">C128</a> for computer games and demos.
+</p><p>Other 8-bit computers such as the <a href="/wiki/Atari" title="Atari">Atari</a> 800, <a href="/wiki/MSX" title="MSX">MSX</a> and <a href="/wiki/Amstrad" title="Amstrad">Amstrad</a> <a href="/wiki/CPC" class="mw-redirect" title="CPC">CPC</a> can also use raster (line) interrupts. The 80 Character mode on the C128/<a href="/index.php?title=VDC&amp;action=edit&amp;redlink=1" class="new" title="VDC (page does not exist)">VDC</a> cannot use this method. 
+</p>
+<div id="toc" class="toc" role="navigation" aria-labelledby="mw-toc-heading"><input type="checkbox" role="button" id="toctogglecheckbox" class="toctogglecheckbox" style="display:none" /><div class="toctitle" lang="en" dir="ltr"><h2 id="mw-toc-heading">Contents</h2><span class="toctogglespan"><label class="toctogglelabel" for="toctogglecheckbox"></label></span></div>
+<ul>
+<li class="toclevel-1 tocsection-1"><a href="#Setting_up_a_raster_interrupt"><span class="tocnumber">1</span> <span class="toctext">Setting up a raster interrupt</span></a></li>
+<li class="toclevel-1 tocsection-2"><a href="#Using_a_single_interrupt_service_routine"><span class="tocnumber">2</span> <span class="toctext">Using a single interrupt service routine</span></a></li>
+<li class="toclevel-1 tocsection-3"><a href="#Using_multiple_interrupt_service_routines"><span class="tocnumber">3</span> <span class="toctext">Using multiple interrupt service routines</span></a></li>
+<li class="toclevel-1 tocsection-4"><a href="#Links"><span class="tocnumber">4</span> <span class="toctext">Links</span></a></li>
+</ul>
+</div>
+
+<p><br clear="all" />
+</p>
+<h2><span class="mw-headline" id="Setting_up_a_raster_interrupt">Setting up a raster interrupt</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Raster_interrupt&amp;veaction=edit&amp;section=1" title="Edit section: Setting up a raster interrupt" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Raster_interrupt&amp;action=edit&amp;section=1" title="Edit section&#39;s source code: Setting up a raster interrupt">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p>By default, the system is set up to receive timer-based signals from <a href="/index.php?title=CIA-1&amp;action=edit&amp;redlink=1" class="new" title="CIA-1 (page does not exist)">CIA-1</a>'s Timer A, but instead the VIC needs to be configured to deliver raster interrupt signals. This is handled by a small initialization routine:
+</p>
+<pre>Init       SEI                 &#160;; set interrupt bit, make the CPU ignore interrupt requests
+           LDA #%01111111      &#160;; switch off interrupt signals from CIA-1
+           STA <a href="/index.php?title=56333&amp;action=edit&amp;redlink=1" class="new" title="56333 (page does not exist)">$DC0D</a>
+
+           AND <a href="/wiki/53265" title="53265">$D011</a>           &#160;; clear most significant bit of VIC's raster register
+           STA $D011
+
+           STA <a href="/index.php?title=56333&amp;action=edit&amp;redlink=1" class="new" title="56333 (page does not exist)">$DC0D</a>           &#160;; acknowledge pending interrupts from CIA-1
+           STA <a href="/index.php?title=56589&amp;action=edit&amp;redlink=1" class="new" title="56589 (page does not exist)">$DD0D</a>           &#160;; acknowledge pending interrupts from CIA-2
+
+           LDA #210            &#160;; set rasterline where interrupt shall occur
+           STA <a href="/index.php?title=53266&amp;action=edit&amp;redlink=1" class="new" title="53266 (page does not exist)">$D012</a>
+
+           LDA #&lt;Irq           &#160;; set interrupt vectors, pointing to interrupt service routine below
+           STA $<a href="/index.php?title=788-789&amp;action=edit&amp;redlink=1" class="new" title="788-789 (page does not exist)">0314</a>
+           LDA #&gt;Irq
+           STA $<a href="/index.php?title=788-789&amp;action=edit&amp;redlink=1" class="new" title="788-789 (page does not exist)">0315</a>
+
+           LDA #%00000001      &#160;; enable raster interrupt signals from VIC
+           STA $<a href="/index.php?title=53275&amp;action=edit&amp;redlink=1" class="new" title="53275 (page does not exist)">D01A</a>
+
+           CLI                 &#160;; clear interrupt flag, allowing the CPU to respond to interrupt requests
+           RTS
+</pre>
+<p>Notice that enabling the raster interrupts from the VIC takes place <i>after</i> setting up everything else. Also, the routine starts with SEI, to disable IRQ requests altogether.
+If the interrupts are enabled before e.g. the interrupt vector is re-directed to the new routine, an interrupt may occur just as this vector is being altered, sending the CPU to a "random" address and probably crashing the system.
+</p>
+<h2><span class="mw-headline" id="Using_a_single_interrupt_service_routine">Using a single interrupt service routine</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Raster_interrupt&amp;veaction=edit&amp;section=2" title="Edit section: Using a single interrupt service routine" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Raster_interrupt&amp;action=edit&amp;section=2" title="Edit section&#39;s source code: Using a single interrupt service routine">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p>Here is a very simple interrupt service routine that that "wiggles" the screen frame color (<a href="/wiki/53280" title="53280">53280</a>) to indicate where on the screen the interrupt occurs:
+</p>
+<pre>Irq        LDA #$7
+           STA <a href="/wiki/53280" title="53280">$D020</a>           &#160;; change border colour to yellow
+
+           LDX #$90            &#160;; empty loop to do nothing for just under half a millisecond
+Pause      DEX
+           BNE Pause
+
+           LDA #$0
+           STA <a href="/wiki/53280" title="53280">$D020</a>           &#160;; change border colour to black
+
+           ASL <a href="/index.php?title=53273&amp;action=edit&amp;redlink=1" class="new" title="53273 (page does not exist)">$D019</a>           &#160;; acknowledge the interrupt by clearing the VIC's interrupt flag
+
+           JMP <a href="/index.php?title=59953&amp;action=edit&amp;redlink=1" class="new" title="59953 (page does not exist)">$EA31</a>           &#160;; jump into <a href="/wiki/KERNAL" class="mw-redirect" title="KERNAL">KERNAL</a>'s standard interrupt service routine to handle keyboard scan, cursor display etc.
+</pre>
+<p>When this is run, the frame, or "border", around the screen is mostly black, except for a yellow stripe at the left and right edges: This stripe appears at raster line #210 as set in the initialization routine, because just as the raster starts out on this pixel line across the screen, the interrupt service routine sets the frame color to yellow. During the pause loop, the raster swipes swipe through 8 whole pixel lines, leaving a 8-pixel-wide stripe before the color is set back to black.
+</p>
+<h2><span class="mw-headline" id="Using_multiple_interrupt_service_routines">Using multiple interrupt service routines</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Raster_interrupt&amp;veaction=edit&amp;section=3" title="Edit section: Using multiple interrupt service routines" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Raster_interrupt&amp;action=edit&amp;section=3" title="Edit section&#39;s source code: Using multiple interrupt service routines">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p>Raster interrupts are often used with a system of two or more interrupt service routines, handling interrupts triggered at different raster lines: Each routine perfoms its "own" tasks, then sets up an interrupt to occur at the "next" desired raster line and re-directs the vector at 788&#8211;789/$0314&#8211;$0315 to point to the next routine associated with that line.
+</p><p>The following example shows two such "concatenated" raster interrupt service routines, splitting the screen in a high-resolution part and a text part: They can be initialized using the routine outlined at the beginning of this article.
+</p><p>The first routine is triggered at raster line 210, and handles the switch from high-res to text mode. It also sets up the interrupt pointer to the second interrupt service routine, and configures the corresponding raster line:
+</p>
+<pre>Irq        LDA <a href="/wiki/53265" title="53265">$D011</a>            &#160;; select text screen mode
+           AND #%11011111
+           STA <a href="/wiki/53265" title="53265">$D011</a>
+
+           LDA #&lt;Irq2           &#160;; set interrupt vectors to the second interrupt service routine at Irq2
+           STA $<a href="/index.php?title=788-789&amp;action=edit&amp;redlink=1" class="new" title="788-789 (page does not exist)">0314</a>
+           LDA #&gt;Irq2
+           STA $<a href="/index.php?title=788-789&amp;action=edit&amp;redlink=1" class="new" title="788-789 (page does not exist)">0315</a>
+
+           LDA #$0
+           STA <a href="/index.php?title=53266&amp;action=edit&amp;redlink=1" class="new" title="53266 (page does not exist)">$D012</a>           &#160;; next interrupt will occur at line no. 0
+
+           ASL <a href="/index.php?title=53273&amp;action=edit&amp;redlink=1" class="new" title="53273 (page does not exist)">$D019</a>           &#160;; acknowledge the interrupt by clearing the VIC's interrupt flag
+
+           JMP <a href="/index.php?title=59953&amp;action=edit&amp;redlink=1" class="new" title="59953 (page does not exist)">$EA31</a>           &#160;; jump into <a href="/wiki/KERNAL" class="mw-redirect" title="KERNAL">KERNAL</a>'s standard interrupt service routine to handle keyboard scan, cursor display etc.
+</pre>
+<p>The second routine handles the switch from text to high-res at raster line 250. It also re-adjusts the interrupt pointer back to the first interrupt service routine, and sets up the raster to trigger it next time the raster passes by line 210:
+</p>
+<pre>Irq2       LDA <a href="/wiki/53265" title="53265">$D011</a>            &#160;; select bitmap screen mode
+           ORA #%00100000
+           STA <a href="/wiki/53265" title="53265">$D011</a>
+
+           LDA #&lt;Irq            &#160;; set interrupt vectors back to the first interrupt service routine at Irq
+           STA $<a href="/index.php?title=788-789&amp;action=edit&amp;redlink=1" class="new" title="788-789 (page does not exist)">0314</a>
+           LDA #&gt;Irq
+           STA $<a href="/index.php?title=788-789&amp;action=edit&amp;redlink=1" class="new" title="788-789 (page does not exist)">0315</a>
+
+           LDA #210
+           STA <a href="/index.php?title=53266&amp;action=edit&amp;redlink=1" class="new" title="53266 (page does not exist)">$D012</a>           &#160;; next interrupt will occur at line no. 210
+
+           ASL <a href="/index.php?title=53273&amp;action=edit&amp;redlink=1" class="new" title="53273 (page does not exist)">$D019</a>           &#160;; acknowledge the interrupt by clearing the VIC's interrupt flag
+
+           JMP <a href="/index.php?title=60033&amp;action=edit&amp;redlink=1" class="new" title="60033 (page does not exist)">$EA81</a>           &#160;; jump into shorter ROM routine to only restore registers from the stack etc
+</pre>
+<p>In this example the "default" interrupt service routine at 59953/$EA31 is "included" through the <a href="/wiki/JMP" title="JMP">JMP</a> command at the end of the first of the two raster routines, enabling you to move the cursor, type commands etc. after the interrupt system has started. Notice that only one in such a set of raster-driven interrupt service routine need to end in a jump into <i>the entire</i> KERNAL service routine: The latter routine takes a jump to 60033/$EA81, where the ROM routine pulls back registers etc. from the stack before handing the CPU back to what it was doing when the interrupt occurred.
+</p>
+<h2><span class="mw-headline" id="Links">Links</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Raster_interrupt&amp;veaction=edit&amp;section=4" title="Edit section: Links" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Raster_interrupt&amp;action=edit&amp;section=4" title="Edit section&#39;s source code: Links">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<table border="0" cellspacing="1" style="background-color:transparent">
+<tbody><tr>
+<td><span class="mw-default-size" typeof="mw:File"><span><img src="https://www.c64-wiki.com/images/5/52/WP-W11.png" decoding="async" loading="lazy" width="18" height="11" class="mw-file-element" /></span></span>
+</td>
+<td align="left"><b><a rel="nofollow" class="external text" href="http://en.wikipedia.org/wiki/Raster_interrupt">Wikipedia: Raster_interrupt</a></b>
+</td></tr></tbody></table>
+<!-- 
+NewPP limit report
+Cached time: 20260927035100
+Cache expiry: 86400
+Reduced expiry: false
+Complications: [show‐toc]
+CPU time usage: 0.020 seconds
+Real time usage: 0.024 seconds
+Preprocessor visited node count: 67/1000000
+Post‐expand include size: 230/2097152 bytes
+Template argument size: 32/2097152 bytes
+Highest expansion depth: 3/100
+Expensive parser function count: 0/100
+Unstrip recursion depth: 0/20
+Unstrip post‐expand size: 0/5000000 bytes
+-->
+<!--
+Transclusion expansion time report (%,ms,calls,template)
+100.00%    2.914      1 -total
+ 52.27%    1.523      1 Template:-
+ 41.66%    1.214      1 Template:Wikipedia
+-->
+
+<!-- Saved in parser cache with key c64?hwiki?hen-wiki_:pcache:idhash:1609-0!canonical!svUser=0!asDate=20260927 and timestamp 20260927035100 and revision id 41551. Rendering was triggered because: page-view
+ -->
+</div>
+</div>
+</body></html>

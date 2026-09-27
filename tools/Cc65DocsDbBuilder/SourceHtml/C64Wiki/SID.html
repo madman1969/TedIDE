@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<!-- From C64-Wiki (https://www.c64-wiki.com/wiki/SID), revision 45448, last edited 8 August 2026, at 07:20.
+     Content is available under the GNU Free Documentation License - see c64wiki/licence.
+     Only the article body is kept; retrieved 2026-09-27 for Tedide's Doc Viewer. -->
+<html><head><meta charset="utf-8"><title>SID</title>
+<meta name="c64wiki-page" content="SID"><meta name="c64wiki-revision" content="45448"><meta name="c64wiki-edited" content="8 August 2026, at 07:20">
+</head><body>
+<div class="mw-content-ltr mw-parser-output" lang="en" dir="ltr"><figure class="mw-halign-right" typeof="mw:File/Thumb"><a href="/wiki/File:Sid.jpg" class="mw-file-description"><img src="https://www.c64-wiki.com/images/thumb/7/75/Sid.jpg/280px-Sid.jpg" decoding="async" loading="lazy" width="280" height="231" class="mw-file-element" srcset="https://www.c64-wiki.com/images/thumb/7/75/Sid.jpg/420px-Sid.jpg 1.5x, https://www.c64-wiki.com/images/thumb/7/75/Sid.jpg/560px-Sid.jpg 2x" /></a><figcaption>SID chip (1987)</figcaption></figure>
+<figure class="mw-halign-right" typeof="mw:File/Thumb"><a href="/wiki/File:SID_Block_Diagram.png" class="mw-file-description"><img src="https://www.c64-wiki.com/images/thumb/6/60/SID_Block_Diagram.png/280px-SID_Block_Diagram.png" decoding="async" loading="lazy" width="280" height="265" class="mw-file-element" srcset="https://www.c64-wiki.com/images/thumb/6/60/SID_Block_Diagram.png/420px-SID_Block_Diagram.png 1.5x, https://www.c64-wiki.com/images/thumb/6/60/SID_Block_Diagram.png/560px-SID_Block_Diagram.png 2x" /></a><figcaption>SID block diagram</figcaption></figure>
+<p><b>SID</b> (short for <b>S</b>ound <b>I</b>nterface <b>D</b>evice) is the name of the sound chip used in the <a href="/wiki/VC_10" class="mw-redirect" title="VC 10">VC 10</a>, <a href="/wiki/C64" title="C64">C64</a> and <a href="/wiki/C128" class="mw-redirect" title="C128">C128</a>. The SID was developed by <a href="/wiki/Bob_Yannes" title="Bob Yannes">Bob Yannes</a>, an employee of the firm <a href="/wiki/MOS_Technology" title="MOS Technology">MOS Technology</a>. Bob (Robert) Yannes knows, beside technical know-how, a lot of music. His intention was to implement a real subtractive synthesis chip, totally different from all other home computer sound devices of its time. The chip's distinctive sound is easily recognized and was clearly ahead of the competition. The chip combines analogue and digital circuitry, that cannot be emulated with 100% fidelity even today. Emulated sounds do come very close to the original and a layperson is not likely to notice the difference. The SID sound is well known among retro gamers.
+</p><p>The <a href="/wiki/Commodore" title="Commodore">Commodore</a> 64 &amp; Commodore 128 &amp; 128D (plastic case) use the 6581 chip. The Commodore 64-II and Commodore 128DCR (metal case) use the newer <a href="/wiki/8580" class="mw-redirect" title="8580">8580</a> chip. There are also new chip replacements that emulate the SID like <a href="/wiki/SIDKick_pico" title="SIDKick pico">SIDKick pico</a> or <a href="/wiki/SwinSID" title="SwinSID">SwinSID</a>. The SID can be programmed in <a href="/wiki/BASIC" title="BASIC">BASIC</a> or <a href="/wiki/machine_language" class="mw-redirect" title="machine language">machine language</a> using a machine language <a href="/wiki/monitor" class="mw-redirect" title="monitor">monitor</a> or an <a href="/wiki/Assembler" title="Assembler">Assembler</a> package (e.g. Merlin, Commodore Assembler, etc.).
+</p>
+<div id="toc" class="toc" role="navigation" aria-labelledby="mw-toc-heading"><input type="checkbox" role="button" id="toctogglecheckbox" class="toctogglecheckbox" style="display:none" /><div class="toctitle" lang="en" dir="ltr"><h2 id="mw-toc-heading">Contents</h2><span class="toctogglespan"><label class="toctogglelabel" for="toctogglecheckbox"></label></span></div>
+<ul>
+<li class="toclevel-1 tocsection-1"><a href="#Properties_of_the_SID"><span class="tocnumber">1</span> <span class="toctext">Properties of the SID</span></a></li>
+<li class="toclevel-1 tocsection-2"><a href="#Chip_variations"><span class="tocnumber">2</span> <span class="toctext">Chip variations</span></a></li>
+<li class="toclevel-1 tocsection-3"><a href="#Memory_Addresses_of_the_SID"><span class="tocnumber">3</span> <span class="toctext">Memory Addresses of the SID</span></a></li>
+<li class="toclevel-1 tocsection-4"><a href="#Pinout"><span class="tocnumber">4</span> <span class="toctext">Pinout</span></a></li>
+<li class="toclevel-1 tocsection-5"><a href="#Programming_in_BASIC"><span class="tocnumber">5</span> <span class="toctext">Programming in BASIC</span></a></li>
+<li class="toclevel-1 tocsection-6"><a href="#Trivia"><span class="tocnumber">6</span> <span class="toctext">Trivia</span></a></li>
+<li class="toclevel-1 tocsection-7"><a href="#Troubleshooting"><span class="tocnumber">7</span> <span class="toctext">Troubleshooting</span></a></li>
+<li class="toclevel-1 tocsection-8"><a href="#Links"><span class="tocnumber">8</span> <span class="toctext">Links</span></a></li>
+</ul>
+</div>
+
+<p>A collection of SID music is available that includes nearly every song ever written for the chip and is known as the <a href="/wiki/High_Voltage_SID_Collection" title="High Voltage SID Collection">High Voltage SID Collection</a>. This collection can be heard on modern computers using utilities such as <a href="/wiki/SIDPLAY" title="SIDPLAY">SIDPLAY</a>.
+</p>
+<h2><span class="mw-headline" id="Properties_of_the_SID">Properties of the SID</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=SID&amp;veaction=edit&amp;section=1" title="Edit section: Properties of the SID" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=SID&amp;action=edit&amp;section=1" title="Edit section&#39;s source code: Properties of the SID">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<ul><li>3 tone generators (voices), frequency 0-4 kHz (16 Bit decomposition)</li>
+<li>4 forms of waves (sawtooth, triangle, rectangle pulse width modulation, (white) noise /rush)</li>
+<li>3 amplitude modulator, until 48 dB</li>
+<li>3 envelope generators</li>
+<li>Synchronization of the oscillators</li>
+<li>Ring modulation</li>
+<li>Programmable filters (low pass, bandpass, high pass)</li>
+<li>Master volume in 16 steps</li>
+<li>2 A/D-converter (8 <a href="/wiki/bit" class="mw-redirect" title="bit">bit</a>, low frequency, used for reading paddle input)</li>
+<li>Random generator</li>
+<li>Audio input (cannot be used for sampling, but the signal can be routed through the SID filter)</li></ul>
+<h2><span class="mw-headline" id="Chip_variations">Chip variations</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=SID&amp;veaction=edit&amp;section=2" title="Edit section: Chip variations" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=SID&amp;action=edit&amp;section=2" title="Edit section&#39;s source code: Chip variations">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<table border="2" cellspacing="0" cellpadding="4" rules="all" style="border-color:#aaaaaa; background-color:#f9f9f9; margin:1em 1em 1em 0; border-style:solid; border-width:1px; border-collapse:collapse; empty-cells:show">
+
+
+<tbody><tr>
+<th>Chip</th>
+<th>Production period</th>
+<th>Remark
+</th></tr>
+<tr>
+<td>6581</td>
+<td>21/1982 - 30/1985</td>
+<td>NMOS, pin 28/Vdd = 12V DC, each 470pF on pins 1+2/3+4
+</td></tr>
+<tr>
+<td>6581R3</td>
+<td>42/1985 - 07/1986</td>
+<td>
+</td></tr>
+<tr>
+<td>6581R4</td>
+<td>16/1986 - 30/1986</td>
+<td>
+</td></tr>
+<tr>
+<td>6581R4AR</td>
+<td>22/1986 - 06/1987</td>
+<td>
+</td></tr>
+<tr>
+<td>8580R5</td>
+<td>06/1987 - 19/1992</td>
+<td>HMOS-II, pin 28/Vdd = 9V DC, each 22nF on pins 1+2/3+4, digisound without <a href="/index.php?title=digifix&amp;action=edit&amp;redlink=1" class="new" title="digifix (page does not exist)">digifix</a> very quiet.
+</td></tr></tbody></table>
+<p><u>Info:</u> The checked production period based on a limit number of SID chips. A larger production period is most likely!
+</p>
+<h2><span class="mw-headline" id="Memory_Addresses_of_the_SID">Memory Addresses of the SID</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=SID&amp;veaction=edit&amp;section=3" title="Edit section: Memory Addresses of the SID" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=SID&amp;action=edit&amp;section=3" title="Edit section&#39;s source code: Memory Addresses of the SID">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<table class="wikitable">
+
+
+<tbody><tr>
+<th>address (decimal)</th>
+<th colspan="8">function
+</th></tr>
+<tr>
+<td>$d400 (54272)</td>
+<td colspan="8">frequency voice 1 low byte
+</td></tr>
+<tr>
+<td>$d401 (54273)</td>
+<td colspan="8">frequency voice 1 high byte
+</td></tr>
+<tr>
+<td>$d402 (54274)</td>
+<td colspan="8">pulse wave duty cycle voice 1 low byte
+</td></tr>
+<tr>
+<th></th>
+<th colspan="4">7..4</th>
+<th colspan="4">3..0
+</th></tr>
+<tr>
+<td>$d403 (54275)</td>
+<td colspan="4">—</td>
+<td colspan="4">pulse wave duty cycle voice 1 high byte
+</td></tr>
+<tr>
+<td>$d404 (54276)</td>
+<td colspan="8">control register voice 1
+</td></tr>
+<tr>
+<th></th>
+<th>7</th>
+<th>6</th>
+<th>5</th>
+<th>4</th>
+<th>3</th>
+<th>2</th>
+<th>1</th>
+<th>0
+</th></tr>
+<tr>
+<td></td>
+<td>noise</td>
+<td>pulse</td>
+<td>sawtooth</td>
+<td>triangle</td>
+<td>test</td>
+<td>ring modulation with voice 3</td>
+<td>synchronize with voice 3</td>
+<td>gate
+</td></tr>
+<tr>
+<th></th>
+<th colspan="4">7..4</th>
+<th colspan="4">3..0
+</th></tr>
+<tr>
+<td>$d405 (54277)</td>
+<td colspan="4">attack duration</td>
+<td colspan="4">decay duration voice 1
+</td></tr>
+<tr>
+<td>$d406 (54278)</td>
+<td colspan="4">sustain level</td>
+<td colspan="4">release duration
+</td></tr>
+<tr>
+<td>$d407 (54279)</td>
+<td colspan="8">frequency voice 2 low byte
+</td></tr>
+<tr>
+<td>$d408 (54280)</td>
+<td colspan="8">frequency voice 2 high byte
+</td></tr>
+<tr>
+<td>$d409 (54281)</td>
+<td colspan="8">pulse wave duty cycle voice 2 low byte
+</td></tr>
+<tr>
+<th></th>
+<th colspan="4">7..4</th>
+<th colspan="4">3..0
+</th></tr>
+<tr>
+<td>$d40a (54282)</td>
+<td colspan="4">—</td>
+<td colspan="4">pulse wave duty cycle voice 2 high byte
+</td></tr>
+<tr>
+<td>$d40b (54283)</td>
+<td colspan="8">control register voice 2
+</td></tr>
+<tr>
+<th></th>
+<th>7</th>
+<th>6</th>
+<th>5</th>
+<th>4</th>
+<th>3</th>
+<th>2</th>
+<th>1</th>
+<th>0
+</th></tr>
+<tr>
+<td></td>
+<td>noise</td>
+<td>pulse</td>
+<td>sawtooth</td>
+<td>triangle</td>
+<td>test</td>
+<td>ring modulation with voice 1</td>
+<td>synchronize with voice 1</td>
+<td>gate
+</td></tr>
+<tr>
+<th></th>
+<th colspan="4">7..4</th>
+<th colspan="4">3..0
+</th></tr>
+<tr>
+<td>$d40c (54284)</td>
+<td colspan="4">attack duration</td>
+<td colspan="4">decay duration voice 2
+</td></tr>
+<tr>
+<td>$d40d (54285)</td>
+<td colspan="4">sustain level</td>
+<td colspan="4">release duration voice 2
+</td></tr>
+<tr>
+<td>$d40e (54286)</td>
+<td colspan="8">frequency voice 3 low byte
+</td></tr>
+<tr>
+<td>$d40f (54287)</td>
+<td colspan="8">frequency voice 3 high byte
+</td></tr>
+<tr>
+<td>$d410 (54288)</td>
+<td colspan="8">pulse wave duty cycle voice 3 low byte
+</td></tr>
+<tr>
+<th></th>
+<th colspan="4">7..4</th>
+<th colspan="4">3..0
+</th></tr>
+<tr>
+<td>$d411 (54289)</td>
+<td colspan="4">—</td>
+<td colspan="4">pulse wave duty cycle voice 3 high byte
+</td></tr>
+<tr>
+<td>$d412 (54290)</td>
+<td colspan="8">control register voice 3
+</td></tr>
+<tr>
+<th></th>
+<th>7</th>
+<th>6</th>
+<th>5</th>
+<th>4</th>
+<th>3</th>
+<th>2</th>
+<th>1</th>
+<th>0
+</th></tr>
+<tr>
+<td></td>
+<td>noise</td>
+<td>pulse</td>
+<td>sawtooth</td>
+<td>triangle</td>
+<td>test</td>
+<td>ring modulation with voice 2</td>
+<td>synchronize with voice 2</td>
+<td>gate
+</td></tr>
+<tr>
+<th></th>
+<th colspan="4">7..4</th>
+<th colspan="4">3..0
+</th></tr>
+<tr>
+<td>$d413 (54291)</td>
+<td colspan="4">attack duration</td>
+<td colspan="4">decay duration voice 3
+</td></tr>
+<tr>
+<td>$d414 (54292)</td>
+<td colspan="4">sustain level</td>
+<td colspan="4">release duration voice 3
+</td></tr>
+<tr>
+<td>$d415 (54293)</td>
+<td colspan="5">—</td>
+<td colspan="3">filter cutoff frequency low byte
+</td></tr>
+<tr>
+<td>$d416 (54294)</td>
+<td colspan="8">filter cutoff frequency high byte
+</td></tr>
+<tr>
+<td>$d417 (54295)</td>
+<td colspan="8">filter resonance and routing
+</td></tr>
+<tr>
+<th></th>
+<th colspan="4">7..4</th>
+<th>3</th>
+<th>2</th>
+<th>1</th>
+<th>0
+</th></tr>
+<tr>
+<td></td>
+<td colspan="4">filter resonance</td>
+<td>external input</td>
+<td>voice 3</td>
+<td>voice 2</td>
+<td>voice 1
+</td></tr>
+<tr>
+<td>$d418 (54296)</td>
+<td colspan="8">filter mode and main volume control
+</td></tr>
+<tr>
+<th></th>
+<th>7</th>
+<th>6</th>
+<th>5</th>
+<th>4</th>
+<th colspan="4">3..0
+</th></tr>
+<tr>
+<td></td>
+<td>mute voice 3</td>
+<td>high pass</td>
+<td>band pass</td>
+<td>low pass</td>
+<td colspan="4">main volume
+</td></tr>
+<tr>
+<td>$d419 (54297)</td>
+<td colspan="8">paddle x value (read only)
+</td></tr>
+<tr>
+<td>$d41a (54298)</td>
+<td colspan="8">paddle y value (read only)
+</td></tr>
+<tr>
+<td>$d41b (54299)</td>
+<td colspan="8">oscillator voice 3 (read only)
+</td></tr>
+<tr>
+<td>$d41c (54300)</td>
+<td colspan="8">envelope voice 3 (read only)
+</td></tr>
+<tr>
+<td>$d500..$d7ff (54528-55295)</td>
+<td colspan="8">SID registers mirrored (not in <a href="/wiki/C128" class="mw-redirect" title="C128">C128</a>)
+</td></tr></tbody></table>
+<p><br />
+</p>
+<h2><span class="mw-headline" id="Pinout">Pinout</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=SID&amp;veaction=edit&amp;section=4" title="Edit section: Pinout" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=SID&amp;action=edit&amp;section=4" title="Edit section&#39;s source code: Pinout">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<table border="2" cellspacing="0" cellpadding="4" rules="all" style="border-color:#aaaaaa; background-color:#f9f9f9; margin:1em 1em 1em 0; border-style:solid; border-width:1px; border-collapse:collapse; empty-cells:show">
+
+
+<tbody><tr>
+<th>
+</th>
+<th>Pin
+</th>
+<th>Description
+</th></tr>
+<tr>
+<td rowspan="15"><span class="mw-default-size" typeof="mw:File"><a href="/wiki/File:SID-Pinbelegung.png" class="mw-file-description"><img src="https://www.c64-wiki.com/images/5/5e/SID-Pinbelegung.png" decoding="async" loading="lazy" width="316" height="303" class="mw-file-element" /></a></span>
+</td>
+<td>CAP1A, CAP1B
+</td>
+<td>Filter capacitor 1 (6581: 470pF, 8580: 20nF)
+</td></tr>
+<tr>
+<td>CAP2A, CAP2B
+</td>
+<td>Filter capacitor 2 (6581: 470pF, 8580: 20nF)
+</td></tr>
+<tr>
+<td>!RES
+</td>
+<td>Reset input - If low for at least 10 phi2 cycles all internal registers reset
+</td></tr>
+<tr>
+<td>&#966;2 (phi2)
+</td>
+<td>Input for system oscillator, receives data only when high
+</td></tr>
+<tr>
+<td>R/!W
+</td>
+<td>High = Read allowed, Low = Write allowed
+</td></tr>
+<tr>
+<td>!CS
+</td>
+<td>Chip Select - active low input, bus data needs to be valid when active
+</td></tr>
+<tr>
+<td>A0 - A4
+</td>
+<td>Five address inputs to select one of the 32 internal registers
+</td></tr>
+<tr>
+<td>GND
+</td>
+<td>Ground
+</td></tr>
+<tr>
+<td>V<sub>dd</sub>
+</td>
+<td>Second voltage +12&#160;VDC (for 6581) or +9&#160;VDC (for 6582, 8580)
+</td></tr>
+<tr>
+<td>AUDIO OUT
+</td>
+<td>Audio-output, 6VDC 3Vp-p at max volume
+</td></tr>
+<tr>
+<td>EXT IN
+</td>
+<td>EXternal audio input, mixes with SID output and can be filtered. (8580 needs ca 330kOhm to GND on this pin to fix old digitized sound)
+</td></tr>
+<tr>
+<td>V<sub>cc</sub>
+</td>
+<td>Main voltage +5&#160;VDC
+</td></tr>
+<tr>
+<td>POT X
+</td>
+<td>Input for potentiometer (Paddle) X-axle
+</td></tr>
+<tr>
+<td>POT Y
+</td>
+<td>Input for potentiometer (Paddle) Y-axle
+</td></tr>
+<tr>
+<td>D0 - D7
+</td>
+<td>Data bus Bits 0 - 7
+</td></tr></tbody></table>
+<h2><span class="mw-headline" id="Programming_in_BASIC">Programming in BASIC</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=SID&amp;veaction=edit&amp;section=5" title="Edit section: Programming in BASIC" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=SID&amp;action=edit&amp;section=5" title="Edit section&#39;s source code: Programming in BASIC">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p>A small <a href="/wiki/BASIC" title="BASIC">BASIC</a> program for the C64 demonstrates some sound effects. Only the first voice of the SID is used for this. The program can only be interrupted with the <span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;"><a href="/wiki/RUN/STOP" title="RUN/STOP">RUN/STOP</a></span>&#160; key.
+</p>
+<pre> 0 <a href="/wiki/REM" title="REM">REM</a> *** C64-WIKI SOUND-DEMO ***
+10 S = 54272: W = 17: <a href="/wiki/ON" title="ON">ON</a> <a href="/wiki/INT" title="INT">INT</a>(<a href="/wiki/RND" title="RND">RND</a>(<a href="/wiki/TI" class="mw-redirect" title="TI">TI</a>)*4)+1 <a href="/wiki/GOTO" title="GOTO">GOTO</a> 12,13,14,15
+12 W = 33: GOTO 15
+13 W = 65: GOTO 15
+14 W = 129
+15 <a href="/wiki/POKE" title="POKE">POKE</a> S+24,15: POKE S+5,97: POKE S+6,200: POKE S+4,W
+16 <a href="/wiki/FOR" title="FOR">FOR</a> X = 0 <a href="/wiki/TO" title="TO">TO</a> 255 <a href="/wiki/STEP" title="STEP">STEP</a> (RND(TI)*15)+1
+17 POKE S,X :POKE S+1,255-X
+18 FOR Y = 0 TO 33: NEXT Y,X
+19 FOR X = 0 TO 200: NEXT: POKE S+24,0
+20 FOR X = 0 TO 100: NEXT: GOTO 10
+21 REM *** ABORT ONLY WITH RUN/STOP&#160;! ***
+</pre>
+<p>Because of the many controls of the SID, the SID's base address should be put into a <a href="/wiki/variable" class="mw-redirect" title="variable">variable</a>, i.e. <code>S = 54272</code>. Before the <a href="/index.php?title=waveform&amp;action=edit&amp;redlink=1" class="new" title="waveform (page does not exist)">waveform</a> (here: register 4) is used, the envelope (<a href="/wiki/ADSR" title="ADSR">ADSR</a>; here: register 5 and 6) should be set. The volume (register 24) can only be set for all voices at once.
+</p>
+<h2><span class="mw-headline" id="Trivia">Trivia</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=SID&amp;veaction=edit&amp;section=6" title="Edit section: Trivia" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=SID&amp;action=edit&amp;section=6" title="Edit section&#39;s source code: Trivia">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p><a href="/wiki/Bob_Yannes" title="Bob Yannes">Bob Yannes</a> later went on to form the well known synthesizer company Ensoniq. Their first synthesizer, the ESQ-1 is, according to Bob, the synthesizer he wanted the SID chip to be. Due to a rough time table, a lot of features had to be dropped and the design was finished just in time. Many characteristics of the SID sound are bugs, technically seen, but depending on the point of the listener they can be seen as features or were used to hack the chip. For example the volume register design flaw in the original 6581 chip was used to play back samples. Every time the volume register value was altered, an audible click could be heard. By changing the first 4 bits of the register at $D418 fast enough, samples can be played back with rates up to some kHz (depends on the code and what else uses rastertime) with 4 bit resolution. In the later 8580 model this "bug" was fixed and samples were inaudible, but it is possible to revert this by soldering a 470kΩ resistor or, if you want to be able to adjust the level, a 1MΩ pot in series between EXT IN and GND. Even better sample playback can be achieved by altering the pulse width modulation register, which can hold an eight bit value.
+</p>
+<h2><span class="mw-headline" id="Troubleshooting">Troubleshooting</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=SID&amp;veaction=edit&amp;section=7" title="Edit section: Troubleshooting" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=SID&amp;action=edit&amp;section=7" title="Edit section&#39;s source code: Troubleshooting">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<ul><li>If there is no audio on pin 3 of the A/V jack then it's possible that the 9VDC supply is missing, which is one cause of this</li>
+<li>If paddles aren't working properly a defective SID may be the reason for this</li></ul>
+<h2><span class="mw-headline" id="Links">Links</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=SID&amp;veaction=edit&amp;section=8" title="Edit section: Links" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=SID&amp;action=edit&amp;section=8" title="Edit section&#39;s source code: Links">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<table border="0" cellspacing="1" style="background-color:transparent">
+<tbody><tr>
+<td><span class="mw-default-size" typeof="mw:File"><span><img src="https://www.c64-wiki.com/images/5/52/WP-W11.png" decoding="async" loading="lazy" width="18" height="11" class="mw-file-element" /></span></span>
+</td>
+<td align="left"><b><a rel="nofollow" class="external text" href="http://en.wikipedia.org/wiki/MOS_Technology_SID">Wikipedia: MOS_Technology_SID</a></b>
+</td></tr></tbody></table>
+<ul><li><a rel="nofollow" class="external text" href="http://cbmmuseum.kuto.de/zusatz_6581_sid.html">The SID in the Commodore Computer Online Museum</a><span class="mw-default-size" typeof="mw:File"><a href="/wiki/File:flag_de_18px.gif" class="mw-file-description" title="Language German"><img alt="Language German" src="https://www.c64-wiki.com/images/c/cf/flag_de_18px.gif" decoding="async" loading="lazy" width="18" height="11" class="mw-file-element" /></a></span></li>
+<li><a rel="nofollow" class="external text" href="http://www.6502.org/documents/datasheets/mos/mos_6581_sid.pdf">MOS 6581 SID data sheet (PDF Format)</a></li>
+<li><a rel="nofollow" class="external text" href="http://www.6502.org/documents/datasheets/mos/mos_6582_sid.pdf">MOS 6582 SID data sheet (PDF Format)</a></li>
+<li><a rel="nofollow" class="external text" href="http://www.sidbrowser.com">Windows program to manage the HVSC</a></li>
+<li><a rel="nofollow" class="external text" href="http://mail.lipsia.de/~enigma/neu/6581.html">Die shots of VIC II 6569 and SID 6581, 8580</a> <span class="mw-default-size" typeof="mw:File"><a href="/wiki/File:flag_en_18px.gif" class="mw-file-description" title="Language:english"><img alt="Language:english" src="https://www.c64-wiki.com/images/2/2b/flag_en_18px.gif" decoding="async" loading="lazy" width="18" height="13" class="mw-file-element" /></a></span> from Michael Huth</li>
+<li><a rel="nofollow" class="external text" href="http://sid.kubarth.com/">SID in-depth information site</a> <span class="mw-default-size" typeof="mw:File"><a href="/wiki/File:flag_en_18px.gif" class="mw-file-description" title="Language:english"><img alt="Language:english" src="https://www.c64-wiki.com/images/2/2b/flag_en_18px.gif" decoding="async" loading="lazy" width="18" height="13" class="mw-file-element" /></a></span> from Darius Kubarth</li>
+<li><a rel="nofollow" class="external text" href="https://www.commodore-64.eu/sid-chip/">SID-Chip explained and test</a> <span class="mw-default-size" typeof="mw:File"><a href="/wiki/File:flag_de_18px.gif" class="mw-file-description" title="Language German"><img alt="Language German" src="https://www.c64-wiki.com/images/c/cf/flag_de_18px.gif" decoding="async" loading="lazy" width="18" height="11" class="mw-file-element" /></a></span> / <span class="mw-default-size" typeof="mw:File"><a href="/wiki/File:flag_en_18px.gif" class="mw-file-description" title="Language:english"><img alt="Language:english" src="https://www.c64-wiki.com/images/2/2b/flag_en_18px.gif" decoding="async" loading="lazy" width="18" height="13" class="mw-file-element" /></a></span> / <span class="mw-default-size" typeof="mw:File"><a href="/wiki/File:Flag_fr_18px.gif" class="mw-file-description" title="Language:French"><img alt="Language:French" src="https://www.c64-wiki.com/images/6/67/Flag_fr_18px.gif" decoding="async" loading="lazy" width="18" height="12" class="mw-file-element" /></a></span> / <span class="mw-default-size" typeof="mw:File"><a href="/wiki/File:flag_es_18px.png" class="mw-file-description" title="Language:spanish"><img alt="Language:spanish" src="https://www.c64-wiki.com/images/6/66/flag_es_18px.png" decoding="async" loading="lazy" width="18" height="12" class="mw-file-element" /></a></span></li></ul>
+<p><br />
+</p>
+<div style="margin-top:24px; text-align:center; padding:5px 0px 5px 0px; background-color:#eeeeee; border:1px solid #bbbbbb;">
+<p><b><a href="/wiki/Hardware_internals_of_the_C64" title="Hardware internals of the C64">Hardware internals of the C64</a> · <a href="/wiki/Portal:Hardware" title="Portal:Hardware">Hardware portal</a></b><br />
+<b>Components of the C64: <a href="/wiki/MOS_6510" class="mw-redirect" title="MOS 6510">CPU</a> · <a href="/wiki/VIC" title="VIC">VIC</a> · <a class="mw-selflink selflink">SID</a> · <a href="/wiki/CIA" title="CIA">CIA</a> · <a href="/wiki/PLA_(C64_chip)" title="PLA (C64 chip)">PLA</a> · <a href="/wiki/RAM" title="RAM">RAM</a> · <a href="/wiki/ROM" title="ROM">ROM</a> · <a href="/wiki/Color_RAM" title="Color RAM">Color RAM</a></b><br />
+</p>
+<b>Interfaces of the C64: <a href="/wiki/Control_Port" title="Control Port">Control Port</a> · <a href="/wiki/Expansion_Port" title="Expansion Port">Expansion Port</a> · <a href="/wiki/Userport" class="mw-redirect" title="Userport">Userport</a> · <a href="/wiki/Cassette_Port" title="Cassette Port">Cassette Port</a> · <a href="/wiki/Power_Supply_Connector" title="Power Supply Connector">Power Supply Connector</a> · <a href="/wiki/A/V_Jack" title="A/V Jack">A/V Jack</a> · <a href="/wiki/RF_Jack" title="RF Jack">RF Jack</a> · <a href="/wiki/Serial_Port" title="Serial Port">Serial Port</a></b></div>
+<!-- 
+NewPP limit report
+Cached time: 20260927040855
+Cache expiry: 86400
+Reduced expiry: false
+Complications: [show‐toc]
+CPU time usage: 0.118 seconds
+Real time usage: 0.148 seconds
+Preprocessor visited node count: 100/1000000
+Post‐expand include size: 2114/2097152 bytes
+Template argument size: 48/2097152 bytes
+Highest expansion depth: 3/100
+Expensive parser function count: 0/100
+Unstrip recursion depth: 0/20
+Unstrip post‐expand size: 0/5000000 bytes
+-->
+<!--
+Transclusion expansion time report (%,ms,calls,template)
+100.00%   24.234      1 -total
+ 20.40%    4.943      2 Template:prettytable
+ 13.77%    3.337      1 Template:Wikitable
+ 10.88%    2.636      1 Template:FR
+  8.72%    2.113      1 Template:ES
+  8.45%    2.048      1 Template:Key
+  8.27%    2.003      2 Template:DE
+  7.75%    1.879      1 Template:Hardware_Assembly_of_the_C64
+  6.85%    1.660      1 Template:Wikipedia
+  6.81%    1.651      3 Template:EN
+-->
+
+<!-- Saved in parser cache with key c64?hwiki?hen-wiki_:pcache:idhash:2032-0!canonical!svUser=0!asDate=20260927 and timestamp 20260927040855 and revision id 45448. Rendering was triggered because: page-view
+ -->
+</div>
+</div>
+</body></html>

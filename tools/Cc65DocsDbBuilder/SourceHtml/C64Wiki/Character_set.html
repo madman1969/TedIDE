@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<!-- From C64-Wiki (https://www.c64-wiki.com/wiki/Character_set), revision 43873, last edited 23 January 2026, at 10:33.
+     Content is available under the GNU Free Documentation License - see c64wiki/licence.
+     Only the article body is kept; retrieved 2026-09-27 for Tedide's Doc Viewer. -->
+<html><head><meta charset="utf-8"><title>Character set</title>
+<meta name="c64wiki-page" content="Character_set"><meta name="c64wiki-revision" content="43873"><meta name="c64wiki-edited" content="23 January 2026, at 10:33">
+</head><body>
+<div class="mw-content-ltr mw-parser-output" lang="en" dir="ltr"><figure typeof="mw:File/Thumb"><a href="/wiki/File:Zeichensatz.png" class="mw-file-description"><img src="https://www.c64-wiki.com/images/thumb/a/a0/Zeichensatz.png/300px-Zeichensatz.png" decoding="async" loading="lazy" width="300" height="107" class="mw-file-element" srcset="https://www.c64-wiki.com/images/a/a0/Zeichensatz.png 1.5x" /></a><figcaption>The character set of a C64 in bitmap mode.</figcaption></figure>
+<p>A <b>character set</b> is a body of information that describes the visual appearance of up to 256 <a href="/wiki/Character" class="mw-redirect" title="Character">characters</a>: Since each character take 8 <a href="/wiki/Byte" title="Byte">bytes</a> of information, a full character set requires 256 &#215; 8 bytes = 2 kB. While the <a href="/index.php?title=Text_screen&amp;action=edit&amp;redlink=1" class="new" title="Text screen (page does not exist)">text screen</a> system was originally designed to provide the <a href="/wiki/Hardware" title="Hardware">hardware</a> facilities for a "console" text screen, it is also widely used along with user-supplied "character" sets to form graphics in games, demos etc.
+</p>
+<div id="toc" class="toc" role="navigation" aria-labelledby="mw-toc-heading"><input type="checkbox" role="button" id="toctogglecheckbox" class="toctogglecheckbox" style="display:none" /><div class="toctitle" lang="en" dir="ltr"><h2 id="mw-toc-heading">Contents</h2><span class="toctogglespan"><label class="toctogglelabel" for="toctogglecheckbox"></label></span></div>
+<ul>
+<li class="toclevel-1 tocsection-1"><a href="#The_Character_sets"><span class="tocnumber">1</span> <span class="toctext">The Character sets</span></a>
+<ul>
+<li class="toclevel-2 tocsection-2"><a href="#Character_Set_1"><span class="tocnumber">1.1</span> <span class="toctext">Character Set 1</span></a></li>
+<li class="toclevel-2 tocsection-3"><a href="#Character_Set_2"><span class="tocnumber">1.2</span> <span class="toctext">Character Set 2</span></a></li>
+</ul>
+</li>
+<li class="toclevel-1 tocsection-4"><a href="#Defining_a_high-resolution_character"><span class="tocnumber">2</span> <span class="toctext">Defining a high-resolution character</span></a></li>
+<li class="toclevel-1 tocsection-5"><a href="#Defining_a_multi-color_character"><span class="tocnumber">3</span> <span class="toctext">Defining a multi-color character</span></a></li>
+<li class="toclevel-1 tocsection-6"><a href="#Character_sequence"><span class="tocnumber">4</span> <span class="toctext">Character sequence</span></a></li>
+<li class="toclevel-1 tocsection-7"><a href="#&quot;Reverse_on&quot;_characters"><span class="tocnumber">5</span> <span class="toctext">"Reverse on" characters</span></a></li>
+<li class="toclevel-1 tocsection-8"><a href="#Configuring_VIC_for_a_character_set"><span class="tocnumber">6</span> <span class="toctext">Configuring VIC for a character set</span></a></li>
+<li class="toclevel-1 tocsection-9"><a href="#Programming"><span class="tocnumber">7</span> <span class="toctext">Programming</span></a></li>
+<li class="toclevel-1 tocsection-10"><a href="#German_Example"><span class="tocnumber">8</span> <span class="toctext">German Example</span></a></li>
+<li class="toclevel-1 tocsection-11"><a href="#U5_Character_ROM_Failure_Symptoms"><span class="tocnumber">9</span> <span class="toctext">U5 Character ROM Failure Symptoms</span></a></li>
+<li class="toclevel-1 tocsection-12"><a href="#See_also"><span class="tocnumber">10</span> <span class="toctext">See also</span></a></li>
+<li class="toclevel-1 tocsection-13"><a href="#Links"><span class="tocnumber">11</span> <span class="toctext">Links</span></a></li>
+</ul>
+</div>
+
+<h2><span class="mw-headline" id="The_Character_sets">The Character sets</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Character_set&amp;veaction=edit&amp;section=1" title="Edit section: The Character sets" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Character_set&amp;action=edit&amp;section=1" title="Edit section&#39;s source code: The Character sets">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p>Users can switch between character sets by holding SHIFT and pressing the Commodore Key, by printing <a href="/wiki/control_character" title="control character">control characters</a> 14 or 142 or also with <code><a href="/wiki/POKE" title="POKE">POKE</a> 53272,23</code> for character set 2 and <code>POKE 53272,21</code> for character set 1.
+</p>
+<ul class="gallery mw-gallery-traditional">
+		<li class="gallerybox" style="width: 155px">
+			<div class="thumb" style="width: 150px; height: 150px;"><span typeof="mw:File"><a href="/wiki/File:Zeichensatz-c64-poke1.jpg" class="mw-file-description" title="Character set 1 (Big/graphics letters) with chars 0-127 of C64"><img alt="Character set 1 (Big/graphics letters) with chars 0-127 of C64" src="https://www.c64-wiki.com/images/thumb/f/f3/Zeichensatz-c64-poke1.jpg/120px-Zeichensatz-c64-poke1.jpg" decoding="async" loading="lazy" width="120" height="85" class="mw-file-element" srcset="https://www.c64-wiki.com/images/thumb/f/f3/Zeichensatz-c64-poke1.jpg/180px-Zeichensatz-c64-poke1.jpg 1.5x, https://www.c64-wiki.com/images/thumb/f/f3/Zeichensatz-c64-poke1.jpg/240px-Zeichensatz-c64-poke1.jpg 2x" /></a></span></div>
+			<div class="gallerytext">Character set 1 (Big/graphics letters) with chars 0-127 of C64</div>
+		</li>
+		<li class="gallerybox" style="width: 155px">
+			<div class="thumb" style="width: 150px; height: 150px;"><span typeof="mw:File"><a href="/wiki/File:Zeichensatz-c64-poke2.jpg" class="mw-file-description" title="Character set 1 (Big/graphics letters) with chars 128-255 of C64"><img alt="Character set 1 (Big/graphics letters) with chars 128-255 of C64" src="https://www.c64-wiki.com/images/thumb/a/a2/Zeichensatz-c64-poke2.jpg/120px-Zeichensatz-c64-poke2.jpg" decoding="async" loading="lazy" width="120" height="85" class="mw-file-element" srcset="https://www.c64-wiki.com/images/thumb/a/a2/Zeichensatz-c64-poke2.jpg/180px-Zeichensatz-c64-poke2.jpg 1.5x, https://www.c64-wiki.com/images/thumb/a/a2/Zeichensatz-c64-poke2.jpg/240px-Zeichensatz-c64-poke2.jpg 2x" /></a></span></div>
+			<div class="gallerytext">Character set 1 (Big/graphics letters) with chars 128-255 of C64</div>
+		</li>
+		<li class="gallerybox" style="width: 155px">
+			<div class="thumb" style="width: 150px; height: 150px;"><span typeof="mw:File"><a href="/wiki/File:Zeichensatz-c64-poke1k.jpg" class="mw-file-description" title="Character set 2 (Big/small letters) with chars 0-127 of C64"><img alt="Character set 2 (Big/small letters) with chars 0-127 of C64" src="https://www.c64-wiki.com/images/thumb/1/1a/Zeichensatz-c64-poke1k.jpg/120px-Zeichensatz-c64-poke1k.jpg" decoding="async" loading="lazy" width="120" height="84" class="mw-file-element" srcset="https://www.c64-wiki.com/images/thumb/1/1a/Zeichensatz-c64-poke1k.jpg/180px-Zeichensatz-c64-poke1k.jpg 1.5x, https://www.c64-wiki.com/images/thumb/1/1a/Zeichensatz-c64-poke1k.jpg/240px-Zeichensatz-c64-poke1k.jpg 2x" /></a></span></div>
+			<div class="gallerytext">Character set 2 (Big/small letters) with chars 0-127 of C64</div>
+		</li>
+		<li class="gallerybox" style="width: 155px">
+			<div class="thumb" style="width: 150px; height: 150px;"><span typeof="mw:File"><a href="/wiki/File:Zeichensatz-c64-poke2k.jpg" class="mw-file-description" title="Character set 2 (Big/small letters) with chars 128-255 of C64"><img alt="Character set 2 (Big/small letters) with chars 128-255 of C64" src="https://www.c64-wiki.com/images/thumb/5/55/Zeichensatz-c64-poke2k.jpg/120px-Zeichensatz-c64-poke2k.jpg" decoding="async" loading="lazy" width="120" height="85" class="mw-file-element" srcset="https://www.c64-wiki.com/images/thumb/5/55/Zeichensatz-c64-poke2k.jpg/180px-Zeichensatz-c64-poke2k.jpg 1.5x, https://www.c64-wiki.com/images/thumb/5/55/Zeichensatz-c64-poke2k.jpg/240px-Zeichensatz-c64-poke2k.jpg 2x" /></a></span></div>
+			<div class="gallerytext">Character set 2 (Big/small letters) with chars 128-255 of C64</div>
+		</li>
+</ul>
+<h3><span class="mw-headline" id="Character_Set_1">Character Set 1</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Character_set&amp;veaction=edit&amp;section=2" title="Edit section: Character Set 1" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Character_set&amp;action=edit&amp;section=2" title="Edit section&#39;s source code: Character Set 1">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<ul class="gallery mw-gallery-nolines">
+		<li class="gallerybox" style="width: 605px">
+			<div class="thumb" style="width: 600px;"><span typeof="mw:File"><a href="/wiki/File:bscode_zs1_0-127.png" class="mw-file-description" title="Chars and char codes 0-127 of character set 1 (Big/graphics letters)."><img alt="Chars and char codes 0-127 of character set 1 (Big/graphics letters)." src="https://www.c64-wiki.com/images/thumb/0/02/bscode_zs1_0-127.png/600px-bscode_zs1_0-127.png" decoding="async" loading="lazy" width="600" height="309" class="mw-file-element" srcset="https://www.c64-wiki.com/images/thumb/0/02/bscode_zs1_0-127.png/900px-bscode_zs1_0-127.png 1.5x, https://www.c64-wiki.com/images/thumb/0/02/bscode_zs1_0-127.png/1199px-bscode_zs1_0-127.png 2x" /></a></span></div>
+			<div class="gallerytext">Chars and char codes 0-127 of character set 1 (Big/graphics letters).</div>
+		</li>
+		<li class="gallerybox" style="width: 605px">
+			<div class="thumb" style="width: 600px;"><span typeof="mw:File"><a href="/wiki/File:bscode_zs1_128-255.png" class="mw-file-description" title="Chars and char codes 128-255 of character set 1 (Big/graphics letters)."><img alt="Chars and char codes 128-255 of character set 1 (Big/graphics letters)." src="https://www.c64-wiki.com/images/thumb/6/68/bscode_zs1_128-255.png/600px-bscode_zs1_128-255.png" decoding="async" loading="lazy" width="600" height="309" class="mw-file-element" srcset="https://www.c64-wiki.com/images/thumb/6/68/bscode_zs1_128-255.png/900px-bscode_zs1_128-255.png 1.5x, https://www.c64-wiki.com/images/thumb/6/68/bscode_zs1_128-255.png/1199px-bscode_zs1_128-255.png 2x" /></a></span></div>
+			<div class="gallerytext">Chars and char codes 128-255 of character set 1 (Big/graphics letters).</div>
+		</li>
+</ul>
+<h3><span class="mw-headline" id="Character_Set_2">Character Set 2</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Character_set&amp;veaction=edit&amp;section=3" title="Edit section: Character Set 2" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Character_set&amp;action=edit&amp;section=3" title="Edit section&#39;s source code: Character Set 2">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<ul class="gallery mw-gallery-nolines">
+		<li class="gallerybox" style="width: 605px">
+			<div class="thumb" style="width: 600px;"><span typeof="mw:File"><a href="/wiki/File:bscode_zs2_0-127.png" class="mw-file-description" title="Chars and char codes 0-127 of character set 2 (Big/small letters)."><img alt="Chars and char codes 0-127 of character set 2 (Big/small letters)." src="https://www.c64-wiki.com/images/thumb/8/8b/bscode_zs2_0-127.png/600px-bscode_zs2_0-127.png" decoding="async" loading="lazy" width="600" height="309" class="mw-file-element" srcset="https://www.c64-wiki.com/images/thumb/8/8b/bscode_zs2_0-127.png/900px-bscode_zs2_0-127.png 1.5x, https://www.c64-wiki.com/images/thumb/8/8b/bscode_zs2_0-127.png/1199px-bscode_zs2_0-127.png 2x" /></a></span></div>
+			<div class="gallerytext">Chars and char codes 0-127 of character set 2 (Big/small letters).</div>
+		</li>
+		<li class="gallerybox" style="width: 605px">
+			<div class="thumb" style="width: 600px;"><span typeof="mw:File"><a href="/wiki/File:bscode_zs2_128-255.png" class="mw-file-description" title="Chars and char codes 128-255 of character set 2 (Big/small letters)."><img alt="Chars and char codes 128-255 of character set 2 (Big/small letters)." src="https://www.c64-wiki.com/images/thumb/1/18/bscode_zs2_128-255.png/600px-bscode_zs2_128-255.png" decoding="async" loading="lazy" width="600" height="309" class="mw-file-element" srcset="https://www.c64-wiki.com/images/thumb/1/18/bscode_zs2_128-255.png/900px-bscode_zs2_128-255.png 1.5x, https://www.c64-wiki.com/images/thumb/1/18/bscode_zs2_128-255.png/1199px-bscode_zs2_128-255.png 2x" /></a></span></div>
+			<div class="gallerytext">Chars and char codes 128-255 of character set 2 (Big/small letters).</div>
+		</li>
+</ul>
+<p>Overview of character set switching:
+</p>
+<table border="2" cellspacing="0" cellpadding="4" rules="all" style="border-color:#aaaaaa; background-color:#f9f9f9; margin:1em 1em 1em 0; border-style:solid; border-width:1px; border-collapse:collapse; empty-cells:show">
+
+
+<tbody><tr>
+<th>Char set
+</th>
+<th>POKE
+</th>
+<th>PRINT CHR$(x)
+</th></tr>
+<tr>
+<td>1</td>
+<td>53272,21</td>
+<td>142
+</td></tr>
+<tr>
+<td>2</td>
+<td>53272,23</td>
+<td>14
+</td></tr></tbody></table>
+<p>Switching the character set can be prevented or permitted by issuing certain codes:
+</p>
+<table class="wikitable" style="text-align:center">
+<tbody><tr>
+<th rowspan="2">Switching
+</th>
+<th colspan="2">PRINT CHR$(...)
+</th></tr>
+<tr>
+<th>C64
+</th>
+<th>C128
+</th></tr>
+<tr>
+<td>deactive</td>
+<td>8</td>
+<td>11
+</td></tr>
+<tr>
+<td>active</td>
+<td>9</td>
+<td>12
+</td></tr></tbody></table>
+<h2><span class="mw-headline" id="Defining_a_high-resolution_character">Defining a high-resolution character</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Character_set&amp;veaction=edit&amp;section=4" title="Edit section: Defining a high-resolution character" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Character_set&amp;action=edit&amp;section=4" title="Edit section&#39;s source code: Defining a high-resolution character">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<table align="right" border="0" cellpadding="0" cellspacing="1">
+<tbody><tr><td bgcolor="#cccccc">&#160;0&#160;</td><td bgcolor="#000000"><font color="#ffffff">&#160;1&#160;</font></td><td bgcolor="#000000"><font color="#ffffff">&#160;1&#160;</font></td><td bgcolor="#cccccc">&#160;0&#160;</td><td bgcolor="#cccccc">&#160;0&#160;</td><td bgcolor="#000000"><font color="#ffffff">&#160;1&#160;</font></td><td bgcolor="#000000"><font color="#ffffff">&#160;1&#160;</font></td><td bgcolor="#cccccc">&#160;0&#160;</td><td><i> = 102/$66</i></td></tr>
+<tr><td bgcolor="#cccccc">&#160;0&#160;</td><td bgcolor="#cccccc">&#160;0&#160;</td><td bgcolor="#cccccc">&#160;0&#160;</td><td bgcolor="#cccccc">&#160;0&#160;</td><td bgcolor="#cccccc">&#160;0&#160;</td><td bgcolor="#cccccc">&#160;0&#160;</td><td bgcolor="#cccccc">&#160;0&#160;</td><td bgcolor="#cccccc">&#160;0&#160;</td><td><i> = 0/$00</i></td></tr>
+<tr><td bgcolor="#cccccc">&#160;0&#160;</td><td bgcolor="#cccccc">&#160;0&#160;</td><td bgcolor="#000000"><font color="#ffffff">&#160;1&#160;</font></td><td bgcolor="#000000"><font color="#ffffff">&#160;1&#160;</font></td><td bgcolor="#000000"><font color="#ffffff">&#160;1&#160;</font></td><td bgcolor="#000000"><font color="#ffffff">&#160;1&#160;</font></td><td bgcolor="#cccccc">&#160;0&#160;</td><td bgcolor="#cccccc">&#160;0&#160;</td><td><i> = 60/$3C</i></td></tr>
+<tr><td bgcolor="#cccccc">&#160;0&#160;</td><td bgcolor="#cccccc">&#160;0&#160;</td><td bgcolor="#cccccc">&#160;0&#160;</td><td bgcolor="#cccccc">&#160;0&#160;</td><td bgcolor="#cccccc">&#160;0&#160;</td><td bgcolor="#000000"><font color="#ffffff">&#160;1&#160;</font></td><td bgcolor="#000000"><font color="#ffffff">&#160;1&#160;</font></td><td bgcolor="#cccccc">&#160;0&#160;</td><td><i> = 6/$06</i></td></tr>
+<tr><td bgcolor="#cccccc">&#160;0&#160;</td><td bgcolor="#cccccc">&#160;0&#160;</td><td bgcolor="#000000"><font color="#ffffff">&#160;1&#160;</font></td><td bgcolor="#000000"><font color="#ffffff">&#160;1&#160;</font></td><td bgcolor="#000000"><font color="#ffffff">&#160;1&#160;</font></td><td bgcolor="#000000"><font color="#ffffff">&#160;1&#160;</font></td><td bgcolor="#000000"><font color="#ffffff">&#160;1&#160;</font></td><td bgcolor="#cccccc">&#160;0&#160;</td><td><i> = 62/$3E</i></td></tr>
+<tr><td bgcolor="#cccccc">&#160;0&#160;</td><td bgcolor="#000000"><font color="#ffffff">&#160;1&#160;</font></td><td bgcolor="#000000"><font color="#ffffff">&#160;1&#160;</font></td><td bgcolor="#cccccc">&#160;0&#160;</td><td bgcolor="#cccccc">&#160;0&#160;</td><td bgcolor="#000000"><font color="#ffffff">&#160;1&#160;</font></td><td bgcolor="#000000"><font color="#ffffff">&#160;1&#160;</font></td><td bgcolor="#cccccc">&#160;0&#160;</td><td><i> = 102/$66</i></td></tr>
+<tr><td bgcolor="#cccccc">&#160;0&#160;</td><td bgcolor="#cccccc">&#160;0&#160;</td><td bgcolor="#000000"><font color="#ffffff">&#160;1&#160;</font></td><td bgcolor="#000000"><font color="#ffffff">&#160;1&#160;</font></td><td bgcolor="#000000"><font color="#ffffff">&#160;1&#160;</font></td><td bgcolor="#000000"><font color="#ffffff">&#160;1&#160;</font></td><td bgcolor="#000000"><font color="#ffffff">&#160;1&#160;</font></td><td bgcolor="#cccccc">&#160;0&#160;</td><td><i> = 62/$3E</i></td></tr>
+<tr><td bgcolor="#cccccc">&#160;0&#160;</td><td bgcolor="#cccccc">&#160;0&#160;</td><td bgcolor="#cccccc">&#160;0&#160;</td><td bgcolor="#cccccc">&#160;0&#160;</td><td bgcolor="#cccccc">&#160;0&#160;</td><td bgcolor="#cccccc">&#160;0&#160;</td><td bgcolor="#cccccc">&#160;0&#160;</td><td bgcolor="#cccccc">&#160;0&#160;</td><td><i> = 0/$00</i></td></tr>
+</tbody></table>
+<p>Each character in <a href="/wiki/High_resolution" class="mw-redirect" title="High resolution">high resolution</a> mode is formed by a matrix of 8 &#215; 8 <a href="/wiki/Pixel" title="Pixel">pixels</a>, as illustrated to the right. Every pixel corresponds to a bit within these 8 bytes, and a bit that's "on" or "1" becomes visible in the "foreground" color for character in the <a href="/wiki/Color_RAM" title="Color RAM">Color RAM</a> at 55296&#8211;56295/$D800&#8211;DBE7, whereas bits that are "off" or "0" appear in the background color.
+</p><p>Each horizontal row in the matrix corresponds to a byte, read with the most significant bit, or pixel, to the left, and the least sigificant one at the right-hand end. The first of the eight byte corresponds to the topmost row, and the last of the eight byte to the bottom row. In the example to the right, the eight byte values to render the letter "ä" as shown, are 102, 0, 60, 6, 62, 102, 62, and 0, or in hexadecimal: $66, $00, $3C, $06, $3E, $66, $3E, and $00.
+</p><p><br clear="all" />
+</p>
+<h2><span class="mw-headline" id="Defining_a_multi-color_character">Defining a multi-color character</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Character_set&amp;veaction=edit&amp;section=5" title="Edit section: Defining a multi-color character" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Character_set&amp;action=edit&amp;section=5" title="Edit section&#39;s source code: Defining a multi-color character">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<table align="right" border="0" cellpadding="0" cellspacing="1">
+<tbody><tr><td bgcolor="#e0e000">&#160;1&#160;&#160;1&#160;</td><td bgcolor="#e0e000">&#160;1&#160;&#160;1&#160;</td><td bgcolor="#e0e000">&#160;1&#160;&#160;1&#160;</td><td bgcolor="#e0e000">&#160;1&#160;&#160;1&#160;</td><td><i> = 255/$FF</i></td></tr>
+<tr><td bgcolor="#e0e000">&#160;1&#160;&#160;1&#160;</td><td bgcolor="#e0e000">&#160;1&#160;&#160;1&#160;</td><td bgcolor="#e0e000">&#160;1&#160;&#160;1&#160;</td><td bgcolor="#805000"><font color="#ffffff">&#160;0&#160;&#160;1&#160;</font></td><td><i> = 253/$FD</i></td></tr>
+<tr><td bgcolor="#e0e000">&#160;1&#160;&#160;1&#160;</td><td bgcolor="#b08000">&#160;1&#160;&#160;0&#160;</td><td bgcolor="#b08000">&#160;1&#160;&#160;0&#160;</td><td bgcolor="#805000"><font color="#ffffff">&#160;0&#160;&#160;1&#160;</font></td><td><i> = 233/$E9</i></td></tr>
+<tr><td bgcolor="#e0e000">&#160;1&#160;&#160;1&#160;</td><td bgcolor="#b08000">&#160;1&#160;&#160;0&#160;</td><td bgcolor="#b08000">&#160;1&#160;&#160;0&#160;</td><td bgcolor="#805000"><font color="#ffffff">&#160;0&#160;&#160;1&#160;</font></td><td><i> = 233/$E9</i></td></tr>
+<tr><td bgcolor="#e0e000">&#160;1&#160;&#160;1&#160;</td><td bgcolor="#b08000">&#160;1&#160;&#160;0&#160;</td><td bgcolor="#b08000">&#160;1&#160;&#160;0&#160;</td><td bgcolor="#805000"><font color="#ffffff">&#160;0&#160;&#160;1&#160;</font></td><td><i> = 233/$E9</i></td></tr>
+<tr><td bgcolor="#e0e000">&#160;1&#160;&#160;1&#160;</td><td bgcolor="#b08000">&#160;1&#160;&#160;0&#160;</td><td bgcolor="#b08000">&#160;1&#160;&#160;0&#160;</td><td bgcolor="#805000"><font color="#ffffff">&#160;0&#160;&#160;1&#160;</font></td><td><i> = 233/$E9</i></td></tr>
+<tr><td bgcolor="#e0e000">&#160;1&#160;&#160;1&#160;</td><td bgcolor="#805000"><font color="#ffffff">&#160;0&#160;&#160;1&#160;</font></td><td bgcolor="#805000"><font color="#ffffff">&#160;0&#160;&#160;1&#160;</font></td><td bgcolor="#805000"><font color="#ffffff">&#160;0&#160;&#160;1&#160;</font></td><td><i> = 213/$D5</i></td></tr>
+<tr><td bgcolor="#805000"><font color="#ffffff">&#160;0&#160;&#160;1&#160;</font></td><td bgcolor="#805000"><font color="#ffffff">&#160;0&#160;&#160;1&#160;</font></td><td bgcolor="#805000"><font color="#ffffff">&#160;0&#160;&#160;1&#160;</font></td><td bgcolor="#805000"><font color="#ffffff">&#160;0&#160;&#160;1&#160;</font></td><td><i> = 85/$55</i></td></tr></tbody></table>
+<p>In <a href="/wiki/Multicolor_mode" class="mw-redirect" title="Multicolor mode">multicolor mode</a>, the pixels are "joined" two at a time to form "bit pairs", yielding a matrix of 4 "double-width" pixels by the same 8 rows as in high-resolution mode: An example of this principle is shown to the right.
+</p><p>Depending on the bit-pair combination, the color of each pixel will be:
+</p>
+<ul><li>Transparent, or "background" if the bit pair is "00"</li>
+<li>The color indicated in address <a href="/index.php?title=53282&amp;action=edit&amp;redlink=1" class="new" title="53282 (page does not exist)">53282</a>/$D022 where the bit pair is "01"</li>
+<li>The color indicated in address <a href="/index.php?title=53283&amp;action=edit&amp;redlink=1" class="new" title="53283 (page does not exist)">53283</a>/$D023 where the bit pair is "10"</li>
+<li>The character's individual color (55296&#8211;56295/$D800&#8211;DBE7) where the bit pair is "11"</li></ul>
+<p>The text screen in multicolor mode uses the most significant of the four bits in each character's individual color: This means that the screen can display both multicolor and high resolution characters side-by-side, but the disadvantage is that the individual color for each multicolor character can only be chosen from the first half (color codes 0 thru 8) of the normal 16-color palette. The two colors stored in 53282/$D022 and 53283/$D023 are common for all multicolor characters on screen, but may assume any of the 16 available <a href="/wiki/Color_code" class="mw-redirect" title="Color code">color codes</a>.
+</p>
+<ul><li>Activate the multicolor mode: <code>POKE 53270,<a href="/wiki/PEEK" title="PEEK">PEEK</a>(53270) <a href="/wiki/OR" title="OR">OR</a> 16</code></li>
+<li>Deactivating the multicolor mode: <code>POKE 53270,PEEK(53270) <a href="/wiki/AND" title="AND">AND</a> 239</code></li></ul>
+<h2><span class="mw-headline" id="Character_sequence">Character sequence</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Character_set&amp;veaction=edit&amp;section=6" title="Edit section: Character sequence" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Character_set&amp;action=edit&amp;section=6" title="Edit section&#39;s source code: Character sequence">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p>The eight-byte "blocks" that form each character follows the same sequence as in the table of <a href="/index.php?title=Screen_character_code&amp;action=edit&amp;redlink=1" class="new" title="Screen character code (page does not exist)">screen character codes</a>, i.e. the very first 8 bytes form the visual appearance of the @ sign, the following 8 bytes form the letter "a", etc. The general rule is that if the whole character set starts at address <i>s</i>, the character whose screen character code is <i>n</i> will start at address <i>s</i> + 8 &#215; <i>n</i>. 
+</p>
+<h2><span id=".22Reverse_on.22_characters"></span><span class="mw-headline" id="&quot;Reverse_on&quot;_characters">"Reverse on" characters</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Character_set&amp;veaction=edit&amp;section=7" title="Edit section: &quot;Reverse on&quot; characters" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Character_set&amp;action=edit&amp;section=7" title="Edit section&#39;s source code: &quot;Reverse on&quot; characters">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p>In the two standard <a href="/wiki/ROM" title="ROM">ROM</a> character sets, the upper 128 characters in each set is a "<span style="color:#ffffff;background:#000000">reverse</span>", or "negative image", of the first 128 characters: The <a href="/wiki/KERNAL" class="mw-redirect" title="KERNAL">KERNAL</a> operating system depends on this for displaying the flashing cursor, <a href="/wiki/control_character" title="control character">control characters</a> in <a href="/wiki/LIST" title="LIST">LISTings</a>, etc.
+</p>
+<h2><span class="mw-headline" id="Configuring_VIC_for_a_character_set">Configuring VIC for a character set</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Character_set&amp;veaction=edit&amp;section=8" title="Edit section: Configuring VIC for a character set" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Character_set&amp;action=edit&amp;section=8" title="Edit section&#39;s source code: Configuring VIC for a character set">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p>A user-supplied character set in RAM <i>must</i> begin at an address that divides with 2048 bytes leaving no remainder, and reside within the same 16 kB <a href="/wiki/VIC_bank" title="VIC bank">VIC bank</a> as the <a href="/wiki/screen_memory" class="mw-redirect" title="screen memory">screen character memory</a>. Moreover, the <a href="/wiki/VIC-II" class="mw-redirect" title="VIC-II">VIC-II</a> cannot see a character set in RAM beginning at either 4096/$1000, 6144/$1800, 36864/$9000, or 38912/$9800, since these areas are "overshadowed" by the ROM character sets, as seen in VIC-II's address space.
+</p><p>The pointers to the character set and the screen character memory both reside in address <a href="/wiki/53272" title="53272">53272</a>/$D018. Also see <a href="/wiki/53272" title="53272">Address 53272</a> for values to put in this address for given combinations of character set and screen RAM start addresses.
+</p>
+<h2><span class="mw-headline" id="Programming">Programming</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Character_set&amp;veaction=edit&amp;section=9" title="Edit section: Programming" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Character_set&amp;action=edit&amp;section=9" title="Edit section&#39;s source code: Programming">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p>This slow BASIC routine copies the char set ROM into the RAM (12288 - 16383) for manipulating.
+</p>
+<pre><a href="/wiki/POKE" title="POKE">POKE</a> 56334, <a href="/wiki/PEEK" title="PEEK">PEEK</a>(56334) <a href="/wiki/AND" title="AND">AND</a> 254                      <i>(Interrupts deactivate)</i>
+POKE 1, PEEK(1) AND 251                              <i>(E/A area deactivate, char set ROM online)</i>
+<a href="/wiki/FOR" title="FOR">FOR</a> A=53248 <a href="/wiki/TO" title="TO">TO</a> 57343: POKE A-40960, PEEK(A): <a href="/wiki/NEXT" title="NEXT">NEXT</a> A  <i>(copy routine)</i>
+POKE 1, PEEK(1) <a href="/wiki/OR" title="OR">OR</a> 4                                 <i>(E/A area activate)</i>
+POKE 56334, PEEK(56334) OR 1                         <i>(Interrupts activate)</i>
+POKE 53272,PEEK(53272) AND 240 OR 12&#160;: REM CHAR SET RAM AT $3000 <i>(Sets soft character base address)</i>
+</pre>
+<ul><li>This short BASIC program deletes a char (here: <b>@</b>): <code>FOR X=12288 TO 12295: POKE X,0: NEXT X</code></li>
+<li>And this BASIC program creates a fully rectangle char for the <b>@</b>: <code>FOR X=12288 TO 12295: POKE X,255: NEXT X</code></li></ul>
+<h2><span class="mw-headline" id="German_Example">German Example</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Character_set&amp;veaction=edit&amp;section=10" title="Edit section: German Example" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Character_set&amp;action=edit&amp;section=10" title="Edit section&#39;s source code: German Example">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<figure class="mw-halign-right" typeof="mw:File/Thumb"><a href="/wiki/File:C64-umlaute.jpg" class="mw-file-description"><img src="https://www.c64-wiki.com/images/thumb/5/5b/C64-umlaute.jpg/300px-C64-umlaute.jpg" decoding="async" loading="lazy" width="300" height="210" class="mw-file-element" srcset="https://www.c64-wiki.com/images/5/5b/C64-umlaute.jpg 1.5x" /></a><figcaption>Example: 4 new chars for the C64 (German mutated vowel) on a test screen (written in german)</figcaption></figure>
+<p>This listing has 2 parts: Firstly the copy routine (now a fast assembler routine) for copying char set ROM into RAM ($3000-$3FFF; lines 10-30) and secondly the modifying of the chars (keys; after line 60) <span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">[</span>&#160;, <span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">&#163;</span>&#160;,  <span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">]</span>&#160; and <span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">↑</span>&#160; to the German mutated vowels Ä, Ö, Ü, ß. These can be made with <code>POKE 1024,X</code> (with 27, 28, 29, 30) or with <code>PRINT <a href="/wiki/CHR$" title="CHR$">CHR$</a>(X)</code> (with 91, 92, 93, 94) print on the screen (but not print on a printer!).
+</p>
+<pre>10 <a href="/wiki/REM" title="REM">REM</a> COPY ROUTINE
+11 FOR I=0 TO 26: <a href="/wiki/READ" title="READ">READ</a> X: POKE 828+I,X: NEXT I
+12 <a href="/wiki/DATA" title="DATA">DATA</a> 169,000,160,208,133,095,132,096&#160;: REM LDA #0; LDY #$D0; STA 95, STY 96
+13 DATA 169,000,160,224,133,090,132,091&#160;: REM LDA #0; LDY #$E0; STA 90; STY 91
+14 DATA 169,000,160,064,133,088,132,089&#160;: REM LDA #0; LDY #$40; STA 88; STY 89
+15 DATA 076,191,163&#160;: REM JMP $A3BF
+16 REM COPY $D000-$DFFF -&gt; $3000-$3FFF
+20 REM CHAR SET ROM INTO RAM 
+21 POKE 56334,PEEK(56334) AND 254&#160;: REM INTERRUPT OFF
+22 POKE 1,PEEK(1) AND 251&#160;: REM CHAR SET ROM ON
+23 <a href="/wiki/SYS" title="SYS">SYS</a> 828&#160;: REM START COPY
+24 POKE 1,PEEK(1) OR 4&#160;: REM CHAR SET ROM OFF
+25 POKE 56334,PEEK(56334) OR 1&#160;: REM INTERRUPT ON
+26 POKE 53272,PEEK(53272) AND 240 OR 12&#160;: REM CHAR SET RAM AT $3000
+60 REM GERMAN MUTATED VOWEL
+61 FOR A=12504 TO 12535: READ ZE: POKE A,ZE: POKE A+1024,255-ZE: NEXT A
+62 <a href="/wiki/DATA" title="DATA">DATA</a> 195,024,102,126,102,102,102,000: REM AE-Ä
+63 DATA 102,060,102,102,102,102,060,000: REM OE-Ö
+64 DATA 102,000,102,102,102,102,060,000: REM UE-Ü
+65 DATA 126,102,102,126,102,126,096,096: REM SS-ß
+</pre>
+<h2><span class="mw-headline" id="U5_Character_ROM_Failure_Symptoms">U5 Character ROM Failure Symptoms</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Character_set&amp;veaction=edit&amp;section=11" title="Edit section: U5 Character ROM Failure Symptoms" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Character_set&amp;action=edit&amp;section=11" title="Edit section&#39;s source code: U5 Character ROM Failure Symptoms">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<ul><li>Normal startup border, but "garbage" characters where startup page characters should be.</li>
+<li>Cartridge works.</li></ul>
+<h2><span class="mw-headline" id="See_also">See also</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Character_set&amp;veaction=edit&amp;section=12" title="Edit section: See also" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Character_set&amp;action=edit&amp;section=12" title="Edit section&#39;s source code: See also">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<ul><li><a href="/wiki/PETSCII" title="PETSCII">PETSCII</a></li>
+<li><a href="/wiki/control_character" title="control character">control character</a></li></ul>
+<h2><span class="mw-headline" id="Links">Links</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Character_set&amp;veaction=edit&amp;section=13" title="Edit section: Links" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Character_set&amp;action=edit&amp;section=13" title="Edit section&#39;s source code: Links">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<ul><li><a rel="nofollow" class="external text" href="http://kofler.dot.at/c64/font_01.html">C64 char sets at kofler.dot.at</a></li>
+<li><a rel="nofollow" class="external text" href="http://style64.org/c64-truetype">Style</a> C64 TrueType Fonts</li>
+<li><a rel="nofollow" class="external text" href="http://www.kreativekorp.com/software/fonts/c64.shtml">Other TrueType Fonts</a></li>
+<li><a rel="nofollow" class="external text" href="https://compidiaries.wordpress.com/2018/09/17/ein-neuer-systemfont-fuer-den-c64/">Blog Compi Diaries: "A new system font for the C64 (Ein neuer Systemfont für den C64)"</a> <span class="mw-default-size" typeof="mw:File"><a href="/wiki/File:flag_de_18px.gif" class="mw-file-description" title="Language German"><img alt="Language German" src="https://www.c64-wiki.com/images/c/cf/flag_de_18px.gif" decoding="async" loading="lazy" width="18" height="11" class="mw-file-element" /></a></span></li></ul>
+<!-- 
+NewPP limit report
+Cached time: 20260927045643
+Cache expiry: 86400
+Reduced expiry: false
+Complications: [show‐toc]
+CPU time usage: 0.052 seconds
+Real time usage: 0.061 seconds
+Preprocessor visited node count: 282/1000000
+Post‐expand include size: 2657/2097152 bytes
+Template argument size: 11/2097152 bytes
+Highest expansion depth: 3/100
+Expensive parser function count: 0/100
+Unstrip recursion depth: 0/20
+Unstrip post‐expand size: 7109/5000000 bytes
+-->
+<!--
+Transclusion expansion time report (%,ms,calls,template)
+100.00%    4.216      1 -total
+ 27.63%    1.165      1 Template:prettytable
+ 22.89%    0.965      4 Template:Key
+ 18.50%    0.780      1 Template:-
+ 17.98%    0.758      1 Template:DE
+-->
+
+<!-- Saved in parser cache with key c64?hwiki?hen-wiki_:pcache:idhash:1582-0!canonical!svUser=0!asDate=20260927 and timestamp 20260927045643 and revision id 43873. Rendering was triggered because: page-view
+ -->
+</div>
+</div>
+</body></html>

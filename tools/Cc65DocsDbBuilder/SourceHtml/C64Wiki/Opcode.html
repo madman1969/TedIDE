@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<!-- From C64-Wiki (https://www.c64-wiki.com/wiki/Opcode), revision 43924, last edited 31 January 2026, at 20:12.
+     Content is available under the GNU Free Documentation License - see c64wiki/licence.
+     Only the article body is kept; retrieved 2026-09-27 for Tedide's Doc Viewer. -->
+<html><head><meta charset="utf-8"><title>Opcode</title>
+<meta name="c64wiki-page" content="Opcode"><meta name="c64wiki-revision" content="43924"><meta name="c64wiki-edited" content="31 January 2026, at 20:12">
+</head><body>
+<div class="mw-content-ltr mw-parser-output" lang="en" dir="ltr"><p><b>Opcodes</b> (short for Operation Codes) are processor instructions used in <a href="/wiki/machine_language" class="mw-redirect" title="machine language">machine language</a>.
+The 6510 CPU offers 151 <sup id="cite&#95;ref-1" class="reference"><a href="#cite_note-1"><span class="cite-bracket">&#91;</span>1<span class="cite-bracket">&#93;</span></a></sup> official opcodes, plus 105 illegal (unofficial) opcodes, totaling 256 opcodes. 
+</p>
+<div id="toc" class="toc" role="navigation" aria-labelledby="mw-toc-heading"><input type="checkbox" role="button" id="toctogglecheckbox" class="toctogglecheckbox" style="display:none" /><div class="toctitle" lang="en" dir="ltr"><h2 id="mw-toc-heading">Contents</h2><span class="toctogglespan"><label class="toctogglelabel" for="toctogglecheckbox"></label></span></div>
+<ul>
+<li class="toclevel-1 tocsection-1"><a href="#Legal_Opcodes"><span class="tocnumber">1</span> <span class="toctext">Legal Opcodes</span></a></li>
+<li class="toclevel-1 tocsection-2"><a href="#Illegal_Opcodes"><span class="tocnumber">2</span> <span class="toctext">Illegal Opcodes</span></a></li>
+<li class="toclevel-1 tocsection-3"><a href="#Opcode_matrix_for_MOS_6510"><span class="tocnumber">3</span> <span class="toctext">Opcode matrix for MOS 6510</span></a></li>
+<li class="toclevel-1 tocsection-4"><a href="#Arrangement"><span class="tocnumber">4</span> <span class="toctext">Arrangement</span></a></li>
+<li class="toclevel-1 tocsection-5"><a href="#Links"><span class="tocnumber">5</span> <span class="toctext">Links</span></a></li>
+<li class="toclevel-1 tocsection-6"><a href="#References"><span class="tocnumber">6</span> <span class="toctext">References</span></a></li>
+</ul>
+</div>
+
+<h2><span class="mw-headline" id="Legal_Opcodes">Legal Opcodes</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Opcode&amp;veaction=edit&amp;section=1" title="Edit section: Legal Opcodes" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Opcode&amp;action=edit&amp;section=1" title="Edit section&#39;s source code: Legal Opcodes">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p>Examples:
+</p>
+<ul><li>$C8 (11001000) is the opcode for the <a href="/wiki/Mnemonic" title="Mnemonic">mnemonic</a> <a href="/wiki/INY" title="INY">INY</a>.</li>
+<li>$EA (11101010) is the opcode for the <a href="/wiki/Mnemonic" title="Mnemonic">mnemonic</a> <a href="/wiki/NOP" title="NOP">NOP</a>.</li></ul>
+<h2><span class="mw-headline" id="Illegal_Opcodes">Illegal Opcodes</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Opcode&amp;veaction=edit&amp;section=2" title="Edit section: Illegal Opcodes" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Opcode&amp;action=edit&amp;section=2" title="Edit section&#39;s source code: Illegal Opcodes">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p>Illegal opcodes are undocumented commands that exist as a side-effect of the hardwired circuit design and were called "illegal" because they are not guaranteed to work reliably.
+</p>
+<h2><span class="mw-headline" id="Opcode_matrix_for_MOS_6510">Opcode matrix for MOS 6510</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Opcode&amp;veaction=edit&amp;section=3" title="Edit section: Opcode matrix for MOS 6510" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Opcode&amp;action=edit&amp;section=3" title="Edit section&#39;s source code: Opcode matrix for MOS 6510">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p>Illegal Opcodes are coloured red.
+</p><p><br />
+</p>
+<table style="border-color:#aaaaaa; background-color:#f9f9f9; margin:1em 1em 1em 0; border-style:solid; border-width:1px; border-collapse:collapse; empty-cells:show" border="2" cellspacing="0" cellpadding="4" rules="all">
+
+
+
+<tbody><tr>
+<td></td>
+<td>x<big><b>0</b></big></td>
+<td>x<big><b>1</b></big></td>
+<td>x<big><b>2</b></big></td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no">x<big><b>3</b></big></td>
+<td>x<big><b>4</b></big></td>
+<td>x<big><b>5</b></big></td>
+<td>x<big><b>6</b></big></td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no">x<big><b>7</b></big></td>
+<td>x<big><b>8</b></big></td>
+<td>x<big><b>9</b></big></td>
+<td>x<big><b>A</b></big></td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no">x<big><b>B</b></big></td>
+<td>x<big><b>C</b></big></td>
+<td>x<big><b>D</b></big></td>
+<td>x<big><b>E</b></big></td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no">x<big><b>F</b></big>
+</td></tr>
+<tr>
+<td><big><b>0</b></big>x</td>
+<td><a href="/wiki/BRK" title="BRK">BRK</a><br />imp</td>
+<td><a href="/wiki/ORA" title="ORA">ORA</a><br />inx</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/JAM" title="JAM">JAM</a></td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/index.php?title=SLO&amp;action=edit&amp;redlink=1" class="new" title="SLO (page does not exist)">SLO</a><br />inx</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/NOP" title="NOP">NOP</a><br />zp</td>
+<td><a href="/wiki/ORA" title="ORA">ORA</a><br />zp</td>
+<td><a href="/wiki/ASL" title="ASL">ASL</a><br />zp</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/index.php?title=SLO&amp;action=edit&amp;redlink=1" class="new" title="SLO (page does not exist)">SLO</a><br />zp</td>
+<td><a href="/wiki/PHP" title="PHP">PHP</a><br />imp</td>
+<td><a href="/wiki/ORA" title="ORA">ORA</a><br />imm</td>
+<td><a href="/wiki/ASL" title="ASL">ASL</a><br />akk</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/ANC" title="ANC">ANC</a><br />imm</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/NOP" title="NOP">NOP</a><br />abs</td>
+<td><a href="/wiki/ORA" title="ORA">ORA</a><br />abs</td>
+<td><a href="/wiki/ASL" title="ASL">ASL</a><br />abs</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/index.php?title=SLO&amp;action=edit&amp;redlink=1" class="new" title="SLO (page does not exist)">SLO</a><br />abs
+</td></tr>
+<tr>
+<td><big><b>1</b></big>x</td>
+<td><a href="/wiki/BPL" title="BPL">BPL</a><br />rel</td>
+<td><a href="/wiki/ORA" title="ORA">ORA</a><br />iny</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/JAM" title="JAM">JAM</a></td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/index.php?title=SLO&amp;action=edit&amp;redlink=1" class="new" title="SLO (page does not exist)">SLO</a><br />iny</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/NOP" title="NOP">NOP</a><br />zpx</td>
+<td><a href="/wiki/ORA" title="ORA">ORA</a><br />zpx</td>
+<td><a href="/wiki/ASL" title="ASL">ASL</a><br />zpx</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/index.php?title=SLO&amp;action=edit&amp;redlink=1" class="new" title="SLO (page does not exist)">SLO</a><br />zpy</td>
+<td><a href="/wiki/CLC" title="CLC">CLC</a><br />imp</td>
+<td><a href="/wiki/ORA" title="ORA">ORA</a><br />aby</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/NOP" title="NOP">NOP</a><i><br />imp</i></td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/index.php?title=SLO&amp;action=edit&amp;redlink=1" class="new" title="SLO (page does not exist)">SLO</a><br />aby</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/NOP" title="NOP">NOP</a><br />abx</td>
+<td><a href="/wiki/ORA" title="ORA">ORA</a><br />abx</td>
+<td><a href="/wiki/ASL" title="ASL">ASL</a><br />abx</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/index.php?title=SLO&amp;action=edit&amp;redlink=1" class="new" title="SLO (page does not exist)">SLO</a><br />abx
+</td></tr>
+<tr>
+<td><big><b>2</b></big>x</td>
+<td><a href="/wiki/JSR" title="JSR">JSR</a><br />abs</td>
+<td><a href="/wiki/AND_(assembler)" title="AND (assembler)">AND</a><br />inx</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/JAM" title="JAM">JAM</a></td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/RLA" title="RLA">RLA</a><br />inx</td>
+<td><a href="/wiki/BIT_(assembler)" title="BIT (assembler)">BIT</a><br />zp</td>
+<td><a href="/wiki/AND_(assembler)" title="AND (assembler)">AND</a><br />zp</td>
+<td><a href="/wiki/ROL" title="ROL">ROL</a><br />zp</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/RLA" title="RLA">RLA</a><br />zp</td>
+<td><a href="/wiki/PLP" title="PLP">PLP</a><br />imp</td>
+<td><a href="/wiki/AND_(assembler)" title="AND (assembler)">AND</a><br />imm</td>
+<td><a href="/wiki/ROL" title="ROL">ROL</a><br />akk</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/ANC" title="ANC">ANC</a><br />imm</td>
+<td><a href="/wiki/BIT_(assembler)" title="BIT (assembler)">BIT</a><br />abs</td>
+<td><a href="/wiki/AND_(assembler)" title="AND (assembler)">AND</a><br />abs</td>
+<td><a href="/wiki/ROL" title="ROL">ROL</a><br />abs</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/RLA" title="RLA">RLA</a><br />abs
+</td></tr>
+<tr>
+<td><big><b>3</b></big>x</td>
+<td><a href="/wiki/BMI" title="BMI">BMI</a><br />rel</td>
+<td><a href="/wiki/AND_(assembler)" title="AND (assembler)">AND</a><br />iny</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/JAM" title="JAM">JAM</a></td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/RLA" title="RLA">RLA</a><br />iny</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/NOP" title="NOP">NOP</a><br />zpx</td>
+<td><a href="/wiki/AND_(assembler)" title="AND (assembler)">AND</a><br />zpx</td>
+<td><a href="/wiki/ROL" title="ROL">ROL</a><br />zpx</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/RLA" title="RLA">RLA</a><br />zpy</td>
+<td><a href="/wiki/SEC" title="SEC">SEC</a><br />imp</td>
+<td><a href="/wiki/AND_(assembler)" title="AND (assembler)">AND</a><br />aby</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/NOP" title="NOP">NOP</a><i><br />imp</i></td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/RLA" title="RLA">RLA</a><br />aby</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/NOP" title="NOP">NOP</a><br />abx</td>
+<td><a href="/wiki/AND_(assembler)" title="AND (assembler)">AND</a><br />abx</td>
+<td><a href="/wiki/ROL" title="ROL">ROL</a><br />abx</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/RLA" title="RLA">RLA</a><br />abx
+</td></tr>
+<tr>
+<td><big><b>4</b></big>x</td>
+<td><a href="/wiki/RTI" title="RTI">RTI</a><br />imp</td>
+<td><a href="/wiki/EOR" title="EOR">EOR</a><br />inx</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/JAM" title="JAM">JAM</a></td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/SRE" title="SRE">SRE</a><br />inx</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/NOP" title="NOP">NOP</a><br />zp</td>
+<td><a href="/wiki/EOR" title="EOR">EOR</a><br />zp</td>
+<td><a href="/wiki/LSR" title="LSR">LSR</a><br />zp</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/SRE" title="SRE">SRE</a><br />zp</td>
+<td><a href="/wiki/PHA" title="PHA">PHA</a><br />imp</td>
+<td><a href="/wiki/EOR" title="EOR">EOR</a><br />imm</td>
+<td><a href="/wiki/LSR" title="LSR">LSR</a><br />akk</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/ALR" title="ALR">ALR</a><br />imm</td>
+<td><a href="/wiki/JMP" title="JMP">JMP</a><br />abs</td>
+<td><a href="/wiki/EOR" title="EOR">EOR</a><br />abs</td>
+<td><a href="/wiki/LSR" title="LSR">LSR</a><br />abs</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/SRE" title="SRE">SRE</a><br />abs
+</td></tr>
+<tr>
+<td><big><b>5</b></big>x</td>
+<td><a href="/wiki/BVC" title="BVC">BVC</a><br />rel</td>
+<td><a href="/wiki/EOR" title="EOR">EOR</a><br />iny</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/JAM" title="JAM">JAM</a></td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/SRE" title="SRE">SRE</a><br />iny</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/NOP" title="NOP">NOP</a><br />zpx</td>
+<td><a href="/wiki/EOR" title="EOR">EOR</a><br />zpx</td>
+<td><a href="/wiki/LSR" title="LSR">LSR</a><br />zpx</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/SRE" title="SRE">SRE</a><br />zpx</td>
+<td><a href="/wiki/CLI" title="CLI">CLI</a><br />imp</td>
+<td><a href="/wiki/EOR" title="EOR">EOR</a><br />aby</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/NOP" title="NOP">NOP</a><i><br />imp</i></td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/SRE" title="SRE">SRE</a><br />aby</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/NOP" title="NOP">NOP</a><br />abx</td>
+<td><a href="/wiki/EOR" title="EOR">EOR</a><br />abx</td>
+<td><a href="/wiki/LSR" title="LSR">LSR</a><br />abx</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/SRE" title="SRE">SRE</a><br />abx
+</td></tr>
+<tr>
+<td><big><b>6</b></big>x</td>
+<td><a href="/wiki/RTS" title="RTS">RTS</a><br />imp</td>
+<td><a href="/wiki/ADC" title="ADC">ADC</a><br />inx</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/JAM" title="JAM">JAM</a></td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/RRA" title="RRA">RRA</a><br />inx</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/NOP" title="NOP">NOP</a><br />zp</td>
+<td><a href="/wiki/ADC" title="ADC">ADC</a><br />zp</td>
+<td><a href="/wiki/ROR" title="ROR">ROR</a><br />zp</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/RRA" title="RRA">RRA</a><br />zp</td>
+<td><a href="/wiki/PLA_(command)" title="PLA (command)">PLA</a><br />imp</td>
+<td><a href="/wiki/ADC" title="ADC">ADC</a><br />imm</td>
+<td><a href="/wiki/ROR" title="ROR">ROR</a><br />akk</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/ARR" title="ARR">ARR</a><br />imm</td>
+<td><a href="/wiki/JMP" title="JMP">JMP</a><br />ind</td>
+<td><a href="/wiki/ADC" title="ADC">ADC</a><br />abs</td>
+<td><a href="/wiki/ROR" title="ROR">ROR</a><br />abs</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/RRA" title="RRA">RRA</a><br />abs
+</td></tr>
+<tr>
+<td><big><b>7</b></big>x</td>
+<td><a href="/wiki/BVS" title="BVS">BVS</a><br />rel</td>
+<td><a href="/wiki/ADC" title="ADC">ADC</a><br />iny</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/JAM" title="JAM">JAM</a></td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/RRA" title="RRA">RRA</a><br />iny</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/NOP" title="NOP">NOP</a><br />zpx</td>
+<td><a href="/wiki/ADC" title="ADC">ADC</a><br />zpx</td>
+<td><a href="/wiki/ROR" title="ROR">ROR</a><br />zpx</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/RRA" title="RRA">RRA</a><br />zpx</td>
+<td><a href="/wiki/SEI" title="SEI">SEI</a><br />imp</td>
+<td><a href="/wiki/ADC" title="ADC">ADC</a><br />aby</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/NOP" title="NOP">NOP</a><i><br />imp</i></td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/RRA" title="RRA">RRA</a><br />aby</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/NOP" title="NOP">NOP</a><br />abx</td>
+<td><a href="/wiki/ADC" title="ADC">ADC</a><br />abx</td>
+<td><a href="/wiki/ROR" title="ROR">ROR</a><br />abx</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/RRA" title="RRA">RRA</a><br />abx
+</td></tr>
+<tr>
+<td><big><b>8</b></big>x</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/NOP" title="NOP">NOP</a><br />imm</td>
+<td><a href="/wiki/STA" title="STA">STA</a><br />inx</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/NOP" title="NOP">NOP</a><br />imm</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/SAX" title="SAX">SAX</a><br />inx</td>
+<td><a href="/wiki/STY" title="STY">STY</a><br />zp</td>
+<td><a href="/wiki/STA" title="STA">STA</a><br />zp</td>
+<td><a href="/wiki/STX" title="STX">STX</a><br />zp</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/SAX" title="SAX">SAX</a><br />zp</td>
+<td><a href="/wiki/DEY" title="DEY">DEY</a><br />imp</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/NOP" title="NOP">NOP</a><br />imm</td>
+<td><a href="/wiki/TXA" title="TXA">TXA</a><br />imp</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/index.php?title=ANE&amp;action=edit&amp;redlink=1" class="new" title="ANE (page does not exist)">ANE</a><br />imm</td>
+<td><a href="/wiki/STY" title="STY">STY</a><br />abs</td>
+<td><a href="/wiki/STA" title="STA">STA</a><br />abs</td>
+<td><a href="/wiki/STX" title="STX">STX</a><br />abs</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/SAX" title="SAX">SAX</a><br />abs
+</td></tr>
+<tr>
+<td><big><b>9</b></big>x</td>
+<td><a href="/wiki/BCC" title="BCC">BCC</a><br />rel</td>
+<td><a href="/wiki/STA" title="STA">STA</a><br />iny</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/JAM" title="JAM">JAM</a></td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/index.php?title=SHA&amp;action=edit&amp;redlink=1" class="new" title="SHA (page does not exist)">SHA</a><br />iny</td>
+<td><a href="/wiki/STY" title="STY">STY</a><br />zpx</td>
+<td><a href="/wiki/STA" title="STA">STA</a><br />zpx</td>
+<td><a href="/wiki/STX" title="STX">STX</a><br />zpy</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/SAX" title="SAX">SAX</a><br />zpy</td>
+<td><a href="/wiki/TYA" title="TYA">TYA</a><br />imp</td>
+<td><a href="/wiki/STA" title="STA">STA</a><br />aby</td>
+<td><a href="/wiki/TXS" title="TXS">TXS</a><br />imp</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/index.php?title=TAS&amp;action=edit&amp;redlink=1" class="new" title="TAS (page does not exist)">TAS</a><br />aby</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/index.php?title=SHY&amp;action=edit&amp;redlink=1" class="new" title="SHY (page does not exist)">SHY</a><br />abx</td>
+<td><a href="/wiki/STA" title="STA">STA</a><br />abx</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/index.php?title=SHX&amp;action=edit&amp;redlink=1" class="new" title="SHX (page does not exist)">SHX</a><br />aby</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/index.php?title=SHA&amp;action=edit&amp;redlink=1" class="new" title="SHA (page does not exist)">SHA</a><br />aby
+</td></tr>
+<tr>
+<td><big><b>A</b></big>x</td>
+<td><a href="/wiki/LDY" title="LDY">LDY</a><br />imm</td>
+<td><a href="/wiki/LDA" title="LDA">LDA</a><br />inx</td>
+<td><a href="/wiki/LDX" title="LDX">LDX</a><br />imm</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/LAX" title="LAX">LAX</a><br />inx</td>
+<td><a href="/wiki/LDY" title="LDY">LDY</a><br />zp</td>
+<td><a href="/wiki/LDA" title="LDA">LDA</a><br />zp</td>
+<td><a href="/wiki/LDX" title="LDX">LDX</a><br />zp</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/LAX" title="LAX">LAX</a><br />zp</td>
+<td><a href="/wiki/TAY" title="TAY">TAY</a><br />imp</td>
+<td><a href="/wiki/LDA" title="LDA">LDA</a><br />imm</td>
+<td><a href="/wiki/TAX" title="TAX">TAX</a><br />imp</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/LAX" title="LAX">LAX</a><br />imm</td>
+<td><a href="/wiki/LDY" title="LDY">LDY</a><br />abs</td>
+<td><a href="/wiki/LDA" title="LDA">LDA</a><br />abs</td>
+<td><a href="/wiki/LDX" title="LDX">LDX</a><br />abs</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/LAX" title="LAX">LAX</a><br />abs
+</td></tr>
+<tr>
+<td><big><b>B</b></big>x</td>
+<td><a href="/wiki/BCS" title="BCS">BCS</a><br />rel</td>
+<td><a href="/wiki/LDA" title="LDA">LDA</a><br />iny</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/JAM" title="JAM">JAM</a></td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/LAX" title="LAX">LAX</a><br />iny</td>
+<td><a href="/wiki/LDY" title="LDY">LDY</a><br />zpx</td>
+<td><a href="/wiki/LDA" title="LDA">LDA</a><br />zpx</td>
+<td><a href="/wiki/LDX" title="LDX">LDX</a><br />zpy</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/LAX" title="LAX">LAX</a><br />zpy</td>
+<td><a href="/wiki/CLV" title="CLV">CLV</a><br />imp</td>
+<td><a href="/wiki/LDA" title="LDA">LDA</a><br />aby</td>
+<td><a href="/wiki/TSX" title="TSX">TSX</a><br />imp</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/index.php?title=LAS&amp;action=edit&amp;redlink=1" class="new" title="LAS (page does not exist)">LAS</a><br />aby</td>
+<td><a href="/wiki/LDY" title="LDY">LDY</a><br />abx</td>
+<td><a href="/wiki/LDA" title="LDA">LDA</a><br />abx</td>
+<td><a href="/wiki/LDX" title="LDX">LDX</a><br />aby</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/LAX" title="LAX">LAX</a><br />aby
+</td></tr>
+<tr>
+<td><big><b>C</b></big>x</td>
+<td><a href="/wiki/CPY" title="CPY">CPY</a><br />imm</td>
+<td><a href="/wiki/CMP" title="CMP">CMP</a><br />inx</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/NOP" title="NOP">NOP</a><br />imm</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/DCP" title="DCP">DCP</a><br />inx</td>
+<td><a href="/wiki/CPY" title="CPY">CPY</a><br />zp</td>
+<td><a href="/wiki/CMP" title="CMP">CMP</a><br />zp</td>
+<td><a href="/wiki/DEC" title="DEC">DEC</a><br />zp</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/DCP" title="DCP">DCP</a><br />zp</td>
+<td><a href="/wiki/INY" title="INY">INY</a><br />imp</td>
+<td><a href="/wiki/CMP" title="CMP">CMP</a><br />imm</td>
+<td><a href="/wiki/DEX" title="DEX">DEX</a><br />imp</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/SBX" title="SBX">SBX</a><br />imm</td>
+<td><a href="/wiki/CPY" title="CPY">CPY</a><br />abs</td>
+<td><a href="/wiki/CMP" title="CMP">CMP</a><br />abs</td>
+<td><a href="/wiki/DEC" title="DEC">DEC</a><br />abs</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/DCP" title="DCP">DCP</a><br />abs
+</td></tr>
+<tr>
+<td><big><b>D</b></big>x</td>
+<td><a href="/wiki/BNE" title="BNE">BNE</a><br />rel</td>
+<td><a href="/wiki/CMP" title="CMP">CMP</a><br />iny</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/JAM" title="JAM">JAM</a></td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/DCP" title="DCP">DCP</a><br />iny</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/NOP" title="NOP">NOP</a><br />zpx</td>
+<td><a href="/wiki/CMP" title="CMP">CMP</a><br />zpx</td>
+<td><a href="/wiki/DEC" title="DEC">DEC</a><br />zpx</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/DCP" title="DCP">DCP</a><br />zpx</td>
+<td><a href="/wiki/CLD" title="CLD">CLD</a><br />imp</td>
+<td><a href="/wiki/CMP" title="CMP">CMP</a><br />aby</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/NOP" title="NOP">NOP</a><i><br />imp</i></td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/DCP" title="DCP">DCP</a><br />aby</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/NOP" title="NOP">NOP</a><br />abx</td>
+<td><a href="/wiki/CMP" title="CMP">CMP</a><br />abx</td>
+<td><a href="/wiki/DEC" title="DEC">DEC</a><br />abx</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/DCP" title="DCP">DCP</a><br />abx
+</td></tr>
+<tr>
+<td><big><b>E</b></big>x</td>
+<td><a href="/wiki/CPX" title="CPX">CPX</a><br />imm</td>
+<td><a href="/wiki/SBC" title="SBC">SBC</a><br />inx</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/NOP" title="NOP">NOP</a><br />imm</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/ISC" title="ISC">ISC</a><br />inx</td>
+<td><a href="/wiki/CPX" title="CPX">CPX</a><br />zp</td>
+<td><a href="/wiki/SBC" title="SBC">SBC</a><br />zp</td>
+<td><a href="/wiki/INC" title="INC">INC</a><br />zp</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/ISC" title="ISC">ISC</a><br />zp</td>
+<td><a href="/wiki/INX" title="INX">INX</a><br />imp</td>
+<td><a href="/wiki/SBC" title="SBC">SBC</a><br />imm</td>
+<td><a href="/wiki/NOP" title="NOP">NOP</a></td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/SBC" title="SBC">SBC</a><br />imm</td>
+<td><a href="/wiki/CPX" title="CPX">CPX</a><br />abs</td>
+<td><a href="/wiki/SBC" title="SBC">SBC</a><br />abs</td>
+<td><a href="/wiki/INC" title="INC">INC</a><br />abs</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/ISC" title="ISC">ISC</a><br />abs
+</td></tr>
+<tr>
+<td><big><b>F</b></big>x</td>
+<td><a href="/wiki/BEQ" title="BEQ">BEQ</a><br />rel</td>
+<td><a href="/wiki/SBC" title="SBC">SBC</a><br />iny</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/JAM" title="JAM">JAM</a></td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/ISC" title="ISC">ISC</a><br />iny</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/NOP" title="NOP">NOP</a><br />zpx</td>
+<td><a href="/wiki/SBC" title="SBC">SBC</a><br />zpx</td>
+<td><a href="/wiki/INC" title="INC">INC</a><br />zpx</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/ISC" title="ISC">ISC</a><br />zpx</td>
+<td><a href="/wiki/SED" title="SED">SED</a><br />imp</td>
+<td><a href="/wiki/SBC" title="SBC">SBC</a><br />aby</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/NOP" title="NOP">NOP</a><i><br />imp</i></td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/ISC" title="ISC">ISC</a><br />aby</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/NOP" title="NOP">NOP</a><br />abx</td>
+<td><a href="/wiki/SBC" title="SBC">SBC</a><br />abx</td>
+<td><a href="/wiki/INC" title="INC">INC</a><br />abx</td>
+<td style="background:#ff9090; color:black; vertical-align: middle; text-align: center;" class="table-no"><a href="/wiki/ISC" title="ISC">ISC</a><br />abx
+</td></tr>
+</tbody></table>
+<h2><span class="mw-headline" id="Arrangement">Arrangement</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Opcode&amp;veaction=edit&amp;section=4" title="Edit section: Arrangement" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Opcode&amp;action=edit&amp;section=4" title="Edit section&#39;s source code: Arrangement">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p>The microcode of the 6502 is compressed into a 130-entry decode ROM.
+Instead of 256 entries telling how to process each separate opcode, it's encoded as combinational logic post-processing the output of a "sparse" ROM that acts in some ways like a programmable logic array (PLA).
+Each entry in the ROM means "if these bits are on, and these bits are off, do things on these six cycles.
+</p><p>Many instructions activate multiple lines of the decode ROM at once.
+Often this is on purpose, such as one line for the addressing mode and one for the opcode part.
+But many of the unofficial opcodes simultaneously trigger parts of the ROM that were intended for completely unrelated instructions.
+</p><p>Perhaps the pattern is easier to see by shuffling the 6502's opcode matrix.
+This table lists all 6502 opcodes, 32 columns per row.
+The columns are colored by bits 1 and 0:
+00 red, 01 green, 10 blue, and 11 gray.
+</p><p>Key: a is a 16-bit absolute address, and d is an 8-bit zero page address. Entries in bold represent unofficial opcodes.
+</p>
+<table>
+<tbody><tr>
+<th></th>
+<th>+00</th>
+<th>+04</th>
+<th>+08</th>
+<th>+0C</th>
+<th>+10</th>
+<th>+14</th>
+<th>+18</th>
+<th>+1C</th>
+<th>+01</th>
+<th>+05</th>
+<th>+09</th>
+<th>+0D</th>
+<th>+11</th>
+<th>+15</th>
+<th>+19</th>
+<th>+1D</th>
+<th>+02</th>
+<th>+06</th>
+<th>+0A</th>
+<th>+0E</th>
+<th>+12</th>
+<th>+16</th>
+<th>+1A</th>
+<th>+1E</th>
+<th>+03</th>
+<th>+07</th>
+<th>+0B</th>
+<th>+0F</th>
+<th>+13</th>
+<th>+17</th>
+<th>+1B</th>
+<th>+1F
+</th></tr>
+<tr valign="top">
+<td>00</td>
+<td style="background:#FCC"><a href="/wiki/BRK" title="BRK">BRK</a><br /></td>
+<td style="background:#FCC"><b><a href="/wiki/NOP" title="NOP">NOP</a></b><br />d</td>
+<td style="background:#FCC"><a href="/wiki/PHP" title="PHP">PHP</a><br /></td>
+<td style="background:#FCC"><b><a href="/wiki/NOP" title="NOP">NOP</a></b><br />a</td>
+<td style="background:#FCC"><a href="/wiki/BPL" title="BPL">BPL</a><br />*+d</td>
+<td style="background:#FCC"><b><a href="/wiki/NOP" title="NOP">NOP</a></b><br />d,x</td>
+<td style="background:#FCC"><a href="/wiki/CLC" title="CLC">CLC</a><br /></td>
+<td style="background:#FCC"><b><a href="/wiki/NOP" title="NOP">NOP</a></b><br />a,x</td>
+<td style="background:#CFC"><a href="/wiki/ORA" title="ORA">ORA</a><br />(d,x)</td>
+<td style="background:#CFC"><a href="/wiki/ORA" title="ORA">ORA</a><br />d</td>
+<td style="background:#CFC"><a href="/wiki/ORA" title="ORA">ORA</a><br />#i</td>
+<td style="background:#CFC"><a href="/wiki/ORA" title="ORA">ORA</a><br />a</td>
+<td style="background:#CFC"><a href="/wiki/ORA" title="ORA">ORA</a><br />(d),y</td>
+<td style="background:#CFC"><a href="/wiki/ORA" title="ORA">ORA</a><br />d,x</td>
+<td style="background:#CFC"><a href="/wiki/ORA" title="ORA">ORA</a><br />a,y</td>
+<td style="background:#CFC"><a href="/wiki/ORA" title="ORA">ORA</a><br />a,x</td>
+<td style="background:#CCF"><b><a href="/wiki/JAM" title="JAM">JAM</a></b><br /></td>
+<td style="background:#CCF"><a href="/wiki/ASL" title="ASL">ASL</a><br />d</td>
+<td style="background:#CCF"><a href="/wiki/ASL" title="ASL">ASL</a><br /></td>
+<td style="background:#CCF"><a href="/wiki/ASL" title="ASL">ASL</a><br />a</td>
+<td style="background:#CCF"><b><a href="/wiki/JAM" title="JAM">JAM</a></b><br /></td>
+<td style="background:#CCF"><a href="/wiki/ASL" title="ASL">ASL</a><br />d,x</td>
+<td style="background:#CCF"><b><a href="/wiki/NOP" title="NOP">NOP</a></b><br /></td>
+<td style="background:#CCF"><a href="/wiki/ASL" title="ASL">ASL</a><br />a,x</td>
+<td style="background:#DDD"><b><a href="/index.php?title=SLO&amp;action=edit&amp;redlink=1" class="new" title="SLO (page does not exist)">SLO</a></b><br />(d,x)</td>
+<td style="background:#DDD"><b><a href="/index.php?title=SLO&amp;action=edit&amp;redlink=1" class="new" title="SLO (page does not exist)">SLO</a></b><br />d</td>
+<td style="background:#DDD"><b><a href="/wiki/ANC" title="ANC">ANC</a></b><br />#i</td>
+<td style="background:#DDD"><b><a href="/index.php?title=SLO&amp;action=edit&amp;redlink=1" class="new" title="SLO (page does not exist)">SLO</a></b><br />a</td>
+<td style="background:#DDD"><b><a href="/index.php?title=SLO&amp;action=edit&amp;redlink=1" class="new" title="SLO (page does not exist)">SLO</a></b><br />(d),y</td>
+<td style="background:#DDD"><b><a href="/index.php?title=SLO&amp;action=edit&amp;redlink=1" class="new" title="SLO (page does not exist)">SLO</a></b><br />d,x</td>
+<td style="background:#DDD"><b><a href="/index.php?title=SLO&amp;action=edit&amp;redlink=1" class="new" title="SLO (page does not exist)">SLO</a></b><br />a,y</td>
+<td style="background:#DDD"><b><a href="/index.php?title=SLO&amp;action=edit&amp;redlink=1" class="new" title="SLO (page does not exist)">SLO</a></b><br />a,x
+</td></tr>
+<tr valign="top">
+<td>20</td>
+<td style="background:#FCC"><a href="/wiki/JSR" title="JSR">JSR</a><br />a</td>
+<td style="background:#FCC"><a href="/wiki/BIT_(assembler)" title="BIT (assembler)">BIT</a><br />d</td>
+<td style="background:#FCC"><a href="/wiki/PLP" title="PLP">PLP</a><br /></td>
+<td style="background:#FCC"><a href="/wiki/BIT_(assembler)" title="BIT (assembler)">BIT</a><br />a</td>
+<td style="background:#FCC"><a href="/wiki/BMI" title="BMI">BMI</a><br />*+d</td>
+<td style="background:#FCC"><b><a href="/wiki/NOP" title="NOP">NOP</a></b><br />d,x</td>
+<td style="background:#FCC"><a href="/wiki/SEC" title="SEC">SEC</a><br /></td>
+<td style="background:#FCC"><b><a href="/wiki/NOP" title="NOP">NOP</a></b><br />a,x</td>
+<td style="background:#CFC"><a href="/wiki/AND" title="AND">AND</a><br />(d,x)</td>
+<td style="background:#CFC"><a href="/wiki/AND" title="AND">AND</a><br />d</td>
+<td style="background:#CFC"><a href="/wiki/AND" title="AND">AND</a><br />#i</td>
+<td style="background:#CFC"><a href="/wiki/AND" title="AND">AND</a><br />a</td>
+<td style="background:#CFC"><a href="/wiki/AND" title="AND">AND</a><br />(d),y</td>
+<td style="background:#CFC"><a href="/wiki/AND" title="AND">AND</a><br />d,x</td>
+<td style="background:#CFC"><a href="/wiki/AND" title="AND">AND</a><br />a,y</td>
+<td style="background:#CFC"><a href="/wiki/AND" title="AND">AND</a><br />a,x</td>
+<td style="background:#CCF"><b><a href="/wiki/JAM" title="JAM">JAM</a></b><br /></td>
+<td style="background:#CCF"><a href="/wiki/ROL" title="ROL">ROL</a><br />d</td>
+<td style="background:#CCF"><a href="/wiki/ROL" title="ROL">ROL</a><br /></td>
+<td style="background:#CCF"><a href="/wiki/ROL" title="ROL">ROL</a><br />a</td>
+<td style="background:#CCF"><b><a href="/wiki/JAM" title="JAM">JAM</a></b><br /></td>
+<td style="background:#CCF"><a href="/wiki/ROL" title="ROL">ROL</a><br />d,x</td>
+<td style="background:#CCF"><b><a href="/wiki/NOP" title="NOP">NOP</a></b><br /></td>
+<td style="background:#CCF"><a href="/wiki/ROL" title="ROL">ROL</a><br />a,x</td>
+<td style="background:#DDD"><b><a href="/wiki/RLA" title="RLA">RLA</a></b><br />(d,x)</td>
+<td style="background:#DDD"><b><a href="/wiki/RLA" title="RLA">RLA</a></b><br />d</td>
+<td style="background:#DDD"><b><a href="/wiki/ANC" title="ANC">ANC</a></b><br />#i</td>
+<td style="background:#DDD"><b><a href="/wiki/RLA" title="RLA">RLA</a></b><br />a</td>
+<td style="background:#DDD"><b><a href="/wiki/RLA" title="RLA">RLA</a></b><br />(d),y</td>
+<td style="background:#DDD"><b><a href="/wiki/RLA" title="RLA">RLA</a></b><br />d,x</td>
+<td style="background:#DDD"><b><a href="/wiki/RLA" title="RLA">RLA</a></b><br />a,y</td>
+<td style="background:#DDD"><b><a href="/wiki/RLA" title="RLA">RLA</a></b><br />a,x
+</td></tr>
+<tr valign="top">
+<td>40</td>
+<td style="background:#FCC"><a href="/wiki/RTI" title="RTI">RTI</a><br /></td>
+<td style="background:#FCC"><b><a href="/wiki/NOP" title="NOP">NOP</a></b><br />d</td>
+<td style="background:#FCC"><a href="/wiki/PHA" title="PHA">PHA</a><br /></td>
+<td style="background:#FCC"><a href="/wiki/JMP" title="JMP">JMP</a><br />a</td>
+<td style="background:#FCC"><a href="/wiki/BVC" title="BVC">BVC</a><br />*+d</td>
+<td style="background:#FCC"><b><a href="/wiki/NOP" title="NOP">NOP</a></b><br />d,x</td>
+<td style="background:#FCC"><a href="/wiki/CLI" title="CLI">CLI</a><br /></td>
+<td style="background:#FCC"><b><a href="/wiki/NOP" title="NOP">NOP</a></b><br />a,x</td>
+<td style="background:#CFC"><a href="/wiki/EOR" title="EOR">EOR</a><br />(d,x)</td>
+<td style="background:#CFC"><a href="/wiki/EOR" title="EOR">EOR</a><br />d</td>
+<td style="background:#CFC"><a href="/wiki/EOR" title="EOR">EOR</a><br />#i</td>
+<td style="background:#CFC"><a href="/wiki/EOR" title="EOR">EOR</a><br />a</td>
+<td style="background:#CFC"><a href="/wiki/EOR" title="EOR">EOR</a><br />(d),y</td>
+<td style="background:#CFC"><a href="/wiki/EOR" title="EOR">EOR</a><br />d,x</td>
+<td style="background:#CFC"><a href="/wiki/EOR" title="EOR">EOR</a><br />a,y</td>
+<td style="background:#CFC"><a href="/wiki/EOR" title="EOR">EOR</a><br />a,x</td>
+<td style="background:#CCF"><b><a href="/wiki/JAM" title="JAM">JAM</a></b><br /></td>
+<td style="background:#CCF"><a href="/wiki/LSR" title="LSR">LSR</a><br />d</td>
+<td style="background:#CCF"><a href="/wiki/LSR" title="LSR">LSR</a><br /></td>
+<td style="background:#CCF"><a href="/wiki/LSR" title="LSR">LSR</a><br />a</td>
+<td style="background:#CCF"><b><a href="/wiki/JAM" title="JAM">JAM</a></b><br /></td>
+<td style="background:#CCF"><a href="/wiki/LSR" title="LSR">LSR</a><br />d,x</td>
+<td style="background:#CCF"><b><a href="/wiki/NOP" title="NOP">NOP</a></b><br /></td>
+<td style="background:#CCF"><a href="/wiki/LSR" title="LSR">LSR</a><br />a,x</td>
+<td style="background:#DDD"><b><a href="/wiki/SRE" title="SRE">SRE</a></b><br />(d,x)</td>
+<td style="background:#DDD"><b><a href="/wiki/SRE" title="SRE">SRE</a></b><br />d</td>
+<td style="background:#DDD"><b><a href="/wiki/ALR" title="ALR">ALR</a></b><br />#i</td>
+<td style="background:#DDD"><b><a href="/wiki/SRE" title="SRE">SRE</a></b><br />a</td>
+<td style="background:#DDD"><b><a href="/wiki/SRE" title="SRE">SRE</a></b><br />(d),y</td>
+<td style="background:#DDD"><b><a href="/wiki/SRE" title="SRE">SRE</a></b><br />d,x</td>
+<td style="background:#DDD"><b><a href="/wiki/SRE" title="SRE">SRE</a></b><br />a,y</td>
+<td style="background:#DDD"><b><a href="/wiki/SRE" title="SRE">SRE</a></b><br />a,x
+</td></tr>
+<tr valign="top">
+<td>60</td>
+<td style="background:#FCC"><a href="/wiki/RTS" title="RTS">RTS</a><br /></td>
+<td style="background:#FCC"><b><a href="/wiki/NOP" title="NOP">NOP</a></b><br />d</td>
+<td style="background:#FCC"><a href="/wiki/PLA_(command)" title="PLA (command)">PLA</a><br /></td>
+<td style="background:#FCC"><a href="/wiki/JMP" title="JMP">JMP</a><br />(a)</td>
+<td style="background:#FCC"><a href="/wiki/BVS" title="BVS">BVS</a><br />*+d</td>
+<td style="background:#FCC"><b><a href="/wiki/NOP" title="NOP">NOP</a></b><br />d,x</td>
+<td style="background:#FCC"><a href="/wiki/SEI" title="SEI">SEI</a><br /></td>
+<td style="background:#FCC"><b><a href="/wiki/NOP" title="NOP">NOP</a></b><br />a,x</td>
+<td style="background:#CFC"><a href="/wiki/ADC" title="ADC">ADC</a><br />(d,x)</td>
+<td style="background:#CFC"><a href="/wiki/ADC" title="ADC">ADC</a><br />d</td>
+<td style="background:#CFC"><a href="/wiki/ADC" title="ADC">ADC</a><br />#i</td>
+<td style="background:#CFC"><a href="/wiki/ADC" title="ADC">ADC</a><br />a</td>
+<td style="background:#CFC"><a href="/wiki/ADC" title="ADC">ADC</a><br />(d),y</td>
+<td style="background:#CFC"><a href="/wiki/ADC" title="ADC">ADC</a><br />d,x</td>
+<td style="background:#CFC"><a href="/wiki/ADC" title="ADC">ADC</a><br />a,y</td>
+<td style="background:#CFC"><a href="/wiki/ADC" title="ADC">ADC</a><br />a,x</td>
+<td style="background:#CCF"><b><a href="/wiki/JAM" title="JAM">JAM</a></b><br /></td>
+<td style="background:#CCF"><a href="/wiki/ROR" title="ROR">ROR</a><br />d</td>
+<td style="background:#CCF"><a href="/wiki/ROR" title="ROR">ROR</a><br /></td>
+<td style="background:#CCF"><a href="/wiki/ROR" title="ROR">ROR</a><br />a</td>
+<td style="background:#CCF"><b><a href="/wiki/JAM" title="JAM">JAM</a></b><br /></td>
+<td style="background:#CCF"><a href="/wiki/ROR" title="ROR">ROR</a><br />d,x</td>
+<td style="background:#CCF"><b><a href="/wiki/NOP" title="NOP">NOP</a></b><br /></td>
+<td style="background:#CCF"><a href="/wiki/ROR" title="ROR">ROR</a><br />a,x</td>
+<td style="background:#DDD"><b><a href="/wiki/RRA" title="RRA">RRA</a></b><br />(d,x)</td>
+<td style="background:#DDD"><b><a href="/wiki/RRA" title="RRA">RRA</a></b><br />d</td>
+<td style="background:#DDD"><b><a href="/wiki/ARR" title="ARR">ARR</a></b><br />#i</td>
+<td style="background:#DDD"><b><a href="/wiki/RRA" title="RRA">RRA</a></b><br />a</td>
+<td style="background:#DDD"><b><a href="/wiki/RRA" title="RRA">RRA</a></b><br />(d),y</td>
+<td style="background:#DDD"><b><a href="/wiki/RRA" title="RRA">RRA</a></b><br />d,x</td>
+<td style="background:#DDD"><b><a href="/wiki/RRA" title="RRA">RRA</a></b><br />a,y</td>
+<td style="background:#DDD"><b><a href="/wiki/RRA" title="RRA">RRA</a></b><br />a,x
+</td></tr>
+<tr valign="top">
+<td>80</td>
+<td style="background:#FCC"><b><a href="/wiki/NOP" title="NOP">NOP</a></b><br />#i</td>
+<td style="background:#FCC"><a href="/wiki/STY" title="STY">STY</a><br />d</td>
+<td style="background:#FCC"><a href="/wiki/DEY" title="DEY">DEY</a><br /></td>
+<td style="background:#FCC"><a href="/wiki/STY" title="STY">STY</a><br />a</td>
+<td style="background:#FCC"><a href="/wiki/BCC" title="BCC">BCC</a><br />*+d</td>
+<td style="background:#FCC"><a href="/wiki/STY" title="STY">STY</a><br />d,x</td>
+<td style="background:#FCC"><a href="/wiki/TYA" title="TYA">TYA</a><br /></td>
+<td style="background:#FCC"><b><a href="/index.php?title=SHY&amp;action=edit&amp;redlink=1" class="new" title="SHY (page does not exist)">SHY</a></b><br />a,x</td>
+<td style="background:#CFC"><a href="/wiki/STA" title="STA">STA</a><br />(d,x)</td>
+<td style="background:#CFC"><a href="/wiki/STA" title="STA">STA</a><br />d</td>
+<td style="background:#CFC"><b><a href="/wiki/NOP" title="NOP">NOP</a></b><br />#i</td>
+<td style="background:#CFC"><a href="/wiki/STA" title="STA">STA</a><br />a</td>
+<td style="background:#CFC"><a href="/wiki/STA" title="STA">STA</a><br />(d),y</td>
+<td style="background:#CFC"><a href="/wiki/STA" title="STA">STA</a><br />d,x</td>
+<td style="background:#CFC"><a href="/wiki/STA" title="STA">STA</a><br />a,y</td>
+<td style="background:#CFC"><a href="/wiki/STA" title="STA">STA</a><br />a,x</td>
+<td style="background:#CCF"><b><a href="/wiki/NOP" title="NOP">NOP</a></b><br />#i</td>
+<td style="background:#CCF"><a href="/wiki/STX" title="STX">STX</a><br />d</td>
+<td style="background:#CCF"><a href="/wiki/TXA" title="TXA">TXA</a><br /></td>
+<td style="background:#CCF"><a href="/wiki/STX" title="STX">STX</a><br />a</td>
+<td style="background:#CCF"><b><a href="/wiki/JAM" title="JAM">JAM</a></b><br /></td>
+<td style="background:#CCF"><a href="/wiki/STX" title="STX">STX</a><br />d,y</td>
+<td style="background:#CCF"><a href="/wiki/TXS" title="TXS">TXS</a><br /></td>
+<td style="background:#CCF"><b><a href="/index.php?title=SHX&amp;action=edit&amp;redlink=1" class="new" title="SHX (page does not exist)">SHX</a></b><br />a,y</td>
+<td style="background:#DDD"><b><a href="/wiki/SAX" title="SAX">SAX</a></b><br />(d,x)</td>
+<td style="background:#DDD"><b><a href="/wiki/SAX" title="SAX">SAX</a></b><br />d</td>
+<td style="background:#DDD"><b><a href="/index.php?title=ANE&amp;action=edit&amp;redlink=1" class="new" title="ANE (page does not exist)">ANE</a></b><br />#i</td>
+<td style="background:#DDD"><b><a href="/wiki/SAX" title="SAX">SAX</a></b><br />a</td>
+<td style="background:#DDD"><b><a href="/index.php?title=SHA&amp;action=edit&amp;redlink=1" class="new" title="SHA (page does not exist)">SHA</a></b><br />(d),y</td>
+<td style="background:#DDD"><b><a href="/wiki/SAX" title="SAX">SAX</a></b><br />d,y</td>
+<td style="background:#DDD"><b><a href="/index.php?title=TAS&amp;action=edit&amp;redlink=1" class="new" title="TAS (page does not exist)">TAS</a></b><br />a,y</td>
+<td style="background:#DDD"><b><a href="/index.php?title=SHA&amp;action=edit&amp;redlink=1" class="new" title="SHA (page does not exist)">SHA</a></b><br />a,y
+</td></tr>
+<tr valign="top">
+<td>A0</td>
+<td style="background:#FCC"><a href="/wiki/LDY" title="LDY">LDY</a><br />#i</td>
+<td style="background:#FCC"><a href="/wiki/LDY" title="LDY">LDY</a><br />d</td>
+<td style="background:#FCC"><a href="/wiki/TAY" title="TAY">TAY</a><br /></td>
+<td style="background:#FCC"><a href="/wiki/LDY" title="LDY">LDY</a><br />a</td>
+<td style="background:#FCC"><a href="/wiki/BCS" title="BCS">BCS</a><br />*+d</td>
+<td style="background:#FCC"><a href="/wiki/LDY" title="LDY">LDY</a><br />d,x</td>
+<td style="background:#FCC"><a href="/wiki/CLV" title="CLV">CLV</a><br /></td>
+<td style="background:#FCC"><a href="/wiki/LDY" title="LDY">LDY</a><br />a,x</td>
+<td style="background:#CFC"><a href="/wiki/LDA" title="LDA">LDA</a><br />(d,x)</td>
+<td style="background:#CFC"><a href="/wiki/LDA" title="LDA">LDA</a><br />d</td>
+<td style="background:#CFC"><a href="/wiki/LDA" title="LDA">LDA</a><br />#i</td>
+<td style="background:#CFC"><a href="/wiki/LDA" title="LDA">LDA</a><br />a</td>
+<td style="background:#CFC"><a href="/wiki/LDA" title="LDA">LDA</a><br />(d),y</td>
+<td style="background:#CFC"><a href="/wiki/LDA" title="LDA">LDA</a><br />d,x</td>
+<td style="background:#CFC"><a href="/wiki/LDA" title="LDA">LDA</a><br />a,y</td>
+<td style="background:#CFC"><a href="/wiki/LDA" title="LDA">LDA</a><br />a,x</td>
+<td style="background:#CCF"><a href="/wiki/LDX" title="LDX">LDX</a><br />#i</td>
+<td style="background:#CCF"><a href="/wiki/LDX" title="LDX">LDX</a><br />d</td>
+<td style="background:#CCF"><a href="/wiki/TAX" title="TAX">TAX</a><br /></td>
+<td style="background:#CCF"><a href="/wiki/LDX" title="LDX">LDX</a><br />a</td>
+<td style="background:#CCF"><b><a href="/wiki/JAM" title="JAM">JAM</a></b><br /></td>
+<td style="background:#CCF"><a href="/wiki/LDX" title="LDX">LDX</a><br />d,y</td>
+<td style="background:#CCF"><a href="/wiki/TSX" title="TSX">TSX</a><br /></td>
+<td style="background:#CCF"><a href="/wiki/LDX" title="LDX">LDX</a><br />a,y</td>
+<td style="background:#DDD"><b><a href="/wiki/LAX" title="LAX">LAX</a></b><br />(d,x)</td>
+<td style="background:#DDD"><b><a href="/wiki/LAX" title="LAX">LAX</a></b><br />d</td>
+<td style="background:#DDD"><b><a href="/wiki/LAX" title="LAX">LAX</a></b><br />#i</td>
+<td style="background:#DDD"><b><a href="/wiki/LAX" title="LAX">LAX</a></b><br />a</td>
+<td style="background:#DDD"><b><a href="/wiki/LAX" title="LAX">LAX</a></b><br />(d),y</td>
+<td style="background:#DDD"><b><a href="/wiki/LAX" title="LAX">LAX</a></b><br />d,y</td>
+<td style="background:#DDD"><b><a href="/index.php?title=LAS&amp;action=edit&amp;redlink=1" class="new" title="LAS (page does not exist)">LAS</a></b><br />a,y</td>
+<td style="background:#DDD"><b><a href="/wiki/LAX" title="LAX">LAX</a></b><br />a,y
+</td></tr>
+<tr valign="top">
+<td>C0</td>
+<td style="background:#FCC"><a href="/wiki/CPY" title="CPY">CPY</a><br />#i</td>
+<td style="background:#FCC"><a href="/wiki/CPY" title="CPY">CPY</a><br />d</td>
+<td style="background:#FCC"><a href="/wiki/INY" title="INY">INY</a><br /></td>
+<td style="background:#FCC"><a href="/wiki/CPY" title="CPY">CPY</a><br />a</td>
+<td style="background:#FCC"><a href="/wiki/BNE" title="BNE">BNE</a><br />*+d</td>
+<td style="background:#FCC"><b><a href="/wiki/NOP" title="NOP">NOP</a></b><br />d,x</td>
+<td style="background:#FCC"><a href="/wiki/CLD" title="CLD">CLD</a><br /></td>
+<td style="background:#FCC"><b><a href="/wiki/NOP" title="NOP">NOP</a></b><br />a,x</td>
+<td style="background:#CFC"><a href="/wiki/CMP" title="CMP">CMP</a><br />(d,x)</td>
+<td style="background:#CFC"><a href="/wiki/CMP" title="CMP">CMP</a><br />d</td>
+<td style="background:#CFC"><a href="/wiki/CMP" title="CMP">CMP</a><br />#i</td>
+<td style="background:#CFC"><a href="/wiki/CMP" title="CMP">CMP</a><br />a</td>
+<td style="background:#CFC"><a href="/wiki/CMP" title="CMP">CMP</a><br />(d),y</td>
+<td style="background:#CFC"><a href="/wiki/CMP" title="CMP">CMP</a><br />d,x</td>
+<td style="background:#CFC"><a href="/wiki/CMP" title="CMP">CMP</a><br />a,y</td>
+<td style="background:#CFC"><a href="/wiki/CMP" title="CMP">CMP</a><br />a,x</td>
+<td style="background:#CCF"><b><a href="/wiki/NOP" title="NOP">NOP</a></b><br />#i</td>
+<td style="background:#CCF"><a href="/wiki/DEC" title="DEC">DEC</a><br />d</td>
+<td style="background:#CCF"><a href="/wiki/DEX" title="DEX">DEX</a><br /></td>
+<td style="background:#CCF"><a href="/wiki/DEC" title="DEC">DEC</a><br />a</td>
+<td style="background:#CCF"><b><a href="/wiki/JAM" title="JAM">JAM</a></b><br /></td>
+<td style="background:#CCF"><a href="/wiki/DEC" title="DEC">DEC</a><br />d,x</td>
+<td style="background:#CCF"><b><a href="/wiki/NOP" title="NOP">NOP</a></b><br /></td>
+<td style="background:#CCF"><a href="/wiki/DEC" title="DEC">DEC</a><br />a,x</td>
+<td style="background:#DDD"><b><a href="/wiki/DCP" title="DCP">DCP</a></b><br />(d,x)</td>
+<td style="background:#DDD"><b><a href="/wiki/DCP" title="DCP">DCP</a></b><br />d</td>
+<td style="background:#DDD"><b><a href="/wiki/SBX" title="SBX">SBX</a></b><br />#i</td>
+<td style="background:#DDD"><b><a href="/wiki/DCP" title="DCP">DCP</a></b><br />a</td>
+<td style="background:#DDD"><b><a href="/wiki/DCP" title="DCP">DCP</a></b><br />(d),y</td>
+<td style="background:#DDD"><b><a href="/wiki/DCP" title="DCP">DCP</a></b><br />d,x</td>
+<td style="background:#DDD"><b><a href="/wiki/DCP" title="DCP">DCP</a></b><br />a,y</td>
+<td style="background:#DDD"><b><a href="/wiki/DCP" title="DCP">DCP</a></b><br />a,x
+</td></tr>
+<tr valign="top">
+<td>E0</td>
+<td style="background:#FCC"><a href="/wiki/CPX" title="CPX">CPX</a><br />#i</td>
+<td style="background:#FCC"><a href="/wiki/CPX" title="CPX">CPX</a><br />d</td>
+<td style="background:#FCC"><a href="/wiki/INX" title="INX">INX</a><br /></td>
+<td style="background:#FCC"><a href="/wiki/CPX" title="CPX">CPX</a><br />a</td>
+<td style="background:#FCC"><a href="/wiki/BEQ" title="BEQ">BEQ</a><br />*+d</td>
+<td style="background:#FCC"><b><a href="/wiki/NOP" title="NOP">NOP</a></b><br />d,x</td>
+<td style="background:#FCC"><a href="/wiki/SED" title="SED">SED</a><br /></td>
+<td style="background:#FCC"><b><a href="/wiki/NOP" title="NOP">NOP</a></b><br />a,x</td>
+<td style="background:#CFC"><a href="/wiki/SBC" title="SBC">SBC</a><br />(d,x)</td>
+<td style="background:#CFC"><a href="/wiki/SBC" title="SBC">SBC</a><br />d</td>
+<td style="background:#CFC"><a href="/wiki/SBC" title="SBC">SBC</a><br />#i</td>
+<td style="background:#CFC"><a href="/wiki/SBC" title="SBC">SBC</a><br />a</td>
+<td style="background:#CFC"><a href="/wiki/SBC" title="SBC">SBC</a><br />(d),y</td>
+<td style="background:#CFC"><a href="/wiki/SBC" title="SBC">SBC</a><br />d,x</td>
+<td style="background:#CFC"><a href="/wiki/SBC" title="SBC">SBC</a><br />a,y</td>
+<td style="background:#CFC"><a href="/wiki/SBC" title="SBC">SBC</a><br />a,x</td>
+<td style="background:#CCF"><b><a href="/wiki/NOP" title="NOP">NOP</a></b><br />#i</td>
+<td style="background:#CCF"><a href="/wiki/INC" title="INC">INC</a><br />d</td>
+<td style="background:#CCF"><a href="/wiki/NOP" title="NOP">NOP</a><br /></td>
+<td style="background:#CCF"><a href="/wiki/INC" title="INC">INC</a><br />a</td>
+<td style="background:#CCF"><b><a href="/wiki/JAM" title="JAM">JAM</a></b><br /></td>
+<td style="background:#CCF"><a href="/wiki/INC" title="INC">INC</a><br />d,x</td>
+<td style="background:#CCF"><b><a href="/wiki/NOP" title="NOP">NOP</a></b><br /></td>
+<td style="background:#CCF"><a href="/wiki/INC" title="INC">INC</a><br />a,x</td>
+<td style="background:#DDD"><b><a href="/wiki/ISC" title="ISC">ISC</a></b><br />(d,x)</td>
+<td style="background:#DDD"><b><a href="/wiki/ISC" title="ISC">ISC</a></b><br />d</td>
+<td style="background:#DDD"><b><a href="/wiki/SBC" title="SBC">SBC</a></b><br />#i</td>
+<td style="background:#DDD"><b><a href="/wiki/ISC" title="ISC">ISC</a></b><br />a</td>
+<td style="background:#DDD"><b><a href="/wiki/ISC" title="ISC">ISC</a></b><br />(d),y</td>
+<td style="background:#DDD"><b><a href="/wiki/ISC" title="ISC">ISC</a></b><br />d,x</td>
+<td style="background:#DDD"><b><a href="/wiki/ISC" title="ISC">ISC</a></b><br />a,y</td>
+<td style="background:#DDD"><b><a href="/wiki/ISC" title="ISC">ISC</a></b><br />a,x
+</td></tr></tbody></table>
+<p><br />
+Thus the 00 (red) block is mostly control instructions,
+01 (green) is ALU operations,
+and 10 (blue) is read-modify-write (RMW) operations and data movement instructions involving X.
+The RMW instructions (all but row 80 and A0) in columns +06, +0E, +16, and +1E
+have the same addressing modes as the corresponding ALU operations.
+</p><p>The 11 (gray) block is unofficial opcodes combining the operations of instructions from the ALU and RMW blocks.
+all of them having the same addressing mode as the corresponding ALU opcode.
+The RMW+ALU instructions that affect memory are easiest to understand
+because their RMW part completes during the opcode and the ALU part completes during the next opcode's fetch.
+Column +0B, on the other hand, has no extra cycles; everything completes during the next opcode's fetch.
+This causes instructions to have strange mixing properties.
+Some even differ based on analog effects.
+</p>
+<h2><span class="mw-headline" id="Links">Links</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Opcode&amp;veaction=edit&amp;section=5" title="Edit section: Links" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Opcode&amp;action=edit&amp;section=5" title="Edit section&#39;s source code: Links">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<ul><li><a rel="nofollow" class="external text" href="http://www.oxyron.de/html/opcodes02.html">6502/6510/8500/8502 opcodes (including illegal) at oxyron.de</a></li>
+<li><a rel="nofollow" class="external text" href="https://csdb.dk/release/?id=212346">NMOS 6510 Unintended Opcodes (No More Secrets)</a></li></ul>
+<h2><span class="mw-headline" id="References">References</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Opcode&amp;veaction=edit&amp;section=6" title="Edit section: References" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Opcode&amp;action=edit&amp;section=6" title="Edit section&#39;s source code: References">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<div class="mw-references-wrap"><ol class="references">
+<li id="cite&#95;note-1"><span class="mw-cite-backlink"><a href="#cite_ref-1">↑</a></span> <span class="reference-text">Codebase64.net - [Extra Instructions Of The 65XX Series CPU]</span>
+</li>
+</ol></div>
+<!-- 
+NewPP limit report
+Cached time: 20260927040424
+Cache expiry: 86400
+Reduced expiry: false
+Complications: [show‐toc]
+CPU time usage: 0.094 seconds
+Real time usage: 0.098 seconds
+Preprocessor visited node count: 1323/1000000
+Post‐expand include size: 13432/2097152 bytes
+Template argument size: 1772/2097152 bytes
+Highest expansion depth: 3/100
+Expensive parser function count: 0/100
+Unstrip recursion depth: 0/20
+Unstrip post‐expand size: 418/5000000 bytes
+-->
+<!--
+Transclusion expansion time report (%,ms,calls,template)
+100.00%   12.227      1 -total
+ 63.57%    7.773    109 Template:no
+  9.22%    1.127      1 Template:prettytable
+-->
+
+<!-- Saved in parser cache with key c64?hwiki?hen-wiki_:pcache:idhash:2264-0!canonical!svUser=0!asDate=20260927 and timestamp 20260927040424 and revision id 43924. Rendering was triggered because: page-view
+ -->
+</div>
+</div>
+</body></html>

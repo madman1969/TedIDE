@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<!-- From C64-Wiki (https://www.c64-wiki.com/wiki/Graphics_Modes), revision 45258, last edited 18 June 2026, at 20:33.
+     Content is available under the GNU Free Documentation License - see c64wiki/licence.
+     Only the article body is kept; retrieved 2026-09-27 for Tedide's Doc Viewer. -->
+<html><head><meta charset="utf-8"><title>Graphics Modes</title>
+<meta name="c64wiki-page" content="Graphics_Modes"><meta name="c64wiki-revision" content="45258"><meta name="c64wiki-edited" content="18 June 2026, at 20:33">
+</head><body>
+<div class="mw-content-ltr mw-parser-output" lang="en" dir="ltr"><p>The <a href="/wiki/Commodore_64" class="mw-redirect" title="Commodore 64">Commodore 64</a> was designed to deliver a number of official <b>graphics modes</b> which provide for combinations of <a href="/wiki/character" class="mw-redirect" title="character">character</a> graphics, <a href="/index.php?title=bitmap&amp;action=edit&amp;redlink=1" class="new" title="bitmap (page does not exist)">bitmap</a> graphics and <a href="/wiki/sprite" class="mw-redirect" title="sprite">sprites</a> in single and multicolour. All of which can be mixed. The various modes were implemented using the <a href="/wiki/VIC-II" class="mw-redirect" title="VIC-II">VIC-II</a>. As familiarity with the VIC-II grew, users developed non-official techniques which delivered graphical improvements.
+</p>
+<figure class="mw-halign-right" typeof="mw:File/Thumb"><a href="/wiki/File:Gary_by_Mermaid.png" class="mw-file-description"><img src="https://www.c64-wiki.com/images/thumb/3/3f/Gary_by_Mermaid.png/300px-Gary_by_Mermaid.png" decoding="async" loading="lazy" width="300" height="188" class="mw-file-element" srcset="https://www.c64-wiki.com/images/3/3f/Gary_by_Mermaid.png 1.5x" /></a><figcaption>Example of <a href="/index.php?title=LoRes&amp;action=edit&amp;redlink=1" class="new" title="LoRes (page does not exist)">LoRes</a>- /<a href="/wiki/PETSCII" title="PETSCII">PETSCII</a> picture: Gary by Mermaid</figcaption></figure>
+<div id="toc" class="toc" role="navigation" aria-labelledby="mw-toc-heading"><input type="checkbox" role="button" id="toctogglecheckbox" class="toctogglecheckbox" style="display:none" /><div class="toctitle" lang="en" dir="ltr"><h2 id="mw-toc-heading">Contents</h2><span class="toctogglespan"><label class="toctogglelabel" for="toctogglecheckbox"></label></span></div>
+<ul>
+<li class="toclevel-1 tocsection-1"><a href="#Implementation"><span class="tocnumber">1</span> <span class="toctext">Implementation</span></a></li>
+<li class="toclevel-1 tocsection-2"><a href="#Official_Modes"><span class="tocnumber">2</span> <span class="toctext">Official Modes</span></a></li>
+<li class="toclevel-1 tocsection-3"><a href="#Unofficial_Modes"><span class="tocnumber">3</span> <span class="toctext">Unofficial Modes</span></a>
+<ul>
+<li class="toclevel-2 tocsection-4"><a href="#High_Resolution_Display_Techniques"><span class="tocnumber">3.1</span> <span class="toctext">High Resolution Display Techniques</span></a></li>
+<li class="toclevel-2 tocsection-5"><a href="#Medium_Resolution_Display_Techniques"><span class="tocnumber">3.2</span> <span class="toctext">Medium Resolution Display Techniques</span></a></li>
+<li class="toclevel-2 tocsection-6"><a href="#Low_Resolution_Display_Techniques"><span class="tocnumber">3.3</span> <span class="toctext">Low Resolution Display Techniques</span></a></li>
+</ul>
+</li>
+<li class="toclevel-1 tocsection-7"><a href="#Links"><span class="tocnumber">4</span> <span class="toctext">Links</span></a>
+<ul>
+<li class="toclevel-2 tocsection-8"><a href="#About_C64_graphics_modes"><span class="tocnumber">4.1</span> <span class="toctext">About C64 graphics modes</span></a></li>
+<li class="toclevel-2 tocsection-9"><a href="#Crest_demos_with_X-FLI-/XFLI"><span class="tocnumber">4.2</span> <span class="toctext">Crest demos with X-FLI-/XFLI</span></a></li>
+<li class="toclevel-2 tocsection-10"><a href="#Another_infos_about_C64/C128_graphics_modes"><span class="tocnumber">4.3</span> <span class="toctext">Another infos about C64/C128 graphics modes</span></a></li>
+</ul>
+</li>
+</ul>
+</div>
+
+<h2><span class="mw-headline" id="Implementation">Implementation</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Graphics_Modes&amp;veaction=edit&amp;section=1" title="Edit section: Implementation" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Graphics_Modes&amp;action=edit&amp;section=1" title="Edit section&#39;s source code: Implementation">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p>The selection of graphics modes is determined by the combined setting (or clearing) of three bits in the two VIC-II control registers. In Control Register 1 ($D011) the flags are Bit 5 (<a href="/index.php?title=BMM&amp;action=edit&amp;redlink=1" class="new" title="BMM (page does not exist)">BMM</a> (Bitmap Mode)) and Bit 6 (<a href="/index.php?title=ECM&amp;action=edit&amp;redlink=1" class="new" title="ECM (page does not exist)">ECM</a> (Extended Color Mode)). In Control Register 2 ($D016) the flag is Bit 4 (<a href="/index.php?title=MCM&amp;action=edit&amp;redlink=1" class="new" title="MCM (page does not exist)">MCM</a> (Multicolor Mode)). Table 1 highlights the bits in the two control registers.
+</p>
+<table class="wikitable">
+
+
+<tbody><tr>
+<th colspan="12">Table 1 - VIC-II Control Registers
+</th></tr>
+<tr>
+<th>Hex Address
+</th>
+<th>Dec Address
+</th>
+<th>Type
+</th>
+<th>Bit 7
+</th>
+<th>Bit 6
+</th>
+<th>Bit 5
+</th>
+<th>Bit 4
+</th>
+<th>Bit 3
+</th>
+<th>Bit 2
+</th>
+<th>Bit 1
+</th>
+<th>Bit 0
+</th>
+<th>Contents
+</th></tr>
+<tr>
+<td>$D011</td>
+<td>53265</td>
+<td>Register</td>
+<td>RST8</td>
+<td><a href="/index.php?title=ECM&amp;action=edit&amp;redlink=1" class="new" title="ECM (page does not exist)">ECM</a></td>
+<td><a href="/index.php?title=BMM&amp;action=edit&amp;redlink=1" class="new" title="BMM (page does not exist)">BMM</a></td>
+<td>DEN</td>
+<td>RSEL
+</td>
+<td rowspan="1" colspan="3" style="text-align: center;">YSCROLL</td>
+<td>Control Register 1
+</td></tr>
+<tr>
+<td>$D016</td>
+<td>53270</td>
+<td>Register</td>
+<td>-</td>
+<td>-</td>
+<td>RES</td>
+<td><a href="/index.php?title=MCM&amp;action=edit&amp;redlink=1" class="new" title="MCM (page does not exist)">MCM</a></td>
+<td>CSEL
+</td>
+<td rowspan="1" colspan="3" style="text-align: center;">XSCROLL</td>
+<td>Control Register 2
+</td></tr>
+</tbody></table>
+<h2><span class="mw-headline" id="Official_Modes">Official Modes</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Graphics_Modes&amp;veaction=edit&amp;section=2" title="Edit section: Official Modes" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Graphics_Modes&amp;action=edit&amp;section=2" title="Edit section&#39;s source code: Official Modes">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p>As there are only 3 bits (ECM, BMM, and MCM) which define the graphics mode, there can be only 8 (2^3) possible bit combinations. Of these, only 5 were officially supported graphics modes. Table 2 displays the bit combinations and results.
+</p>
+<table class="wikitable">
+
+
+<tbody><tr>
+<th colspan="5">Table 2 - Graphics Modes VIC-II Bit Combinations
+</th></tr>
+<tr>
+<th>Mode
+</th>
+<th>ECM
+</th>
+<th>BMM
+</th>
+<th>MCM
+</th>
+<th>Result
+</th></tr>
+<tr>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td><a href="/wiki/Standard_Character_Mode" title="Standard Character Mode">Standard Character Mode</a>
+</td></tr>
+<tr>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td><a href="/wiki/Multicolor_Character_Mode" class="mw-redirect" title="Multicolor Character Mode">Multicolor Character Mode</a>
+</td></tr>
+<tr>
+<td>2</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td><a href="/wiki/Standard_Bitmap_Mode" title="Standard Bitmap Mode">Standard Bitmap Mode</a>
+</td></tr>
+<tr>
+<td>3</td>
+<td>0</td>
+<td>1</td>
+<td>1</td>
+<td><a href="/wiki/Multicolor_Bitmap_Mode" title="Multicolor Bitmap Mode">Multicolor Bitmap Mode</a>
+</td></tr>
+<tr>
+<td>4</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td><a href="/wiki/Extended_Background_Color_Mode" class="mw-redirect" title="Extended Background Color Mode">Extended Background Color Mode</a>
+</td></tr>
+<tr>
+<td>5</td>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+<td><a href="/index.php?title=Extended_Background_Color_Multicolor_Character_Mode&amp;action=edit&amp;redlink=1" class="new" title="Extended Background Color Multicolor Character Mode (page does not exist)">Extended Background Color Multicolor Character Mode</a> (invalid)
+</td></tr>
+<tr>
+<td>6</td>
+<td>1</td>
+<td>1</td>
+<td>0</td>
+<td><a href="/index.php?title=Extended_Background_Color_Standard_Bitmap_Mode&amp;action=edit&amp;redlink=1" class="new" title="Extended Background Color Standard Bitmap Mode (page does not exist)">Extended Background Color Standard Bitmap Mode</a> (invalid)
+</td></tr>
+<tr>
+<td>7</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td><a href="/index.php?title=Extended_Background_Color_Multicolor_Bitmap_Mode&amp;action=edit&amp;redlink=1" class="new" title="Extended Background Color Multicolor Bitmap Mode (page does not exist)">Extended Background Color Multicolor Bitmap Mode</a> (invalid)
+</td></tr>
+</tbody></table>
+<p>Modes 0-4 are documented, and were therefore supported, by <a href="/wiki/Commodore" title="Commodore">Commodore</a>. Modes 5-7 are technically feasible, but considered illegal. Although the features expected of modes 5-7 are present (such as collision detection), there is no visible screen output for the user. It is for this reason that they are not utilised.
+</p>
+<h2><span class="mw-headline" id="Unofficial_Modes">Unofficial Modes</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Graphics_Modes&amp;veaction=edit&amp;section=3" title="Edit section: Unofficial Modes" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Graphics_Modes&amp;action=edit&amp;section=3" title="Edit section&#39;s source code: Unofficial Modes">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p>There are a number of user, or unofficial, modes which have been developed to improve the quality of graphics from the VIC-II. However, rather than being true “modes”, they are actually programming techniques which exploit flaws in the VIC-II; sometimes in combination with <a href="/wiki/raster_interrupt" class="mw-redirect" title="raster interrupt">raster interrupts</a>, <a href="/index.php?title=interlacing&amp;action=edit&amp;redlink=1" class="new" title="interlacing (page does not exist)">interlacing</a> and <a href="/wiki/sprite" class="mw-redirect" title="sprite">sprites</a>. The various effects create graphics which appear to create a larger display area and/or an increased palette; although, notably, never increasing the maximum VIC-II pixel density. Essentially these improvements are achieved through software, as opposed to the official modes which are achieved through hardware. The known techniques are:
+</p>
+<h3><span class="mw-headline" id="High_Resolution_Display_Techniques">High Resolution Display Techniques</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Graphics_Modes&amp;veaction=edit&amp;section=4" title="Edit section: High Resolution Display Techniques" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Graphics_Modes&amp;action=edit&amp;section=4" title="Edit section&#39;s source code: High Resolution Display Techniques">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<table class="wikitable">
+
+
+<tbody><tr>
+<th colspan="3">High Resolution Display Techniques
+</th></tr>
+<tr>
+<th>Acronym
+</th>
+<th>Technique Name
+</th>
+<th>Date Created
+</th></tr>
+<tr>
+<td>AFLI</td>
+<td><a href="/index.php?title=Advanced_Flexible_Line_Interpretation&amp;action=edit&amp;redlink=1" class="new" title="Advanced Flexible Line Interpretation (page does not exist)">Advanced Flexible Line Interpretation</a></td>
+<td>April 1990
+</td></tr>
+<tr>
+<td>AH</td>
+<td><a href="/index.php?title=Advanced_HiRes&amp;action=edit&amp;redlink=1" class="new" title="Advanced HiRes (page does not exist)">Advanced HiRes</a></td>
+<td>December 1996
+</td></tr>
+<tr>
+<td>AIFLI</td>
+<td><a href="/index.php?title=Advanced_Interlaced_Flexible_Line_Interpretation&amp;action=edit&amp;redlink=1" class="new" title="Advanced Interlaced Flexible Line Interpretation (page does not exist)">Advanced Interlaced Flexible Line Interpretation</a></td>
+<td>
+</td></tr>
+<tr>
+<td>ASSLACE</td>
+<td><a href="/index.php?title=Alternating_Sprite_Sieve_(Inter)lace&amp;action=edit&amp;redlink=1" class="new" title="Alternating Sprite Sieve (Inter)lace (page does not exist)">Alternating Sprite Sieve (Inter)lace</a></td>
+<td>April 2004
+</td></tr>
+<tr>
+<td>ECI</td>
+<td><a href="/index.php?title=Extended_Colors_with_Interlace&amp;action=edit&amp;redlink=1" class="new" title="Extended Colors with Interlace (page does not exist)">Extended Colors with Interlace</a></td>
+<td>June 1988
+</td></tr>
+<tr>
+<td>IAFLI</td>
+<td><a href="/index.php?title=Advanced_Flexible_Line_Interpretation&amp;action=edit&amp;redlink=1" class="new" title="Advanced Flexible Line Interpretation (page does not exist)">Advanced Flexible Line Interpretation</a></td>
+<td>April 1990
+</td></tr>
+<tr>
+<td>IH</td>
+<td><a href="/index.php?title=Interlaced_HiRes&amp;action=edit&amp;redlink=1" class="new" title="Interlaced HiRes (page does not exist)">Interlaced HiRes</a></td>
+<td>
+</td></tr>
+<tr>
+<td>MRFLI</td>
+<td><a href="/index.php?title=Multi_Resolution_Flexible_Line_Interpretation&amp;action=edit&amp;redlink=1" class="new" title="Multi Resolution Flexible Line Interpretation (page does not exist)">Multi Resolution Flexible Line Interpretation</a></td>
+<td>February 2010
+</td></tr>
+<tr>
+<td>MUCSUFLI</td>
+<td><a href="/index.php?title=Multicolor_Sprite_Underlay_Flexible_Line_Interpretation&amp;action=edit&amp;redlink=1" class="new" title="Multicolor Sprite Underlay Flexible Line Interpretation (page does not exist)">Multicolor Sprite Underlay Flexible Line Interpretation</a></td>
+<td>May 2011
+</td></tr>
+<tr>
+<td>MUCSUH</td>
+<td><a href="/index.php?title=Multicolor_Sprite_Underlay_HiRes&amp;action=edit&amp;redlink=1" class="new" title="Multicolor Sprite Underlay HiRes (page does not exist)">Multicolor Sprite Underlay HiRes</a></td>
+<td>February 2009
+</td></tr>
+<tr>
+<td>MUFLI</td>
+<td><a href="/index.php?title=Multicolor_Underlayed_Flexible_Line_Interpretation&amp;action=edit&amp;redlink=1" class="new" title="Multicolor Underlayed Flexible Line Interpretation (page does not exist)">Multicolor Underlayed Flexible Line Interpretation</a></td>
+<td>July 2006
+</td></tr>
+<tr>
+<td>MUIFLI</td>
+<td><a href="/index.php?title=Multicolor_Underlayed_Interlaced_Flexible_Line_Interpretation&amp;action=edit&amp;redlink=1" class="new" title="Multicolor Underlayed Interlaced Flexible Line Interpretation (page does not exist)">Multicolor Underlayed Interlaced Flexible Line Interpretation</a></td>
+<td>July 2009
+</td></tr>
+<tr>
+<td>NUFLI</td>
+<td><a href="/index.php?title=New_Underlayed_Flexible_Line_Interpretation&amp;action=edit&amp;redlink=1" class="new" title="New Underlayed Flexible Line Interpretation (page does not exist)">New Underlayed Flexible Line Interpretation</a></td>
+<td>July 2009
+</td></tr>
+<tr>
+<td>NUIFLI</td>
+<td><a href="/index.php?title=New_Underlayed_Interlaced_Flexible_Line_Interpretation&amp;action=edit&amp;redlink=1" class="new" title="New Underlayed Interlaced Flexible Line Interpretation (page does not exist)">New Underlayed Interlaced Flexible Line Interpretation</a></td>
+<td>July 2009
+</td></tr>
+<tr>
+<td>SH</td>
+<td><a href="/index.php?title=Super_HiRes&amp;action=edit&amp;redlink=1" class="new" title="Super HiRes (page does not exist)">Super HiRes</a></td>
+<td>January 1991
+</td></tr>
+<tr>
+<td>SHFLI</td>
+<td><a href="/index.php?title=Super_HiRes_Flexible_Line_Interpretation&amp;action=edit&amp;redlink=1" class="new" title="Super HiRes Flexible Line Interpretation (page does not exist)">Super HiRes Flexible Line Interpretation</a></td>
+<td>April 1996
+</td></tr>
+<tr>
+<td>SHI</td>
+<td><a href="/index.php?title=Super_HiRes_Interlace&amp;action=edit&amp;redlink=1" class="new" title="Super HiRes Interlace (page does not exist)">Super HiRes Interlace</a></td>
+<td>
+</td></tr>
+<tr>
+<td>SHIFLI</td>
+<td><a href="/index.php?title=Super_HiRes_Interlaced_Flexible_Line_Interpretation&amp;action=edit&amp;redlink=1" class="new" title="Super HiRes Interlaced Flexible Line Interpretation (page does not exist)">Super HiRes Interlaced Flexible Line Interpretation</a></td>
+<td>April 1996
+</td></tr>
+<tr>
+<td>SHIFXL</td>
+<td><a href="/index.php?title=Super_HiRes_Interlaced_Flexible_Line_Interpretation_eXtra_Large&amp;action=edit&amp;redlink=1" class="new" title="Super HiRes Interlaced Flexible Line Interpretation eXtra Large (page does not exist)">Super HiRes Interlaced Flexible Line Interpretation eXtra Large</a></td>
+<td>April 1997
+</td></tr>
+<tr>
+<td>UFLI</td>
+<td><a href="/index.php?title=Underlayed_Flexible_Line_Interpretation&amp;action=edit&amp;redlink=1" class="new" title="Underlayed Flexible Line Interpretation (page does not exist)">Underlayed Flexible Line Interpretation</a></td>
+<td>April 1996
+</td></tr>
+<tr>
+<td>UIFLI</td>
+<td><a href="/index.php?title=Underlayed_Interlaced_Flexible_Line_Interpretation&amp;action=edit&amp;redlink=1" class="new" title="Underlayed Interlaced Flexible Line Interpretation (page does not exist)">Underlayed Interlaced Flexible Line Interpretation</a></td>
+<td>December 1997
+</td></tr>
+<tr>
+<td>TRIFLI</td>
+<td><a href="/index.php?title=Tri_Interlaced_Flexible_Line_Interpretation&amp;action=edit&amp;redlink=1" class="new" title="Tri Interlaced Flexible Line Interpretation (page does not exist)">Tri Interlaced Flexible Line Interpretation</a></td>
+<td>January 2010
+</td></tr>
+<tr>
+<td>XFLI</td>
+<td><a href="/index.php?title=eXtended_Flexible_Line_Interpretation&amp;action=edit&amp;redlink=1" class="new" title="eXtended Flexible Line Interpretation (page does not exist)">eXtended Flexible Line Interpretation</a></td>
+<td>August 2002
+</td></tr>
+<tr>
+<td>XIFLI</td>
+<td><a href="/index.php?title=eXtended_Interlaced_Flexible_Line_Interpretation&amp;action=edit&amp;redlink=1" class="new" title="eXtended Interlaced Flexible Line Interpretation (page does not exist)">eXtended Interlaced Flexible Line Interpretation</a></td>
+<td>August 2002
+</td></tr>
+</tbody></table>
+<h3><span class="mw-headline" id="Medium_Resolution_Display_Techniques">Medium Resolution Display Techniques</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Graphics_Modes&amp;veaction=edit&amp;section=5" title="Edit section: Medium Resolution Display Techniques" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Graphics_Modes&amp;action=edit&amp;section=5" title="Edit section&#39;s source code: Medium Resolution Display Techniques">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<table class="wikitable">
+
+
+<tbody><tr>
+<th colspan="3">Medium Resolution Display Techniques
+</th></tr>
+<tr>
+<th>Acronym
+</th>
+<th>Technique Name
+</th>
+<th>Date Created
+</th></tr>
+<tr>
+<td>FLI</td>
+<td><a href="/index.php?title=Flexible_Line_Interpretation&amp;action=edit&amp;redlink=1" class="new" title="Flexible Line Interpretation (page does not exist)">Flexible Line Interpretation</a></td>
+<td>July 1989
+</td></tr>
+<tr>
+<td>HCB</td>
+<td><a href="/index.php?title=Half_Char_Bitmap&amp;action=edit&amp;redlink=1" class="new" title="Half Char Bitmap (page does not exist)">Half Char Bitmap</a></td>
+<td>October 2008
+</td></tr>
+<tr>
+<td>IFLI</td>
+<td><a href="/index.php?title=Interlaced_Flexible_Line_Interpretation&amp;action=edit&amp;redlink=1" class="new" title="Interlaced Flexible Line Interpretation (page does not exist)">Interlaced Flexible Line Interpretation</a></td>
+<td>Unknown 1991
+</td></tr>
+<tr>
+<td>MUCSU</td>
+<td><a href="/index.php?title=Multicolor_Sprite_Underlay&amp;action=edit&amp;redlink=1" class="new" title="Multicolor Sprite Underlay (page does not exist)">Multicolor Sprite Underlay</a></td>
+<td>
+</td></tr>
+<tr>
+<td>MCI</td>
+<td><a href="/index.php?title=Multicolor_Interlace&amp;action=edit&amp;redlink=1" class="new" title="Multicolor Interlace (page does not exist)">Multicolor Interlace</a></td>
+<td>
+</td></tr>
+</tbody></table>
+<h3><span class="mw-headline" id="Low_Resolution_Display_Techniques">Low Resolution Display Techniques</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Graphics_Modes&amp;veaction=edit&amp;section=6" title="Edit section: Low Resolution Display Techniques" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Graphics_Modes&amp;action=edit&amp;section=6" title="Edit section&#39;s source code: Low Resolution Display Techniques">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<table class="wikitable">
+
+
+<tbody><tr>
+<th colspan="3">Low Resolution Display Techniques
+</th></tr>
+<tr>
+<th>Acronym
+</th>
+<th>Technique Name
+</th>
+<th>Date Created
+</th></tr>
+<tr>
+<td></td>
+<td><a href="/index.php?title=Megatext&amp;action=edit&amp;redlink=1" class="new" title="Megatext (page does not exist)">Megatext</a></td>
+<td>July 2004
+</td></tr>
+<tr>
+<td>PRS</td>
+<td><a href="/index.php?title=Permanent_Raster_Split&amp;action=edit&amp;redlink=1" class="new" title="Permanent Raster Split (page does not exist)">Permanent Raster Split</a></td>
+<td>February 2011
+</td></tr>
+</tbody></table>
+<p>New graphics modes in first use are also listed in the <b><a href="/wiki/Timetable_of_C64_demos" title="Timetable of C64 demos">Timetable of C64 demos</a></b>.
+</p>
+<h2><span class="mw-headline" id="Links">Links</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Graphics_Modes&amp;veaction=edit&amp;section=7" title="Edit section: Links" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Graphics_Modes&amp;action=edit&amp;section=7" title="Edit section&#39;s source code: Links">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<ul><li><a rel="nofollow" class="external text" href="http://www.codebase64.net/doku.php?id=base:vicii_memory_organizing">VIC-II memory organizing</a> codebase.org</li></ul>
+<h3><span class="mw-headline" id="About_C64_graphics_modes">About C64 graphics modes</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Graphics_Modes&amp;veaction=edit&amp;section=8" title="Edit section: About C64 graphics modes" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Graphics_Modes&amp;action=edit&amp;section=8" title="Edit section&#39;s source code: About C64 graphics modes">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<ul><li><a rel="nofollow" class="external text" href="http://sta.c64.org/cbm64disp.html">Commodore 64 display modes</a> Standard modes at sta.c64.org</li>
+<li><a rel="nofollow" class="external text" href="http://www.codebase64.net/doku.php?id=base:vic#custom_graphics_modes">custom graphics modes</a> at codebase.org</li>
+<li><a rel="nofollow" class="external text" href="http://www.studiostyle.sk/dmagic/gallery/gfxmodes.htm">Description of C64 graphic modes</a></li>
+<li><a rel="nofollow" class="external text" href="http://www.devili.iki.fi/pub/Commodore/docs/magazines/discovery/issue1.txt">George Taylor's TRI FLI</a></li>
+<li><a rel="nofollow" class="external text" href="http://www.cascade64.de/csc_graphics.php">Cascade64.de</a></li></ul>
+<h3><span id="Crest_demos_with_X-FLI-.2FXFLI"></span><span class="mw-headline" id="Crest_demos_with_X-FLI-/XFLI">Crest demos with X-FLI-/XFLI</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Graphics_Modes&amp;veaction=edit&amp;section=9" title="Edit section: Crest demos with X-FLI-/XFLI" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Graphics_Modes&amp;action=edit&amp;section=9" title="Edit section&#39;s source code: Crest demos with X-FLI-/XFLI">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<ul><li><a rel="nofollow" class="external text" href="http://www.pouet.net/prod.php?which=7180">Digital magic 2002</a></li>
+<li><a rel="nofollow" class="external text" href="http://www.pouet.net/prod.php?which=12105">Don't meet Crest 2004</a></li></ul>
+<h3><span id="Another_infos_about_C64.2FC128_graphics_modes"></span><span class="mw-headline" id="Another_infos_about_C64/C128_graphics_modes">Another infos about C64/C128 graphics modes</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Graphics_Modes&amp;veaction=edit&amp;section=10" title="Edit section: Another infos about C64/C128 graphics modes" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Graphics_Modes&amp;action=edit&amp;section=10" title="Edit section&#39;s source code: Another infos about C64/C128 graphics modes">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<ul><li><a rel="nofollow" class="external text" href="http://noname.c64.org/csdb/forums/?roomid=7&amp;topicid=25743">noname.c64.org</a></li>
+<li><a rel="nofollow" class="external text" href="http://csdb.dk/release/?id=100510">csdb</a></li>
+<li><a rel="nofollow" class="external text" href="https://c64gfx.com">C64GFX celebrates the extraordinary pixel art created on the Commodore 64.</a></li></ul>
+<!-- 
+NewPP limit report
+Cached time: 20260927041254
+Cache expiry: 86400
+Reduced expiry: false
+Complications: [show‐toc]
+CPU time usage: 0.023 seconds
+Real time usage: 0.024 seconds
+Preprocessor visited node count: 102/1000000
+Post‐expand include size: 95/2097152 bytes
+Template argument size: 0/2097152 bytes
+Highest expansion depth: 2/100
+Expensive parser function count: 0/100
+Unstrip recursion depth: 0/20
+Unstrip post‐expand size: 0/5000000 bytes
+-->
+<!--
+Transclusion expansion time report (%,ms,calls,template)
+100.00%    1.427      1 -total
+ 80.95%    1.155      5 Template:Wikitable
+-->
+
+<!-- Saved in parser cache with key c64?hwiki?hen-wiki_:pcache:idhash:4734-0!canonical!svUser=0!asDate=20260927 and timestamp 20260927041254 and revision id 45258. Rendering was triggered because: page-view
+ -->
+</div>
+</div>
+</body></html>

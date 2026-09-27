@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<!-- From C64-Wiki (https://www.c64-wiki.com/wiki/Bank_Switching), revision 38213, last edited 4 January 2022, at 22:31.
+     Content is available under the GNU Free Documentation License - see c64wiki/licence.
+     Only the article body is kept; retrieved 2026-09-27 for Tedide's Doc Viewer. -->
+<html><head><meta charset="utf-8"><title>Bank Switching</title>
+<meta name="c64wiki-page" content="Bank_Switching"><meta name="c64wiki-revision" content="38213"><meta name="c64wiki-edited" content="4 January 2022, at 22:31">
+</head><body>
+<div class="mw-content-ltr mw-parser-output" lang="en" dir="ltr"><p><b>Bank Switching</b> is a technique which configures the memory accessible by the <a href="/wiki/CPU" title="CPU">CPU</a> at any given time.
+</p><p>As the <a href="/wiki/MOS_6510" class="mw-redirect" title="MOS 6510">MOS 6510</a> <a href="/wiki/CPU" title="CPU">CPU</a> can only access 2<sup>16</sup> = 65536 memory locations ($0000-$FFFF), banks of memory can be switched (which exposes or hides them from the <a href="/wiki/CPU" title="CPU">CPU</a>) in order to provide a greater overall capacity. In its original state the <a href="/wiki/C64" title="C64">C64</a> contains 64 kBytes of <a href="/wiki/RAM" title="RAM">RAM</a>, 20 kBytes of <a href="/wiki/ROM" title="ROM">ROM</a>, and 512 bytes of <a href="/wiki/Color_RAM" title="Color RAM">Color RAM</a>. Through the <a href="/wiki/expansion_port" class="mw-redirect" title="expansion port">expansion port</a>, extensions such as additional <a href="/wiki/ROM" title="ROM">ROM</a> and/or <a href="/wiki/RAM" title="RAM">RAM</a> can be added. Bank switching allows the <a href="/wiki/CPU" title="CPU">CPU</a> to access all of this memory (albeit non-contiguously) to execute a program, and is a common technique in 8-bit microcomputer systems. Unlike memory management by <a href="/index.php?title=paging&amp;action=edit&amp;redlink=1" class="new" title="paging (page does not exist)">paging</a>, data is not exchanged with a storage device but is loaded into memory and remains inaccessible to the <a href="/wiki/CPU" title="CPU">CPU</a> until bank switching is initiated.
+</p>
+<div id="toc" class="toc" role="navigation" aria-labelledby="mw-toc-heading"><input type="checkbox" role="button" id="toctogglecheckbox" class="toctogglecheckbox" style="display:none" /><div class="toctitle" lang="en" dir="ltr"><h2 id="mw-toc-heading">Contents</h2><span class="toctogglespan"><label class="toctogglelabel" for="toctogglecheckbox"></label></span></div>
+<ul>
+<li class="toclevel-1 tocsection-1"><a href="#Caution"><span class="tocnumber">1</span> <span class="toctext">Caution</span></a></li>
+<li class="toclevel-1 tocsection-2"><a href="#Control_bits"><span class="tocnumber">2</span> <span class="toctext">Control bits</span></a>
+<ul>
+<li class="toclevel-2 tocsection-3"><a href="#CPU_Control_Lines"><span class="tocnumber">2.1</span> <span class="toctext">CPU Control Lines</span></a></li>
+<li class="toclevel-2 tocsection-4"><a href="#Expansion_Port"><span class="tocnumber">2.2</span> <span class="toctext">Expansion Port</span></a></li>
+</ul>
+</li>
+<li class="toclevel-1 tocsection-5"><a href="#Memory_Configurations"><span class="tocnumber">3</span> <span class="toctext">Memory Configurations</span></a>
+<ul>
+<li class="toclevel-2 tocsection-6"><a href="#Bank_Switching_Zones"><span class="tocnumber">3.1</span> <span class="toctext">Bank Switching Zones</span></a></li>
+<li class="toclevel-2 tocsection-7"><a href="#Mode_Table"><span class="tocnumber">3.2</span> <span class="toctext">Mode Table</span></a></li>
+<li class="toclevel-2 tocsection-8"><a href="#Mode_Table_Notes"><span class="tocnumber">3.3</span> <span class="toctext">Mode Table Notes</span></a></li>
+<li class="toclevel-2 tocsection-9"><a href="#Optimised_Mode_Table"><span class="tocnumber">3.4</span> <span class="toctext">Optimised Mode Table</span></a></li>
+<li class="toclevel-2 tocsection-10"><a href="#Optimised_Mode_Table_Notes"><span class="tocnumber">3.5</span> <span class="toctext">Optimised Mode Table Notes</span></a></li>
+</ul>
+</li>
+<li class="toclevel-1 tocsection-11"><a href="#Links"><span class="tocnumber">4</span> <span class="toctext">Links</span></a></li>
+</ul>
+</div>
+
+<h2><span class="mw-headline" id="Caution">Caution</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Bank_Switching&amp;veaction=edit&amp;section=1" title="Edit section: Caution" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Bank_Switching&amp;action=edit&amp;section=1" title="Edit section&#39;s source code: Caution">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p>Caution should be taken when bank switching away from the default configuration. Because the standard <a href="/wiki/Interrupt" title="Interrupt">interrupt</a> handling routines in <a href="/wiki/ROM" title="ROM">ROM</a> access the <a href="/wiki/I/O" title="I/O">I/O</a> hardware (for example in order to scan the keyboard), normal <a href="/wiki/Interrupt" title="Interrupt">interrupt</a> operations should be disabled when the <a href="/wiki/I/O" title="I/O">I/O</a> hardware is banked out (not accessible by the <a href="/wiki/CPU" title="CPU">CPU</a>). Likewise care should be taken to avoid the <a href="/wiki/CPU" title="CPU">CPU</a> trying to execute code expected from <a href="/wiki/ROM" title="ROM">ROM</a>, when that <a href="/wiki/ROM" title="ROM">ROM</a> is banked out.
+</p>
+<h2><span class="mw-headline" id="Control_bits">Control bits</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Bank_Switching&amp;veaction=edit&amp;section=2" title="Edit section: Control bits" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Bank_Switching&amp;action=edit&amp;section=2" title="Edit section&#39;s source code: Control bits">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p>In order to achieve bank switching, the <a href="/wiki/CPU" title="CPU">CPU</a> needs access to a latch.  For the <a href="/wiki/C64" title="C64">C64</a>, the <a href="/wiki/PLA_(C64_chip)" title="PLA (C64 chip)">Programmable Logic Array (PLA)</a> acts as a latch which enables memory configurations by setting or clearing latch bits.  The <a href="/wiki/PLA_(C64_chip)" title="PLA (C64 chip)">PLA</a> is connected to the <a href="/wiki/CPU" title="CPU">CPU</a> control lines and the <a href="/wiki/expansion_port" class="mw-redirect" title="expansion port">expansion port</a> which, together, dictate which areas of memory are banked.
+</p>
+<h3><span class="mw-headline" id="CPU_Control_Lines">CPU Control Lines</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Bank_Switching&amp;veaction=edit&amp;section=3" title="Edit section: CPU Control Lines" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Bank_Switching&amp;action=edit&amp;section=3" title="Edit section&#39;s source code: CPU Control Lines">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<p>The three least significant bits in the port register (address 1) correspond to the three control lines in the port used for bank switching. To use these control lines, they must be configured as outputs, i.e. the same three least significant bits in the port's directional data register (at address 0) must be set to 1. This is the default upon power-up, but a programmer may want to make certain of this before bank switching. The control lines, in general, perform the function given in their descriptions. However, a combination of control lines are occasionally used to set a particular memory configuration.
+</p>
+<ul><li>LORAM (bit 0, weight 1) is a control line which banks the 8 kByte <a href="/wiki/BASIC_ROM" title="BASIC ROM">BASIC ROM</a> in or out of the <a href="/wiki/CPU" title="CPU">CPU</a> address space. Normally, this line is logically high (set to 1) for <a href="/wiki/BASIC" title="BASIC">BASIC</a> operation. If this line is logically low (cleared to 0), the <a href="/wiki/BASIC_ROM" title="BASIC ROM">BASIC ROM</a> will typically disappear from the <a href="/wiki/memory_map" class="mw-redirect" title="memory map">memory map</a> and be replaced by 8 kBytes of <a href="/wiki/RAM" title="RAM">RAM</a> from $A000-$BFFF. Some exceptions to this rule exist; see the table below for a full overview.</li></ul>
+<ul><li>HIRAM (bit 1, weight 2) is a control line which banks the 8 kByte <a href="/index.php?title=KERNAL_ROM&amp;action=edit&amp;redlink=1" class="new" title="KERNAL ROM (page does not exist)">KERNAL ROM</a> in or out of the <a href="/wiki/CPU" title="CPU">CPU</a> address space. Normally, this line is logically high (set to 1) for <a href="/index.php?title=KERNAL_ROM&amp;action=edit&amp;redlink=1" class="new" title="KERNAL ROM (page does not exist)">KERNAL ROM</a> operation. If this line is logically low (cleared to 0), the <a href="/index.php?title=KERNAL_ROM&amp;action=edit&amp;redlink=1" class="new" title="KERNAL ROM (page does not exist)">KERNAL ROM</a> will typically disappear from the <a href="/wiki/memory_map" class="mw-redirect" title="memory map">memory map</a> and be replaced by 8 kBytes of RAM from $E000-$FFFF. Some exceptions to this rule exist; see the table below for a full overview.</li></ul>
+<ul><li>CHAREN (bit 2, weight 4) is a control line which banks the 4 kByte <a href="/index.php?title=character_generator_ROM&amp;action=edit&amp;redlink=1" class="new" title="character generator ROM (page does not exist)">character generator ROM</a> in or out of the <a href="/wiki/CPU" title="CPU">CPU</a> address space. From the <a href="/wiki/CPU" title="CPU">CPU</a> point of view, the <a href="/index.php?title=character_generator_ROM&amp;action=edit&amp;redlink=1" class="new" title="character generator ROM (page does not exist)">character generator ROM</a> occupies the same address space as the <a href="/wiki/I/O" title="I/O">I/O</a> devices ($D000-$DFFF). When the CHAREN line is set to 1 (as is normal), the <a href="/wiki/I/O" title="I/O">I/O</a> devices appear in the <a href="/wiki/CPU" title="CPU">CPU</a> address space, and the <a href="/index.php?title=character_generator_ROM&amp;action=edit&amp;redlink=1" class="new" title="character generator ROM (page does not exist)">character generator ROM</a> is not accessible. When the CHAREN bit is cleared to 0, the <a href="/index.php?title=character_generator_ROM&amp;action=edit&amp;redlink=1" class="new" title="character generator ROM (page does not exist)">character generator ROM</a> appears in the <a href="/wiki/CPU" title="CPU">CPU</a> address space, and the <a href="/wiki/I/O" title="I/O">I/O</a> devices are not accessible. The <a href="/wiki/CPU" title="CPU">CPU</a> only needs to access the <a href="/index.php?title=character_generator_ROM&amp;action=edit&amp;redlink=1" class="new" title="character generator ROM (page does not exist)">character generator ROM</a> when downloading the character set from <a href="/wiki/ROM" title="ROM">ROM</a> to <a href="/wiki/RAM" title="RAM">RAM</a>. CHAREN can be overridden by other control lines in certain memory configurations. CHAREN will have no effect on any memory configuration without <a href="/wiki/I/O" title="I/O">I/O</a> devices. <a href="/wiki/RAM" title="RAM">RAM</a> will appear from $D000-$DFFF instead.</li></ul>
+<h3><span class="mw-headline" id="Expansion_Port">Expansion Port</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Bank_Switching&amp;veaction=edit&amp;section=4" title="Edit section: Expansion Port" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Bank_Switching&amp;action=edit&amp;section=4" title="Edit section&#39;s source code: Expansion Port">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<p>The bank switching technique in the <a href="/wiki/C64" title="C64">C64</a> also handles external ROM in the form of a <a href="/wiki/Cartridge" title="Cartridge">cartridge</a> plugged into the <a href="/wiki/Expansion_Port" title="Expansion Port">expansion port</a> and is linked to the <a href="/wiki/PLA_(C64_chip)" title="PLA (C64 chip)">PLA</a> by 2 lines: GAME and EXROM.  These lines have been designed to allow a <a href="/wiki/cartridge" class="mw-redirect" title="cartridge">cartridge</a> to map one or two 8 kByte banks of <a href="/wiki/ROM" title="ROM">ROM</a> into the system easily by wiring the ROM's enable pin to ROMH/ROML lines of the port. Extra logic on the cartridge can be used to implement more complex behaviour such as <a href="/index.php?title=Freezer&amp;action=edit&amp;redlink=1" class="new" title="Freezer (page does not exist)">Freezers</a> though.
+</p>
+<ul><li>GAME (pin 8) is pulled logically high (set to 1) through internal pull-up resistor RP4.  When a cartridge is attached and GAME is pulled logically low (cleared to 0), the interaction with the <a href="/wiki/CPU" title="CPU">CPU</a> Control Lines can enable <a href="/wiki/cartridge" class="mw-redirect" title="cartridge">cartridge</a> <a href="/wiki/ROM" title="ROM">ROM</a> to be banked in between $8000-$BFFF and/or $E000-$EFFF.  GAME can also have the effect of completely banking out all memory between $1000-$7FFF and $A000-$CFFF (<a href="/wiki/Ultimax" title="Ultimax">Ultimax</a> mode).</li></ul>
+<ul><li>EXROM (pin 9) is pulled logically high (set to 1) through internal pull-up resistor RP4.  When a cartridge is attached and EXROM is pulled logically low (cleared to 0), the interaction with the <a href="/wiki/CPU" title="CPU">CPU</a> Control Lines can enable <a href="/wiki/cartridge" class="mw-redirect" title="cartridge">cartridge</a> <a href="/wiki/ROM" title="ROM">ROM</a> to be banked in between $8000-$BFFF and/or $E000-$EFFF.</li></ul>
+<h2><span class="mw-headline" id="Memory_Configurations">Memory Configurations</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Bank_Switching&amp;veaction=edit&amp;section=5" title="Edit section: Memory Configurations" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Bank_Switching&amp;action=edit&amp;section=5" title="Edit section&#39;s source code: Memory Configurations">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p>Because there are 5 latch bits (LORAM, HIRAM, CHAREN, GAME, EXROM) that control the memory configurations, there are 2<sup>5</sup> = 32 possible memory arrangements or modes.  However, in reality, there is duplication and so only 14 different modes actually exist. Each mode is a combination of various-sized memory banks (although are multiples of 4 kBytes or 16 pages).  Additionally, the banks are pegged to specific addresses and so their location when switched in or out of memory is fixed. Consequently, the 65536 addressable memory locations are essentially divided into 7 uneven <b>Bank Switching Zones</b> where memory banks can be manipulated.
+</p>
+<h3><span class="mw-headline" id="Bank_Switching_Zones">Bank Switching Zones</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Bank_Switching&amp;veaction=edit&amp;section=6" title="Edit section: Bank Switching Zones" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Bank_Switching&amp;action=edit&amp;section=6" title="Edit section&#39;s source code: Bank Switching Zones">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<table class="wikitable">
+<tbody><tr>
+<th>Hex Address
+</th>
+<th>Dec Address
+</th>
+<th>Page
+</th>
+<th>Size
+</th>
+<th>Contents
+</th></tr>
+<tr>
+<td>$0000-$0FFF</td>
+<td>0-4095</td>
+<td>Page 0-15</td>
+<td>4 kBytes</td>
+<td>RAM (which the system requires and must appear in each mode)
+</td></tr>
+<tr>
+<td>$1000-$7FFF</td>
+<td>4096-32767</td>
+<td>Page 16-127</td>
+<td>28 kBytes</td>
+<td>RAM or is unmapped
+</td></tr>
+<tr>
+<td>$8000-$9FFF</td>
+<td>32768-40959</td>
+<td>Page 128-159</td>
+<td>8 kBytes</td>
+<td>RAM or cartridge ROM
+</td></tr>
+<tr>
+<td>$A000-$BFFF</td>
+<td>40960-49151</td>
+<td>Page 160-191</td>
+<td>8 kBytes</td>
+<td>RAM, BASIC interpretor ROM, cartridge ROM or is unmapped
+</td></tr>
+<tr>
+<td>$C000-$CFFF</td>
+<td>49152-53247</td>
+<td>Page 192-207</td>
+<td>4 kBytes</td>
+<td>RAM or is unmapped
+</td></tr>
+<tr>
+<td>$D000-$DFFF</td>
+<td>53248-57343</td>
+<td>Page 208-223</td>
+<td>4 kBytes</td>
+<td>RAM, Character generator ROM, or I/O registers and Color RAM
+</td></tr>
+<tr>
+<td>$E000-$FFFF</td>
+<td>57344-65535</td>
+<td>Page 224-255</td>
+<td>8 kBytes</td>
+<td>RAM, KERNAL ROM or cartridge ROM
+</td></tr>
+</tbody></table>
+<h3><span class="mw-headline" id="Mode_Table">Mode Table</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Bank_Switching&amp;veaction=edit&amp;section=7" title="Edit section: Mode Table" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Bank_Switching&amp;action=edit&amp;section=7" title="Edit section&#39;s source code: Mode Table">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<p>This table displays the 32 modes of bank switching.
+</p>
+<table class="wikitable">
+
+<tbody><tr align="center">
+<th rowspan="3">Mode
+</th>
+<th colspan="5">PLA Latch Bit States
+</th>
+<th colspan="16">Memory Configuration
+</th></tr>
+<tr>
+<th colspan="2">Expansion Port</th>
+<th colspan="3">CPU Control Lines
+</th>
+<th>Page 0-15</th>
+<th>Page 16-127</th>
+<th>Page 128-159</th>
+<th>Page 160-191</th>
+<th>Page 192-207</th>
+<th>Page 208-223</th>
+<th>Page 224-255
+</th></tr>
+<tr>
+<th>_EXROM</th>
+<th>_GAME</th>
+<th>CHAREN</th>
+<th>HIRAM</th>
+<th>LORAM
+</th>
+<th>$0000-$0FFF</th>
+<th>$1000-$7FFF</th>
+<th>$8000-$9FFF</th>
+<th>$A000-$BFFF</th>
+<th>C000-$CFFF</th>
+<th>$D000-$DFFF</th>
+<th>$E000-$FFFF
+</th></tr>
+<tr align="center">
+<td>31</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>BASIC ROM</td>
+<td>RAM</td>
+<td>I/O</td>
+<td>KERNAL ROM
+</td></tr>
+<tr align="center">
+<td>30</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>0</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>I/O</td>
+<td>KERNAL ROM
+</td></tr>
+<tr align="center">
+<td>29</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>I/O</td>
+<td>RAM
+</td></tr>
+<tr align="center">
+<td>28</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM
+</td></tr>
+<tr align="center">
+<td>27</td>
+<td>1</td>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+<td>1</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>BASIC ROM</td>
+<td>RAM</td>
+<td>CHAR ROM</td>
+<td>KERNAL ROM
+</td></tr>
+<tr align="center">
+<td>26</td>
+<td>1</td>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>CHAR ROM</td>
+<td>KERNAL ROM
+</td></tr>
+<tr align="center">
+<td>25</td>
+<td>1</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>CHAR ROM</td>
+<td>RAM
+</td></tr>
+<tr align="center">
+<td>24</td>
+<td>1</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM
+</td></tr>
+<tr align="center">
+<td>23</td>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>RAM</td>
+<td>-</td>
+<td>CART ROM LO</td>
+<td>-</td>
+<td>-</td>
+<td>I/O</td>
+<td>CART ROM HI
+</td></tr>
+<tr align="center">
+<td>22</td>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+<td>1</td>
+<td>0</td>
+<td>RAM</td>
+<td>-</td>
+<td>CART ROM LO</td>
+<td>-</td>
+<td>-</td>
+<td>I/O</td>
+<td>CART ROM HI
+</td></tr>
+<tr align="center">
+<td>21</td>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+<td>RAM</td>
+<td>-</td>
+<td>CART ROM LO</td>
+<td>-</td>
+<td>-</td>
+<td>I/O</td>
+<td>CART ROM HI
+</td></tr>
+<tr align="center">
+<td>20</td>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>RAM</td>
+<td>-</td>
+<td>CART ROM LO</td>
+<td>-</td>
+<td>-</td>
+<td>I/O</td>
+<td>CART ROM HI
+</td></tr>
+<tr align="center">
+<td>19</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>1</td>
+<td>RAM</td>
+<td>-</td>
+<td>CART ROM LO</td>
+<td>-</td>
+<td>-</td>
+<td>I/O</td>
+<td>CART ROM HI
+</td></tr>
+<tr align="center">
+<td>18</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>RAM</td>
+<td>-</td>
+<td>CART ROM LO</td>
+<td>-</td>
+<td>-</td>
+<td>I/O</td>
+<td>CART ROM HI
+</td></tr>
+<tr align="center">
+<td>17</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>RAM</td>
+<td>-</td>
+<td>CART ROM LO</td>
+<td>-</td>
+<td>-</td>
+<td>I/O</td>
+<td>CART ROM HI
+</td></tr>
+<tr align="center">
+<td>16</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>RAM</td>
+<td>-</td>
+<td>CART ROM LO</td>
+<td>-</td>
+<td>-</td>
+<td>I/O</td>
+<td>CART ROM HI
+</td></tr>
+<tr align="center">
+<td>15</td>
+<td>0</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>CART ROM LO</td>
+<td>BASIC ROM</td>
+<td>RAM</td>
+<td>I/O</td>
+<td>KERNAL ROM
+</td></tr>
+<tr align="center">
+<td>14</td>
+<td>0</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>0</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>I/O</td>
+<td>KERNAL ROM
+</td></tr>
+<tr align="center">
+<td>13</td>
+<td>0</td>
+<td>1</td>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>I/O</td>
+<td>RAM
+</td></tr>
+<tr align="center">
+<td>12</td>
+<td>0</td>
+<td>1</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM
+</td></tr>
+<tr align="center">
+<td>11</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+<td>1</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>CART ROM LO</td>
+<td>BASIC ROM</td>
+<td>RAM</td>
+<td>CHAR ROM</td>
+<td>KERNAL ROM
+</td></tr>
+<tr align="center">
+<td>10</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>CHAR ROM</td>
+<td>KERNAL ROM
+</td></tr>
+<tr align="center">
+<td>9</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>CHAR ROM</td>
+<td>RAM
+</td></tr>
+<tr align="center">
+<td>8</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM
+</td></tr>
+<tr align="center">
+<td>7</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>CART ROM LO</td>
+<td>CART ROM HI</td>
+<td>RAM</td>
+<td>I/O</td>
+<td>KERNAL ROM
+</td></tr>
+<tr align="center">
+<td>6</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>1</td>
+<td>0</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>CART ROM HI</td>
+<td>RAM</td>
+<td>I/O</td>
+<td>KERNAL ROM
+</td></tr>
+<tr align="center">
+<td>5</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>I/O</td>
+<td>RAM
+</td></tr>
+<tr align="center">
+<td>4</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM
+</td></tr>
+<tr align="center">
+<td>3</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>1</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>CART ROM LO</td>
+<td>CART ROM HI</td>
+<td>RAM</td>
+<td>CHAR ROM</td>
+<td>KERNAL ROM
+</td></tr>
+<tr align="center">
+<td>2</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>CART ROM HI</td>
+<td>RAM</td>
+<td>CHAR ROM</td>
+<td>KERNAL ROM
+</td></tr>
+<tr align="center">
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM
+</td></tr>
+<tr align="center">
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM
+</td></tr></tbody></table>
+<h3><span class="mw-headline" id="Mode_Table_Notes">Mode Table Notes</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Bank_Switching&amp;veaction=edit&amp;section=8" title="Edit section: Mode Table Notes" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Bank_Switching&amp;action=edit&amp;section=8" title="Edit section&#39;s source code: Mode Table Notes">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<ul><li>The default is mode 31 (no <a href="/wiki/cartridge" class="mw-redirect" title="cartridge">cartridge</a>) as all latch bits are logically high (set to 1).</li>
+<li>Modes 16-23 are <a href="/wiki/Ultimax" title="Ultimax">Ultimax</a> compatibility modes.</li>
+<li>"-" means "open" or "unmapped": No (internal) chip of the C64 is enabled, and the data bus can be written to by the cartridge, just like in the "CART ROM" states.</li>
+<li>"I/O" includes Color RAM as well ($D800-$DBFF)</li>
+<li>$DE00-$DFFF is special and reserved for I/O with chips on the expansion port (by wiring the IOx lines of the port to the enable pins of the chips)</li>
+<li>A <a href="/wiki/cartridge" class="mw-redirect" title="cartridge">cartridge</a> may configure the system to one of the modes 0-23 as one or both of the <a href="/wiki/expansion_port" class="mw-redirect" title="expansion port">expansion port</a> latch bits will be logically low (cleared to 0) by grounding the EXROM/GAME lines.</li>
+<li>For cartridges that statically ground EXROM/GAME, manipulation during run-time is limited to the <a href="/wiki/CPU" title="CPU">CPU</a> control lines.
+<ul><li>This means that bank switching is confined within a group of modes (within modes 0-7, 8-15, 16-23 or 24-31).</li>
+<li>For example, from mode 31 the system can bank switch to mode 27 but not to mode 12.</li>
+<li>For example, from mode 2 the system can bank switch to mode 7 but not to mode 19.</li></ul></li>
+<li>For cartridges that include own logic, more complex behaviour can be implemented.
+<ul><li>Modes 16-23 and additional cartridge logic allow arbitrary chips (be it ROMs, RAMs, or even other chips such as additional CIAs) to be visible to the CPU at $1000-$CFFF/$DE00-$FFFF.</li></ul></li></ul>
+<h3><span class="mw-headline" id="Optimised_Mode_Table">Optimised Mode Table</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Bank_Switching&amp;veaction=edit&amp;section=9" title="Edit section: Optimised Mode Table" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Bank_Switching&amp;action=edit&amp;section=9" title="Edit section&#39;s source code: Optimised Mode Table">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<p>Although the results are the same as the <b>Mode Table</b>, this table is condensed for ease of reference.
+</p>
+<table class="wikitable">
+
+<tbody><tr align="center">
+<th rowspan="3">Modes
+</th>
+<th colspan="5">PLA Latch Bit States
+</th>
+<th colspan="16">Memory Configuration
+</th></tr>
+<tr>
+<th colspan="2">Expansion Port</th>
+<th colspan="3">CPU Lines
+</th>
+<th>Page 0-15</th>
+<th>Page 16-127</th>
+<th>Page 128-159</th>
+<th>Page 160-191</th>
+<th>Page 192-207</th>
+<th>Page 208-223</th>
+<th>Page 224-255
+</th></tr>
+<tr>
+<th>EXROM</th>
+<th>GAME</th>
+<th>CHAREN</th>
+<th>HIRAM</th>
+<th>LORAM
+</th>
+<th>$0000-$0FFF</th>
+<th>$1000-$7FFF</th>
+<th>$8000-$9FFF</th>
+<th>$A000-$BFFF</th>
+<th>C000-$CFFF</th>
+<th>$D000-$DFFF</th>
+<th>$E000-$FFFF
+</th></tr>
+<tr align="center">
+<td>31</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>BASIC ROM</td>
+<td>RAM</td>
+<td>I/O</td>
+<td>KERNAL ROM
+</td></tr>
+<tr align="center">
+<td>30, 14</td>
+<td>X</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>0</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>I/O</td>
+<td>KERNAL ROM
+</td></tr>
+<tr align="center">
+<td>29, 13</td>
+<td>X</td>
+<td>1</td>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>I/O</td>
+<td>RAM
+</td></tr>
+<tr align="center">
+<td>28, 24</td>
+<td>1</td>
+<td>1</td>
+<td>X</td>
+<td>0</td>
+<td>0</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM
+</td></tr>
+<tr align="center">
+<td>27</td>
+<td>1</td>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+<td>1</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>BASIC ROM</td>
+<td>RAM</td>
+<td>CHAR ROM</td>
+<td>KERNAL ROM
+</td></tr>
+<tr align="center">
+<td>26, 10</td>
+<td>X</td>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>CHAR ROM</td>
+<td>KERNAL ROM
+</td></tr>
+<tr align="center">
+<td>25, 9</td>
+<td>X</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>CHAR ROM</td>
+<td>RAM
+</td></tr>
+<tr align="center">
+<td>23, 22, 21, 20, 19, 18, 17, 16</td>
+<td>1</td>
+<td>0</td>
+<td>X</td>
+<td>X</td>
+<td>X</td>
+<td>RAM</td>
+<td>-</td>
+<td>CART ROM LO</td>
+<td>-</td>
+<td>-</td>
+<td>I/O</td>
+<td>CART ROM HI
+</td></tr>
+<tr align="center">
+<td>15</td>
+<td>0</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>CART ROM LO</td>
+<td>BASIC ROM</td>
+<td>RAM</td>
+<td>I/O</td>
+<td>KERNAL
+</td></tr>
+<tr align="center">
+<td>12, 8, 4, 0</td>
+<td>0</td>
+<td>X</td>
+<td>X</td>
+<td>0</td>
+<td>0</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM
+</td></tr>
+<tr align="center">
+<td>11</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+<td>1</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>CART ROM LO</td>
+<td>BASIC ROM</td>
+<td>RAM</td>
+<td>CHAR ROM</td>
+<td>KERNAL ROM
+</td></tr>
+<tr align="center">
+<td>7</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>CART ROM LO</td>
+<td>CART ROM HI</td>
+<td>RAM</td>
+<td>I/O</td>
+<td>KERNAL ROM
+</td></tr>
+<tr align="center">
+<td>6</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>1</td>
+<td>0</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>CART ROM HI</td>
+<td>RAM</td>
+<td>I/O</td>
+<td>KERNAL ROM
+</td></tr>
+<tr align="center">
+<td>5</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>I/O</td>
+<td>RAM
+</td></tr>
+<tr align="center">
+<td>3</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>1</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>CART ROM LO</td>
+<td>CART ROM HI</td>
+<td>RAM</td>
+<td>CHAR ROM</td>
+<td>KERNAL ROM
+</td></tr>
+<tr align="center">
+<td>2</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>CART ROM HI</td>
+<td>RAM</td>
+<td>CHAR ROM</td>
+<td>KERNAL ROM
+</td></tr>
+<tr align="center">
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM</td>
+<td>RAM
+</td></tr></tbody></table>
+<h3><span class="mw-headline" id="Optimised_Mode_Table_Notes">Optimised Mode Table Notes</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Bank_Switching&amp;veaction=edit&amp;section=10" title="Edit section: Optimised Mode Table Notes" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Bank_Switching&amp;action=edit&amp;section=10" title="Edit section&#39;s source code: Optimised Mode Table Notes">edit source</a><span class="mw-editsection-bracket">]</span></span></h3>
+<ul><li>Although there are 17 lines in the table, there remain 14 different modes.</li>
+<li>The "X" state of the latch bit is irrelevant, as the mode will be chosen regardless of being logically high (set to 1) or low (cleared to 0).</li>
+<li>All <b>Mode Table Notes</b> remain valid.</li></ul>
+<p><br />
+</p><p><br />
+</p>
+<h2><span class="mw-headline" id="Links">Links</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Bank_Switching&amp;veaction=edit&amp;section=11" title="Edit section: Links" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Bank_Switching&amp;action=edit&amp;section=11" title="Edit section&#39;s source code: Links">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p><i>FIXME:</i> Include info from <a rel="nofollow" class="external text" href="http://zimmers.net/anonftp/pub/cbm/magazines/transactor/v6i5/p055.jpg">The Transactor Volume 6, Issue 05, page 55</a> - R(BA) vs. R(~BA); what memory does the VIC see?  <b>This will be added to the VIC page shortly.</b>
+</p>
+<!-- 
+NewPP limit report
+Cached time: 20260927053745
+Cache expiry: 86400
+Reduced expiry: false
+Complications: [show‐toc]
+CPU time usage: 0.030 seconds
+Real time usage: 0.031 seconds
+Preprocessor visited node count: 109/1000000
+Post‐expand include size: 0/2097152 bytes
+Template argument size: 0/2097152 bytes
+Highest expansion depth: 2/100
+Expensive parser function count: 0/100
+Unstrip recursion depth: 0/20
+Unstrip post‐expand size: 0/5000000 bytes
+-->
+<!--
+Transclusion expansion time report (%,ms,calls,template)
+100.00%    0.000      1 -total
+-->
+
+<!-- Saved in parser cache with key c64?hwiki?hen-wiki_:pcache:idhash:3915-0!canonical!svUser=0!asDate=20260927 and timestamp 20260927053745 and revision id 38213. Rendering was triggered because: page-view
+ -->
+</div>
+</div>
+</body></html>

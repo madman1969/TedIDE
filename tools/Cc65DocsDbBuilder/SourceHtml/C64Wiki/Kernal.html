@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<!-- From C64-Wiki (https://www.c64-wiki.com/wiki/Kernal), revision 36272, last edited 12 January 2021, at 19:34.
+     Content is available under the GNU Free Documentation License - see c64wiki/licence.
+     Only the article body is kept; retrieved 2026-09-27 for Tedide's Doc Viewer. -->
+<html><head><meta charset="utf-8"><title>Kernal</title>
+<meta name="c64wiki-page" content="Kernal"><meta name="c64wiki-revision" content="36272"><meta name="c64wiki-edited" content="12 January 2021, at 19:34">
+</head><body>
+<div class="mw-content-ltr mw-parser-output" lang="en" dir="ltr"><p>Commodore's low-level <a href="/wiki/Operating_System" title="Operating System">Operating System</a> was named the <b>Kernal</b>. It comprises the set of low-level hardware interfaces which is consequently used throughout Commodore's 8-bit computer series, beginning with the Commodore <a href="/wiki/PET" title="PET">PET</a>.
+</p><p>In the 1980's many people believed the word <b>KERNAL</b> was an abbreviation for "<b>K</b>eyboard <b>E</b>ntry <b>R</b>ead, <b>N</b>etwork, <b>A</b>nd <b>L</b>ink". According to the legendary account from <a href="/index.php?title=Robert_Russell&amp;action=edit&amp;redlink=1" class="new" title="Robert Russell (page does not exist)">Robert Russell</a> &#8212;one of the dominant people around the development of the  <a href="/wiki/VIC20" class="mw-redirect" title="VIC20">VIC20</a>&#8212; this name had its origin from a mistake Russell made during the creation of the VIC 20 Programmer's Guide<sup id="cite&#95;ref-1" class="reference"><a href="#cite_note-1"><span class="cite-bracket">&#91;</span>1<span class="cite-bracket">&#93;</span></a></sup> 
+This spelling has been repeated thereafter in countless publications and in the documentation for succeeding machines like the <a href="/wiki/C64" title="C64">C64</a><sup id="cite&#95;ref-2" class="reference"><a href="#cite_note-2"><span class="cite-bracket">&#91;</span>2<span class="cite-bracket">&#93;</span></a></sup> or <a href="/wiki/C128" class="mw-redirect" title="C128">C128</a>.<sup id="cite&#95;ref-3" class="reference"><a href="#cite_note-3"><span class="cite-bracket">&#91;</span>3<span class="cite-bracket">&#93;</span></a></sup>
+</p>
+<div id="toc" class="toc" role="navigation" aria-labelledby="mw-toc-heading"><input type="checkbox" role="button" id="toctogglecheckbox" class="toctogglecheckbox" style="display:none" /><div class="toctitle" lang="en" dir="ltr"><h2 id="mw-toc-heading">Contents</h2><span class="toctogglespan"><label class="toctogglelabel" for="toctogglecheckbox"></label></span></div>
+<ul>
+<li class="toclevel-1 tocsection-1"><a href="#Functions"><span class="tocnumber">1</span> <span class="toctext">Functions</span></a></li>
+<li class="toclevel-1 tocsection-2"><a href="#C64_U4_Kernal_ROM_Failure_Symptoms"><span class="tocnumber">2</span> <span class="toctext">C64 U4 Kernal ROM Failure Symptoms</span></a></li>
+<li class="toclevel-1 tocsection-3"><a href="#References"><span class="tocnumber">3</span> <span class="toctext">References</span></a></li>
+<li class="toclevel-1 tocsection-4"><a href="#Links"><span class="tocnumber">4</span> <span class="toctext">Links</span></a></li>
+</ul>
+</div>
+
+<h2><span class="mw-headline" id="Functions">Functions</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Kernal&amp;veaction=edit&amp;section=1" title="Edit section: Functions" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Kernal&amp;action=edit&amp;section=1" title="Edit section&#39;s source code: Functions">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p>The Kernal consisted of thirty-nine (39) functions ranging from Input/Output control to file management, memory management, console management and time management.  These functions formed the basis for higher level routines in the <a href="/wiki/BASIC" title="BASIC">BASIC</a> ROM like <a href="/wiki/LOAD" title="LOAD">LOAD</a>, <a href="/wiki/SAVE" title="SAVE">SAVE</a>, <a href="/wiki/INPUT" title="INPUT">INPUT</a> and <a href="/wiki/PRINT" title="PRINT">PRINT</a>.
+</p><p><a class="mw-selflink selflink">Kernal</a> functions are accessible via a jump-table at the end of addressable memory ($FF81-$FFF3).  The <a class="mw-selflink selflink">Kernal</a> ROM occupied the last 8KB of address space in Commodore 8-bit computers ($E000-$FFFF).
+</p>
+<table border="2" cellspacing="4" cellpadding="1" align="Left" style="margin:1em 1em 1em 0; border-style:solid; border-width:1px; border-collapse:collapse; empty-cells:show">
+<tbody><tr>
+<td rowspan="2" align="center" valign="top" bgcolor="#eeeeee"><b>Name</b>
+</td>
+<td colspan="2" align="center" bgcolor="#eeeeee"><b>Address</b>
+</td>
+<td rowspan="2" align="center" valign="top" bgcolor="#eeeeee"><b>Function</b>
+</td></tr>
+<tr>
+<td bgcolor="#eeeeee" align="Center">Hexadecimal
+</td>
+<td bgcolor="#eeeeee" align="Center">Decimal
+</td></tr>
+<tr>
+<td align="Left"><a href="/index.php?title=ACPTR&amp;action=edit&amp;redlink=1" class="new" title="ACPTR (page does not exist)">ACPTR</a>
+</td>
+<td align="Center">$FFA5
+</td>
+<td align="Center">65445
+</td>
+<td align="Left">Input byte from serial port
+</td></tr>
+<tr>
+<td align="Left"><a href="/index.php?title=CHKIN&amp;action=edit&amp;redlink=1" class="new" title="CHKIN (page does not exist)">CHKIN</a>
+</td>
+<td align="Center">$FFC6
+</td>
+<td align="Center">65478
+</td>
+<td align="Left">Open channel for input
+</td></tr>
+<tr>
+<td align="Left"><a href="/index.php?title=CHKOUT&amp;action=edit&amp;redlink=1" class="new" title="CHKOUT (page does not exist)">CHKOUT</a>
+</td>
+<td align="Center">$FFC9
+</td>
+<td align="Center">65481
+</td>
+<td align="Left">Open a channel for output
+</td></tr>
+<tr>
+<td align="Left"><a href="/index.php?title=CHRIN&amp;action=edit&amp;redlink=1" class="new" title="CHRIN (page does not exist)">CHRIN</a>
+</td>
+<td align="Center">$FFCF
+</td>
+<td align="Center">65487
+</td>
+<td align="Left">Get a character from the input channel
+</td></tr>
+<tr>
+<td align="Left"><a href="/wiki/CHROUT" title="CHROUT">CHROUT</a>
+</td>
+<td align="Center">$FFD2
+</td>
+<td align="Center">65490
+</td>
+<td align="Left">Output a character
+</td></tr>
+<tr>
+<td align="Left"><a href="/index.php?title=CIOUT&amp;action=edit&amp;redlink=1" class="new" title="CIOUT (page does not exist)">CIOUT</a>
+</td>
+<td align="Center">$FFA8
+</td>
+<td align="Center">65448
+</td>
+<td align="Left">Transmit a byte over the serial bus
+</td></tr>
+<tr>
+<td align="Left"><a href="/index.php?title=CINT&amp;action=edit&amp;redlink=1" class="new" title="CINT (page does not exist)">CINT</a>
+</td>
+<td align="Center">$FF81
+</td>
+<td align="Center">65409
+</td>
+<td align="Left">Initialize the screen editor and VIC-II Chip
+</td></tr>
+<tr>
+<td align="Left"><a href="/index.php?title=CLALL&amp;action=edit&amp;redlink=1" class="new" title="CLALL (page does not exist)">CLALL</a>
+</td>
+<td align="Center">$FFE7
+</td>
+<td align="Center">65511
+</td>
+<td align="Left">Close all open files
+</td></tr>
+<tr>
+<td align="Left"><a href="/index.php?title=CLOSE_(Kernal)&amp;action=edit&amp;redlink=1" class="new" title="CLOSE (Kernal) (page does not exist)">CLOSE</a>
+</td>
+<td align="Center">$FFC3
+</td>
+<td align="Center">65475
+</td>
+<td align="Left">Close a logical file
+</td></tr>
+<tr>
+<td align="Left"><a href="/wiki/CLRCHN" title="CLRCHN">CLRCHN</a>
+</td>
+<td align="Center">$FFCC
+</td>
+<td align="Center">65484
+</td>
+<td align="Left">Clear all I/O channels
+</td></tr>
+<tr>
+<td align="Left"><a href="/wiki/GETIN" title="GETIN">GETIN</a>
+</td>
+<td align="Center">$FFE4
+</td>
+<td align="Center">65508
+</td>
+<td align="Left">Get a character
+</td></tr>
+<tr>
+<td align="Left"><a href="/index.php?title=IOBASE&amp;action=edit&amp;redlink=1" class="new" title="IOBASE (page does not exist)">IOBASE</a>
+</td>
+<td align="Center">$FFF3
+</td>
+<td align="Center">65523
+</td>
+<td align="Left">Define I/O memory page
+</td></tr>
+<tr>
+<td align="Left"><a href="/index.php?title=IOINIT&amp;action=edit&amp;redlink=1" class="new" title="IOINIT (page does not exist)">IOINIT</a>
+</td>
+<td align="Center">$FF84
+</td>
+<td align="Center">65412
+</td>
+<td align="Left">Initialize I/O devices
+</td></tr>
+<tr>
+<td align="Left"><a href="/index.php?title=LISTEN&amp;action=edit&amp;redlink=1" class="new" title="LISTEN (page does not exist)">LISTEN</a>
+</td>
+<td align="Center">$FFB1
+</td>
+<td align="Center">65457
+</td>
+<td align="Left">Command a device on the serial bus to listen
+</td></tr>
+<tr>
+<td align="Left"><a href="/index.php?title=LOAD_(Kernal)&amp;action=edit&amp;redlink=1" class="new" title="LOAD (Kernal) (page does not exist)">LOAD</a>
+</td>
+<td align="Center">$FFD5
+</td>
+<td align="Center">65493
+</td>
+<td align="Left">Load RAM from device
+</td></tr>
+<tr>
+<td align="Left"><a href="/index.php?title=MEMBOT&amp;action=edit&amp;redlink=1" class="new" title="MEMBOT (page does not exist)">MEMBOT</a>
+</td>
+<td align="Center">$FF9C
+</td>
+<td align="Center">65436
+</td>
+<td align="Left">Set bottom of memory
+</td></tr>
+<tr>
+<td align="Left"><a href="/index.php?title=MEMTOP&amp;action=edit&amp;redlink=1" class="new" title="MEMTOP (page does not exist)">MEMTOP</a>
+</td>
+<td align="Center">$FF99
+</td>
+<td align="Center">65433
+</td>
+<td align="Left">Set the top of RAM
+</td></tr>
+<tr>
+<td align="Left"><a href="/index.php?title=OPEN_(Kernal)&amp;action=edit&amp;redlink=1" class="new" title="OPEN (Kernal) (page does not exist)">OPEN</a>
+</td>
+<td align="Center">$FFC0
+</td>
+<td align="Center">65472
+</td>
+<td align="Left">Open a logical file
+</td></tr>
+<tr>
+<td align="Left"><a href="/wiki/PLOT" class="mw-redirect" title="PLOT">PLOT</a>
+</td>
+<td align="Center">$FFF0
+</td>
+<td align="Center">65520
+</td>
+<td align="Left">Set or retrieve cursor location
+</td></tr>
+<tr>
+<td align="Left"><a href="/index.php?title=RAMTAS&amp;action=edit&amp;redlink=1" class="new" title="RAMTAS (page does not exist)">RAMTAS</a>
+</td>
+<td align="Center">$FF87
+</td>
+<td align="Center">65415
+</td>
+<td align="Left">Perform RAM test
+</td></tr>
+<tr>
+<td align="Left"><a href="/index.php?title=RDTIM&amp;action=edit&amp;redlink=1" class="new" title="RDTIM (page does not exist)">RDTIM</a>
+</td>
+<td align="Center">$FFDE
+</td>
+<td align="Center">65502
+</td>
+<td align="Left">Read system clock
+</td></tr>
+<tr>
+<td align="Left"><a href="/index.php?title=READST&amp;action=edit&amp;redlink=1" class="new" title="READST (page does not exist)">READST</a>
+</td>
+<td align="Center">$FFB7
+</td>
+<td align="Center">65463
+</td>
+<td align="Left">Read status word
+</td></tr>
+<tr>
+<td align="Left"><a href="/index.php?title=RESTOR&amp;action=edit&amp;redlink=1" class="new" title="RESTOR (page does not exist)">RESTOR</a>
+</td>
+<td align="Center">$FF8A
+</td>
+<td align="Center">65418
+</td>
+<td align="Left">Set the top of RAM
+</td></tr>
+<tr>
+<td align="Left"><a href="/index.php?title=SAVE_(Kernel)&amp;action=edit&amp;redlink=1" class="new" title="SAVE (Kernel) (page does not exist)">SAVE</a>
+</td>
+<td align="Center">$FFD8
+</td>
+<td align="Center">65496
+</td>
+<td align="Left">Save memory to a device
+</td></tr>
+<tr>
+<td align="Left"><a href="/index.php?title=SCNKEY&amp;action=edit&amp;redlink=1" class="new" title="SCNKEY (page does not exist)">SCNKEY</a>
+</td>
+<td align="Center">$FF9F
+</td>
+<td align="Center">65439
+</td>
+<td align="Left">Scan the keyboard
+</td></tr>
+<tr>
+<td align="Left"><a href="/index.php?title=SCREEN&amp;action=edit&amp;redlink=1" class="new" title="SCREEN (page does not exist)">SCREEN</a>
+</td>
+<td align="Center">$FFED
+</td>
+<td align="Center">65517
+</td>
+<td align="Left">Return screen format
+</td></tr>
+<tr>
+<td align="Left"><a href="/index.php?title=SECOND&amp;action=edit&amp;redlink=1" class="new" title="SECOND (page does not exist)">SECOND</a>
+</td>
+<td align="Center">$FF93
+</td>
+<td align="Center">65427
+</td>
+<td align="Left">Send secondary address for <a href="/index.php?title=LISTEN&amp;action=edit&amp;redlink=1" class="new" title="LISTEN (page does not exist)">LISTEN</a>
+</td></tr>
+<tr>
+<td align="Left"><a href="/index.php?title=SETLFS&amp;action=edit&amp;redlink=1" class="new" title="SETLFS (page does not exist)">SETLFS</a>
+</td>
+<td align="Center">$FFBA
+</td>
+<td align="Center">65466
+</td>
+<td align="Left">Set up a logical file
+</td></tr>
+<tr>
+<td align="Left"><a href="/index.php?title=SETMSG&amp;action=edit&amp;redlink=1" class="new" title="SETMSG (page does not exist)">SETMSG</a>
+</td>
+<td align="Center">$FF90
+</td>
+<td align="Center">65424
+</td>
+<td align="Left">Set system message output
+</td></tr>
+<tr>
+<td align="Left"><a href="/index.php?title=SETNAM&amp;action=edit&amp;redlink=1" class="new" title="SETNAM (page does not exist)">SETNAM</a>
+</td>
+<td align="Center">$FFBD
+</td>
+<td align="Center">65469
+</td>
+<td align="Left">Set up file name
+</td></tr>
+<tr>
+<td align="Left"><a href="/index.php?title=SETTIM&amp;action=edit&amp;redlink=1" class="new" title="SETTIM (page does not exist)">SETTIM</a>
+</td>
+<td align="Center">$FFDB
+</td>
+<td align="Center">65499
+</td>
+<td align="Left">Set the system clock
+</td></tr>
+<tr>
+<td align="Left"><a href="/index.php?title=SETTMO&amp;action=edit&amp;redlink=1" class="new" title="SETTMO (page does not exist)">SETTMO</a>
+</td>
+<td align="Center">$FFA2
+</td>
+<td align="Center">65442
+</td>
+<td align="Left">Set IEEE bus card timeout flag
+</td></tr>
+<tr>
+<td align="Left"><a href="/wiki/STOP_(Kernal)" title="STOP (Kernal)">STOP</a>
+</td>
+<td align="Center">$FFE1
+</td>
+<td align="Center">65505
+</td>
+<td align="Left">Check if STOP key is pressed
+</td></tr>
+<tr>
+<td align="Left"><a href="/index.php?title=TALK&amp;action=edit&amp;redlink=1" class="new" title="TALK (page does not exist)">TALK</a>
+</td>
+<td align="Center">$FFB4
+</td>
+<td align="Center">65460
+</td>
+<td align="Left">Command a device on the serial bus to talk
+</td></tr>
+<tr>
+<td align="Left"><a href="/index.php?title=TKSA&amp;action=edit&amp;redlink=1" class="new" title="TKSA (page does not exist)">TKSA</a>
+</td>
+<td align="Center">$FF96
+</td>
+<td align="Center">65430
+</td>
+<td align="Left">Send a secondary address to a device commanded to talk
+</td></tr>
+<tr>
+<td align="Left"><a href="/index.php?title=UDTIM&amp;action=edit&amp;redlink=1" class="new" title="UDTIM (page does not exist)">UDTIM</a>
+</td>
+<td align="Center">$FFEA
+</td>
+<td align="Center">65514
+</td>
+<td align="Left">Update the system clock
+</td></tr>
+<tr>
+<td align="Left"><a href="/index.php?title=UNLSN&amp;action=edit&amp;redlink=1" class="new" title="UNLSN (page does not exist)">UNLSN</a>
+</td>
+<td align="Center">$FFAE
+</td>
+<td align="Center">65454
+</td>
+<td align="Left">Send an UNLISTEN command
+</td></tr>
+<tr>
+<td align="Left"><a href="/index.php?title=UNTLK&amp;action=edit&amp;redlink=1" class="new" title="UNTLK (page does not exist)">UNTLK</a>
+</td>
+<td align="Center">$FFAB
+</td>
+<td align="Center">65451
+</td>
+<td align="Left">Send an UNTALK command
+</td></tr>
+<tr>
+<td align="Left"><a href="/index.php?title=VECTOR&amp;action=edit&amp;redlink=1" class="new" title="VECTOR (page does not exist)">VECTOR</a>
+</td>
+<td align="Center">$FF8D
+</td>
+<td align="Center">65421
+</td>
+<td align="Left">Manage RAM vectors
+</td></tr></tbody></table>
+<p><br clear="all" />
+</p>
+<pre>OPEN --------------------+
+ CHKIN/CHKOUT ---------+ |
+   begin a loop -----+ | |
+     input or output | | |
+   end a loop -------+ | |
+ CLRCHN ---------------+ |
+CLOSE -------------------+
+</pre>
+<h2><span class="mw-headline" id="C64_U4_Kernal_ROM_Failure_Symptoms">C64 U4 Kernal ROM Failure Symptoms</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Kernal&amp;veaction=edit&amp;section=2" title="Edit section: C64 U4 Kernal ROM Failure Symptoms" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Kernal&amp;action=edit&amp;section=2" title="Edit section&#39;s source code: C64 U4 Kernal ROM Failure Symptoms">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<ul><li>Blank screen, no border.</li>
+<li>Most cartridges don't work but a few game carts (example: CBM <a href="/wiki/Kickman" title="Kickman">Kickman</a> and <a href="/wiki/Jupiter_Lander" title="Jupiter Lander">Jupiter Lander</a>) will work with a normal screen because they bypass the Kernal ROM.</li></ul>
+<h2><span class="mw-headline" id="References">References</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Kernal&amp;veaction=edit&amp;section=3" title="Edit section: References" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Kernal&amp;action=edit&amp;section=3" title="Edit section&#39;s source code: References">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<div class="mw-references-wrap"><ol class="references">
+<li id="cite&#95;note-1"><span class="mw-cite-backlink"><a href="#cite_ref-1">↑</a></span> <span class="reference-text">Book <a href="/index.php?title=Volkscomputer&amp;action=edit&amp;redlink=1" class="new" title="Volkscomputer (page does not exist)">Volkscomputer</a> - Computer für die Masse 1981 - Startvorbereitungen, p. 114 <span class="mw-default-size" typeof="mw:File"><a href="/wiki/File:flag_de_18px.gif" class="mw-file-description" title="Language German"><img alt="Language German" src="https://www.c64-wiki.com/images/c/cf/flag_de_18px.gif" decoding="async" loading="lazy" width="18" height="11" class="mw-file-element" /></a></span></span>
+</li>
+<li id="cite&#95;note-2"><span class="mw-cite-backlink"><a href="#cite_ref-2">↑</a></span> <span class="reference-text"><a href="/wiki/Commodore_64_Programmer%27s_Reference_Guide" title="Commodore 64 Programmer&#39;s Reference Guide">C64 Programmer's Reference Guide</a>, p. 268: "The KERNAL"</span>
+</li>
+<li id="cite&#95;note-3"><span class="mw-cite-backlink"><a href="#cite_ref-3">↑</a></span> <span class="reference-text"><a rel="nofollow" class="external text" href="http://www.youtube.com/watch?v=BpXFB8ZEH30">Video at YouTube</a>  8-Bit Guy's channel: Commodore History Part 3 - The Commodore 64 (remark on the writing of "KERNAL" at 0:05:00) </span>
+</li>
+</ol></div>
+<h2><span class="mw-headline" id="Links">Links</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Kernal&amp;veaction=edit&amp;section=4" title="Edit section: Links" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Kernal&amp;action=edit&amp;section=4" title="Edit section&#39;s source code: Links">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<table border="0" cellspacing="1" style="background-color:transparent">
+<tbody><tr>
+<td><span class="mw-default-size" typeof="mw:File"><span><img src="https://www.c64-wiki.com/images/5/52/WP-W11.png" decoding="async" loading="lazy" width="18" height="11" class="mw-file-element" /></span></span>
+</td>
+<td align="left"><b><a rel="nofollow" class="external text" href="http://en.wikipedia.org/wiki/Kernal">Wikipedia: Kernal</a></b>
+</td></tr></tbody></table>
+<ul><li><a rel="nofollow" class="external text" href="http://unusedino.de/ec64/technical/aay/c64/krnromma.htm">Detailed KERNAL ROM-Listing</a> of <a href="/wiki/AAY64" class="mw-redirect" title="AAY64">AAY64</a></li>
+<li><a rel="nofollow" class="external text" href="http://www.everything2.com/index.pl?node_id=747887">KERNAL Refernce bei everything2.com</a></li></ul>
+<!-- 
+NewPP limit report
+Cached time: 20260927043021
+Cache expiry: 86400
+Reduced expiry: false
+Complications: [show‐toc]
+CPU time usage: 0.032 seconds
+Real time usage: 0.034 seconds
+Preprocessor visited node count: 125/1000000
+Post‐expand include size: 313/2097152 bytes
+Template argument size: 23/2097152 bytes
+Highest expansion depth: 4/100
+Expensive parser function count: 0/100
+Unstrip recursion depth: 0/20
+Unstrip post‐expand size: 1603/5000000 bytes
+-->
+<!--
+Transclusion expansion time report (%,ms,calls,template)
+100.00%    7.867      1 -total
+ 13.88%    1.092      1 Template:-
+ 11.91%    0.937      1 Template:Wikipedia
+  8.82%    0.694      1 Template:DE
+  7.69%    0.605      1 Template:youtube
+-->
+
+<!-- Saved in parser cache with key c64?hwiki?hen-wiki_:pcache:idhash:3145-0!canonical!svUser=0!asDate=20260927 and timestamp 20260927043021 and revision id 36272. Rendering was triggered because: page-view
+ -->
+</div>
+</div>
+</body></html>

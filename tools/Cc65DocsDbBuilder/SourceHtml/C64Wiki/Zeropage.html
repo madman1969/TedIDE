@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<!-- From C64-Wiki (https://www.c64-wiki.com/wiki/Zeropage), revision 38127, last edited 11 December 2021, at 15:58.
+     Content is available under the GNU Free Documentation License - see c64wiki/licence.
+     Only the article body is kept; retrieved 2026-09-27 for Tedide's Doc Viewer. -->
+<html><head><meta charset="utf-8"><title>Zeropage</title>
+<meta name="c64wiki-page" content="Zeropage"><meta name="c64wiki-revision" content="38127"><meta name="c64wiki-edited" content="11 December 2021, at 15:58">
+</head><body>
+<div class="mw-content-ltr mw-parser-output" lang="en" dir="ltr"><p>The first 256 Bytes of the <a href="/wiki/C64" title="C64">C64</a> <a href="/wiki/memory_map" class="mw-redirect" title="memory map">memory map</a> (0-255 or $0000-$00FF) are called <b>zeropage</b> (<b>Page 0</b>). Besides faster fetching and storing from/to these addresses, the 65xx CPUs offer the <a href="/wiki/Indirect-indexed_addressing" title="Indirect-indexed addressing">indirect-indexed addressing mode</a> which only work on zeropage addresses.
+</p><p>The two very first addresses in both zeropage (and the entire address space) of the C64, are "hardwired" in the <a href="/wiki/CPU" title="CPU">CPU</a> to internal registers for use with the 6510's on-chip <a href="/index.php?title=Port&amp;action=edit&amp;redlink=1" class="new" title="Port (page does not exist)">port</a>. Reading and writing to these registers does not affect the attached <a href="/wiki/RAM" title="RAM">RAM</a> chips, and there is no direct way to access addresses 0 and 1 in RAM rather than the internal port registers (but some cunning hardware trickery with the VIC-chip will allow you to do so). This leaves 254 "normal", usable zeropage addresses, and thus potentially 254/2=127 index registers for use with indirect-indexed addressing.
+</p><p>This is also part of the reason why there are so few internal registers in 65xx CPUs compared to other CPUs of the day (1970s design): Why waste precious space on the CPU chip itself, when external RAM (including the zeropage area) runs at the same speed as the CPU itself, and thus provides a whopping 127 16-bit index registers...!
+</p><p>Those zeropage addresses are useful and important in programming the C64 &#8211; so useful that the internal <a href="/wiki/KERNAL" class="mw-redirect" title="KERNAL">KERNAL</a> and <a href="/wiki/BASIC" title="BASIC">BASIC</a> system <a href="/wiki/ROM" title="ROM">ROMs</a> make use of most of them, leaving only a handful that are completely "safe" for machine language programmers to use for their own purposes, without risking a system crash.
+</p>
+<h2><span class="mw-headline" id="Addresses">Addresses</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=Zeropage&amp;veaction=edit&amp;section=1" title="Edit section: Addresses" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=Zeropage&amp;action=edit&amp;section=1" title="Edit section&#39;s source code: Addresses">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<table class="wikitable">
+
+
+<tbody><tr>
+<th>Hex Address
+</th>
+<th>Dec Address
+</th>
+<th>Type
+</th>
+<th>Purpose
+</th></tr>
+<tr>
+<td rowspan="9" valign="top">$0000</td>
+<td rowspan="9" valign="top">0</td>
+<td rowspan="9" valign="top">Register</td>
+<td>6510 CPU's data direction I/O port register; 0 = input, 1 = output
+</td></tr>
+<tr>
+<td>Bit 0 - Direction of I/O on port at bit 0 of address $0001; default = 1
+</td></tr>
+<tr>
+<td>Bit 1 - Direction of I/O on port at bit 1 of address $0001; default = 1
+</td></tr>
+<tr>
+<td>Bit 2 - Direction of I/O on port at bit 2 of address $0001; default = 1
+</td></tr>
+<tr>
+<td>Bit 3 - Direction of I/O on port at bit 3 of address $0001; default = 1
+</td></tr>
+<tr>
+<td>Bit 4 - Direction of I/O on port at bit 4 of address $0001; default = 0
+</td></tr>
+<tr>
+<td>Bit 5 - Direction of I/O on port at bit 5 of address $0001; default = 1
+</td></tr>
+<tr>
+<td>Bit 6 - Direction of I/O on port at bit 6 of address $0001; unused, as bit 6 of address $0001 is undefined
+</td></tr>
+<tr>
+<td>Bit 7 - Direction of I/O on port at bit 7 of address $0001; unused, as bit 7 of address $0001 is undefined
+</td></tr>
+<tr>
+<td rowspan="9" valign="top">$0001</td>
+<td rowspan="9" valign="top">1</td>
+<td rowspan="9" valign="top">Register</td>
+<td>6510 CPU's on-chip port register
+</td></tr>
+<tr>
+<td>Bit 0 - LORAM: Configures <a href="/wiki/RAM" title="RAM">RAM</a> or <a href="/wiki/ROM" title="ROM">ROM</a> at $A000-$BFFF (see <a href="/wiki/Bankswitching" class="mw-redirect" title="Bankswitching">bankswitching</a>)
+</td></tr>
+<tr>
+<td>Bit 1 - HIRAM: Configures <a href="/wiki/RAM" title="RAM">RAM</a> or <a href="/wiki/ROM" title="ROM">ROM</a> at $E000-$FFFF (see <a href="/wiki/Bankswitching" class="mw-redirect" title="Bankswitching">bankswitching</a>)
+</td></tr>
+<tr>
+<td>Bit 2 - CHAREN: Configures <a href="/wiki/I/O" title="I/O">I/O</a> or <a href="/wiki/ROM" title="ROM">ROM</a> at $D000-$DFFF (see <a href="/wiki/Bankswitching" class="mw-redirect" title="Bankswitching">bankswitching</a>)
+</td></tr>
+<tr>
+<td>Bit 3 - Cassette Data Output Line (<a href="/wiki/Datasette" class="mw-redirect" title="Datasette">Datasette</a>)
+</td></tr>
+<tr>
+<td>Bit 4 - Cassette Switch Sense; 1 = Switch Closed
+</td></tr>
+<tr>
+<td>Bit 5 - Cassette Motor Control; 0 = On, 1 = Off
+</td></tr>
+<tr>
+<td>Bit 6 - Undefined
+</td></tr>
+<tr>
+<td>Bit 7 - Undefined
+</td></tr>
+<tr>
+<td>$0002</td>
+<td>2</td>
+<td></td>
+<td>Unused
+</td></tr>
+<tr>
+<td>$0003</td>
+<td>3</td>
+<td>Pointer</td>
+<td><a href="/wiki/Low-Byte" class="mw-redirect" title="Low-Byte">Low Byte</a> pointing to address 45482/$B1AA; a <a href="/wiki/ROM" title="ROM">ROM</a> routine for converting <a href="/wiki/Floating_point_arithmetic" title="Floating point arithmetic">floating point</a> numbers to integers
+</td></tr>
+<tr>
+<td>$0004</td>
+<td>4</td>
+<td>Pointer</td>
+<td><a href="/wiki/High-byte" class="mw-redirect" title="High-byte">High byte</a> pointing to address 45482/$B1AA; a <a href="/wiki/ROM" title="ROM">ROM</a> routine for converting <a href="/wiki/Floating_point_arithmetic" title="Floating point arithmetic">floating point</a> numbers to integers
+</td></tr>
+<tr>
+<td>$0005</td>
+<td>5</td>
+<td>Pointer</td>
+<td><a href="/wiki/Low-Byte" class="mw-redirect" title="Low-Byte">Low Byte</a> pointing to 45969/$B391; a <a href="/wiki/ROM" title="ROM">ROM</a> routine for converting integer numbers to <a href="/wiki/Floating_point_arithmetic" title="Floating point arithmetic">floating point</a> format
+</td></tr>
+<tr>
+<td>$0006</td>
+<td>6</td>
+<td>Pointer</td>
+<td><a href="/wiki/High-byte" class="mw-redirect" title="High-byte">High byte</a> pointing to 45969/$B391; a <a href="/wiki/ROM" title="ROM">ROM</a> routine for converting integer numbers to <a href="/wiki/Floating_point_arithmetic" title="Floating point arithmetic">floating point</a> format
+</td></tr>
+<tr>
+<td>$0007</td>
+<td>7</td>
+<td>Flag</td>
+<td>Search character/temporary integer during <a href="/wiki/INT" title="INT">INT</a>, <a href="/wiki/OR" title="OR">OR</a> and <a href="/wiki/AND" title="AND">AND</a>
+</td></tr>
+<tr>
+<td>$0008</td>
+<td>8</td>
+<td>Flag</td>
+<td>Scan for quote character at end of string during tokenization of BASIC commands.
+</td></tr>
+<tr>
+<td>$0009</td>
+<td>9</td>
+<td>Value</td>
+<td><a href="/index.php?title=Cursor&amp;action=edit&amp;redlink=1" class="new" title="Cursor (page does not exist)">Cursor</a> column position after last invocation of <a href="/wiki/TAB" class="mw-redirect" title="TAB">TAB</a> or <a href="/wiki/SPC" class="mw-redirect" title="SPC">SPC</a>
+</td></tr>
+<tr>
+<td>$000A</td>
+<td>10</td>
+<td>Flag</td>
+<td>Sets condition for BASIC <a href="/wiki/Interpreter" title="Interpreter">Interpreter</a> function; 0 = <a href="/wiki/LOAD" title="LOAD">LOAD</a>, 1 = <a href="/wiki/VERIFY" title="VERIFY">VERIFY</a>
+</td></tr>
+<tr>
+<td>$000B</td>
+<td>11</td>
+<td>Pointer</td>
+<td>Input buffer pointer/number of subscripts for <a href="/wiki/DIM" title="DIM">DIM</a>, line length for tokenization
+</td></tr>
+<tr>
+<td>$000C</td>
+<td>12</td>
+<td>Flag</td>
+<td>Default size of array for <a href="/wiki/DIM" title="DIM">DIM</a>
+</td></tr>
+<tr>
+<td>$000D</td>
+<td>13</td>
+<td>Flag</td>
+<td>Variable type; 0 = numeric, 255 = character string
+</td></tr>
+<tr>
+<td>$000E</td>
+<td>14</td>
+<td>Flag</td>
+<td>Numeric variable type flag; 0 = floating-point, 128 = integer
+</td></tr>
+<tr>
+<td>$000F</td>
+<td>15</td>
+<td>Flag</td>
+<td>For <a href="/wiki/LIST" title="LIST">LIST</a>, <a href="/wiki/Garbage_Collection" title="Garbage Collection">Garbage Collection</a> or tokenization
+</td></tr>
+<tr>
+<td>$0010</td>
+<td>16</td>
+<td>Flag</td>
+<td>Distinguishes between user function call or array variable
+</td></tr>
+<tr>
+<td>$0011</td>
+<td>17</td>
+<td>Flag</td>
+<td>Designates data entry method; 0 = <a href="/wiki/INPUT" title="INPUT">INPUT</a>, 64 = <a href="/wiki/GET" title="GET">GET</a> or 152 = <a href="/wiki/READ" title="READ">READ</a>
+</td></tr>
+<tr>
+<td>$0012</td>
+<td>18</td>
+<td>Flag</td>
+<td>Tracks sign of trigonometric function calls (255 in quadrant 2/3 for <a href="/wiki/SIN" title="SIN">SIN</a> or <a href="/wiki/TAN" title="TAN">TAN</a> or quadrant 1/2 for <a href="/wiki/COS" title="COS">COS</a>, 0 otherwise), or tracks comparison operator (1 = &gt;, 2 = equals, 4 = &lt;, is bit-field combination)
+</td></tr>
+<tr>
+<td>$0013</td>
+<td>19</td>
+<td>Flag</td>
+<td>Current input filenumber: 0 = default input (<a href="/wiki/Keyboard" title="Keyboard">Keyboard</a>), &gt; 0 other open file
+</td></tr>
+<tr>
+<td>$0014</td>
+<td>20</td>
+<td>Pointer</td>
+<td><a href="/wiki/Low-Byte" class="mw-redirect" title="Low-Byte">Low Byte</a> target line number for <a href="/wiki/ON" title="ON">ON</a>, <a href="/wiki/GOTO" title="GOTO">GOTO</a>, <a href="/wiki/GOSUB" title="GOSUB">GOSUB</a> and <a href="/wiki/LIST" title="LIST">LIST</a>, and address for <a href="/wiki/PEEK" title="PEEK">PEEK</a>, <a href="/wiki/POKE" title="POKE">POKE</a> and <a href="/wiki/SYS" title="SYS">SYS</a>
+</td></tr>
+<tr>
+<td>$0015</td>
+<td>21</td>
+<td>Pointer</td>
+<td><a href="/wiki/High-byte" class="mw-redirect" title="High-byte">High byte</a> target line number for <a href="/wiki/ON" title="ON">ON</a>, <a href="/wiki/GOTO" title="GOTO">GOTO</a>, <a href="/wiki/GOSUB" title="GOSUB">GOSUB</a> and <a href="/wiki/LIST" title="LIST">LIST</a>, and address for <a href="/wiki/PEEK" title="PEEK">PEEK</a>, <a href="/wiki/POKE" title="POKE">POKE</a> and <a href="/wiki/SYS" title="SYS">SYS</a>
+</td></tr>
+<tr>
+<td>$0016</td>
+<td>22</td>
+<td>Pointer</td>
+<td>Next available element on the temporary string descriptor stack in address range from  25 to 33 ($0019-$0021)
+</td></tr>
+<tr>
+<td>$0017</td>
+<td>23</td>
+<td>Pointer</td>
+<td><a href="/wiki/Low-Byte" class="mw-redirect" title="Low-Byte">Low Byte</a> of last used temporary string address or string stack pointer; value = 3 less than the value at address 22 ($0016)
+</td></tr>
+<tr>
+<td>$0018</td>
+<td>24</td>
+<td>Pointer</td>
+<td><a href="/wiki/High-byte" class="mw-redirect" title="High-byte">High byte</a> of last used temporary string address or string stack pointer; value = 0
+</td></tr>
+<tr>
+<td>$0019-$0021</td>
+<td>25-33</td>
+<td></td>
+<td>Temporary string stack: holds 3 string descriptors each consisting of length and start address of string
+</td></tr>
+<tr>
+<td>$0022-$0025</td>
+<td>34-37</td>
+<td>Pointer</td>
+<td>Utility pointer area for the <a href="/wiki/BASIC" title="BASIC">BASIC</a> interpreter
+</td></tr>
+<tr>
+<td>$0026-$002A</td>
+<td>38-42</td>
+<td></td>
+<td>Floating point result of multiplication or division
+</td></tr>
+<tr>
+<td>$002B</td>
+<td>43</td>
+<td>Pointer</td>
+<td><a href="/wiki/Low-Byte" class="mw-redirect" title="Low-Byte">Low Byte</a> TXTTAB, start of <a href="/wiki/BASIC" title="BASIC">BASIC</a> program text, default: 2049 / $0801
+</td></tr>
+<tr>
+<td>$002C</td>
+<td>44</td>
+<td>Pointer</td>
+<td><a href="/wiki/High-byte" class="mw-redirect" title="High-byte">High byte</a> TXTTAB, start of <a href="/wiki/BASIC" title="BASIC">BASIC</a> program text, default: 2049 / $0801
+</td></tr>
+<tr>
+<td>$002D</td>
+<td>45</td>
+<td>Pointer</td>
+<td><a href="/wiki/Low-Byte" class="mw-redirect" title="Low-Byte">Low Byte</a> VARTAB, end of <a href="/wiki/BASIC" title="BASIC">BASIC</a> program text+1 / start of numeric variables
+</td></tr>
+<tr>
+<td>$002E</td>
+<td>46</td>
+<td>Pointer</td>
+<td><a href="/wiki/High-byte" class="mw-redirect" title="High-byte">High byte</a> VARTAB, end of <a href="/wiki/BASIC" title="BASIC">BASIC</a> program text+1 / start of numeric variables
+</td></tr>
+<tr>
+<td>$002F</td>
+<td>47</td>
+<td>Pointer</td>
+<td><a href="/wiki/Low-Byte" class="mw-redirect" title="Low-Byte">Low Byte</a> ARYTAB, end of numeric Variables+1 / start of array variables
+</td></tr>
+<tr>
+<td>$0030</td>
+<td>48</td>
+<td>Pointer</td>
+<td><a href="/wiki/High-byte" class="mw-redirect" title="High-byte">High byte</a> ARYTAB, end of numeric Variables+1 / start of array variables
+</td></tr>
+<tr>
+<td>$0031</td>
+<td>49</td>
+<td>Pointer</td>
+<td><a href="/wiki/Low-Byte" class="mw-redirect" title="Low-Byte">Low Byte</a> STREND, end of array variables+1 / lowest address for string stack
+</td></tr>
+<tr>
+<td>$0032</td>
+<td>50</td>
+<td>Pointer</td>
+<td><a href="/wiki/High-byte" class="mw-redirect" title="High-byte">High byte</a> STREND, end of array variables+1 / lowest address for string stack
+</td></tr>
+<tr>
+<td>$0033</td>
+<td>51</td>
+<td>Pointer</td>
+<td><a href="/wiki/Low-Byte" class="mw-redirect" title="Low-Byte">Low Byte</a> FRETOP, top of string stack
+</td></tr>
+<tr>
+<td>$0034</td>
+<td>52</td>
+<td>Pointer</td>
+<td><a href="/wiki/High-byte" class="mw-redirect" title="High-byte">High byte</a> FRETOP, top of string stack
+</td></tr>
+<tr>
+<td>$0035</td>
+<td>53</td>
+<td>Pointer</td>
+<td><a href="/wiki/Low-Byte" class="mw-redirect" title="Low-Byte">Low Byte</a> FRESPC, utility pointer for strings
+</td></tr>
+<tr>
+<td>$0036</td>
+<td>54</td>
+<td>Pointer</td>
+<td><a href="/wiki/High-byte" class="mw-redirect" title="High-byte">High byte</a> FRESPC, utility pointer for strings
+</td></tr>
+<tr>
+<td>$0037</td>
+<td>55</td>
+<td>Pointer</td>
+<td><a href="/wiki/Low-Byte" class="mw-redirect" title="Low-Byte">Low Byte</a> MEMSIZ, highest <a href="/wiki/BASIC" title="BASIC">BASIC</a> <a href="/wiki/RAM" title="RAM">RAM</a> address / bottom of string stack
+</td></tr>
+<tr>
+<td>$0038</td>
+<td>56</td>
+<td>Pointer</td>
+<td><a href="/wiki/High-byte" class="mw-redirect" title="High-byte">High byte</a> MEMSIZ, highest <a href="/wiki/BASIC" title="BASIC">BASIC</a> <a href="/wiki/RAM" title="RAM">RAM</a> address / bottom of string stack
+</td></tr>
+<tr>
+<td>$0039</td>
+<td>57</td>
+<td>Pointer</td>
+<td><a href="/wiki/Low-Byte" class="mw-redirect" title="Low-Byte">Low Byte</a> current <a href="/wiki/BASIC" title="BASIC">BASIC</a> line number
+</td></tr>
+<tr>
+<td>$003A</td>
+<td>58</td>
+<td>Pointer</td>
+<td><a href="/wiki/High-byte" class="mw-redirect" title="High-byte">High byte</a> current <a href="/wiki/BASIC" title="BASIC">BASIC</a> line number
+</td></tr>
+<tr>
+<td>$003B</td>
+<td>59</td>
+<td>Pointer</td>
+<td><a href="/wiki/Low-Byte" class="mw-redirect" title="Low-Byte">Low Byte</a> previous <a href="/wiki/BASIC" title="BASIC">BASIC</a> line number for <a href="/wiki/CONT" title="CONT">CONT</a> after <a href="/wiki/STOP" title="STOP">STOP</a>
+</td></tr>
+<tr>
+<td>$003C</td>
+<td>60</td>
+<td>Pointer</td>
+<td><a href="/wiki/High-byte" class="mw-redirect" title="High-byte">High byte</a> previous <a href="/wiki/BASIC" title="BASIC">BASIC</a> line number for <a href="/wiki/CONT" title="CONT">CONT</a> after <a href="/wiki/STOP" title="STOP">STOP</a>
+</td></tr>
+<tr>
+<td>$003D</td>
+<td>61</td>
+<td>Pointer</td>
+<td><a href="/wiki/Low-Byte" class="mw-redirect" title="Low-Byte">Low Byte</a> next <a href="/wiki/BASIC" title="BASIC">BASIC</a> statement for <a href="/wiki/CONT" title="CONT">CONT</a>
+</td></tr>
+<tr>
+<td>$003E</td>
+<td>62</td>
+<td></td>
+<td><a href="/wiki/High-byte" class="mw-redirect" title="High-byte">High byte</a> next <a href="/wiki/BASIC" title="BASIC">BASIC</a> statement for <a href="/wiki/CONT" title="CONT">CONT</a>
+</td></tr>
+<tr>
+<td>$003F</td>
+<td>63</td>
+<td></td>
+<td><a href="/wiki/Low-Byte" class="mw-redirect" title="Low-Byte">Low Byte</a> current <a href="/wiki/DATA" title="DATA">DATA</a> line
+</td></tr>
+<tr>
+<td>$0040</td>
+<td>64</td>
+<td></td>
+<td><a href="/wiki/High-byte" class="mw-redirect" title="High-byte">High byte</a> current <a href="/wiki/DATA" title="DATA">DATA</a> line
+</td></tr>
+<tr>
+<td>$0041-$0042</td>
+<td><a href="/wiki/65-66" title="65-66">65-66</a></td>
+<td></td>
+<td>next <a href="/wiki/DATA" title="DATA">DATA</a> item for <a href="/wiki/READ" title="READ">READ</a>
+</td></tr>
+<tr>
+<td>$0043</td>
+<td>67</td>
+<td></td>
+<td>temporary storage for <a href="/wiki/INPUT" title="INPUT">INPUT</a>
+</td></tr>
+<tr>
+<td>$0044</td>
+<td>68</td>
+<td></td>
+<td>temporary storage for <a href="/wiki/INPUT" title="INPUT">INPUT</a>
+</td></tr>
+<tr>
+<td>$0045</td>
+<td>69</td>
+<td></td>
+<td>Name of variable to look up in variable table (VARNAM).
+</td></tr>
+<tr>
+<td>$0046</td>
+<td>70</td>
+<td></td>
+<td>Name of variable to look up in variable table (VARNAM).
+</td></tr>
+<tr>
+<td>$0047</td>
+<td>71</td>
+<td></td>
+<td>VARNAM of current variable if integer; to descriptor if string
+</td></tr>
+<tr>
+<td>$0048</td>
+<td>72</td>
+<td></td>
+<td>VARNAM of current variable if integer; to descriptor if string
+</td></tr>
+<tr>
+<td>$0049</td>
+<td>73</td>
+<td></td>
+<td>Index variable of <a href="/wiki/FOR" title="FOR">FOR</a> ... <a href="/wiki/NEXT" title="NEXT">NEXT</a> loop
+</td></tr>
+<tr>
+<td>$004A</td>
+<td>74</td>
+<td></td>
+<td>Index variable of <a href="/wiki/FOR" title="FOR">FOR</a> ... <a href="/wiki/NEXT" title="NEXT">NEXT</a> loop
+</td></tr>
+<tr>
+<td>$004B</td>
+<td>75</td>
+<td></td>
+<td>Temporary storage for mathematical operations or TXTPTR during READ/GET/INPUT
+</td></tr>
+<tr>
+<td>$004C</td>
+<td>76</td>
+<td></td>
+<td>Temporary storage for mathematical operations or TXTPTR during READ/GET/INPUT
+</td></tr>
+<tr>
+<td>$004D</td>
+<td>77</td>
+<td></td>
+<td>Mask used during evaluation (FRMEVL) of &lt;, &gt;, =
+</td></tr>
+<tr>
+<td>$004E-$004F</td>
+<td>78-79</td>
+<td></td>
+<td>Temporary storage for FN or floating point value during FLPT
+</td></tr>
+<tr>
+<td>$0050-$0052</td>
+<td>80-82</td>
+<td></td>
+<td>Strings
+</td></tr>
+<tr>
+<td>$0053</td>
+<td>83</td>
+<td></td>
+<td>Length of string variable during <a href="/wiki/Garbage_Collection" title="Garbage Collection">Garbage Collection</a>
+</td></tr>
+<tr>
+<td>$0054</td>
+<td>84</td>
+<td>Constant</td>
+<td>Processor opcode "JMP absolute"; value = 76
+</td></tr>
+<tr>
+<td>$0055-$0056</td>
+<td>85-86</td>
+<td></td>
+<td>Pointer during function evaluation
+</td></tr>
+<tr>
+<td>$0057-$005B</td>
+<td>87-91</td>
+<td></td>
+<td>Register for <a href="/wiki/TAN" title="TAN">TAN</a> (floating point accumulator (<a href="/wiki/FAC" title="FAC">FAC</a>) #3)
+</td></tr>
+<tr>
+<td>$005C-$0060</td>
+<td>92-96</td>
+<td></td>
+<td>Register for <a href="/wiki/TAN" title="TAN">TAN</a> (<a href="/wiki/FAC" title="FAC">FAC</a> #4)
+</td></tr>
+<tr>
+<td>$0061</td>
+<td>97</td>
+<td></td>
+<td>Floating point accumulator (<a href="/wiki/FAC" title="FAC">FAC</a>) #1 exponent
+</td></tr>
+<tr>
+<td>$0062</td>
+<td>98</td>
+<td></td>
+<td>Floating point accumulator (<a href="/wiki/FAC" title="FAC">FAC</a>) #1 mantissa
+</td></tr>
+<tr>
+<td>$0063</td>
+<td>99</td>
+<td></td>
+<td>Floating point accumulator (<a href="/wiki/FAC" title="FAC">FAC</a>) #1 mantissa
+</td></tr>
+<tr>
+<td>$0064</td>
+<td>100</td>
+<td></td>
+<td>Floating point accumulator (<a href="/wiki/FAC" title="FAC">FAC</a>) #1 mantissa
+</td></tr>
+<tr>
+<td>$0065</td>
+<td>101</td>
+<td></td>
+<td>Floating point accumulator (<a href="/wiki/FAC" title="FAC">FAC</a>) #1 mantissa
+</td></tr>
+<tr>
+<td>$0066</td>
+<td>102</td>
+<td></td>
+<td>Floating point accumulator (<a href="/wiki/FAC" title="FAC">FAC</a>) #1 sign
+</td></tr>
+<tr>
+<td>$0067</td>
+<td>103</td>
+<td></td>
+<td>Number of terms in series evaluation
+</td></tr>
+<tr>
+<td>$0068</td>
+<td>104</td>
+<td></td>
+<td><a href="/wiki/FAC" title="FAC">FAC</a> #1: bit overflow area during normalization
+</td></tr>
+<tr>
+<td>$0069</td>
+<td>105</td>
+<td></td>
+<td>Floating point accumulator (<a href="/wiki/FAC" title="FAC">FAC</a>) #2 exponent
+</td></tr>
+<tr>
+<td>$006A</td>
+<td>106</td>
+<td></td>
+<td>Floating point accumulator (<a href="/wiki/FAC" title="FAC">FAC</a>) #2 mantissa
+</td></tr>
+<tr>
+<td>$006B</td>
+<td>107</td>
+<td></td>
+<td>Floating point accumulator (<a href="/wiki/FAC" title="FAC">FAC</a>) #2 mantissa
+</td></tr>
+<tr>
+<td>$006C</td>
+<td>108</td>
+<td></td>
+<td>Floating point accumulator (<a href="/wiki/FAC" title="FAC">FAC</a>) #2 mantissa
+</td></tr>
+<tr>
+<td>$006D</td>
+<td>109</td>
+<td></td>
+<td>Floating point accumulator (<a href="/wiki/FAC" title="FAC">FAC</a>) #2 mantissa
+</td></tr>
+<tr>
+<td>$006E</td>
+<td>110</td>
+<td></td>
+<td>Floating point accumulator (<a href="/wiki/FAC" title="FAC">FAC</a>) #2 sign
+</td></tr>
+<tr>
+<td>$006F</td>
+<td>111</td>
+<td>Flag</td>
+<td>Result of signed comparison between <a href="/wiki/FAC" title="FAC">FAC</a> #1 and <a href="/wiki/FAC" title="FAC">FAC</a> #2: 0 = equal signs, 255 = different signs
+</td></tr>
+<tr>
+<td>$0070</td>
+<td>112</td>
+<td></td>
+<td><a href="/wiki/FAC" title="FAC">FAC</a> #2: low byte of <a href="/wiki/FAC" title="FAC">FAC</a> #1 mantissa during rounding if mantissa bigger longer than four bytes
+</td></tr>
+<tr>
+<td>$0071-$0072</td>
+<td>113-114</td>
+<td>Pointer</td>
+<td>To temporary table during series evaluation
+</td></tr>
+<tr>
+<td>$0073-$008A</td>
+<td>115-138</td>
+<td></td>
+<td>CHRGET routine: fetches next character of <a href="/wiki/BASIC" title="BASIC">BASIC</a> program text
+</td></tr>
+<tr>
+<td>$008B-$008F</td>
+<td>139-143</td>
+<td></td>
+<td>Seed stored by last invocation of <a href="/wiki/RND" title="RND">RND</a>
+</td></tr>
+<tr>
+<td>$0090</td>
+<td>144</td>
+<td></td>
+<td><a href="/wiki/KERNAL" class="mw-redirect" title="KERNAL">KERNAL</a> I/O <a href="/wiki/STATUS" title="STATUS">STATUS</a> indicates end of file if bit 6 is set
+</td></tr>
+<tr>
+<td>$0091</td>
+<td>145</td>
+<td>Flag</td>
+<td>127 = <span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">stop</span>&#160;, 223 = <span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">C&#61;</span>&#160;, 239 = <span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">SPACE</span>&#160;, 251 = <span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;">CTRL</span>&#160;, 255 = no key pressed
+</td></tr>
+<tr>
+<td>$0092</td>
+<td>146</td>
+<td></td>
+<td>Constant for timing of cassette reads
+</td></tr>
+<tr>
+<td>$0093</td>
+<td>147</td>
+<td>Flag</td>
+<td><a href="/wiki/KERNAL" class="mw-redirect" title="KERNAL">KERNAL</a> <a href="/wiki/LOAD" title="LOAD">LOAD</a> routine: 0 = <a href="/wiki/LOAD" title="LOAD">LOAD</a>, 1 = <a href="/wiki/VERIFY" title="VERIFY">VERIFY</a>
+</td></tr>
+<tr>
+<td>$0094</td>
+<td>148</td>
+<td>Flag</td>
+<td>Character waiting in serial bus output register
+</td></tr>
+<tr>
+<td>$0095</td>
+<td>149</td>
+<td></td>
+<td>Serial bus output register
+</td></tr>
+<tr>
+<td>$0096</td>
+<td>150</td>
+<td></td>
+<td>Cassette block synchronisation number
+</td></tr>
+<tr>
+<td>$0097</td>
+<td>151</td>
+<td></td>
+<td>Temporary storage for X register
+</td></tr>
+<tr>
+<td>$0098</td>
+<td>152</td>
+<td></td>
+<td>Number of open I/O file; pointer to top of file table (see addresses 601-631)
+</td></tr>
+<tr>
+<td>$0099</td>
+<td>153</td>
+<td></td>
+<td>Current input device: defaults to 0 = keyboard
+</td></tr>
+<tr>
+<td>$009A</td>
+<td>154</td>
+<td></td>
+<td>Current output device for <a href="/wiki/CMD" title="CMD">CMD</a>: defaults to 3 = screen
+</td></tr>
+<tr>
+<td>$009B</td>
+<td>155</td>
+<td></td>
+<td>Cassette parity byte
+</td></tr>
+<tr>
+<td>$009C</td>
+<td>156</td>
+<td>Flag</td>
+<td>Tape byte received
+</td></tr>
+<tr>
+<td>$009D</td>
+<td>157</td>
+<td>Flag</td>
+<td><a href="/wiki/KERNAL" class="mw-redirect" title="KERNAL">KERNAL</a> message display control: bit 6 = error messages, bit 7 = control message
+</td></tr>
+<tr>
+<td>$009E</td>
+<td>158</td>
+<td></td>
+<td>Cassette read pass 1 error log
+</td></tr>
+<tr>
+<td>$009F</td>
+<td>159</td>
+<td></td>
+<td>Cassette read pass 2 error log
+</td></tr>
+<tr>
+<td>$00A0-$00A2</td>
+<td>160-162</td>
+<td></td>
+<td>Software jiffy clock, updated by KERNAL IRQ every 1/60 second
+</td></tr>
+<tr>
+<td>$00A3-$00A4</td>
+<td>163-164</td>
+<td></td>
+<td>Bit counter for serial bus / cassette I/O (EOI)
+</td></tr>
+<tr>
+<td>$00A5</td>
+<td>165</td>
+<td></td>
+<td>Cassette synchronization byte counter
+</td></tr>
+<tr>
+<td>$00A6</td>
+<td>166</td>
+<td></td>
+<td>Number of characters in cassette I/O buffer
+</td></tr>
+<tr>
+<td>$00A7</td>
+<td>167</td>
+<td></td>
+<td>Temporary RS-232 / cassette read data register
+</td></tr>
+<tr>
+<td>$00A8</td>
+<td>168</td>
+<td>Counter</td>
+<td>RS-232 input bits received / flag: cassette read error
+</td></tr>
+<tr>
+<td>$00A9</td>
+<td>169</td>
+<td>Flag</td>
+<td>RS-232 start bit 0 = received, 144 = not received
+</td></tr>
+<tr>
+<td>$00AA</td>
+<td>170</td>
+<td></td>
+<td>RS-232 input byte buffer / flag: cassette read character sync/data
+</td></tr>
+<tr>
+<td>$00AB</td>
+<td>171</td>
+<td></td>
+<td>RS-232 input parity/cassette leader counter
+</td></tr>
+<tr>
+<td>$00AC</td>
+<td>172</td>
+<td>Pointer</td>
+<td>Starting address of a load / screen scrolling temporary storage
+</td></tr>
+<tr>
+<td>$00AD</td>
+<td>173</td>
+<td>Pointer</td>
+<td>Starting address of a load / screen scrolling temporary storage
+</td></tr>
+<tr>
+<td>$00AE</td>
+<td>174</td>
+<td>Pointer</td>
+<td>End address of LOAD/VERIFY/SAVE
+</td></tr>
+<tr>
+<td>$00AF</td>
+<td>175</td>
+<td>Pointer</td>
+<td>End address of LOAD/VERIFY/SAVE
+</td></tr>
+<tr>
+<td>$00B0</td>
+<td>176</td>
+<td>Pointer</td>
+<td>Constant for timing of cassette reads (default: 146)
+</td></tr>
+<tr>
+<td>$00B1</td>
+<td>177</td>
+<td>Pointer</td>
+<td>Constant for timing of cassette reads (default: 146)
+</td></tr>
+<tr>
+<td>$00B2</td>
+<td>178</td>
+<td>Pointer</td>
+<td>Low byte Start of cassette buffer
+</td></tr>
+<tr>
+<td>$00B3</td>
+<td>179</td>
+<td>Pointer</td>
+<td>High byte Start of cassette buffer
+</td></tr>
+<tr>
+<td>$00B4</td>
+<td>180</td>
+<td></td>
+<td>RS-232 output bit counter / cassette ready to read next byte
+</td></tr>
+<tr>
+<td>$00B5</td>
+<td>181</td>
+<td></td>
+<td>Next output bit / cassette read block byte counter
+</td></tr>
+<tr>
+<td>$00B6</td>
+<td>182</td>
+<td></td>
+<td>Output buffer
+</td></tr>
+<tr>
+<td>$00B7</td>
+<td>183</td>
+<td></td>
+<td>Length of current file name
+</td></tr>
+<tr>
+<td>$00B8</td>
+<td><a href="/wiki/184-186" title="184-186">184</a></td>
+<td></td>
+<td>Current logical file number
+</td></tr>
+<tr>
+<td>$00B9</td>
+<td><a href="/wiki/184-186" title="184-186">185</a></td>
+<td></td>
+<td>Current secondary address
+</td></tr>
+<tr>
+<td>$00BA</td>
+<td><a href="/wiki/184-186" title="184-186">186</a></td>
+<td></td>
+<td>Current device number
+</td></tr>
+<tr>
+<td>$00BB</td>
+<td>187</td>
+<td>Pointer</td>
+<td>Current file name
+</td></tr>
+<tr>
+<td>$00BC</td>
+<td>188</td>
+<td>Pointer</td>
+<td>Current file name
+</td></tr>
+<tr>
+<td>$00BD</td>
+<td>189</td>
+<td></td>
+<td>RS-232 output parity / temporary cassette read/write register
+</td></tr>
+<tr>
+<td>$00BE</td>
+<td>190</td>
+<td></td>
+<td>cassette read/write duplicate block counter
+</td></tr>
+<tr>
+<td>$00BF</td>
+<td>191</td>
+<td></td>
+<td>Cassette read byte register
+</td></tr>
+<tr>
+<td>$00C0</td>
+<td>192</td>
+<td>Flag</td>
+<td>Cassette motor 0 = off, 1 = on
+</td></tr>
+<tr>
+<td>$00C1</td>
+<td>193</td>
+<td></td>
+<td>Start address for LOAD / SAVE
+</td></tr>
+<tr>
+<td>$00C2</td>
+<td>194</td>
+<td></td>
+<td>Start address for LOAD / SAVE
+</td></tr>
+<tr>
+<td>$00C3</td>
+<td>195</td>
+<td></td>
+<td>End address for LOAD / SAVE
+</td></tr>
+<tr>
+<td>$00C4</td>
+<td>196</td>
+<td></td>
+<td>End address for LOAD / SAVE
+</td></tr>
+<tr>
+<td>$00C5</td>
+<td><a href="/wiki/197" title="197">197</a></td>
+<td></td>
+<td>Matrix coordinate of last pressed key, 64 = none
+</td></tr>
+<tr>
+<td>$00C6</td>
+<td><a href="/wiki/198" title="198">198</a></td>
+<td></td>
+<td>Number of characters in keyboard buffer
+</td></tr>
+<tr>
+<td>$00C7</td>
+<td><a href="/wiki/199" title="199">199</a></td>
+<td>Flag</td>
+<td>Print reverse characters, default 0 = normal
+</td></tr>
+<tr>
+<td>$00C8</td>
+<td>200</td>
+<td>Pointer</td>
+<td>Last column of current line during INPUT
+</td></tr>
+<tr>
+<td>$00C9</td>
+<td>201</td>
+<td>Pointer</td>
+<td>X coordinate of cursor during INPUT
+</td></tr>
+<tr>
+<td>$00CA</td>
+<td>202</td>
+<td></td>
+<td>Y coordinate of cursor during INPUT
+</td></tr>
+<tr>
+<td>$00CB</td>
+<td><a href="/wiki/203" title="203">203</a></td>
+<td></td>
+<td>Index to keyboard decoding table for currently pressed key, 64 = no key was depressed
+</td></tr>
+<tr>
+<td>$00CC</td>
+<td>204</td>
+<td>Flag</td>
+<td>Flash cursor 0 = yes, otherwise no
+</td></tr>
+<tr>
+<td>$00CD</td>
+<td>205</td>
+<td></td>
+<td>Counter for cursor flashing, default 20, decreased every jiffy
+</td></tr>
+<tr>
+<td>$00CE</td>
+<td>206</td>
+<td></td>
+<td>Character at cursor position
+</td></tr>
+<tr>
+<td>$00CF</td>
+<td>207</td>
+<td>Flag</td>
+<td>Cursor flash phase 0 = visible, &gt;0 invisible
+</td></tr>
+<tr>
+<td>$00D0</td>
+<td>208</td>
+<td>Flag</td>
+<td>Input from 0 = keyboard or 3 = screen
+</td></tr>
+<tr>
+<td>$00D1</td>
+<td>209</td>
+<td>Pointer</td>
+<td>Low byte memory address of current screen line
+</td></tr>
+<tr>
+<td>$00D2</td>
+<td>210</td>
+<td>Pointer</td>
+<td>High byte memory address of current screen line
+</td></tr>
+<tr>
+<td>$00D3</td>
+<td>211</td>
+<td></td>
+<td>Column of cursor in current logical line, used by <a href="/wiki/SPC(" title="SPC(">SPC(</a>
+</td></tr>
+<tr>
+<td>$00D4</td>
+<td><a href="/wiki/212" title="212">212</a></td>
+<td>Flag</td>
+<td>Quote mode, &gt;0 = editor is in quote mode, i.e. control characters are printed as reverse graphic characters
+</td></tr>
+<tr>
+<td>$00D5</td>
+<td>213</td>
+<td></td>
+<td>Maximum column index of logical screen line (39 or 79)
+</td></tr>
+<tr>
+<td>$00D6</td>
+<td>214</td>
+<td></td>
+<td>Current physical line number of cursor
+</td></tr>
+<tr>
+<td>$00D7</td>
+<td>215</td>
+<td></td>
+<td>ASCII value of last printed character
+</td></tr>
+<tr>
+<td>$00D8</td>
+<td>216</td>
+<td>Flag</td>
+<td>Insert mode, if &gt; 0 puts editor in quote mode (see address 212 ($00D4))
+</td></tr>
+<tr>
+<td>$00D9-$00F2</td>
+<td>217-242</td>
+<td></td>
+<td>Screen line link table / temporary storage for editor; 26 bytes, one byte for each screen line: bit 0…6 containing to the page based on the start of screen RAM page in $288/648; bit 7 reset indicates that the line together with the previous line forms a logical line longer than 40 characters.<br /> $F2/242 is for a fictive overflow line while scrolling.
+</td></tr>
+<tr>
+<td>$00F3</td>
+<td>243</td>
+<td>Pointer</td>
+<td>Low byte first address in <a href="/wiki/Color_RAM" title="Color RAM">Color RAM</a> of current screen line
+</td></tr>
+<tr>
+<td>$00F4</td>
+<td>244</td>
+<td>Pointer</td>
+<td>High byte first address in <a href="/wiki/Color_RAM" title="Color RAM">Color RAM</a> of current screen line
+</td></tr>
+<tr>
+<td>$00F5</td>
+<td>245</td>
+<td>Pointer</td>
+<td>Low byte keyboard decoding table
+</td></tr>
+<tr>
+<td>$00F6</td>
+<td>246</td>
+<td>Pointer</td>
+<td>High byte keyboard decoding table
+</td></tr>
+<tr>
+<td>$00F7</td>
+<td>247</td>
+<td>Pointer</td>
+<td>Low byte RS-232 input buffer
+</td></tr>
+<tr>
+<td>$00F8</td>
+<td>248</td>
+<td>Pointer</td>
+<td>High byte RS-232 input buffer
+</td></tr>
+<tr>
+<td>$00F9</td>
+<td>249</td>
+<td>Pointer</td>
+<td>Low byte RS-232 output buffer
+</td></tr>
+<tr>
+<td>$00FA</td>
+<td>250</td>
+<td>Pointer</td>
+<td>High byte RS-232 output buffer
+</td></tr>
+<tr>
+<td>$00FB</td>
+<td>251</td>
+<td></td>
+<td>Unused
+</td></tr>
+<tr>
+<td>$00FC</td>
+<td>252</td>
+<td></td>
+<td>Unused
+</td></tr>
+<tr>
+<td>$00FD</td>
+<td>253</td>
+<td></td>
+<td>Unused
+</td></tr>
+<tr>
+<td>$00FE</td>
+<td>254</td>
+<td></td>
+<td>Unused
+</td></tr>
+<tr>
+<td>$00FF</td>
+<td>255</td>
+<td></td>
+<td>Temporary register for <a href="/wiki/BASIC" title="BASIC">BASIC</a> floating point to ASCII conversion
+</td></tr>
+</tbody></table>
+<!-- 
+NewPP limit report
+Cached time: 20260927041311
+Cache expiry: 86400
+Reduced expiry: false
+Complications: []
+CPU time usage: 0.047 seconds
+Real time usage: 0.049 seconds
+Preprocessor visited node count: 39/1000000
+Post‐expand include size: 2411/2097152 bytes
+Template argument size: 20/2097152 bytes
+Highest expansion depth: 3/100
+Expensive parser function count: 0/100
+Unstrip recursion depth: 0/20
+Unstrip post‐expand size: 0/5000000 bytes
+-->
+<!--
+Transclusion expansion time report (%,ms,calls,template)
+100.00%    3.367      1 -total
+ 46.63%    1.570      1 Template:Wikitable
+ 40.51%    1.364      4 Template:Key
+-->
+
+<!-- Saved in parser cache with key c64?hwiki?hen-wiki_:pcache:idhash:1561-0!canonical!svUser=0!asDate=20260927 and timestamp 20260927041311 and revision id 38127. Rendering was triggered because: page-view
+ -->
+</div>
+</div>
+</body></html>
