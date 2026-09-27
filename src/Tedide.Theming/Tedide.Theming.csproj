@@ -7,6 +7,7 @@
   <ItemGroup>
     <!-- ThemeSchemeTests checks every theme's colors via ThemeSwitcher.SchemesFor. -->
     <InternalsVisibleTo Include="Tedide.App.Tests" />
+    <InternalsVisibleTo Include="Tedide.DocViewer.Tests" />
   </ItemGroup>
 
   <PropertyGroup>

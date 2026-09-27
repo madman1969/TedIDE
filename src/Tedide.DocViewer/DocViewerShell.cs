@@ -5,7 +5,6 @@ using Terminal.Gui.Drawing;
 using Terminal.Gui.Input;
 using Terminal.Gui.ViewBase;
 using Terminal.Gui.Views;
-using TextMateSharp.Grammars;
 
 namespace Tedide.DocViewer;
 
@@ -45,7 +44,7 @@ public sealed class DocViewerShell : Window
     private readonly TreeView _tree = new();
     private readonly FindableMarkdown _contentView = new();
     private readonly FrameView _contentFrame;
-    private readonly TextMateSyntaxHighlighter _syntaxHighlighter = new();
+    private readonly ThemedMarkdownHighlighter _syntaxHighlighter = new();
 
     private MenuItem _bookmarksListItem = null!;
     private PageEntry? _currentEntry;
@@ -135,11 +134,8 @@ public sealed class DocViewerShell : Window
         _contentView.Width = Dim.Fill();
         _contentView.Height = Dim.Fill();
         _contentView.ViewportSettings = ViewportSettingsFlags.HasScrollBars;
-        // Real per-token syntax highlighting (via TextMateSharp's VS Code grammars) instead of the
-        // plain dimmed code-block background Markdown falls back to with no highlighter set - makes
-        // fenced code genuinely stand out rather than just visually separated from prose. Tracks
-        // whichever of the app's own themes is active (see UpdateSyntaxHighlighterTheme) rather than
-        // a fixed light/dark choice.
+        // Real per-token syntax highlighting in fenced code (via TextMateSharp's VS Code grammars),
+        // with headings/links/etc. styled from the app theme - see ThemedMarkdownHighlighter.
         _contentView.SyntaxHighlighter = _syntaxHighlighter;
         // Otherwise the whole pane is filled with the TextMate theme's own editor background (pure
         // white for Light+, near-black for Dark+) instead of the app theme's - Solarized Light's
@@ -181,14 +177,12 @@ public sealed class DocViewerShell : Window
         Add([menuBar, treeFrame, _contentFrame, statusBar]);
     }
 
-    /// <summary>Picks a light or dark TextMate theme for <see cref="_syntaxHighlighter"/> matching
-    /// whichever of the app's own themes is currently active, so code blocks read naturally against
-    /// both e.g. Vs2026Light and the mostly-dark remaining themes - called once at startup and again
-    /// on every <see cref="ThemeSwitcher.Changed"/> (theme menu selection).</summary>
+    /// <summary>Picks light or dark TextMate token colors for code blocks to match whichever of the
+    /// app's own themes is currently active - called once at startup and again on every
+    /// <see cref="ThemeSwitcher.Changed"/> (theme menu selection).</summary>
     private void UpdateSyntaxHighlighterTheme()
     {
-        var editorBackground = SchemeManager.GetScheme("Base").Normal.Background;
-        _syntaxHighlighter.SetTheme(TextMateSyntaxHighlighter.GetThemeForBackground(editorBackground));
+        _syntaxHighlighter.MatchBackground(SchemeManager.GetScheme("Base").Normal.Background);
         _contentView.SetNeedsDraw();
     }
 
