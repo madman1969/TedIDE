@@ -386,6 +386,8 @@ rendered Markdown on the right (via Terminal.Gui's own `Markdown` view). Both pa
 from `Docs.db`, an embedded SQLite database built once ahead of time by `tools/Cc65DocsDbBuilder`
 from cc65's own HTML manuals - regenerate it (and rebuild) if that tool's `SourceHtml/` changes.
 
+![The Doc Viewer showing the cc65 manual's "coding" page: the contents tree on the left with the page selected, and on the right its rendered text with themed headings and syntax-highlighted C and 6502 code blocks](docs/images/docviewer.png)
+
 - **Navigate** - **Back**/**Forward** (Alt+Left/Right) walk browser-style history; clicking a
   cross-page link (or pressing Enter on one) does too. A same-page `#slug` link is scrolled to
   directly by the Markdown view itself, without adding a history entry. **Search Documentation...**
