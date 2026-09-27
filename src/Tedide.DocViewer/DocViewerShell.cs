@@ -37,6 +37,7 @@ public sealed class DocViewerShell : Window
     private readonly DocDatabase _database;
     private readonly NavigationHistory _history = new();
     private readonly DocBookmarks _bookmarks = DocBookmarks.Load();
+    private readonly DocViewerLayoutSettings _layoutSettings = DocViewerLayoutSettings.Load();
 
     private readonly Dictionary<string, PageEntry> _entriesByFileName = [];
     private readonly Dictionary<string, TreeNode> _nodesByFileName = [];
@@ -78,7 +79,11 @@ public sealed class DocViewerShell : Window
             Title = "Contents",
             X = 0,
             Y = Pos.Bottom(menuBar),
-            Width = Dim.Percent(30),
+            // Fills whatever _contentFrame's current width (the saved percentage, then whatever the
+            // user drags it to) doesn't use, so the two panes always exactly share the row, with
+            // _contentFrame's own left border acting as the draggable divider - the same set-up as
+            // Tedide.App's Solution Explorer/Editor splitter.
+            Width = Dim.Fill(Dim.Func(_ => _contentFrame!.Frame.Width)),
             Height = Dim.Fill(1),
         };
         _tree.Width = Dim.Fill();
@@ -128,9 +133,24 @@ public sealed class DocViewerShell : Window
             HotKeySpecifier = new System.Text.Rune(0xFFFF),
             X = Pos.Right(treeFrame),
             Y = Pos.Bottom(menuBar),
-            Width = Dim.Fill(),
+            Width = Dim.Percent(_layoutSettings.ClampedContentPaneWidthPercent),
             Height = Dim.Fill(1),
+            // Makes this frame's left border a draggable divider between it and the Contents tree
+            // (treeFrame's Width, above, tracks this frame's Frame.Width live). CanFocus is required
+            // for the border-drag mouse interaction to register.
+            Arrangement = ViewArrangement.LeftResizable,
+            CanFocus = true,
         };
+        // treeFrame's Width reads _contentFrame.Frame.Width live, but within one layout pass
+        // treeFrame is resolved first, so it sees the width from before this pass - on the first
+        // pass, 0, claiming the whole window. A layout pass queued for strictly after the current
+        // one lets it catch up (a synchronous SetNeedsLayout here is superseded by the pass it's
+        // called from) - see AppShell's _editorFrame.FrameChanged for the full story.
+        _contentFrame.FrameChanged += (_, _) => Application.AddTimeout(TimeSpan.Zero, () =>
+        {
+            SetNeedsLayout();
+            return false;
+        });
         _contentView.Width = Dim.Fill();
         _contentView.Height = Dim.Fill();
         _contentView.ViewportSettings = ViewportSettingsFlags.HasScrollBars;
@@ -175,6 +195,20 @@ public sealed class DocViewerShell : Window
         _contentFrame.Add(_contentView);
 
         Add([menuBar, treeFrame, _contentFrame, statusBar]);
+    }
+
+    /// <summary>
+    /// Records the Contents/Documentation divider's current position (as a percentage of the
+    /// window's width) so the next run starts where this one left off. Called once, from
+    /// Program.cs, right after <c>Application.Run(shell)</c> returns - i.e. when the user quits.
+    /// </summary>
+    public void SaveLayoutSettings()
+    {
+        if (Frame.Width <= 0)
+            return;
+
+        _layoutSettings.ContentPaneWidthPercent = _contentFrame.Frame.Width * 100 / Frame.Width;
+        _layoutSettings.Save();
     }
 
     /// <summary>Picks light or dark TextMate token colors for code blocks to match whichever of the

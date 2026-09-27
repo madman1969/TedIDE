@@ -49,7 +49,16 @@ try
     // The theme still applies if it can't be saved; it just isn't remembered - see ThemeSwitcher.SaveFailed.
     ThemeSwitcher.SaveFailed += ex => Log.Error(ex, "Could not save the theme setting");
     ThemeSwitcher.Apply(ThemeSettings.Load().Theme, persist: false);
-    Application.Run(new DocViewerShell(database));
+    var shell = new DocViewerShell(database);
+    Application.Run(shell);
+    try
+    {
+        shell.SaveLayoutSettings();
+    }
+    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+    {
+        Log.Error(ex, "Could not save the layout settings");
+    }
 }
 finally
 {
