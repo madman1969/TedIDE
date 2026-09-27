@@ -4,6 +4,7 @@ using Terminal.Gui.App;
 using Terminal.Gui.Input;
 using Terminal.Gui.ViewBase;
 using Terminal.Gui.Views;
+using Scheme = Terminal.Gui.Drawing.Scheme;
 
 namespace Tedide.App.Views;
 
@@ -53,6 +54,12 @@ public sealed class SolutionExplorerTree : TreeView
     public SolutionExplorerTree()
     {
         _contextMenu = new PopoverMenu { Target = new WeakReference<View>(this) };
+
+        // Folder nodes (src, include, Generated Files...) stand out from the files in them. Read
+        // from the tree's own scheme at draw time, so a theme switch restyles them immediately.
+        // Every other node gets that scheme explicitly: returning null (documented as "use the
+        // default") drew files white-on-black whatever the theme.
+        ColorGetter = node => node is FolderNode ? FolderScheme(GetScheme()) : GetScheme();
 
         Accepted += (_, _) =>
         {
@@ -113,6 +120,19 @@ public sealed class SolutionExplorerTree : TreeView
         _contextMenu.MakeVisible(screenPosition);
         return true;
     }
+
+    /// <summary>A folder, or the "Generated Files" group - drawn with <see cref="FolderScheme"/>.</summary>
+    internal sealed class FolderNode : TreeNode;
+
+    /// <summary>
+    /// <paramref name="treeScheme"/> with unselected text in the theme's type color (CodeType - the
+    /// same readability-checked color type names get in the editor: teal in VS2026 Dark, yellow in
+    /// Solarized, light green in Commodore 64). Selected rows keep the tree's own Focus/Active look.
+    /// </summary>
+    internal static Scheme FolderScheme(Scheme treeScheme) => new(treeScheme)
+    {
+        Normal = new Terminal.Gui.Drawing.Attribute(treeScheme.CodeType.Foreground, treeScheme.Normal.Background, treeScheme.Normal.Style),
+    };
 
     public void Rebuild(Workspace workspace)
     {
@@ -186,7 +206,7 @@ public sealed class SolutionExplorerTree : TreeView
         if (generatedFiles.Count == 0)
             return;
 
-        var generatedNode = new TreeNode { Text = "Generated Files" };
+        var generatedNode = new FolderNode { Text = "Generated Files" };
         foreach (var generatedFile in generatedFiles)
         {
             generatedNode.Children.Add(new TreeNode
@@ -206,7 +226,7 @@ public sealed class SolutionExplorerTree : TreeView
 
         foreach (var subdirectory in subdirectories)
         {
-            var subdirectoryNode = new TreeNode { Text = Path.GetFileName(subdirectory), Tag = subdirectory };
+            var subdirectoryNode = new FolderNode { Text = Path.GetFileName(subdirectory), Tag = subdirectory };
             AddDirectoryContents(subdirectoryNode, subdirectory);
 
             // Skip folders that (recursively) contain nothing we'd display, e.g. an empty

@@ -807,10 +807,11 @@ public static class ThemeSwitcher
         var warningFocus = new GuiAttribute(brightAmber, Color.Black);
 
         // Amber-on-black is already the theme's whole palette (see the Warning scheme's comment
-        // above), so tokens stand out via brightness, not an introduced hue - literals in the
-        // same brightAmber as keywords, everything else plain amber.
+        // above), so tokens stand out via brightness, not an introduced hue - types and literals
+        // in the same brightAmber as keywords (types also color the Solution Explorer's folders,
+        // which must stand out from the files in them), everything else plain amber.
         var syntax = new Syntax(
-            Type: amber, String: brightAmber, Number: brightAmber, Constant: brightAmber, Function: amber, Attribute: amber);
+            Type: brightAmber, String: brightAmber, Number: brightAmber, Constant: brightAmber, Function: amber, Attribute: amber);
 
         return new Palette(
             Base: BuildScheme(editorNormal, editorFocus, editorHot, editorDisabled, syntax),
