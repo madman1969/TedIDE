@@ -22,9 +22,9 @@ namespace Tedide.Theming;
 /// color names to VisualRoles (see its XshdRoleMap - "Digits" maps to VisualRole.CodeNumber) and
 /// prefers an explicit scheme Attribute for that role over the xshd's own literal color.
 ///
-/// Every call to <see cref="Apply"/> persists the chosen theme via <see cref="ThemeSettings"/>, so
-/// the app can restore it on the next run (see Program.cs, which applies <see cref="ThemeSettings.Load"/>
-/// on startup instead of a hardcoded default).
+/// <see cref="Apply"/> persists the chosen theme via <see cref="ThemeSettings"/> (unless told not
+/// to), so the app can restore it on the next run (see each Program.cs, which applies
+/// <see cref="ThemeSettings.Load"/> on startup instead of a hardcoded default).
 /// </summary>
 public static class ThemeSwitcher
 {
@@ -33,7 +33,21 @@ public static class ThemeSwitcher
     /// <summary>Raised after a theme has been applied and the app redrawn.</summary>
     public static event Action? Changed;
 
-    public static void Apply(AppTheme theme)
+    /// <summary>
+    /// Raised when the chosen theme couldn't be saved - the theme is still applied for this run,
+    /// just not remembered for the next. Saving used to throw straight out of <see cref="Apply"/>,
+    /// which is called from the Theme menu and at startup: confirmed live, a read-only
+    /// settings.json stopped the Doc Viewer (and, through this same shared code, Tedide.App)
+    /// from even starting. This library has no logger of its own, so each app reports it.
+    /// </summary>
+    public static event Action<Exception>? SaveFailed;
+
+    /// <param name="persist">
+    /// False at startup, when <paramref name="theme"/> was just read from the settings file -
+    /// writing it straight back is pointless, and was the one save that could stop the app
+    /// starting at all.
+    /// </param>
+    public static void Apply(AppTheme theme, bool persist = true)
     {
         var palette = theme switch
         {
@@ -58,7 +72,17 @@ public static class ThemeSwitcher
 
         Current = theme;
         Application.LayoutAndDraw(true);
-        new ThemeSettings { Theme = theme }.Save();
+        if (persist)
+        {
+            try
+            {
+                new ThemeSettings { Theme = theme }.Save();
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+            {
+                SaveFailed?.Invoke(ex);
+            }
+        }
         Changed?.Invoke();
     }
 

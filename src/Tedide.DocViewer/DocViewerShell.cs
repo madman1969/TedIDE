@@ -258,18 +258,35 @@ public sealed class DocViewerShell : Window
 
         if (_bookmarks.Contains(entry.FileName, null))
         {
-            _bookmarks.Toggle(entry.FileName, null, "");
-            RefreshBookmarksMenu();
+            ToggleAndSave(entry.FileName, "");
             return;
         }
 
         var dialog = new AddBookmarkDialog(entry.Description);
         Application.Run(dialog);
         if (dialog.Label is { } label)
+            ToggleAndSave(entry.FileName, label);
+    }
+
+    /// <summary>
+    /// Toggles the bookmark and saves the list. A save that fails (the bookmarks file read-only,
+    /// locked, or its folder not writable) is reported rather than thrown: this runs from Ctrl+D
+    /// and the Bookmarks menu, where an escaping exception ended the whole app (confirmed live).
+    /// The change still applies for this session - only remembering it for the next one failed.
+    /// </summary>
+    private void ToggleAndSave(string fileName, string label)
+    {
+        try
         {
-            _bookmarks.Toggle(entry.FileName, null, label);
-            RefreshBookmarksMenu();
+            _bookmarks.Toggle(fileName, null, label);
         }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+        {
+            Serilog.Log.Error(ex, "Could not save bookmarks");
+            MessageBox.ErrorQuery(App!, "Could Not Save Bookmarks",
+                $"The bookmark was changed for this session, but saving it failed:\n{ex.Message}", "OK");
+        }
+        RefreshBookmarksMenu();
     }
 
     private MenuBar BuildMenuBar()

@@ -30,7 +30,9 @@ try
     Cc65LinkerMapHighlighting.Register();
     Cc65LabelsHighlighting.Register();
     Cc65CfgHighlighting.Register();
-    ThemeSwitcher.Apply(ThemeSettings.Load().Theme);
+    // Theme still applies if it can't be saved; it just isn't remembered - see ThemeSwitcher.SaveFailed.
+    ThemeSwitcher.SaveFailed += ex => Log.Error(ex, "Could not save the theme setting");
+    ThemeSwitcher.Apply(ThemeSettings.Load().Theme, persist: false);
     var shell = new AppShell();
     Application.Run(shell);
     shell.SaveLayoutSettings();

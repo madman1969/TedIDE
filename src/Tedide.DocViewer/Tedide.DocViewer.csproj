@@ -17,6 +17,10 @@
          package/version as Tedide.App.csproj's AboutDialog, which this project otherwise has no
          dependency on. -->
     <PackageReference Include="System.Drawing.Common" Version="9.0.0" />
+    <!-- File logging plus an unhandled-exception hook, same versions as Tedide.App.csproj - see
+         Program.cs for why a TUI app needs this to leave any trace of a crash at all. -->
+    <PackageReference Include="Serilog" Version="4.2.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
   </ItemGroup>
 
   <ItemGroup>
