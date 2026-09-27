@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<!-- From Wikipedia (https://en.wikipedia.org/wiki/GPIB), revision 1367456819, last edited 2026-08-03 05:20 UTC.
+     Text is available under the Creative Commons Attribution-ShareAlike 4.0 License - see wikipedia/licence.
+     Only the article body is kept; retrieved 2026-09-27 for Tedide's Doc Viewer. -->
+<html><head><meta charset="utf-8"><title>GPIB</title>
+<meta name="wiki-page" content="GPIB"><meta name="wiki-revision" content="1367456819"><meta name="wiki-edited" content="2026-08-03 05:20 UTC">
+</head><body>
+<div class="mw-content-ltr mw-parser-output" lang="en" dir="ltr"><div class="shortdescription nomobile noexcerpt noprint searchaux" style="display:none">General Purpose Interface Bus specification</div>
+<style data-mw-deduplicate="TemplateStyles:r1368532237">.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+.mw-empty-elt+.hatnote{margin-top:-0.5em}@media print{body.ns-0 .mw-parser-output .hatnote{display:none!important}}</style><div role="note" class="hatnote navigation-not-searchable">For the Indonesian Reformed church with the same abbreviation, see <a href="/wiki/Protestant_Church_in_Western_Indonesia" title="Protestant Church in Western Indonesia">Protestant Church in Western Indonesia</a>.</div>
+<style data-mw-deduplicate="TemplateStyles:r1358620234">@media(min-width:640px){.mw-parser-output .infobox{margin-left:1em;float:right;clear:right;width:22em}}.mw-parser-output .infobox-subbox{padding:0;border:none;margin:-3px;width:auto;min-width:100%;font-size:100%;clear:none;float:none;background-color:transparent;color:inherit}.mw-parser-output .infobox-3cols-child{margin:-3px}.mw-parser-output .infobox .navbar{font-size:100%}.mw-parser-output .infobox-hiddenrow,body.skin--responsive.skin--responsive .mw-parser-output .infobox .infobox-hiddenrow{display:none}@media screen{html.skin-theme-clientpref-night .mw-parser-output .infobox-full-data:not(.notheme)>div:not(.notheme)[style]{background:#1f1f23!important;color:#f8f9fa}}@media screen and (prefers-color-scheme:dark){html.skin-theme-clientpref-os .mw-parser-output .infobox-full-data:not(.notheme)>div:not(.notheme)[style]{background:#1f1f23!important;color:#f8f9fa}}@media(min-width:640px){body.skin--responsive .mw-parser-output .infobox-table{display:table!important}body.skin--responsive .mw-parser-output .infobox-table>caption{display:table-caption!important}body.skin--responsive .mw-parser-output .infobox-table>tbody{display:table-row-group}body.skin--responsive .mw-parser-output .infobox-table th,body.skin--responsive .mw-parser-output .infobox-table td{padding-left:inherit;padding-right:inherit}}</style><table class="infobox"><caption class="infobox-title">GPIB</caption><tbody><tr><td colspan="2" class="infobox-subheader"><style data-mw-deduplicate="TemplateStyles:r1126788409">.mw-parser-output .plainlist ol,.mw-parser-output .plainlist ul{line-height:inherit;list-style:none;margin:0;padding:0}.mw-parser-output .plainlist ol li,.mw-parser-output .plainlist ul li{margin-bottom:0}</style><div class="plainlist">
+<ul><li>General Purpose Interface Bus</li>
+<li>Hewlett-Packard Interface Bus</li></ul>
+</div></td></tr><tr><th scope="row" class="infobox-label">Year created</th><td class="infobox-data">1972<sup id="cite&#95;ref-1" class="reference"><a href="#cite_note-1"><span class="cite-bracket">&#91;</span>1<span class="cite-bracket">&#93;</span></a></sup></td></tr><tr><th scope="row" class="infobox-label">Speed</th><td class="infobox-data">8 Mbyte/s</td></tr><tr><th scope="row" class="infobox-label">Style</th><td class="infobox-data"><a href="/wiki/Parallel_communication" title="Parallel communication">Parallel</a></td></tr><tr><th scope="row" class="infobox-label">Website</th><td class="infobox-data"><span class="url"><a rel="nofollow" class="external text" href="https://standards.ieee.org/ieee/488.1/716/">standards<wbr />.ieee<wbr />.org<wbr />/ieee<wbr />/488<wbr />.1<wbr />/716<wbr />/</a></span></td></tr></tbody></table>
+<figure class="mw-default-size" typeof="mw:File/Thumb"><a href="/wiki/File:IEEE-488-Stecker2.jpg" class="mw-file-description"><img src="//thumb.wikimedia.org/wikipedia/commons/thumb/7/76/IEEE-488-Stecker2.jpg/250px-IEEE-488-Stecker2.jpg?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail" decoding="async" loading="lazy" width="250" height="295" class="mw-file-element" srcset="//thumb.wikimedia.org/wikipedia/commons/thumb/7/76/IEEE-488-Stecker2.jpg/500px-IEEE-488-Stecker2.jpg?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail 2x" data-file-width="990" data-file-height="1170" /></a><figcaption>IEEE 488 cable with stacking connectors</figcaption></figure>
+<p><b>General Purpose Interface Bus</b> (<b>GPIB</b>) or <b>Hewlett-Packard Interface Bus</b> (<b>HP-IB</b>) is a short-range digital communications <a href="/wiki/8-bit" class="mw-redirect" title="8-bit">8-bit</a> <a href="/wiki/Parallel_communication" title="Parallel communication">parallel</a> <a href="/wiki/Multi-master_bus" title="Multi-master bus">multi-master</a> <a href="/wiki/Interface_(computing)" title="Interface (computing)">interface bus</a> specification originally developed by <a href="/wiki/Hewlett-Packard" title="Hewlett-Packard">Hewlett-Packard</a> and standardized in <b>IEEE 488.1-2003</b>. It subsequently became the subject of several standards. Although the bus was originally created to connect together <a href="/wiki/Automated_test_equipment" class="mw-redirect" title="Automated test equipment">automated test equipment</a>, it also had some success as a <a href="/wiki/Peripheral_bus" title="Peripheral bus">peripheral bus</a> for early <a href="/wiki/Microcomputer" title="Microcomputer">microcomputers</a>, notably the <a href="/wiki/Commodore_PET" title="Commodore PET">Commodore PET</a>. Newer standards have largely replaced IEEE 488 for computer use, but it is still used by test equipment.
+</p>
+<meta property="mw:PageProp/toc" />
+<div class="mw-heading mw-heading2"><h2 id="History">History</h2><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/w/index.php?title=GPIB&amp;action=edit&amp;section=1" title="Edit section: History"><span>edit</span></a><span class="mw-editsection-bracket">]</span></span></div>
+<p>In the 1960s, <a href="/wiki/Hewlett-Packard" title="Hewlett-Packard">Hewlett-Packard</a> (HP) manufactured various automated test and measurement instruments, such as digital <a href="/wiki/Multimeter" title="Multimeter">multimeters</a> and <a href="/wiki/Logic_analyzer" title="Logic analyzer">logic analyzers</a>. They developed the <i>HP Interface Bus (HP-IB)</i> to enable easier interconnection between instruments and controllers (computers and other instruments).<sup id="cite&#95;ref-2" class="reference"><a href="#cite_note-2"><span class="cite-bracket">&#91;</span>2<span class="cite-bracket">&#93;</span></a></sup> This part of HP was later (c. 1999) spun off as <a href="/wiki/Agilent_Technologies" title="Agilent Technologies">Agilent Technologies</a>, and in 2014 Agilent's test and measurement division was spun off as <a href="/wiki/Keysight_Technologies" class="mw-redirect" title="Keysight Technologies">Keysight Technologies</a>.<sup id="cite&#95;ref-3" class="reference"><a href="#cite_note-3"><span class="cite-bracket">&#91;</span>3<span class="cite-bracket">&#93;</span></a></sup><sup id="cite&#95;ref-4" class="reference"><a href="#cite_note-4"><span class="cite-bracket">&#91;</span>4<span class="cite-bracket">&#93;</span></a></sup>
+</p><p>The bus was relatively easy to implement using the technology at the time, using a simple parallel <a href="/wiki/Bus_(computing)" title="Bus (computing)">bus</a> and several individual control lines. For example, the HP 59501 Power Supply Programmer and HP 59306A Relay Actuator were both relatively simple HP-IB peripherals implemented in <a href="/wiki/Transistor%E2%80%93transistor_logic" title="Transistor–transistor logic">TTL</a>, without the need for a microprocessor.
+</p><p>HP licensed the HP-IB patents for a nominal fee to other manufacturers. It became known as the General Purpose Interface Bus (GPIB), and became a <a href="/wiki/De_facto_standard" title="De facto standard">de facto standard</a> for automated and industrial instrument control. As GPIB became popular, it was formalized by various <a href="/wiki/Standards_organization" title="Standards organization">standards organizations</a>.
+</p><p>In 1975, the <a href="/wiki/Institute_of_Electrical_and_Electronics_Engineers" title="Institute of Electrical and Electronics Engineers">IEEE</a> standardized the bus as <i>Standard Digital Interface for Programmable Instrumentation</i>, IEEE 488; it was revised in 1978 (producing IEEE 488-1978).<sup id="cite&#95;ref-5" class="reference"><a href="#cite_note-5"><span class="cite-bracket">&#91;</span>5<span class="cite-bracket">&#93;</span></a></sup> The standard was revised in 1987, and redesignated as IEEE 488.1 (IEEE 488.1-1987). These standards formalized the mechanical, electrical, and basic protocol parameters of GPIB, but said nothing about the format of commands or data.
+</p><p>In 1987, IEEE introduced <i>Standard Codes, Formats, Protocols, and Common Commands</i>, IEEE 488.2. It was revised in 1992.<sup id="cite&#95;ref-6" class="reference"><a href="#cite_note-6"><span class="cite-bracket">&#91;</span>6<span class="cite-bracket">&#93;</span></a></sup> IEEE 488.2 provided for basic syntax and format conventions, as well as device-independent commands, data structures, error protocols, and the like. IEEE 488.2 built on IEEE 488.1 without superseding it; equipment can conform to IEEE 488.1 without following IEEE 488.2.
+</p><p>While IEEE 488.1 defined the hardware and IEEE 488.2 defined the protocol, there was still no standard for instrument-specific commands. Commands to control the same class of instrument, <i>e.g.</i>, multimeters, varied between manufacturers and even models.
+</p><p>The United States Air Force,<sup id="cite&#95;ref-7" class="reference"><a href="#cite_note-7"><span class="cite-bracket">&#91;</span>7<span class="cite-bracket">&#93;</span></a></sup> and later Hewlett-Packard, recognized this as a problem. In 1989, HP developed their Test Measurement Language (TML)<sup id="cite&#95;ref-8" class="reference"><a href="#cite_note-8"><span class="cite-bracket">&#91;</span>8<span class="cite-bracket">&#93;</span></a></sup> or Test and Measurement Systems Language (TMSL)<sup id="cite&#95;ref-9" class="reference"><a href="#cite_note-9"><span class="cite-bracket">&#91;</span>9<span class="cite-bracket">&#93;</span></a></sup> which was the forerunner to <a href="/wiki/Standard_Commands_for_Programmable_Instrumentation" class="mw-redirect" title="Standard Commands for Programmable Instrumentation">Standard Commands for Programmable Instrumentation</a> (SCPI), introduced as an industry standard in 1990.<sup id="cite&#95;ref-10" class="reference"><a href="#cite_note-10"><span class="cite-bracket">&#91;</span>10<span class="cite-bracket">&#93;</span></a></sup> SCPI added standard generic commands, and a series of instrument classes with corresponding class-specific commands. SCPI mandated the IEEE 488.2 syntax, but allowed other (non-IEEE 488.1) physical transports.
+</p><p>The <a href="/wiki/International_Electrotechnical_Commission" title="International Electrotechnical Commission">IEC</a> developed their own standards in parallel with the IEEE, with IEC 60625-1 and IEC 60625-2 (IEC 625), later replaced by <a href="/wiki/IEC_60884" class="mw-redirect" title="IEC 60884">IEC 60488-2</a>.
+</p><p><a href="/wiki/National_Instruments" title="National Instruments">National Instruments</a> introduced a backward-compatible extension to IEEE 488.1, originally known as HS-488. It increased the maximum data rate to 8 <a href="/wiki/Megabyte" title="Megabyte">Mbyte</a>/s, although the rate decreases as more devices are connected to the bus. This was incorporated into the standard in 2003 (IEEE 488.1-2003),<sup id="cite&#95;ref-11" class="reference"><a href="#cite_note-11"><span class="cite-bracket">&#91;</span>11<span class="cite-bracket">&#93;</span></a></sup> over HP's objections.<sup id="cite&#95;ref-12" class="reference"><a href="#cite_note-12"><span class="cite-bracket">&#91;</span>12<span class="cite-bracket">&#93;</span></a></sup><sup id="cite&#95;ref-13" class="reference"><a href="#cite_note-13"><span class="cite-bracket">&#91;</span>13<span class="cite-bracket">&#93;</span></a></sup>
+</p><p>In 2004, the IEEE and IEC combined their respective standards into a "Dual Logo" IEEE/IEC standard IEC 60488-1, <i>Standard for Higher Performance Protocol for the Standard Digital Interface for Programmable Instrumentation - Part 1: General</i>,<sup id="cite&#95;ref-14" class="reference"><a href="#cite_note-14"><span class="cite-bracket">&#91;</span>14<span class="cite-bracket">&#93;</span></a></sup> replaces IEEE 488.1/IEC 60625-1, and IEC 60488-2,<i>Part 2: Codes, Formats, Protocols and Common Commands</i>,<sup id="cite&#95;ref-15" class="reference"><a href="#cite_note-15"><span class="cite-bracket">&#91;</span>15<span class="cite-bracket">&#93;</span></a></sup> replaces IEEE 488.2/IEC 60625-2.<sup id="cite&#95;ref-16" class="reference"><a href="#cite_note-16"><span class="cite-bracket">&#91;</span>16<span class="cite-bracket">&#93;</span></a></sup>
+</p><p>The <a href="/wiki/Linux_kernel" title="Linux kernel">Linux kernel</a> got support for GPIB with version 6.19, after <a href="/wiki/Greg_Kroah-Hartman" title="Greg Kroah-Hartman">Greg Kroah-Hartman</a> merged the code.<sup id="cite&#95;ref-17" class="reference"><a href="#cite_note-17"><span class="cite-bracket">&#91;</span>17<span class="cite-bracket">&#93;</span></a></sup>
+</p>
+<div class="mw-heading mw-heading2"><h2 id="Characteristics">Characteristics</h2><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/w/index.php?title=GPIB&amp;action=edit&amp;section=2" title="Edit section: Characteristics"><span>edit</span></a><span class="mw-editsection-bracket">]</span></span></div>
+<p>IEEE 488 is an <a href="/wiki/8-bit" class="mw-redirect" title="8-bit">8-bit</a>, electrically <a href="/wiki/Parallel_communication" title="Parallel communication">parallel</a> bus which employs sixteen signal lines — eight used for bi-directional data transfer, three for <a href="/wiki/Handshake_(computing)" title="Handshake (computing)">handshake</a>, and five for bus management — plus eight ground return lines.
+</p><p>The bus supports 31 five-bit primary device addresses numbered from 0 to 30, allocating a unique address to each device on the bus.<sup id="cite&#95;ref-NI-488.2&#95;18-0" class="reference"><a href="#cite_note-NI-488.2-18"><span class="cite-bracket">&#91;</span>18<span class="cite-bracket">&#93;</span></a></sup><sup id="cite&#95;ref-Agilent&#95;82350B&#95;19-0" class="reference"><a href="#cite_note-Agilent_82350B-19"><span class="cite-bracket">&#91;</span>19<span class="cite-bracket">&#93;</span></a></sup>
+</p><p>The standard allows up to 15 devices to share a single physical bus of up to 20 metres (66&#160;ft) total cable length. The physical topology can be linear or star (forked).<sup id="cite&#95;ref-20" class="reference"><a href="#cite_note-20"><span class="cite-bracket">&#91;</span>20<span class="cite-bracket">&#93;</span></a></sup> Active extenders allow longer buses, with up to 31 devices theoretically possible on a logical bus.
+</p><p>Control and data transfer functions are logically separated; a controller can address one device as a "talker" and one or more devices as "listeners" without having to participate in the data transfer. It is possible for multiple controllers to share the same bus, but only one can be the "Controller In Charge" at a time.<sup id="cite&#95;ref-21" class="reference"><a href="#cite_note-21"><span class="cite-bracket">&#91;</span>21<span class="cite-bracket">&#93;</span></a></sup>
+</p><p>In the original protocol, transfers use an interlocked, three-wire <i>ready–valid–accepted</i> handshake.<sup id="cite&#95;ref-22" class="reference"><a href="#cite_note-22"><span class="cite-bracket">&#91;</span>22<span class="cite-bracket">&#93;</span></a></sup> The maximum data rate is about one megabyte per second. The later HS-488 extension relaxes the handshake requirements, allowing up to 8 Mbyte/s. The slowest participating device determines the speed of the bus.<sup id="cite&#95;ref-23" class="reference"><a href="#cite_note-23"><span class="cite-bracket">&#91;</span>23<span class="cite-bracket">&#93;</span></a></sup>
+</p>
+<div class="mw-heading mw-heading2"><h2 id="Connectors">Connectors</h2><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/w/index.php?title=GPIB&amp;action=edit&amp;section=3" title="Edit section: Connectors"><span>edit</span></a><span class="mw-editsection-bracket">]</span></span></div>
+<link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1358620234" /><table class="infobox infobox-table"><caption class="infobox-title">IEEE 488</caption><tbody><tr><th colspan="4" class="infobox-header" style="background:#ccccff;color:inherit;">Pinout</th></tr><tr><td colspan="4" class="infobox-full-data">
+<span typeof="mw:File"><a href="/wiki/File:IEEE-448.svg" class="mw-file-description"><img src="//thumb.wikimedia.org/wikipedia/commons/thumb/e/e3/IEEE-448.svg/330px-IEEE-448.svg.png?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail" decoding="async" loading="lazy" width="300" height="94" class="mw-file-element" srcset="//thumb.wikimedia.org/wikipedia/commons/thumb/e/e3/IEEE-448.svg/960px-IEEE-448.svg.png?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail 2x" data-file-width="3784" data-file-height="1186" /></a></span></td></tr><tr><td colspan="4" class="infobox-full-data">
+Female IEEE 488 connector</td></tr><tr><th scope="row" class="infobox-label">Pin 1</th><td class="infobox-data infobox-data-a">
+DIO1</td><td class="infobox-data infobox-data-b">
+Data input/output bit</td></tr><tr><th scope="row" class="infobox-label">Pin 2</th><td class="infobox-data infobox-data-a">
+DIO2</td><td class="infobox-data infobox-data-b">
+Data input/output bit</td></tr><tr><th scope="row" class="infobox-label">Pin 3</th><td class="infobox-data infobox-data-a">
+DIO3</td><td class="infobox-data infobox-data-b">
+Data input/output bit</td></tr><tr><th scope="row" class="infobox-label">Pin 4</th><td class="infobox-data infobox-data-a">
+DIO4</td><td class="infobox-data infobox-data-b">
+Data input/output bit</td></tr><tr><th scope="row" class="infobox-label">Pin 5</th><td class="infobox-data infobox-data-a">
+EOI</td><td class="infobox-data infobox-data-b">
+End-or-identify</td></tr><tr><th scope="row" class="infobox-label">Pin 6</th><td class="infobox-data infobox-data-a">
+DAV</td><td class="infobox-data infobox-data-b">
+Data valid</td></tr><tr><th scope="row" class="infobox-label">Pin 7</th><td class="infobox-data infobox-data-a">
+NRFD</td><td class="infobox-data infobox-data-b">
+Not ready for data</td></tr><tr><th scope="row" class="infobox-label">Pin 8</th><td class="infobox-data infobox-data-a">
+NDAC</td><td class="infobox-data infobox-data-b">
+Not data accepted</td></tr><tr><th scope="row" class="infobox-label">Pin 9</th><td class="infobox-data infobox-data-a">
+IFC</td><td class="infobox-data infobox-data-b">
+Interface clear</td></tr><tr><th scope="row" class="infobox-label">Pin 10</th><td class="infobox-data infobox-data-a">
+SRQ</td><td class="infobox-data infobox-data-b">
+Service request</td></tr><tr><th scope="row" class="infobox-label">Pin 11</th><td class="infobox-data infobox-data-a">
+ATN</td><td class="infobox-data infobox-data-b">
+Attention</td></tr><tr><th scope="row" class="infobox-label">Pin 12</th><td class="infobox-data infobox-data-a">
+SHIELD</td><td class="infobox-data infobox-data-b">
+</td></tr><tr><th scope="row" class="infobox-label">Pin 13</th><td class="infobox-data infobox-data-a">
+DIO5</td><td class="infobox-data infobox-data-b">
+Data input/output bit</td></tr><tr><th scope="row" class="infobox-label">Pin 14</th><td class="infobox-data infobox-data-a">
+DIO6</td><td class="infobox-data infobox-data-b">
+Data input/output bit</td></tr><tr><th scope="row" class="infobox-label">Pin 15</th><td class="infobox-data infobox-data-a">
+DIO7</td><td class="infobox-data infobox-data-b">
+Data input/output bit</td></tr><tr><th scope="row" class="infobox-label">Pin 16</th><td class="infobox-data infobox-data-a">
+DIO8</td><td class="infobox-data infobox-data-b">
+Data input/output bit</td></tr><tr><th scope="row" class="infobox-label">Pin 17</th><td class="infobox-data infobox-data-a">
+REN</td><td class="infobox-data infobox-data-b">
+Remote enable</td></tr><tr><th scope="row" class="infobox-label">Pin 18</th><td class="infobox-data infobox-data-a">
+GND</td><td class="infobox-data infobox-data-b">
+(wire twisted with DAV)</td></tr><tr><th scope="row" class="infobox-label">Pin 19</th><td class="infobox-data infobox-data-a">
+GND</td><td class="infobox-data infobox-data-b">
+(wire twisted with NRFD)</td></tr><tr><th scope="row" class="infobox-label">Pin 20</th><td class="infobox-data infobox-data-a">
+GND</td><td class="infobox-data infobox-data-b">
+(wire twisted with NDAC)</td></tr><tr><th scope="row" class="infobox-label">Pin 21</th><td class="infobox-data infobox-data-a">
+GND</td><td class="infobox-data infobox-data-b">
+(wire twisted with IFC)</td></tr><tr><th scope="row" class="infobox-label">Pin 22</th><td class="infobox-data infobox-data-a">
+GND</td><td class="infobox-data infobox-data-b">
+(wire twisted with SRQ)</td></tr><tr><th scope="row" class="infobox-label">Pin 23</th><td class="infobox-data infobox-data-a">
+GND</td><td class="infobox-data infobox-data-b">
+(wire twisted with ATN)</td></tr><tr><th scope="row" class="infobox-label">Pin 24</th><td class="infobox-data infobox-data-a">
+Logic ground</td><td class="infobox-data infobox-data-b">
+</td></tr></tbody></table>
+<p>IEEE 488 specifies a 24-pin <a href="/wiki/Amphenol" title="Amphenol">Amphenol</a>-designed <a href="/wiki/Micro_ribbon" class="mw-redirect" title="Micro ribbon">micro ribbon</a> connector. Micro ribbon connectors have a D-shaped metal shell, but are larger than <a href="/wiki/D-subminiature" title="D-subminiature">D-subminiature</a> connectors. They are sometimes called "Centronics connectors" after the <a href="/wiki/IEEE_1284" title="IEEE 1284">36-pin micro ribbon</a> connector <a href="/wiki/Centronics" title="Centronics">Centronics</a> used for their printers.
+</p><p>One unusual feature of IEEE 488 connectors is they commonly use a "double-headed" design, with male on one side, and female on the other. This allows stacking connectors for easy <a href="/wiki/Daisy_chain_(electrical_engineering)" title="Daisy chain (electrical engineering)">daisy-chaining</a>. Mechanical considerations limit the number of stacked connectors to four or fewer, although a workaround involving physically supporting the connectors may be able to get around this.
+</p><p>They are held in place by screws, either #6-32 <a href="/wiki/Unified_Thread_Standard#Unified_Screw_Threads_—_UNC,_UNF_and_UNEF" title="Unified Thread Standard">UNC</a><sup id="cite&#95;ref-24" class="reference"><a href="#cite_note-24"><span class="cite-bracket">&#91;</span>24<span class="cite-bracket">&#93;</span></a></sup> (now largely obsolete) or <a href="/wiki/ISO_metric_screw_thread" title="ISO metric screw thread">metric</a> M3.5×0.6 <a href="/wiki/Screw_thread" title="Screw thread">threads</a>. Early versions of the standard suggested that metric screws should be blackened to avoid confusion with the incompatible UTS threads. However, by the 1987 revision this was no longer considered necessary because of the prevalence of metric threads.<sup id="cite&#95;ref-25" class="reference"><a href="#cite_note-25"><span class="cite-bracket">&#91;</span>25<span class="cite-bracket">&#93;</span></a></sup>
+</p><p>The IEC 60625 standard prescribes the use of 25-pin <a href="/wiki/D-subminiature" title="D-subminiature">D-subminiature</a> connectors (the same as used for the <a href="/wiki/Parallel_port" title="Parallel port">parallel port</a> on <a href="/wiki/IBM_PC_compatible" title="IBM PC compatible">IBM PC compatibles</a>). This connector did not gain significant market acceptance against the established 24-pin connector.
+</p>
+<div class="mw-heading mw-heading2"><h2 id="Capabilities">Capabilities</h2><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/w/index.php?title=GPIB&amp;action=edit&amp;section=4" title="Edit section: Capabilities"><span>edit</span></a><span class="mw-editsection-bracket">]</span></span></div>
+<figure class="mw-default-size" typeof="mw:File/Thumb"><a href="/wiki/File:IEEE-488_port_with_listed_capabilities_on_a_laboratory_temperature_controller.jpg" class="mw-file-description"><img src="//thumb.wikimedia.org/wikipedia/commons/thumb/f/f9/IEEE-488_port_with_listed_capabilities_on_a_laboratory_temperature_controller.jpg/250px-IEEE-488_port_with_listed_capabilities_on_a_laboratory_temperature_controller.jpg?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail" decoding="async" loading="lazy" width="250" height="140" class="mw-file-element" srcset="//thumb.wikimedia.org/wikipedia/commons/thumb/f/f9/IEEE-488_port_with_listed_capabilities_on_a_laboratory_temperature_controller.jpg/500px-IEEE-488_port_with_listed_capabilities_on_a_laboratory_temperature_controller.jpg?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail 2x" data-file-width="4000" data-file-height="2236" /></a><figcaption>IEEE-488 port with listed capabilities on a laboratory temperature controller</figcaption></figure>
+<table class="wikitable">
+<caption>Capabilities<sup id="cite&#95;ref-26" class="reference"><a href="#cite_note-26"><span class="cite-bracket">&#91;</span>26<span class="cite-bracket">&#93;</span></a></sup>
+</caption>
+<tbody><tr>
+<th>Function
+</th>
+<th colspan="2">Abbreviation
+</th>
+<th>Description and examples
+</th></tr>
+<tr>
+<td>Source Handshake
+</td>
+<td>SH
+</td>
+<td>1
+</td>
+<td>Complete
+</td></tr>
+<tr>
+<td>Acceptor Handshake</td>
+<td>AH
+</td>
+<td>1
+</td>
+<td>Complete
+</td></tr>
+<tr>
+<td rowspan="3">Basic Talker
+</td>
+<td rowspan="3">T
+</td>
+<td>5
+</td>
+<td>Responds to serial poll; untalks when listen address received; talk only capability
+</td></tr>
+<tr>
+<td>6
+</td>
+<td>Untalks when listen address received; no talk only
+</td></tr>
+<tr>
+<td>7
+</td>
+<td>No serial poll; untalks when listen address received; talk only capability
+</td></tr>
+<tr>
+<td>Extended Talker
+</td>
+<td>TE
+</td>
+<td>0
+</td>
+<td>No extended talker
+</td></tr>
+<tr>
+<td rowspan="2">Basic Listener
+</td>
+<td rowspan="2">L
+</td>
+<td>3
+</td>
+<td>Listen only mode; unlistens if talk address received
+</td></tr>
+<tr>
+<td>4
+</td>
+<td>Unlistens if talk address received
+</td></tr>
+<tr>
+<td>Extended Listener
+</td>
+<td>LE
+</td>
+<td>0
+</td>
+<td>No extended listener
+</td></tr>
+<tr>
+<td rowspan="2">Service Request
+</td>
+<td rowspan="2">SR
+</td>
+<td>0
+</td>
+<td>No service request capability
+</td></tr>
+<tr>
+<td>1
+</td>
+<td>Complete
+</td></tr>
+<tr>
+<td rowspan="2">Remote-Local
+</td>
+<td rowspan="2">RL
+</td>
+<td>0
+</td>
+<td>No local lockout
+</td></tr>
+<tr>
+<td>1
+</td>
+<td>Complete
+</td></tr>
+<tr>
+<td>Parallel Poll
+</td>
+<td>PP
+</td>
+<td>0
+</td>
+<td>Does not respond to Parallel Poll
+</td></tr>
+<tr>
+<td>Device Clear
+</td>
+<td>DC
+</td>
+<td>1
+</td>
+<td>complete
+</td></tr>
+<tr>
+<td rowspan="2">Device Trigger
+</td>
+<td rowspan="2">DT
+</td>
+<td>0
+</td>
+<td>No device trigger capability
+</td></tr>
+<tr>
+<td>1
+</td>
+<td>Complete
+</td></tr>
+<tr>
+<td>Controller
+</td>
+<td>C
+</td>
+<td>0
+</td>
+<td>No controller function
+</td></tr>
+<tr>
+<td rowspan="2">
+</td>
+<td rowspan="2">E
+</td>
+<td>1
+</td>
+<td>Open collector drive electronics
+</td></tr>
+<tr>
+<td>2
+</td>
+<td>Three state drivers
+</td></tr></tbody></table>
+<div class="mw-heading mw-heading2"><h2 id="Use_as_a_computer_interface">Use as a computer interface</h2><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/w/index.php?title=GPIB&amp;action=edit&amp;section=5" title="Edit section: Use as a computer interface"><span>edit</span></a><span class="mw-editsection-bracket">]</span></span></div>
+<figure class="mw-default-size" typeof="mw:File/Thumb"><a href="/wiki/File:National_pci_GPIB_card_IMGP1642_smial_wp.jpg" class="mw-file-description"><img src="//thumb.wikimedia.org/wikipedia/commons/thumb/d/d1/National_pci_GPIB_card_IMGP1642_smial_wp.jpg/250px-National_pci_GPIB_card_IMGP1642_smial_wp.jpg?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail" decoding="async" loading="lazy" width="250" height="165" class="mw-file-element" srcset="//thumb.wikimedia.org/wikipedia/commons/thumb/d/d1/National_pci_GPIB_card_IMGP1642_smial_wp.jpg/500px-National_pci_GPIB_card_IMGP1642_smial_wp.jpg?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail 2x" data-file-width="4869" data-file-height="3207" /></a><figcaption><a href="/wiki/National_Instruments" title="National Instruments">National Instruments</a> GPIB controller card for <a href="/wiki/Peripheral_Component_Interconnect" title="Peripheral Component Interconnect">PCI</a> bus</figcaption></figure>
+<p>HP's designers did not specifically plan for IEEE 488 to be a peripheral interface for general-purpose computers; the focus was on instrumentation. But when HP's early <a href="/wiki/Microcomputer" title="Microcomputer">microcomputers</a> needed an interface for peripherals (<a href="/wiki/Disk_drive" class="mw-redirect" title="Disk drive">disk drives</a>, <a href="/wiki/Tape_drive" title="Tape drive">tape drives</a>, <a href="/wiki/Computer_printer" class="mw-redirect" title="Computer printer">printers</a>, <a href="/wiki/Plotter" title="Plotter">plotters</a>, etc.), HP-IB was readily available and easily adapted to the purpose.
+</p><p>HP computer products which used HP-IB included the <a href="/wiki/HP_Series_80" title="HP Series 80">HP Series 80</a>, <a href="/wiki/HP_9800_series" title="HP 9800 series">HP 9800 series</a>,<sup id="cite&#95;ref-27" class="reference"><a href="#cite_note-27"><span class="cite-bracket">&#91;</span>27<span class="cite-bracket">&#93;</span></a></sup> the <a href="/wiki/HP_2100" title="HP 2100">HP 2100</a> series,<sup id="cite&#95;ref-28" class="reference"><a href="#cite_note-28"><span class="cite-bracket">&#91;</span>28<span class="cite-bracket">&#93;</span></a></sup> and the <a href="/wiki/HP_3000" title="HP 3000">HP 3000</a> series.<sup id="cite&#95;ref-29" class="reference"><a href="#cite_note-29"><span class="cite-bracket">&#91;</span>29<span class="cite-bracket">&#93;</span></a></sup> HP computer peripherals which did not utilize the RS-232 communication interface often used HP-IB including disc systems like the <a href="/wiki/HP_7935" title="HP 7935">HP 7935</a>. Some of HP's advanced pocket calculators of the 1980s, such as the <a href="/wiki/HP-41" class="mw-redirect" title="HP-41">HP-41</a> and <a href="/wiki/HP-71B" title="HP-71B">HP-71B</a> series, also had IEEE 488 capabilities, via an optional <a href="/wiki/HP-IL" title="HP-IL">HP-IL</a>/HP-IB interface module.
+</p><p>Other manufacturers adopted GPIB for their computers as well, such as with the <a href="/wiki/Tektronix_405x" class="mw-redirect" title="Tektronix 405x">Tektronix 405x</a> line.
+</p><p>The <a href="/wiki/Commodore_PET" title="Commodore PET">Commodore PET</a> (introduced 1977) range of personal computers connected their peripherals using the IEEE 488 bus, but with a non-standard card edge connector. Commodore's following 8-bit machines utilized a <a href="/wiki/Commodore_bus" title="Commodore bus">serial bus</a> whose protocol was based on IEEE 488.<sup id="cite&#95;ref-30" class="reference"><a href="#cite_note-30"><span class="cite-bracket">&#91;</span>30<span class="cite-bracket">&#93;</span></a></sup> Commodore marketed an IEEE 488 cartridge for the VIC-20<sup id="cite&#95;ref-31" class="reference"><a href="#cite_note-31"><span class="cite-bracket">&#91;</span>31<span class="cite-bracket">&#93;</span></a></sup> and the Commodore 64.<sup id="cite&#95;ref-32" class="reference"><a href="#cite_note-32"><span class="cite-bracket">&#91;</span>32<span class="cite-bracket">&#93;</span></a></sup> Several third party suppliers of <a href="/wiki/Commodore_64_peripherals" title="Commodore 64 peripherals">Commodore 64 peripherals</a> made a cartridge for the C64 that provided an IEEE 488-derived interface on a card edge connector similar to that of the PET series.<sup id="cite&#95;ref-33" class="reference"><a href="#cite_note-33"><span class="cite-bracket">&#91;</span>33<span class="cite-bracket">&#93;</span></a></sup>
+</p><p>Eventually, faster, more complete standards such as <a href="/wiki/SCSI" title="SCSI">SCSI</a> superseded IEEE 488 for peripheral access.
+</p>
+<ul class="gallery mw-gallery-traditional">
+		<li class="gallerybox" style="width: 195px">
+			<div class="thumb" style="width: 190px; height: 120px;"><span typeof="mw:File"><a href="/wiki/File:Commodore_8032-SK_--_rear_panel.jpg" class="mw-file-description" title="Rear of Commodore 8032-SK showing IEEE&#160;488 port"><img alt="Rear of Commodore 8032-SK showing IEEE&#160;488 port" src="//thumb.wikimedia.org/wikipedia/commons/thumb/9/93/Commodore_8032-SK_--_rear_panel.jpg/250px-Commodore_8032-SK_--_rear_panel.jpg?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail" decoding="async" loading="lazy" width="160" height="90" class="mw-file-element" srcset="//thumb.wikimedia.org/wikipedia/commons/thumb/9/93/Commodore_8032-SK_--_rear_panel.jpg/330px-Commodore_8032-SK_--_rear_panel.jpg?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail 2x" data-file-width="1024" data-file-height="576" /></a></span></div>
+			<div class="gallerytext">Rear of <a href="/wiki/Commodore_PET" title="Commodore PET">Commodore 8032-SK</a> showing IEEE&#160;488 port</div>
+		</li>
+		<li class="gallerybox" style="width: 195px">
+			<div class="thumb" style="width: 190px; height: 120px;"><span typeof="mw:File"><a href="/wiki/File:SFD1001_back.jpg" class="mw-file-description" title="Rear of Commodore SFD 1001 floppy disk drive with IEEE&#160;488 port"><img alt="Rear of Commodore SFD 1001 floppy disk drive with IEEE&#160;488 port" src="//thumb.wikimedia.org/wikipedia/commons/thumb/a/a4/SFD1001_back.jpg/250px-SFD1001_back.jpg?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail" decoding="async" loading="lazy" width="160" height="73" class="mw-file-element" srcset="//thumb.wikimedia.org/wikipedia/commons/thumb/a/a4/SFD1001_back.jpg/330px-SFD1001_back.jpg?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail 2x" data-file-width="562" data-file-height="255" /></a></span></div>
+			<div class="gallerytext">Rear of <a href="/wiki/Commodore_International" title="Commodore International">Commodore</a> SFD 1001 <a href="/wiki/Floppy_disk_drive" class="mw-redirect" title="Floppy disk drive">floppy disk drive</a> with IEEE&#160;488 port</div>
+		</li>
+		<li class="gallerybox" style="width: 195px">
+			<div class="thumb" style="width: 190px; height: 120px;"><span typeof="mw:File"><a href="/wiki/File:Technofor-IEEE488.JPG" class="mw-file-description" title="C64 interface"><img alt="C64 interface" src="//upload.wikimedia.org/wikipedia/commons/4/48/Technofor-IEEE488.JPG?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail_unscaled" decoding="async" loading="lazy" width="142" height="90" class="mw-file-element" data-file-width="220" data-file-height="140" /></a></span></div>
+			<div class="gallerytext">C64 interface</div>
+		</li>
+		<li class="gallerybox" style="width: 195px">
+			<div class="thumb" style="width: 190px; height: 120px;"><span typeof="mw:File"><a href="/wiki/File:Acorn_IEEE488_Interface_(back).jpg" class="mw-file-description" title="Acorn IEEE&#160;488 Interface"><img alt="Acorn IEEE&#160;488 Interface" src="//thumb.wikimedia.org/wikipedia/commons/thumb/7/7d/Acorn_IEEE488_Interface_%28back%29.jpg/250px-Acorn_IEEE488_Interface_%28back%29.jpg?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail" decoding="async" loading="lazy" width="160" height="68" class="mw-file-element" srcset="//thumb.wikimedia.org/wikipedia/commons/thumb/7/7d/Acorn_IEEE488_Interface_%28back%29.jpg/330px-Acorn_IEEE488_Interface_%28back%29.jpg?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail 2x" data-file-width="640" data-file-height="272" /></a></span></div>
+			<div class="gallerytext"><a href="/wiki/Acorn_Computers" title="Acorn Computers">Acorn</a> IEEE&#160;488 Interface</div>
+		</li>
+		<li class="gallerybox" style="width: 195px">
+			<div class="thumb" style="width: 190px; height: 120px;"><span typeof="mw:File"><a href="/wiki/File:USB-GPIB-Converter.jpg" class="mw-file-description" title="USB GPIB Protocol converter"><img alt="USB GPIB Protocol converter" src="//thumb.wikimedia.org/wikipedia/commons/thumb/e/ec/USB-GPIB-Converter.jpg/250px-USB-GPIB-Converter.jpg?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail" decoding="async" loading="lazy" width="160" height="64" class="mw-file-element" srcset="//thumb.wikimedia.org/wikipedia/commons/thumb/e/ec/USB-GPIB-Converter.jpg/330px-USB-GPIB-Converter.jpg?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail 2x" data-file-width="1010" data-file-height="404" /></a></span></div>
+			<div class="gallerytext"><a href="/wiki/USB" title="USB">USB</a> GPIB <a href="/wiki/Protocol_converter" title="Protocol converter">Protocol converter</a></div>
+		</li>
+		<li class="gallerybox" style="width: 195px">
+			<div class="thumb" style="width: 190px; height: 120px;"><span typeof="mw:File"><a href="/wiki/File:Digitaloszilloskop_Schnittstellen_IMGP1974_WP.jpg" class="mw-file-description" title="Rear of Tektronix TDS 210 digital oscilloscope with IEEE&#160;488 port"><img alt="Rear of Tektronix TDS 210 digital oscilloscope with IEEE&#160;488 port" src="//thumb.wikimedia.org/wikipedia/commons/thumb/c/c9/Digitaloszilloskop_Schnittstellen_IMGP1974_WP.jpg/250px-Digitaloszilloskop_Schnittstellen_IMGP1974_WP.jpg?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail" decoding="async" loading="lazy" width="135" height="90" class="mw-file-element" srcset="//thumb.wikimedia.org/wikipedia/commons/thumb/c/c9/Digitaloszilloskop_Schnittstellen_IMGP1974_WP.jpg/330px-Digitaloszilloskop_Schnittstellen_IMGP1974_WP.jpg?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail 2x" data-file-width="1600" data-file-height="1068" /></a></span></div>
+			<div class="gallerytext">Rear of <a href="/wiki/Tektronix" title="Tektronix">Tektronix</a> TDS 210 digital <a href="/wiki/Oscilloscope" title="Oscilloscope">oscilloscope</a> with IEEE&#160;488 port</div>
+		</li>
+		<li class="gallerybox" style="width: 195px">
+			<div class="thumb" style="width: 190px; height: 120px;"><span typeof="mw:File"><a href="/wiki/File:Data_Acquisition_Agilent_(2).jpg" class="mw-file-description" title="Rear of Keysight 34970A data acquisition chassis / multimeter with IEEE&#160;488 port"><img alt="Rear of Keysight 34970A data acquisition chassis / multimeter with IEEE&#160;488 port" src="//thumb.wikimedia.org/wikipedia/commons/thumb/3/33/Data_Acquisition_Agilent_%282%29.jpg/250px-Data_Acquisition_Agilent_%282%29.jpg?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail" decoding="async" loading="lazy" width="156" height="90" class="mw-file-element" srcset="//thumb.wikimedia.org/wikipedia/commons/thumb/3/33/Data_Acquisition_Agilent_%282%29.jpg/330px-Data_Acquisition_Agilent_%282%29.jpg?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail 2x" data-file-width="3425" data-file-height="1975" /></a></span></div>
+			<div class="gallerytext">Rear of <a href="/wiki/Keysight" title="Keysight">Keysight</a> 34970A <a href="/wiki/Data_acquisition" title="Data acquisition">data acquisition</a> chassis / <a href="/wiki/Multimeter" title="Multimeter">multimeter</a> with IEEE&#160;488 port</div>
+		</li>
+		<li class="gallerybox" style="width: 195px">
+			<div class="thumb" style="width: 190px; height: 120px;"><span typeof="mw:File"><a href="/wiki/File:Keithley_DMM7510_7.5_Digit_Bench_Multimeter_(16895247108).jpg" class="mw-file-description" title="Rear of Keithley DMM7510 multimeter with IEEE&#160;488 port"><img alt="Rear of Keithley DMM7510 multimeter with IEEE&#160;488 port" src="//thumb.wikimedia.org/wikipedia/commons/thumb/a/a4/Keithley_DMM7510_7.5_Digit_Bench_Multimeter_%2816895247108%29.jpg/120px-Keithley_DMM7510_7.5_Digit_Bench_Multimeter_%2816895247108%29.jpg?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail" decoding="async" loading="lazy" width="120" height="90" class="mw-file-element" srcset="//thumb.wikimedia.org/wikipedia/commons/thumb/a/a4/Keithley_DMM7510_7.5_Digit_Bench_Multimeter_%2816895247108%29.jpg/250px-Keithley_DMM7510_7.5_Digit_Bench_Multimeter_%2816895247108%29.jpg?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail 2x" data-file-width="3648" data-file-height="2736" /></a></span></div>
+			<div class="gallerytext">Rear of <a href="/wiki/Keithley_Instruments" title="Keithley Instruments">Keithley</a> DMM7510 <a href="/wiki/Multimeter" title="Multimeter">multimeter</a> with IEEE&#160;488 port</div>
+		</li>
+		<li class="gallerybox" style="width: 195px">
+			<div class="thumb" style="width: 190px; height: 120px;"><span typeof="mw:File"><a href="/wiki/File:7580B_Plotter_Settings.jpg" class="mw-file-description" title="HP 7580B plotter with IEEE 488 port"><img alt="HP 7580B plotter with IEEE 488 port" src="//thumb.wikimedia.org/wikipedia/commons/thumb/3/3a/7580B_Plotter_Settings.jpg/250px-7580B_Plotter_Settings.jpg?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail" decoding="async" loading="lazy" width="135" height="90" class="mw-file-element" srcset="//thumb.wikimedia.org/wikipedia/commons/thumb/3/3a/7580B_Plotter_Settings.jpg/330px-7580B_Plotter_Settings.jpg?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail 2x" data-file-width="5184" data-file-height="3456" /></a></span></div>
+			<div class="gallerytext"><a href="/wiki/Hewlett-Packard" title="Hewlett-Packard">HP</a> 7580B <a href="/wiki/Plotter" title="Plotter">plotter</a> with IEEE 488 port</div>
+		</li>
+		<li class="gallerybox" style="width: 195px">
+			<div class="thumb" style="width: 190px; height: 120px;"><span typeof="mw:File"><a href="/wiki/File:Hp-thinkjet-a-rear.jpg" class="mw-file-description" title="HP ThinkJet 2225A with IEEE 488 port"><img alt="HP ThinkJet 2225A with IEEE 488 port" src="//thumb.wikimedia.org/wikipedia/commons/thumb/b/b4/Hp-thinkjet-a-rear.jpg/250px-Hp-thinkjet-a-rear.jpg?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail" decoding="async" loading="lazy" width="135" height="90" class="mw-file-element" srcset="//thumb.wikimedia.org/wikipedia/commons/thumb/b/b4/Hp-thinkjet-a-rear.jpg/330px-Hp-thinkjet-a-rear.jpg?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail 2x" data-file-width="6000" data-file-height="4000" /></a></span></div>
+			<div class="gallerytext"> HP <a href="/wiki/ThinkJet" class="mw-redirect" title="ThinkJet">ThinkJet</a> 2225A with IEEE 488 port</div>
+		</li>
+</ul>
+<div class="mw-heading mw-heading2"><h2 id="Comparison_with_other_interface_standards">Comparison with other interface standards</h2><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/w/index.php?title=GPIB&amp;action=edit&amp;section=6" title="Edit section: Comparison with other interface standards"><span>edit</span></a><span class="mw-editsection-bracket">]</span></span></div>
+<style data-mw-deduplicate="TemplateStyles:r1364180890">.mw-parser-output .ambox{border:1px solid #a2a9b1;border-left:10px solid #36c;background-color:#fbfbfb;box-sizing:border-box}.mw-parser-output .ambox+.mw-empty-elt+.ambox,.mw-parser-output .ambox+.mw-empty-elt+.mw-empty-elt+.ambox,.mw-parser-output .ambox+.mw-empty-elt+.mw-empty-elt+.mw-empty-elt+.ambox{margin-top:-1px}html body.mediawiki .mw-parser-output .ambox.mbox-small-left{margin:4px 1em 4px 0;overflow:hidden;width:238px;border-collapse:collapse;font-size:88%;line-height:1.25em}.mw-parser-output .ambox-speedy{border-left:10px solid #b32424;background-color:#fee7e6}.mw-parser-output .ambox-delete{border-left:10px solid #b32424}.mw-parser-output .ambox-content{border-left:10px solid #f28500}.mw-parser-output .ambox-style{border-left:10px solid #fc3}.mw-parser-output .ambox-move{border-left:10px solid #9932cc}.mw-parser-output .ambox-protection{border-left:10px solid #a2a9b1}.mw-parser-output .ambox .mbox-text{border:none;padding:0.25em 0.5em;width:100%}.mw-parser-output .ambox .mbox-image{border:none;padding:2px 0 2px 0.5em;text-align:center}.mw-parser-output .ambox .mbox-imageright{border:none;padding:2px 0.5em 2px 0;text-align:center}.mw-parser-output .ambox .mbox-empty-cell{border:none;padding:0;width:1px}.mw-parser-output .ambox .mbox-image-div{width:52px}@media(min-width:720px){.mw-parser-output .ambox{margin:0 10%}}@media print{body.ns-0 .mw-parser-output .ambox{display:none!important}}</style><table class="box-Unreferenced&#95;section plainlinks metadata ambox ambox-content ambox-Unreferenced" role="presentation"><tbody><tr><td class="mbox-image"><div class="mbox-image-div"><span typeof="mw:File"><a href="/wiki/File:Question_book-new.svg" class="mw-file-description"><img alt="icon" src="//thumb.wikimedia.org/wikipedia/en/thumb/9/99/Question_book-new.svg/60px-Question_book-new.svg.png?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail" decoding="async" loading="lazy" width="50" height="39" class="mw-file-element" srcset="//thumb.wikimedia.org/wikipedia/en/thumb/9/99/Question_book-new.svg/120px-Question_book-new.svg.png?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail 2x" data-file-width="512" data-file-height="399" /></a></span></div></td><td class="mbox-text"><div class="mbox-text-span">This section <b>does not <a href="/wiki/Wikipedia:Citing_sources" title="Wikipedia:Citing sources">cite</a> any <a href="/wiki/Wikipedia:Verifiability" title="Wikipedia:Verifiability">sources</a></b>.<span class="hide-when-compact"> Please help <a href="/wiki/Special:EditPage/GPIB" title="Special:EditPage/GPIB">improve this section</a> by <a href="/wiki/Help:Referencing_for_beginners" title="Help:Referencing for beginners">adding citations to reliable sources</a>. Unsourced material may be challenged and <a href="/wiki/Wikipedia:Verifiability#Burden_of_evidence" title="Wikipedia:Verifiability">removed</a>.</span>  <span class="date-container"><i>(<span class="date">February 2010</span>)</i></span><span class="hide-when-compact"><i> (<small><a href="/wiki/Help:Maintenance_template_removal" title="Help:Maintenance template removal">Learn how and when to remove this message</a></small>)</i></span></div></td></tr></tbody></table>
+<p>Electrically, IEEE 488 used a hardware interface that could be implemented with some discrete logic or with a microcontroller. The hardware interface enabled devices made by different manufacturers to communicate with a single host. Since each device generated the asynchronous handshaking signals required by the bus protocol, slow and fast devices could be mixed on one bus. The data transfer is relatively slow, so <a href="/wiki/Transmission_line" title="Transmission line">transmission line</a> issues such as impedance matching and line termination are ignored. There was no requirement for <a href="/wiki/Galvanic_isolation" title="Galvanic isolation">galvanic isolation</a> between the bus and devices, which created the possibility of <a href="/wiki/Ground_loop_(electricity)" title="Ground loop (electricity)">ground loops</a> causing extra noise and loss of data.
+</p><p>Physically, the IEEE 488 connectors and cabling were rugged and held in place by screws. While physically large and sturdy connectors were an advantage in industrial or laboratory set ups, the size and cost of the connectors was a liability in applications such as personal computers.
+</p><p>Although the electrical and physical interfaces were well defined, there was not an initial standard command set. Devices from different manufacturers might use different commands for the same function.<sup id="cite&#95;ref-34" class="reference"><a href="#cite_note-34"><span class="cite-bracket">&#91;</span>34<span class="cite-bracket">&#93;</span></a></sup> Some aspects of the command protocol standards were not standardized until <a href="/wiki/Standard_Commands_for_Programmable_Instruments" title="Standard Commands for Programmable Instruments">Standard Commands for Programmable Instruments</a> (SCPI) in 1990. Implementation options (e.g. end of transmission handling) can complicate interoperability in pre-IEEE 488.2 devices.
+</p><p>More recent standards such as <a href="/wiki/USB" title="USB">USB</a>, <a href="/wiki/FireWire" title="FireWire">FireWire</a>, and <a href="/wiki/Ethernet" title="Ethernet">Ethernet</a> take advantage of declining costs of interface electronics to implement more complex standards providing higher bandwidth. The multi-conductor (parallel data) connectors and shielded cable were inherently more costly than the connectors and cabling that could be used with serial data transfer standards such as <a href="/wiki/RS-232" title="RS-232">RS-232</a>, <a href="/wiki/RS-485" title="RS-485">RS-485</a>, USB, FireWire or Ethernet. Very few mass-market personal computers or peripherals (such as printers or scanners) implemented IEEE 488.
+</p>
+<div class="mw-heading mw-heading2"><h2 id="See_also">See also</h2><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/w/index.php?title=GPIB&amp;action=edit&amp;section=7" title="Edit section: See also"><span>edit</span></a><span class="mw-editsection-bracket">]</span></span></div>
+<style data-mw-deduplicate="TemplateStyles:r1314755338">.mw-parser-output .side-box{margin:4px 0;box-sizing:border-box;border:1px solid #aaa;font-size:88%;line-height:1.25em;background-color:var(--background-color-interactive-subtle,#f8f9fa);color:inherit;display:flow-root}.mw-parser-output .infobox .side-box{font-size:100%}.mw-parser-output .side-box-abovebelow,.mw-parser-output .side-box-text{padding:0.25em 0.9em}.mw-parser-output .side-box-image{padding:2px 0 2px 0.9em;text-align:center}.mw-parser-output .side-box-imageright{padding:2px 0.9em 2px 0;text-align:center}@media(min-width:500px){.mw-parser-output .side-box-flex{display:flex;align-items:center}.mw-parser-output .side-box-text{flex:1;min-width:0}}@media(min-width:640px){.mw-parser-output .side-box{width:238px}.mw-parser-output .side-box-right{clear:right;float:right;margin-left:1em}.mw-parser-output .side-box-left{margin-right:1em}}</style><style data-mw-deduplicate="TemplateStyles:r1374954486">@media print{body.ns-0 .mw-parser-output .sistersitebox{display:none!important}}@media screen{html.skin-theme-clientpref-night .mw-parser-output .sistersitebox img[src*="Wiktionary-logo-en-v2.svg"]{filter:invert(1)brightness(55%)contrast(250%)hue-rotate(180deg)}}@media screen and (prefers-color-scheme:dark){html.skin-theme-clientpref-os .mw-parser-output .sistersitebox img[src*="Wiktionary-logo-en-v2.svg"]{filter:invert(1)brightness(55%)contrast(250%)hue-rotate(180deg)}}</style><div class="side-box side-box-right plainlinks sistersitebox"><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1126788409" />
+<div class="side-box-flex">
+<div class="side-box-image"><span class="noviewer" typeof="mw:File"><a href="/wiki/File:Commons-logo.svg" class="mw-file-description"><img alt="Wikimedia Commons logo" src="//thumb.wikimedia.org/wikipedia/en/thumb/4/4a/Commons-logo.svg/40px-Commons-logo.svg.png?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail" decoding="async" loading="lazy" width="30" height="40" class="mw-file-element" srcset="//thumb.wikimedia.org/wikipedia/en/thumb/4/4a/Commons-logo.svg/60px-Commons-logo.svg.png?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail 2x" data-file-width="1024" data-file-height="1376" /></a></span></div>
+<div class="side-box-text plainlist">Wikimedia Commons has media related to <a href="https://commons.wikimedia.org/wiki/Category:IEEE_488" class="extiw" title="commons:Category:IEEE 488"><span style="font-style:italic; font-weight:bold;">IEEE 488</span></a>.</div></div>
+</div>
+<ul><li><a href="/wiki/Commodore_bus" title="Commodore bus">Commodore bus</a>&#160;– Serial bus of the home computers series of Commodore</li>
+<li><a href="/wiki/HP_Series_80" title="HP Series 80">HP Series 80</a>&#160;– 1980 Hewlett-Packard small scientific desktop computer</li>
+<li><a href="/wiki/HP-IL" title="HP-IL">HP-IL</a>&#160;– Communications protocol</li>
+<li><a href="/wiki/LAN_eXtensions_for_Instrumentation" title="LAN eXtensions for Instrumentation">LAN eXtensions for Instrumentation</a>&#160;– Ethernet standard</li>
+<li><a href="/wiki/PCI_eXtensions_for_Instrumentation" title="PCI eXtensions for Instrumentation">PCI eXtensions for Instrumentation</a>&#160;– Laboratory instrumentation hardware platform</li>
+<li><a href="/wiki/Rocky_Mountain_BASIC" title="Rocky Mountain BASIC">Rocky Mountain BASIC</a>&#160;– Dialect of the BASIC programming language</li>
+<li><a href="/wiki/Standard_Commands_for_Programmable_Instruments" title="Standard Commands for Programmable Instruments">Standard Commands for Programmable Instruments</a>&#160;– Communications protocol for test equipment</li>
+<li><a href="/wiki/Virtual_Instrument_Software_Architecture" class="mw-redirect" title="Virtual Instrument Software Architecture">Virtual Instrument Software Architecture</a>&#160;– Test and measurement API<span style="display:none" class="category-annotation-with-redirected-description">Pages displaying short descriptions of redirect targets</span></li></ul>
+<div class="mw-heading mw-heading2"><h2 id="References">References</h2><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/w/index.php?title=GPIB&amp;action=edit&amp;section=8" title="Edit section: References"><span>edit</span></a><span class="mw-editsection-bracket">]</span></span></div>
+<style data-mw-deduplicate="TemplateStyles:r1327269900">.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}body.skin-vector-2022 .mw-parser-output .reflist-columns-2{column-width:27em}body.skin-vector-2022 .mw-parser-output .reflist-columns-3{column-width:22.5em}.mw-parser-output .references[data-mw-group=upper-alpha]{list-style-type:upper-alpha}.mw-parser-output .references[data-mw-group=upper-roman]{list-style-type:upper-roman}.mw-parser-output .references[data-mw-group=lower-alpha]{list-style-type:lower-alpha}.mw-parser-output .references[data-mw-group=lower-greek]{list-style-type:lower-greek}.mw-parser-output .references[data-mw-group=lower-roman]{list-style-type:lower-roman}.mw-parser-output div.reflist-liststyle-upper-alpha .references{list-style-type:upper-alpha}.mw-parser-output div.reflist-liststyle-upper-roman .references{list-style-type:upper-roman}.mw-parser-output div.reflist-liststyle-lower-alpha .references{list-style-type:lower-alpha}.mw-parser-output div.reflist-liststyle-lower-greek .references{list-style-type:lower-greek}.mw-parser-output div.reflist-liststyle-lower-roman .references{list-style-type:lower-roman}</style><div>
+<div class="mw-references-wrap mw-references-columns"><ol class="references">
+<li id="cite&#95;note-1"><span class="mw-cite-backlink"><b><a href="#cite_ref-1">^</a></b></span> <span class="reference-text"><style data-mw-deduplicate="TemplateStyles:r1333433106">.mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free.id-lock-free a{background:url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited.id-lock-limited a,.mw-parser-output .id-lock-registration.id-lock-registration a{background:url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription.id-lock-subscription a{background:url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}body:not(.skin-timeless):not(.skin-minerva) .mw-parser-output .id-lock-free a,body:not(.skin-timeless):not(.skin-minerva) .mw-parser-output .id-lock-limited a,body:not(.skin-timeless):not(.skin-minerva) .mw-parser-output .id-lock-registration a,body:not(.skin-timeless):not(.skin-minerva) .mw-parser-output .id-lock-subscription a,body:not(.skin-timeless):not(.skin-minerva) .mw-parser-output .cs1-ws-icon a{background-size:contain;padding:0 1em 0 0}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:var(--color-error,#bf3c2c)}.mw-parser-output .cs1-visible-error{color:var(--color-error,#bf3c2c)}.mw-parser-output .cs1-maint{display:none;color:#085;margin-left:0.3em}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}@media screen{.mw-parser-output .cs1-format{font-size:95%}html.skin-theme-clientpref-night .mw-parser-output .cs1-maint{color:#18911f}}@media screen and (prefers-color-scheme:dark){html.skin-theme-clientpref-os .mw-parser-output .cs1-maint{color:#18911f}}</style><cite class="citation web cs1"><a rel="nofollow" class="external text" href="https://www.hp9845.net/9845/tutorials/hpib/">"The Hewlett-Packard Interface Bus (HP-IB)"</a>.</cite><span title="ctx&#95;ver=Z39.88-2004&amp;rft&#95;val&#95;fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Abook&amp;rft.genre=unknown&amp;rft.btitle=The+Hewlett-Packard+Interface+Bus+%28HP-IB%29&amp;rft&#95;id=https%3A%2F%2Fwww.hp9845.net%2F9845%2Ftutorials%2Fhpib%2F&amp;rfr&#95;id=info%3Asid%2Fen.wikipedia.org%3AGPIB" class="Z3988"></span></span>
+</li>
+<li id="cite&#95;note-2"><span class="mw-cite-backlink"><b><a href="#cite_ref-2">^</a></b></span> <span class="reference-text"><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1333433106" /><cite id="CITEREFNelsonRicci1972" class="citation journal cs1">Nelson, Gerald E.; Ricci, David W. (October 1972). <a rel="nofollow" class="external text" href="http://hparchive.com/Journals/HPJ-1972-10.pdf">"A Practical Interface System for Electronic Instruments"</a> <span class="cs1-format">(PDF)</span>. <i>Hewlett-Packard Journal</i>. <b>24</b> (2): <span class="nowrap">2–</span>7. <q>Controllers: 3260A Marked Card Reader; <a href="/wiki/HP_9800_series#Second_generation" title="HP 9800 series">9820A</a> Calculator (with 11144A Interface Kit)</q></cite><span title="ctx&#95;ver=Z39.88-2004&amp;rft&#95;val&#95;fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Ajournal&amp;rft.genre=article&amp;rft.jtitle=Hewlett-Packard+Journal&amp;rft.atitle=A+Practical+Interface+System+for+Electronic+Instruments&amp;rft.volume=24&amp;rft.issue=2&amp;rft.pages=2-7&amp;rft.date=1972-10&amp;rft.aulast=Nelson&amp;rft.aufirst=Gerald+E.&amp;rft.au=Ricci%2C+David+W.&amp;rft&#95;id=http%3A%2F%2Fhparchive.com%2FJournals%2FHPJ-1972-10.pdf&amp;rfr&#95;id=info%3Asid%2Fen.wikipedia.org%3AGPIB" class="Z3988"></span><br /><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1333433106" /><cite id="CITEREFLoughry1972" class="citation journal cs1">Loughry, Donald C. (October 1972). <a rel="nofollow" class="external text" href="http://hparchive.com/Journals/HPJ-1972-10.pdf">"A Common Digital Interface for Programmable Instruments: The Evolution of a System"</a> <span class="cs1-format">(PDF)</span>. <i>Hewlett-Packard Journal</i>. <b>24</b> (2): <span class="nowrap">8–</span>11.</cite><span title="ctx&#95;ver=Z39.88-2004&amp;rft&#95;val&#95;fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Ajournal&amp;rft.genre=article&amp;rft.jtitle=Hewlett-Packard+Journal&amp;rft.atitle=A+Common+Digital+Interface+for+Programmable+Instruments%3A+The+Evolution+of+a+System&amp;rft.volume=24&amp;rft.issue=2&amp;rft.pages=8-11&amp;rft.date=1972-10&amp;rft.aulast=Loughry&amp;rft.aufirst=Donald+C.&amp;rft&#95;id=http%3A%2F%2Fhparchive.com%2FJournals%2FHPJ-1972-10.pdf&amp;rfr&#95;id=info%3Asid%2Fen.wikipedia.org%3AGPIB" class="Z3988"></span></span>
+</li>
+<li id="cite&#95;note-3"><span class="mw-cite-backlink"><b><a href="#cite_ref-3">^</a></b></span> <span class="reference-text"><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1333433106" /><cite class="citation web cs1"><a rel="nofollow" class="external text" href="https://web.archive.org/web/20191208020546/https://www.agilent.com/about/newsroom/presrel/2014/07jan-gp14001.html">"Agilent Technologies Reveals Name of Electronic Measurement Spin-Off Company"</a>. Agilent. 7 January 2014. Archived from <a rel="nofollow" class="external text" href="http://www.agilent.com/about/newsroom/presrel/2014/07jan-gp14001.html">the original</a> on 8 December 2019<span class="reference-accessdate">. Retrieved <span class="nowrap">19 December</span> 2014</span>.</cite><span title="ctx&#95;ver=Z39.88-2004&amp;rft&#95;val&#95;fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Abook&amp;rft.genre=unknown&amp;rft.btitle=Agilent+Technologies+Reveals+Name+of+Electronic+Measurement+Spin-Off+Company&amp;rft.pub=Agilent&amp;rft.date=2014-01-07&amp;rft&#95;id=http%3A%2F%2Fwww.agilent.com%2Fabout%2Fnewsroom%2Fpresrel%2F2014%2F07jan-gp14001.html&amp;rfr&#95;id=info%3Asid%2Fen.wikipedia.org%3AGPIB" class="Z3988"></span></span>
+</li>
+<li id="cite&#95;note-4"><span class="mw-cite-backlink"><b><a href="#cite_ref-4">^</a></b></span> <span class="reference-text"><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1333433106" /><cite class="citation web cs1"><a rel="nofollow" class="external text" href="https://www.sec.gov/Archives/edgar/data/1601046/000104746914001833/a2218670zex-99_1.htm">"Exhibit 99.1"</a>. <i>www.sec.gov</i>.</cite><span title="ctx&#95;ver=Z39.88-2004&amp;rft&#95;val&#95;fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Ajournal&amp;rft.genre=unknown&amp;rft.jtitle=www.sec.gov&amp;rft.atitle=Exhibit+99.1&amp;rft&#95;id=https%3A%2F%2Fwww.sec.gov%2FArchives%2Fedgar%2Fdata%2F1601046%2F000104746914001833%2Fa2218670zex-99&#95;1.htm&amp;rfr&#95;id=info%3Asid%2Fen.wikipedia.org%3AGPIB" class="Z3988"></span></span>
+</li>
+<li id="cite&#95;note-5"><span class="mw-cite-backlink"><b><a href="#cite_ref-5">^</a></b></span> <span class="reference-text"><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1333433106" /><cite class="citation cs2"><i>IEEE Standard Digital Interface for Programmable Instrumentation</i>, <a href="/wiki/Institute_of_Electrical_and_Electronics_Engineers" title="Institute of Electrical and Electronics Engineers">Institute of Electrical and Electronics Engineers</a>, 1978, <a href="/wiki/Doi_(identifier)" class="mw-redirect" title="Doi (identifier)">doi</a>:<a rel="nofollow" class="external text" href="https://doi.org/10.1109%2FIEEESTD.1978.7425098">10.1109/IEEESTD.1978.7425098</a>, <a href="/wiki/ISBN_(identifier)" class="mw-redirect" title="ISBN (identifier)">ISBN</a>&#160;<a href="/wiki/Special:BookSources/978-1-5044-0366-5" title="Special:BookSources/978-1-5044-0366-5"><bdi>978-1-5044-0366-5</bdi></a>, ANSI/IEEE Std 488-1978</cite><span title="ctx&#95;ver=Z39.88-2004&amp;rft&#95;val&#95;fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Abook&amp;rft.genre=book&amp;rft.btitle=IEEE+Standard+Digital+Interface+for+Programmable+Instrumentation&amp;rft.pub=Institute+of+Electrical+and+Electronics+Engineers&amp;rft.date=1978&amp;rft&#95;id=info%3Adoi%2F10.1109%2FIEEESTD.1978.7425098&amp;rft.isbn=978-1-5044-0366-5&amp;rfr&#95;id=info%3Asid%2Fen.wikipedia.org%3AGPIB" class="Z3988"></span><br /><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1333433106" /><cite class="citation cs2"><i>IEEE Standard Digital Interface for Programmable Instrumentation</i>, <a href="/wiki/Institute_of_Electrical_and_Electronics_Engineers" title="Institute of Electrical and Electronics Engineers">Institute of Electrical and Electronics Engineers</a>, 1987, <a href="/wiki/ISBN_(identifier)" class="mw-redirect" title="ISBN (identifier)">ISBN</a>&#160;<a href="/wiki/Special:BookSources/0-471-62222-2" title="Special:BookSources/0-471-62222-2"><bdi>0-471-62222-2</bdi></a>, ANSI/IEEE Std 488.1-1987</cite><span title="ctx&#95;ver=Z39.88-2004&amp;rft&#95;val&#95;fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Abook&amp;rft.genre=book&amp;rft.btitle=IEEE+Standard+Digital+Interface+for+Programmable+Instrumentation&amp;rft.pub=Institute+of+Electrical+and+Electronics+Engineers&amp;rft.date=1987&amp;rft.isbn=0-471-62222-2&amp;rfr&#95;id=info%3Asid%2Fen.wikipedia.org%3AGPIB" class="Z3988"></span>, p. iii</span>
+</li>
+<li id="cite&#95;note-6"><span class="mw-cite-backlink"><b><a href="#cite_ref-6">^</a></b></span> <span class="reference-text"><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1333433106" /><cite class="citation cs2"><i>IEEE Standard Codes, Formats, Protocols, and Common Commands for Use With IEEE Std 488.1-1987, IEEE Standard Digital Interface for Programmable Instrumentation</i>, <a href="/wiki/Institute_of_Electrical_and_Electronics_Engineers" title="Institute of Electrical and Electronics Engineers">Institute of Electrical and Electronics Engineers</a>, 1992, <a href="/wiki/ISBN_(identifier)" class="mw-redirect" title="ISBN (identifier)">ISBN</a>&#160;<a href="/wiki/Special:BookSources/978-1-55937-238-1" title="Special:BookSources/978-1-55937-238-1"><bdi>978-1-55937-238-1</bdi></a>, IEEE Std 488.2-1992</cite><span title="ctx&#95;ver=Z39.88-2004&amp;rft&#95;val&#95;fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Abook&amp;rft.genre=book&amp;rft.btitle=IEEE+Standard+Codes%2C+Formats%2C+Protocols%2C+and+Common+Commands+for+Use+With+IEEE+Std+488.1-1987%2C+IEEE+Standard+Digital+Interface+for+Programmable+Instrumentation&amp;rft.pub=Institute+of+Electrical+and+Electronics+Engineers&amp;rft.date=1992&amp;rft.isbn=978-1-55937-238-1&amp;rfr&#95;id=info%3Asid%2Fen.wikipedia.org%3AGPIB" class="Z3988"></span></span>
+</li>
+<li id="cite&#95;note-7"><span class="mw-cite-backlink"><b><a href="#cite_ref-7">^</a></b></span> <span class="reference-text">Project Mate in 1985</span>
+</li>
+<li id="cite&#95;note-8"><span class="mw-cite-backlink"><b><a href="#cite_ref-8">^</a></b></span> <span class="reference-text"><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1333433106" /><cite class="citation web cs1"><a rel="nofollow" class="external text" href="http://www.icselect.com/ab_note.html#anchor338658">"GPIB 101, A Tutorial of the GPIB Bus"</a>. ICS Electronics. p.&#160;5, paragraph = SCPI Commands.</cite><span title="ctx&#95;ver=Z39.88-2004&amp;rft&#95;val&#95;fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Abook&amp;rft.genre=unknown&amp;rft.btitle=GPIB+101%2C+A+Tutorial+of+the+GPIB+Bus&amp;rft.pages=5%2C+paragraph+%3D+SCPI+Commands&amp;rft.pub=ICS+Electronics&amp;rft&#95;id=http%3A%2F%2Fwww.icselect.com%2Fab&#95;note.html%23anchor338658&amp;rfr&#95;id=info%3Asid%2Fen.wikipedia.org%3AGPIB" class="Z3988"></span></span>
+</li>
+<li id="cite&#95;note-9"><span class="mw-cite-backlink"><b><a href="#cite_ref-9">^</a></b></span> <span class="reference-text"><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1333433106" /><cite class="citation web cs1"><a rel="nofollow" class="external text" href="http://hparchive.com/Catalogs/HP-Catalog-1991.pdf">"Hewlett Packard Test &amp; Measurement Catalog 1991"</a> <span class="cs1-format">(PDF)</span>. hparchive.com. p.&#160;8, paragraph = SCPI.</cite><span title="ctx&#95;ver=Z39.88-2004&amp;rft&#95;val&#95;fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Abook&amp;rft.genre=unknown&amp;rft.btitle=Hewlett+Packard+Test+%26+Measurement+Catalog+1991&amp;rft.pages=8%2C+paragraph+%3D+SCPI&amp;rft.pub=hparchive.com&amp;rft&#95;id=http%3A%2F%2Fhparchive.com%2FCatalogs%2FHP-Catalog-1991.pdf&amp;rfr&#95;id=info%3Asid%2Fen.wikipedia.org%3AGPIB" class="Z3988"></span></span>
+</li>
+<li id="cite&#95;note-10"><span class="mw-cite-backlink"><b><a href="#cite_ref-10">^</a></b></span> <span class="reference-text"><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1333433106" /><cite class="citation web cs1"><a rel="nofollow" class="external text" href="http://zone.ni.com/devzone/cda/tut/p/id/3419">"History of GPIB"</a>. National Instruments<span class="reference-accessdate">. Retrieved <span class="nowrap">2010-02-06</span></span>. <q>In 1990, the IEEE 488.2 specification included the Standard Commands for Programmable Instrumentation (SCPI) document.</q></cite><span title="ctx&#95;ver=Z39.88-2004&amp;rft&#95;val&#95;fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Abook&amp;rft.genre=unknown&amp;rft.btitle=History+of+GPIB&amp;rft.pub=National+Instruments&amp;rft&#95;id=http%3A%2F%2Fzone.ni.com%2Fdevzone%2Fcda%2Ftut%2Fp%2Fid%2F3419&amp;rfr&#95;id=info%3Asid%2Fen.wikipedia.org%3AGPIB" class="Z3988"></span></span>
+</li>
+<li id="cite&#95;note-11"><span class="mw-cite-backlink"><b><a href="#cite_ref-11">^</a></b></span> <span class="reference-text"><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1333433106" /><cite class="citation web cs1"><a rel="nofollow" class="external text" href="https://web.archive.org/web/20031207052849/http://standards.ieee.org/announcements/pr_4881upgrade.html">"Upgraded Standard Boosts Speed of IEEE 488 Instrument Buses Eightfold"</a>. IEEE. 2003-10-06. Archived from <a rel="nofollow" class="external text" href="http://standards.ieee.org/announcements/pr_4881upgrade.html">the original</a> on December 7, 2003<span class="reference-accessdate">. Retrieved <span class="nowrap">2010-02-06</span></span>.</cite><span title="ctx&#95;ver=Z39.88-2004&amp;rft&#95;val&#95;fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Abook&amp;rft.genre=unknown&amp;rft.btitle=Upgraded+Standard+Boosts+Speed+of+IEEE+488+Instrument+Buses+Eightfold&amp;rft.pub=IEEE&amp;rft.date=2003-10-06&amp;rft&#95;id=http%3A%2F%2Fstandards.ieee.org%2Fannouncements%2Fpr&#95;4881upgrade.html&amp;rfr&#95;id=info%3Asid%2Fen.wikipedia.org%3AGPIB" class="Z3988"></span></span>
+</li>
+<li id="cite&#95;note-12"><span class="mw-cite-backlink"><b><a href="#cite_ref-12">^</a></b></span> <span class="reference-text"><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1333433106" /><cite class="citation pressrelease cs1"><a rel="nofollow" class="external text" href="https://web.archive.org/web/20110610164221/http://grouper.ieee.org/groups/imstc8/488/1/hppress12-97.html">"HP and Other Test and Measurement Companies Urge IEEE to Oppose Revisions of Established IEEE 488 Standard"</a> (Press release). Hewlett-Packard Company. December 1997. Archived from <a rel="nofollow" class="external text" href="http://grouper.ieee.org/groups/imstc8/488/1/hppress12-97.html">the original</a> on 2011-06-10<span class="reference-accessdate">. Retrieved <span class="nowrap">2010-02-16</span></span>.</cite><span title="ctx&#95;ver=Z39.88-2004&amp;rft&#95;val&#95;fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Abook&amp;rft.genre=unknown&amp;rft.btitle=HP+and+Other+Test+and+Measurement+Companies+Urge+IEEE+to+Oppose+Revisions+of+Established+IEEE+488+Standard&amp;rft.pub=Hewlett-Packard+Company&amp;rft.date=1997-12&amp;rft&#95;id=http%3A%2F%2Fgrouper.ieee.org%2Fgroups%2Fimstc8%2F488%2F1%2Fhppress12-97.html&amp;rfr&#95;id=info%3Asid%2Fen.wikipedia.org%3AGPIB" class="Z3988"></span></span>
+</li>
+<li id="cite&#95;note-13"><span class="mw-cite-backlink"><b><a href="#cite_ref-13">^</a></b></span> <span class="reference-text"><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1333433106" /><cite class="citation web cs1"><a rel="nofollow" class="external text" href="https://web.archive.org/web/20100428090906/http://grouper.ieee.org/groups/imstc8/488/1/">"P488.1 Project Home"</a>. IEEE. Archived from <a rel="nofollow" class="external text" href="http://grouper.ieee.org/groups/imstc8/488/1/">the original</a> on 2010-04-28<span class="reference-accessdate">. Retrieved <span class="nowrap">2010-02-16</span></span>.</cite><span title="ctx&#95;ver=Z39.88-2004&amp;rft&#95;val&#95;fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Abook&amp;rft.genre=unknown&amp;rft.btitle=P488.1+Project+Home&amp;rft.pub=IEEE&amp;rft&#95;id=http%3A%2F%2Fgrouper.ieee.org%2Fgroups%2Fimstc8%2F488%2F1%2F&amp;rfr&#95;id=info%3Asid%2Fen.wikipedia.org%3AGPIB" class="Z3988"></span></span>
+</li>
+<li id="cite&#95;note-14"><span class="mw-cite-backlink"><b><a href="#cite_ref-14">^</a></b></span> <span class="reference-text"><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1333433106" /><cite class="citation book cs1"><i>IEC/IEEE Standard for Higher Performance Protocol for the Standard Digital Interface for Programmable Instrumentation - Part 1: General (Adoption of IEEE Std 488.1-2003)</i>. IEEE. <a href="/wiki/Doi_(identifier)" class="mw-redirect" title="Doi (identifier)">doi</a>:<a rel="nofollow" class="external text" href="https://doi.org/10.1109%2FIEEESTD.2004.95749">10.1109/IEEESTD.2004.95749</a>. <a href="/wiki/ISBN_(identifier)" class="mw-redirect" title="ISBN (identifier)">ISBN</a>&#160;<a href="/wiki/Special:BookSources/978-0-7381-4536-5" title="Special:BookSources/978-0-7381-4536-5"><bdi>978-0-7381-4536-5</bdi></a>.</cite><span title="ctx&#95;ver=Z39.88-2004&amp;rft&#95;val&#95;fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Abook&amp;rft.genre=book&amp;rft.btitle=IEC%2FIEEE+Standard+for+Higher+Performance+Protocol+for+the+Standard+Digital+Interface+for+Programmable+Instrumentation+-+Part+1%3A+General+%28Adoption+of+IEEE+Std+488.1-2003%29&amp;rft.pub=IEEE&amp;rft&#95;id=info%3Adoi%2F10.1109%2FIEEESTD.2004.95749&amp;rft.isbn=978-0-7381-4536-5&amp;rfr&#95;id=info%3Asid%2Fen.wikipedia.org%3AGPIB" class="Z3988"></span></span>
+</li>
+<li id="cite&#95;note-15"><span class="mw-cite-backlink"><b><a href="#cite_ref-15">^</a></b></span> <span class="reference-text"><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1333433106" /><cite class="citation book cs1"><i>Standard Digital Interface for Programmable Instrumentation- Part 2: Codes, Formats, Protocols and Common Commands (Adoption of (IEEE Std 488.2-1992)</i>. IEEE. <a href="/wiki/Doi_(identifier)" class="mw-redirect" title="Doi (identifier)">doi</a>:<a rel="nofollow" class="external text" href="https://doi.org/10.1109%2FIEEESTD.2004.95390">10.1109/IEEESTD.2004.95390</a>. <a href="/wiki/Hdl_(identifier)" class="mw-redirect" title="Hdl (identifier)">hdl</a>:<a rel="nofollow" class="external text" href="https://hdl.handle.net/11059%2F14380">11059/14380</a>. <a href="/wiki/ISBN_(identifier)" class="mw-redirect" title="ISBN (identifier)">ISBN</a>&#160;<a href="/wiki/Special:BookSources/978-0-7381-4100-8" title="Special:BookSources/978-0-7381-4100-8"><bdi>978-0-7381-4100-8</bdi></a>.</cite><span title="ctx&#95;ver=Z39.88-2004&amp;rft&#95;val&#95;fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Abook&amp;rft.genre=book&amp;rft.btitle=Standard+Digital+Interface+for+Programmable+Instrumentation-+Part+2%3A+Codes%2C+Formats%2C+Protocols+and+Common+Commands+%28Adoption+of+%28IEEE+Std+488.2-1992%29&amp;rft.pub=IEEE&amp;rft&#95;id=info%3Ahdl%2F11059%2F14380&amp;rft&#95;id=info%3Adoi%2F10.1109%2FIEEESTD.2004.95390&amp;rft.isbn=978-0-7381-4100-8&amp;rfr&#95;id=info%3Asid%2Fen.wikipedia.org%3AGPIB" class="Z3988"></span></span>
+</li>
+<li id="cite&#95;note-16"><span class="mw-cite-backlink"><b><a href="#cite_ref-16">^</a></b></span> <span class="reference-text"><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1333433106" /><cite class="citation web cs1"><a rel="nofollow" class="external text" href="http://www.iec.ch/cgi-bin/procgi.pl/www/iecwww.p?header=IEC&amp;search=replaced&amp;wwwprog=sea22.p">"Replaced or Withdrawn Publications"</a>. IEC<span class="reference-accessdate">. Retrieved <span class="nowrap">2010-02-06</span></span>.</cite><span title="ctx&#95;ver=Z39.88-2004&amp;rft&#95;val&#95;fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Abook&amp;rft.genre=unknown&amp;rft.btitle=Replaced+or+Withdrawn+Publications&amp;rft.pub=IEC&amp;rft&#95;id=http%3A%2F%2Fwww.iec.ch%2Fcgi-bin%2Fprocgi.pl%2Fwww%2Fiecwww.p%3Fheader%3DIEC%26search%3Dreplaced%26wwwprog%3Dsea22.p&amp;rfr&#95;id=info%3Asid%2Fen.wikipedia.org%3AGPIB" class="Z3988"></span><span class="cs1-maint citation-comment"><code class="cs1-code">{{<a href="/wiki/Template:Cite_web" title="Template:Cite web">cite web</a>}}</code>:  CS1 maint: deprecated archival service (<a href="/wiki/Category:CS1_maint:_deprecated_archival_service" title="Category:CS1 maint: deprecated archival service">link</a>)</span></span>
+</li>
+<li id="cite&#95;note-17"><span class="mw-cite-backlink"><b><a href="#cite_ref-17">^</a></b></span> <span class="reference-text"><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1333433106" /><cite id="CITEREFPosch2025" class="citation web cs1">Posch, Maya (2025-12-16). <a rel="nofollow" class="external text" href="https://hackaday.com/2025/12/16/after-decades-linux-finally-gains-stable-gpib-support/">"After Decades, Linux Finally Gains Stable GPIB Support"</a>. <i><a href="/wiki/Hackaday" title="Hackaday">Hackaday</a></i><span class="reference-accessdate">. Retrieved <span class="nowrap">2026-03-15</span></span>.</cite><span title="ctx&#95;ver=Z39.88-2004&amp;rft&#95;val&#95;fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Ajournal&amp;rft.genre=unknown&amp;rft.jtitle=Hackaday&amp;rft.atitle=After+Decades%2C+Linux+Finally+Gains+Stable+GPIB+Support&amp;rft.date=2025-12-16&amp;rft.aulast=Posch&amp;rft.aufirst=Maya&amp;rft&#95;id=https%3A%2F%2Fhackaday.com%2F2025%2F12%2F16%2Fafter-decades-linux-finally-gains-stable-gpib-support%2F&amp;rfr&#95;id=info%3Asid%2Fen.wikipedia.org%3AGPIB" class="Z3988"></span></span>
+</li>
+<li id="cite&#95;note-NI-488.2-18"><span class="mw-cite-backlink"><b><a href="#cite_ref-NI-488.2_18-0">^</a></b></span> <span class="reference-text"><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1333433106" /><cite class="citation book cs1"><a rel="nofollow" class="external text" href="http://www.ni.com/pdf/manuals/370428c.pdf">"GPIB Addressing"</a> <span class="cs1-format">(PDF)</span>. <i>NI-488.2 User Manual</i>. National Instruments Corporation. February 2005. p.&#160;A-2. NI P/N 370428C-01<span class="reference-accessdate">. Retrieved <span class="nowrap">2010-02-16</span></span>. <q>The primary address is a number in the range 0 to 30.</q></cite><span title="ctx&#95;ver=Z39.88-2004&amp;rft&#95;val&#95;fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Abook&amp;rft.genre=bookitem&amp;rft.atitle=GPIB+Addressing&amp;rft.btitle=NI-488.2+User+Manual&amp;rft.pages=A-2&amp;rft.pub=National+Instruments+Corporation&amp;rft.date=2005-02&amp;rft&#95;id=http%3A%2F%2Fwww.ni.com%2Fpdf%2Fmanuals%2F370428c.pdf&amp;rfr&#95;id=info%3Asid%2Fen.wikipedia.org%3AGPIB" class="Z3988"></span></span>
+</li>
+<li id="cite&#95;note-Agilent&#95;82350B-19"><span class="mw-cite-backlink"><b><a href="#cite_ref-Agilent_82350B_19-0">^</a></b></span> <span class="reference-text"><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1333433106" /><cite class="citation book cs1"><a rel="nofollow" class="external text" href="http://literature.cdn.keysight.com/litweb/pdf/82350-90004.pdf">"Table 1-1: 82350 GPIB interface card configuration parameters"</a> <span class="cs1-format">(PDF)</span>. <i>Agilent 82350B PCI GPIB Interface: Installation and Configuration Guide</i>. Agilent Technologies. 2009-07-20. p.&#160;26. Agilent P/N 82350-90004<span class="reference-accessdate">. Retrieved <span class="nowrap">2010-02-16</span></span>. <q>any address in the range 0 - 30, inclusive, may be used</q></cite><span title="ctx&#95;ver=Z39.88-2004&amp;rft&#95;val&#95;fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Abook&amp;rft.genre=bookitem&amp;rft.atitle=Table+1-1%3A+82350+GPIB+interface+card+configuration+parameters&amp;rft.btitle=Agilent+82350B+PCI+GPIB+Interface%3A+Installation+and+Configuration+Guide&amp;rft.pages=26&amp;rft.pub=Agilent+Technologies&amp;rft.date=2009-07-20&amp;rft&#95;id=http%3A%2F%2Fliterature.cdn.keysight.com%2Flitweb%2Fpdf%2F82350-90004.pdf&amp;rfr&#95;id=info%3Asid%2Fen.wikipedia.org%3AGPIB" class="Z3988"></span></span>
+</li>
+<li id="cite&#95;note-20"><span class="mw-cite-backlink"><b><a href="#cite_ref-20">^</a></b></span> <span class="reference-text"><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1333433106" /><cite class="citation web cs1"><a rel="nofollow" class="external text" href="http://zone.ni.com/devzone/cda/tut/p/id/2761">"GPIB Instrument Control Tutorial"</a>. National Instruments. 2009-08-24<span class="reference-accessdate">. Retrieved <span class="nowrap">2010-02-16</span></span>. <q>connected in either a daisy-chain or star topology</q></cite><span title="ctx&#95;ver=Z39.88-2004&amp;rft&#95;val&#95;fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Abook&amp;rft.genre=unknown&amp;rft.btitle=GPIB+Instrument+Control+Tutorial&amp;rft.pub=National+Instruments&amp;rft.date=2009-08-24&amp;rft&#95;id=http%3A%2F%2Fzone.ni.com%2Fdevzone%2Fcda%2Ftut%2Fp%2Fid%2F2761&amp;rfr&#95;id=info%3Asid%2Fen.wikipedia.org%3AGPIB" class="Z3988"></span></span>
+</li>
+<li id="cite&#95;note-21"><span class="mw-cite-backlink"><b><a href="#cite_ref-21">^</a></b></span> <span class="reference-text"><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1333433106" /><cite class="citation book cs1"><a rel="nofollow" class="external text" href="https://web.archive.org/web/20081202204121/http://www.ni.com/pdf/manuals/370428c.pdf"><i>NI-488.2 User Manual</i></a> <span class="cs1-format">(PDF)</span>. National Instruments Corporation. February 2005. p.&#160;A-1. NI P/N 370428C-01. Archived from <a rel="nofollow" class="external text" href="http://www.ni.com/pdf/manuals/370428c.pdf">the original</a> <span class="cs1-format">(PDF)</span> on 2008-12-02<span class="reference-accessdate">. Retrieved <span class="nowrap">2010-02-16</span></span>.</cite><span title="ctx&#95;ver=Z39.88-2004&amp;rft&#95;val&#95;fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Abook&amp;rft.genre=book&amp;rft.btitle=NI-488.2+User+Manual&amp;rft.pages=A-1&amp;rft.pub=National+Instruments+Corporation&amp;rft.date=2005-02&amp;rft&#95;id=http%3A%2F%2Fwww.ni.com%2Fpdf%2Fmanuals%2F370428c.pdf&amp;rfr&#95;id=info%3Asid%2Fen.wikipedia.org%3AGPIB" class="Z3988"></span></span>
+</li>
+<li id="cite&#95;note-22"><span class="mw-cite-backlink"><b><a href="#cite_ref-22">^</a></b></span> <span class="reference-text"><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1333433106" /><cite class="citation book cs1"><a rel="nofollow" class="external text" href="http://www.ni.com/pdf/manuals/370428c.pdf">"Handshake Lines"</a> <span class="cs1-format">(PDF)</span>. <i>NI-488.2 User Manual</i>. National Instruments Corporation. February 2005. p.&#160;A-3. NI P/N 370428C-01<span class="reference-accessdate">. Retrieved <span class="nowrap">2010-02-16</span></span>.</cite><span title="ctx&#95;ver=Z39.88-2004&amp;rft&#95;val&#95;fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Abook&amp;rft.genre=bookitem&amp;rft.atitle=Handshake+Lines&amp;rft.btitle=NI-488.2+User+Manual&amp;rft.pages=A-3&amp;rft.pub=National+Instruments+Corporation&amp;rft.date=2005-02&amp;rft&#95;id=http%3A%2F%2Fwww.ni.com%2Fpdf%2Fmanuals%2F370428c.pdf&amp;rfr&#95;id=info%3Asid%2Fen.wikipedia.org%3AGPIB" class="Z3988"></span></span>
+</li>
+<li id="cite&#95;note-23"><span class="mw-cite-backlink"><b><a href="#cite_ref-23">^</a></b></span> <span class="reference-text"><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1333433106" /><cite class="citation web cs1"><a rel="nofollow" class="external text" href="http://zone.ni.com/devzone/cda/tut/p/id/4552">"Using HS488 to Improve GPIB System Performance"</a>. National Instruments Corporation. 30 March 2009<span class="reference-accessdate">. Retrieved <span class="nowrap">2010-02-16</span></span>.</cite><span title="ctx&#95;ver=Z39.88-2004&amp;rft&#95;val&#95;fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Abook&amp;rft.genre=unknown&amp;rft.btitle=Using+HS488+to+Improve+GPIB+System+Performance&amp;rft.pub=National+Instruments+Corporation&amp;rft.date=2009-03-30&amp;rft&#95;id=http%3A%2F%2Fzone.ni.com%2Fdevzone%2Fcda%2Ftut%2Fp%2Fid%2F4552&amp;rfr&#95;id=info%3Asid%2Fen.wikipedia.org%3AGPIB" class="Z3988"></span></span>
+</li>
+<li id="cite&#95;note-24"><span class="mw-cite-backlink"><b><a href="#cite_ref-24">^</a></b></span> <span class="reference-text"><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1333433106" /><cite class="citation book cs1"><a rel="nofollow" class="external text" href="http://bitsavers.org/pdf/hp/hpib/TutorialDescrOfHPIB.pdf">"Mechanical Aspects"</a> <span class="cs1-format">(PDF)</span>. <i>Tutorial Description of the Hewlett-Packard Interface Bus</i>. Hewlett-Packard. p.&#160;28<span class="reference-accessdate">. Retrieved <span class="nowrap">2022-06-13</span></span>. <q>Some existing cables use English threads (6-32UNK).</q></cite><span title="ctx&#95;ver=Z39.88-2004&amp;rft&#95;val&#95;fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Abook&amp;rft.genre=bookitem&amp;rft.atitle=Mechanical+Aspects&amp;rft.btitle=Tutorial+Description+of+the+Hewlett-Packard+Interface+Bus&amp;rft.pages=28&amp;rft.pub=Hewlett-Packard&amp;rft&#95;id=http%3A%2F%2Fbitsavers.org%2Fpdf%2Fhp%2Fhpib%2FTutorialDescrOfHPIB.pdf&amp;rfr&#95;id=info%3Asid%2Fen.wikipedia.org%3AGPIB" class="Z3988"></span></span>
+</li>
+<li id="cite&#95;note-25"><span class="mw-cite-backlink"><b><a href="#cite_ref-25">^</a></b></span> <span class="reference-text"><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1333433106" /><cite class="citation cs2"><i>IEEE Standard Digital Interface for Programmable Instrumentation</i>, <a href="/wiki/Institute_of_Electrical_and_Electronics_Engineers" title="Institute of Electrical and Electronics Engineers">Institute of Electrical and Electronics Engineers</a>, 1987, p.&#160;v, <a href="/wiki/ISBN_(identifier)" class="mw-redirect" title="ISBN (identifier)">ISBN</a>&#160;<a href="/wiki/Special:BookSources/978-0-471-62222-2" title="Special:BookSources/978-0-471-62222-2"><bdi>978-0-471-62222-2</bdi></a>, ANSI/IEEE Std 488.1-1987, <q>The "helpful note" on metric threads found in previous editions has been deleted since metric thread use is common IEEE 488 practice. Consequently, the recommendation to coat such parts in black material to call attention to metric threads is also considered unnecessary.</q></cite><span title="ctx&#95;ver=Z39.88-2004&amp;rft&#95;val&#95;fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Abook&amp;rft.genre=book&amp;rft.btitle=IEEE+Standard+Digital+Interface+for+Programmable+Instrumentation&amp;rft.pages=v&amp;rft.pub=Institute+of+Electrical+and+Electronics+Engineers&amp;rft.date=1987&amp;rft.isbn=978-0-471-62222-2&amp;rfr&#95;id=info%3Asid%2Fen.wikipedia.org%3AGPIB" class="Z3988"></span></span>
+</li>
+<li id="cite&#95;note-26"><span class="mw-cite-backlink"><b><a href="#cite_ref-26">^</a></b></span> <span class="reference-text"><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1333433106" /><cite id="CITEREFTilden1983" class="citation cs2">Tilden, Mark D. (1983), <a rel="nofollow" class="external text" href="http://www.mirrorservice.org/sites/www.bitsavers.org/pdf/tektronix/404x/070-4696-00_4041_GPIB_Programming_Guide_Sep1983.pdf">"Appendix A: Subsets Describe Interface Functions"</a> <span class="cs1-format">(PDF)</span>, <i>4041 GPIB Programming Guide</i>, Tektronix, Inc., pp.&#160;<span class="nowrap">113–</span>115</cite><span title="ctx&#95;ver=Z39.88-2004&amp;rft&#95;val&#95;fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Abook&amp;rft.genre=bookitem&amp;rft.atitle=Appendix+A%3A+Subsets+Describe+Interface+Functions&amp;rft.btitle=4041+GPIB+Programming+Guide&amp;rft.pages=113-115&amp;rft.pub=Tektronix%2C+Inc.&amp;rft.date=1983&amp;rft.aulast=Tilden&amp;rft.aufirst=Mark+D.&amp;rft&#95;id=http%3A%2F%2Fwww.mirrorservice.org%2Fsites%2Fwww.bitsavers.org%2Fpdf%2Ftektronix%2F404x%2F070-4696-00&#95;4041&#95;GPIB&#95;Programming&#95;Guide&#95;Sep1983.pdf&amp;rfr&#95;id=info%3Asid%2Fen.wikipedia.org%3AGPIB" class="Z3988"></span> <span class="cs1-visible-error citation-comment"><code class="cs1-code">{{<a href="/wiki/Template:Citation" title="Template:Citation">citation</a>}}</code>: </span><span class="cs1-visible-error citation-comment">Cite uses generic title (<a href="/wiki/Help:CS1_errors#generic_title" title="Help:CS1 errors">help</a>)</span></span>
+</li>
+<li id="cite&#95;note-27"><span class="mw-cite-backlink"><b><a href="#cite_ref-27">^</a></b></span> <span class="reference-text"><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1333433106" /><cite class="citation web cs1"><a rel="nofollow" class="external text" href="http://www.hpmuseum.net/display_item.php?hw=463">"HP 98135A HP-IB Interface 9815"</a>. <i>HP Computer Museum</i><span class="reference-accessdate">. Retrieved <span class="nowrap">2010-02-06</span></span>.</cite><span title="ctx&#95;ver=Z39.88-2004&amp;rft&#95;val&#95;fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Ajournal&amp;rft.genre=unknown&amp;rft.jtitle=HP+Computer+Museum&amp;rft.atitle=HP+98135A+HP-IB+Interface+9815&amp;rft&#95;id=http%3A%2F%2Fwww.hpmuseum.net%2Fdisplay&#95;item.php%3Fhw%3D463&amp;rfr&#95;id=info%3Asid%2Fen.wikipedia.org%3AGPIB" class="Z3988"></span></span>
+</li>
+<li id="cite&#95;note-28"><span class="mw-cite-backlink"><b><a href="#cite_ref-28">^</a></b></span> <span class="reference-text"><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1333433106" /><cite class="citation web cs1"><a rel="nofollow" class="external text" href="http://www.hpmuseum.net/display_item.php?hw=522">"59310A HP-IB Interface"</a>. <i>HP Computer Museum</i><span class="reference-accessdate">. Retrieved <span class="nowrap">2010-02-06</span></span>. <q>HP-IB interface for HP1000 and HP2000 computers</q></cite><span title="ctx&#95;ver=Z39.88-2004&amp;rft&#95;val&#95;fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Ajournal&amp;rft.genre=unknown&amp;rft.jtitle=HP+Computer+Museum&amp;rft.atitle=59310A+HP-IB+Interface&amp;rft&#95;id=http%3A%2F%2Fwww.hpmuseum.net%2Fdisplay&#95;item.php%3Fhw%3D522&amp;rfr&#95;id=info%3Asid%2Fen.wikipedia.org%3AGPIB" class="Z3988"></span></span>
+</li>
+<li id="cite&#95;note-29"><span class="mw-cite-backlink"><b><a href="#cite_ref-29">^</a></b></span> <span class="reference-text"><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1333433106" /><cite class="citation web cs1"><a rel="nofollow" class="external text" href="http://www.hpmuseum.net/display_item.php?hw=786">"27113A HP-IB Interface"</a>. <i>HP Computer Museum</i><span class="reference-accessdate">. Retrieved <span class="nowrap">2010-02-06</span></span>. <q>CIO HP-IB interface for 3000 Series 900</q></cite><span title="ctx&#95;ver=Z39.88-2004&amp;rft&#95;val&#95;fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Ajournal&amp;rft.genre=unknown&amp;rft.jtitle=HP+Computer+Museum&amp;rft.atitle=27113A+HP-IB+Interface&amp;rft&#95;id=http%3A%2F%2Fwww.hpmuseum.net%2Fdisplay&#95;item.php%3Fhw%3D786&amp;rfr&#95;id=info%3Asid%2Fen.wikipedia.org%3AGPIB" class="Z3988"></span></span>
+</li>
+<li id="cite&#95;note-30"><span class="mw-cite-backlink"><b><a href="#cite_ref-30">^</a></b></span> <span class="reference-text"><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1333433106" /><cite id="CITEREFBagnall2006" class="citation book cs1">Bagnall, Brian (2006). <i>On the Edge: The Spectacular Rise and Fall of Commodore</i>. Variant Press. p.&#160;221. <a href="/wiki/ISBN_(identifier)" class="mw-redirect" title="ISBN (identifier)">ISBN</a>&#160;<a href="/wiki/Special:BookSources/0-9738649-0-7" title="Special:BookSources/0-9738649-0-7"><bdi>0-9738649-0-7</bdi></a>. <a href="/wiki/OCLC_(identifier)" class="mw-redirect" title="OCLC (identifier)">OCLC</a>&#160;<a rel="nofollow" class="external text" href="https://search.worldcat.org/oclc/761384138">761384138</a>.</cite><span title="ctx&#95;ver=Z39.88-2004&amp;rft&#95;val&#95;fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Abook&amp;rft.genre=book&amp;rft.btitle=On+the+Edge%3A+The+Spectacular+Rise+and+Fall+of+Commodore&amp;rft.pages=221&amp;rft.pub=Variant+Press&amp;rft.date=2006&amp;rft&#95;id=info%3Aoclcnum%2F761384138&amp;rft.isbn=0-9738649-0-7&amp;rft.aulast=Bagnall&amp;rft.aufirst=Brian&amp;rfr&#95;id=info%3Asid%2Fen.wikipedia.org%3AGPIB" class="Z3988"></span></span>
+</li>
+<li id="cite&#95;note-31"><span class="mw-cite-backlink"><b><a href="#cite_ref-31">^</a></b></span> <span class="reference-text">Commodore drawing for VIC-1112 - Drawing no. 1110010 Rev:A</span>
+</li>
+<li id="cite&#95;note-32"><span class="mw-cite-backlink"><b><a href="#cite_ref-32">^</a></b></span> <span class="reference-text"><a rel="nofollow" class="external text" href="http://www.zimmers.net/anonftp/pub/cbm/schematics/cartridges/c64/ieee-488/index.html">Reverse-engineered schematics for Commodore C64 IEEE interface</a></span>
+</li>
+<li id="cite&#95;note-33"><span class="mw-cite-backlink"><b><a href="#cite_ref-33">^</a></b></span> <span class="reference-text"><a rel="nofollow" class="external free" href="http://www.zimmers.net/anonftp/pub/cbm/schematics/cartridges/c64/ieee-488/index.html">http://www.zimmers.net/anonftp/pub/cbm/schematics/cartridges/c64/ieee-488/index.html</a> Link to schematic for one such converter.</span>
+</li>
+<li id="cite&#95;note-34"><span class="mw-cite-backlink"><b><a href="#cite_ref-34">^</a></b></span> <span class="reference-text">Early devices might respond to an <code>ID</code> command with an identification string; later standards had devices respond to the <code>*ID</code> command.</span>
+</li>
+</ol></div></div>
+<div class="mw-heading mw-heading2"><h2 id="External_links">External links</h2><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/w/index.php?title=GPIB&amp;action=edit&amp;section=9" title="Edit section: External links"><span>edit</span></a><span class="mw-editsection-bracket">]</span></span></div>
+<div class="mw-heading mw-heading3"><h3 id="Part_1_Specifications">Part 1 Specifications</h3><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/w/index.php?title=GPIB&amp;action=edit&amp;section=10" title="Edit section: Part 1 Specifications"><span>edit</span></a><span class="mw-editsection-bracket">]</span></span></div>
+<ul><li><a rel="nofollow" class="external text" href="https://ieeexplore.ieee.org/document/1405845">IEEE/IEC 60488-1-2004</a>, 158 page PDF file, costs <a rel="nofollow" class="external text" href="https://store.accuristech.com/standards/ieee-iec-60488-1-2004?product_id=1779369">USD423</a> in 2026</li></ul>
+<div class="mw-heading mw-heading3"><h3 id="Part_2_Specifications">Part 2 Specifications</h3><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/w/index.php?title=GPIB&amp;action=edit&amp;section=11" title="Edit section: Part 2 Specifications"><span>edit</span></a><span class="mw-editsection-bracket">]</span></span></div>
+<ul><li><a rel="nofollow" class="external text" href="https://ieeexplore.ieee.org/document/8705775">IEEE 488.2-1992</a>, 254 page PDF file, costs <a rel="nofollow" class="external text" href="https://www.techstreet.com/ieee/standards/ieee-488-2-1992?product_id=1888634">USD56</a> in 2026 <i>(superseded by IEEE/IEC 60488-2-2004)</i></li>
+<li><a rel="nofollow" class="external text" href="https://ieeexplore.ieee.org/document/1352831">IEEE/IEC 60488-2-2004</a>, 264 page PDF file, costs <a rel="nofollow" class="external text" href="https://www.techstreet.com/ieee/standards/ieee-iec-60488-2-2004?product_id=1779348">USD404</a> in 2026</li></ul>
+<div class="mw-heading mw-heading3"><h3 id="Other">Other</h3><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/w/index.php?title=GPIB&amp;action=edit&amp;section=12" title="Edit section: Other"><span>edit</span></a><span class="mw-editsection-bracket">]</span></span></div>
+<ul><li><a rel="nofollow" class="external text" href="https://www.electronics-notes.com/articles/test-methods/gpib-ieee-488-bus/what-is-gpib-ieee488.php">GPIB / IEEE 488 multiple page tutorial</a></li></ul>
+<div class="navbox-styles"><style data-mw-deduplicate="TemplateStyles:r1374427404">.mw-parser-output .hlist dl,.mw-parser-output .hlist ol,.mw-parser-output .hlist ul{margin:0;padding:0}.mw-parser-output .hlist dd,.mw-parser-output .hlist dt,.mw-parser-output .hlist li{margin:0;display:inline}.mw-parser-output .hlist.inline,.mw-parser-output .hlist.inline dl,.mw-parser-output .hlist.inline ol,.mw-parser-output .hlist.inline ul,.mw-parser-output .hlist dl dl,.mw-parser-output .hlist dl ol,.mw-parser-output .hlist dl ul,.mw-parser-output .hlist ol dl,.mw-parser-output .hlist ol ol,.mw-parser-output .hlist ol ul,.mw-parser-output .hlist ul dl,.mw-parser-output .hlist ul ol,.mw-parser-output .hlist ul ul{display:inline}.mw-parser-output .hlist .mw-empty-li{display:none}.mw-parser-output .hlist dt::after{content:": "}.mw-parser-output .hlist dd::after,.mw-parser-output .hlist li::after{content:"\a0 · ";font-weight:bold}.mw-parser-output .hlist dd:last-child::after,.mw-parser-output .hlist dt:last-child::after,.mw-parser-output .hlist li:last-child::after{content:none}.mw-parser-output .hlist dd dd:first-child::before,.mw-parser-output .hlist dd dt:first-child::before,.mw-parser-output .hlist dd li:first-child::before,.mw-parser-output .hlist dt dd:first-child::before,.mw-parser-output .hlist dt dt:first-child::before,.mw-parser-output .hlist dt li:first-child::before,.mw-parser-output .hlist li dd:first-child::before,.mw-parser-output .hlist li dt:first-child::before,.mw-parser-output .hlist li li:first-child::before{content:" (";font-weight:normal}.mw-parser-output .hlist dd dd:last-child::after,.mw-parser-output .hlist dd dt:last-child::after,.mw-parser-output .hlist dd li:last-child::after,.mw-parser-output .hlist dt dd:last-child::after,.mw-parser-output .hlist dt dt:last-child::after,.mw-parser-output .hlist dt li:last-child::after,.mw-parser-output .hlist li dd:last-child::after,.mw-parser-output .hlist li dt:last-child::after,.mw-parser-output .hlist li li:last-child::after{content:")";font-weight:normal}.mw-parser-output .hlist ol{counter-reset:listitem}.mw-parser-output .hlist ol>li{counter-increment:listitem}.mw-parser-output .hlist ol>li::before{content:" "counter(listitem)"\a0 "}.mw-parser-output .hlist dd ol>li:first-child::before,.mw-parser-output .hlist dt ol>li:first-child::before,.mw-parser-output .hlist li ol>li:first-child::before{content:" ("counter(listitem)"\a0 "}</style><style data-mw-deduplicate="TemplateStyles:r1377086236">.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox-styles+.navbox,.mw-parser-output .navbox+span.mw-empty-elt+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd;color:inherit}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf;color:inherit}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf;color:inherit}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff;color:inherit}.mw-parser-output .navbox-even{background-color:#f7f7f7;color:inherit}.mw-parser-output .navbox-odd{background-color:transparent;color:inherit}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}body.skin--responsive .mw-parser-output .navbox-image img{max-width:none!important}@media print{body.ns-0 .mw-parser-output .navbox{display:none!important}}</style></div><div role="navigation" class="navbox" aria-labelledby="Technical&#95;and&#95;de&#95;facto&#95;standards&#95;for&#95;wired&#95;computer&#95;buses3884" style="padding:3px"><table class="nowraplinks mw-collapsible autocollapse navbox-inner" style="border-spacing:0;background:transparent;color:inherit"><tbody><tr><th scope="col" class="navbox-title" colspan="2"><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1374427404" /><style data-mw-deduplicate="TemplateStyles:r1239400231">.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}html.skin-theme-clientpref-night .mw-parser-output .navbar li a abbr{color:var(--color-base)!important}@media(prefers-color-scheme:dark){html.skin-theme-clientpref-os .mw-parser-output .navbar li a abbr{color:var(--color-base)!important}}@media print{.mw-parser-output .navbar{display:none!important}}</style><div class="navbar plainlinks hlist navbar-mini"><ul><li class="nv-view"><a href="/wiki/Template:Computer_bus" title="Template:Computer bus"><abbr title="View this template">v</abbr></a></li><li class="nv-talk"><a href="/wiki/Template_talk:Computer_bus" title="Template talk:Computer bus"><abbr title="Discuss this template">t</abbr></a></li><li class="nv-edit"><a href="/wiki/Special:EditPage/Template:Computer_bus" title="Special:EditPage/Template:Computer bus"><abbr title="Edit this template">e</abbr></a></li></ul></div><div id="Technical&#95;and&#95;de&#95;facto&#95;standards&#95;for&#95;wired&#95;computer&#95;buses3884" style="font-size:114%;margin:0 4em"><a href="/wiki/Technical_standard" title="Technical standard">Technical</a> and <a href="/wiki/De_facto_standard" title="De facto standard"><i>de facto</i> standards</a> for <a href="/wiki/Wired_communication" title="Wired communication">wired</a> <a href="/wiki/Bus_(computing)" title="Bus (computing)">computer buses</a></div></th></tr><tr><th scope="row" class="navbox-group" style="width:1%">General</th><td class="navbox-list-with-group navbox-list navbox-odd hlist" style="width:100%;padding:0"><div style="padding:0 0.25em">
+<ul><li><a href="/wiki/System_bus" title="System bus">System bus</a></li>
+<li><a href="/wiki/Front-side_bus" title="Front-side bus">Front-side bus</a></li>
+<li><a href="/wiki/Back-side_bus" title="Back-side bus">Back-side bus</a></li>
+<li><a href="/wiki/Daisy_chain_(electrical_engineering)" title="Daisy chain (electrical engineering)">Daisy chain</a></li>
+<li><a href="/wiki/Control_bus" title="Control bus">Control bus</a></li>
+<li><a href="/wiki/Address_bus" class="mw-redirect" title="Address bus">Address bus</a></li>
+<li><a href="/wiki/Bus_contention" title="Bus contention">Bus contention</a></li>
+<li><a href="/wiki/Bus_mastering" title="Bus mastering">Bus mastering</a></li>
+<li><a href="/wiki/Network_on_a_chip" title="Network on a chip">Network on a chip</a></li>
+<li><a href="/wiki/Plug_and_play" title="Plug and play">Plug and play</a></li>
+<li><a href="/wiki/Double_data_rate" title="Double data rate">Double data rate</a></li>
+<li><a href="/wiki/Quad_data_rate" title="Quad data rate">Quad data rate</a></li>
+<li><a href="/wiki/List_of_interface_bit_rates#Computer_buses" title="List of interface bit rates">List of bus bandwidths</a></li></ul>
+</div></td></tr><tr><th scope="row" class="navbox-group" style="width:1%">Standards</th><td class="navbox-list-with-group navbox-list navbox-even hlist" style="width:100%;padding:0"><div style="padding:0 0.25em">
+<ul><li><a href="/wiki/SS-50_bus" title="SS-50 bus">SS-50 bus</a></li>
+<li><a href="/wiki/S-100_bus" title="S-100 bus">S-100 bus</a></li>
+<li><a href="/wiki/Multibus" title="Multibus">Multibus</a></li>
+<li><a href="/wiki/Unibus" title="Unibus">Unibus</a></li>
+<li><a href="/wiki/VAXBI" title="VAXBI">VAXBI</a></li>
+<li><a href="/wiki/MBus_(SPARC)" title="MBus (SPARC)">MBus</a></li>
+<li><a href="/wiki/STD_Bus" title="STD Bus">STD Bus</a></li>
+<li><a href="/wiki/System_Management_Bus" title="System Management Bus">SMBus</a></li>
+<li><a href="/wiki/Q-Bus" title="Q-Bus">Q-Bus</a></li>
+<li><a href="/wiki/Europe_Card_Bus" title="Europe Card Bus">Europe Card Bus</a></li>
+<li><a href="/wiki/Industry_Standard_Architecture" title="Industry Standard Architecture">ISA</a></li>
+<li><a href="/wiki/STEbus" title="STEbus">STEbus</a></li>
+<li><a href="/wiki/Zorro_II" title="Zorro II">Zorro II</a></li>
+<li><a href="/wiki/Zorro_III" title="Zorro III">Zorro III</a></li>
+<li><a href="/wiki/Computer_Automated_Measurement_and_Control" title="Computer Automated Measurement and Control">CAMAC</a></li>
+<li><a href="/wiki/FASTBUS" title="FASTBUS">FASTBUS</a></li>
+<li><a href="/wiki/Low_Pin_Count" title="Low Pin Count">LPC</a></li>
+<li><a href="/wiki/HP_Precision_Bus" title="HP Precision Bus">HP Precision Bus</a></li>
+<li><a href="/wiki/Extended_Industry_Standard_Architecture" title="Extended Industry Standard Architecture">EISA</a></li>
+<li><a href="/wiki/VMEbus" title="VMEbus">VME</a></li>
+<li><a href="/wiki/VME_eXtensions_for_Instrumentation" title="VME eXtensions for Instrumentation">VXI</a></li>
+<li><a href="/wiki/VXS" title="VXS">VXS</a></li>
+<li><a href="/wiki/VPX" title="VPX">VPX</a></li>
+<li><a href="/wiki/NuBus" title="NuBus">NuBus</a></li>
+<li><a href="/wiki/TURBOchannel" title="TURBOchannel">TURBOchannel</a></li>
+<li><a href="/wiki/Micro_Channel_architecture" title="Micro Channel architecture">MCA</a></li>
+<li><a href="/wiki/SBus" title="SBus">SBus</a></li>
+<li><a href="/wiki/VESA_Local_Bus" title="VESA Local Bus">VLB</a></li>
+<li><a href="/wiki/GSC_bus" title="GSC bus">HP GSC bus</a></li>
+<li><a href="/wiki/InfiniBand" title="InfiniBand">InfiniBand</a></li>
+<li><a href="/wiki/Ethernet" title="Ethernet">Ethernet</a></li>
+<li><a href="/wiki/Ultra_Port_Architecture" title="Ultra Port Architecture">UPA</a></li>
+<li><a href="/wiki/Peripheral_Component_Interconnect" title="Peripheral Component Interconnect">PCI</a></li>
+<li><a href="/wiki/PCI-X" title="PCI-X">PCI Extended (PCI-X)</a></li>
+<li><a href="/wiki/PCI_eXtensions_for_Instrumentation" title="PCI eXtensions for Instrumentation">PXI</a></li>
+<li><a href="/wiki/PCI_Express" title="PCI Express">PCI Express (PCIe)</a></li>
+<li><a href="/wiki/Accelerated_Graphics_Port" title="Accelerated Graphics Port">AGP</a></li>
+<li><a href="/wiki/Compute_Express_Link" title="Compute Express Link">Compute Express Link (CXL)</a></li>
+<li><a href="/wiki/Direct_Media_Interface" title="Direct Media Interface">Direct Media Interface (DMI)</a></li>
+<li><a href="/wiki/RapidIO" title="RapidIO">RapidIO</a></li>
+<li><a href="/wiki/Intel_QuickPath_Interconnect" title="Intel QuickPath Interconnect">Intel QuickPath Interconnect</a></li>
+<li><a href="/wiki/NVLink" title="NVLink">NVLink</a></li>
+<li><a href="/wiki/HyperTransport" title="HyperTransport">HyperTransport</a>
+<ul><li><a href="/wiki/Infinity_Fabric" class="mw-redirect" title="Infinity Fabric">Infinity Fabric</a></li></ul></li>
+<li><a href="/wiki/Intel_Ultra_Path_Interconnect" title="Intel Ultra Path Interconnect">Intel Ultra Path Interconnect</a></li>
+<li><a href="/wiki/Coherent_Accelerator_Processor_Interface" title="Coherent Accelerator Processor Interface">Coherent Accelerator Processor Interface (CAPI)</a></li>
+<li><a href="/wiki/SpaceWire" title="SpaceWire">SpaceWire</a></li></ul>
+</div></td></tr><tr><th scope="row" class="navbox-group" style="width:1%">Storage</th><td class="navbox-list-with-group navbox-list navbox-odd hlist" style="width:100%;padding:0"><div style="padding:0 0.25em">
+<ul><li><a href="/wiki/ST-506/ST-412" title="ST-506/ST-412">ST-506</a></li>
+<li><a href="/wiki/Enhanced_Small_Disk_Interface" title="Enhanced Small Disk Interface">ESDI</a></li>
+<li><a href="/wiki/Standard_Disk_Interconnect" title="Standard Disk Interconnect">SDI</a></li>
+<li><a href="/wiki/Intelligent_Peripheral_Interface" title="Intelligent Peripheral Interface">IPI</a></li>
+<li><a href="/wiki/Storage_Module_Device" title="Storage Module Device">SMD</a></li>
+<li><a href="/wiki/Floppy_disk_drive_interface" title="Floppy disk drive interface">Floppy connector</a></li>
+<li><a href="/wiki/Parallel_ATA" title="Parallel ATA">Parallel ATA (PATA)</a></li>
+<li><a href="/wiki/Bus_and_Tag" title="Bus and Tag">Bus and Tag</a></li>
+<li><a href="/wiki/Digital_Storage_Systems_Interconnect" title="Digital Storage Systems Interconnect">DSSI</a></li>
+<li><a href="/wiki/HIPPI" title="HIPPI">HIPPI</a></li>
+<li><a href="/wiki/SATA" title="SATA">Serial ATA (SATA)</a></li>
+<li><a href="/wiki/SCSI" title="SCSI">SCSI</a>
+<ul><li><a href="/wiki/Parallel_SCSI" title="Parallel SCSI">Parallel</a></li>
+<li><a href="/wiki/Serial_Attached_SCSI" title="Serial Attached SCSI">SAS</a></li></ul></li>
+<li><a href="/wiki/ESCON" title="ESCON">ESCON</a></li>
+<li><a href="/wiki/Fibre_Channel" title="Fibre Channel">Fibre Channel</a></li>
+<li><a href="/wiki/Serial_Storage_Architecture" title="Serial Storage Architecture">SSA</a></li>
+<li><a href="/wiki/SATA_Express" title="SATA Express">SATAe</a></li>
+<li>PCI Express (via <a href="/wiki/Advanced_Host_Controller_Interface" title="Advanced Host Controller Interface">AHCI</a> or <a href="/wiki/NVM_Express" title="NVM Express">NVMe</a> logical device interface)</li></ul>
+</div></td></tr><tr><th scope="row" class="navbox-group" style="width:1%">Peripheral</th><td class="navbox-list-with-group navbox-list navbox-even hlist" style="width:100%;padding:0"><div style="padding:0 0.25em">
+<ul><li><a href="/wiki/Apple_Desktop_Bus" title="Apple Desktop Bus">Apple Desktop Bus</a></li>
+<li><a href="/wiki/Atari_SIO" title="Atari SIO">Atari SIO</a></li>
+<li><a href="/wiki/Digital_Control_Bus" title="Digital Control Bus">DCB</a></li>
+<li><a href="/wiki/Commodore_bus" title="Commodore bus">Commodore bus</a></li>
+<li><a href="/wiki/HP-IL" title="HP-IL">HP-IL</a></li>
+<li><a href="/wiki/HIL_bus" title="HIL bus">HIL</a></li>
+<li><a href="/wiki/MIDI" title="MIDI">MIDI</a></li>
+<li><a href="/wiki/RS-232" title="RS-232">RS-232</a></li>
+<li><a href="/wiki/RS-422" title="RS-422">RS-422</a></li>
+<li><a href="/wiki/RS-423" title="RS-423">RS-423</a></li>
+<li><a href="/wiki/RS-485" title="RS-485">RS-485</a></li>
+<li><a href="/wiki/Lightning_(connector)" title="Lightning (connector)">Lightning</a></li>
+<li><a href="/wiki/DMX512#DMX512-A" title="DMX512">DMX512-A</a></li>
+<li><a href="/wiki/IEEE-488" class="mw-redirect" title="IEEE-488">IEEE-488 (GPIB)</a></li>
+<li><a href="/wiki/IEEE_1284" title="IEEE 1284">IEEE-1284 (parallel port)</a></li>
+<li><a href="/wiki/IEEE_1394" class="mw-redirect" title="IEEE 1394">IEEE-1394 (FireWire)</a></li>
+<li><a href="/wiki/UNI/O" title="UNI/O">UNI/O</a></li>
+<li><a href="/wiki/1-Wire" title="1-Wire">1-Wire</a></li>
+<li><a href="/wiki/I2C" title="I2C">I<sup>2</sup>C</a> (<a href="/wiki/ACCESS.bus" title="ACCESS.bus">ACCESS.bus</a>, <a href="/wiki/Power_Management_Bus" title="Power Management Bus">PMBus</a>, <a href="/wiki/System_Management_Bus" title="System Management Bus">SMBus</a>)</li>
+<li><a href="/wiki/I3C_(bus)" title="I3C (bus)">I3C</a></li>
+<li><a href="/wiki/Serial_Peripheral_Interface" title="Serial Peripheral Interface">SPI</a></li>
+<li><a href="/wiki/IEC_61030" title="IEC 61030">D²B</a></li>
+<li><a href="/wiki/Parallel_SCSI" title="Parallel SCSI">Parallel SCSI</a></li>
+<li><a href="/wiki/Profibus" title="Profibus">Profibus</a></li>
+<li><a href="/wiki/USB" title="USB">USB</a></li>
+<li><a href="/wiki/Camera_Link" title="Camera Link">Camera Link</a></li>
+<li><a href="/wiki/PCI_Express#PCI_Express_External_Cabling" title="PCI Express">External PCIe</a></li>
+<li><a href="/wiki/Thunderbolt_(interface)" title="Thunderbolt (interface)">Thunderbolt</a></li>
+<li><a href="/wiki/CAN_bus" title="CAN bus">CAN bus</a></li></ul>
+</div></td></tr><tr><th scope="row" class="navbox-group" style="width:1%">Audio</th><td class="navbox-list-with-group navbox-list navbox-odd hlist" style="width:100%;padding:0"><div style="padding:0 0.25em">
+<ul><li><a href="/wiki/ADAT_Lightpipe" title="ADAT Lightpipe">ADAT Lightpipe</a></li>
+<li><a href="/wiki/AES3" title="AES3">AES3</a></li>
+<li><a href="/wiki/Intel_High_Definition_Audio" title="Intel High Definition Audio">Intel HD Audio</a></li>
+<li><a href="/wiki/I2S" title="I2S">I<sup>2</sup>S</a></li>
+<li><a href="/wiki/MADI" title="MADI">MADI</a></li>
+<li><a href="/wiki/McASP" title="McASP">McASP</a></li>
+<li><a href="/wiki/S/PDIF" title="S/PDIF">S/PDIF</a></li>
+<li><a href="/wiki/TOSLINK" title="TOSLINK">TOSLINK</a></li></ul>
+</div></td></tr><tr><th scope="row" class="navbox-group" style="width:1%">Portable</th><td class="navbox-list-with-group navbox-list navbox-even hlist" style="width:100%;padding:0"><div style="padding:0 0.25em">
+<ul><li><a href="/wiki/PC_Card" title="PC Card">PC Card</a></li>
+<li><a href="/wiki/ExpressCard" title="ExpressCard">ExpressCard</a></li></ul>
+</div></td></tr><tr><th scope="row" class="navbox-group" style="width:1%">Embedded</th><td class="navbox-list-with-group navbox-list navbox-odd hlist" style="width:100%;padding:0"><div style="padding:0 0.25em">
+<ul><li><a href="/wiki/Multidrop_bus" title="Multidrop bus">Multidrop bus</a></li>
+<li><a href="/wiki/CoreConnect" title="CoreConnect">CoreConnect</a></li>
+<li><a href="/wiki/Advanced_Microcontroller_Bus_Architecture" title="Advanced Microcontroller Bus Architecture">AMBA</a> (<a href="/wiki/Advanced_eXtensible_Interface" title="Advanced eXtensible Interface">AXI</a>)</li>
+<li><a href="/wiki/Wishbone_(computer_bus)" title="Wishbone (computer bus)">Wishbone</a></li>
+<li><a href="/wiki/SLIMbus" title="SLIMbus">SLIMbus</a></li></ul>
+</div></td></tr><tr><td class="navbox-abovebelow" colspan="2"><div>Interfaces are listed by their speed in the (roughly) ascending order, so the interface at the end of each section should be the fastest.<br /><span class="noviewer" typeof="mw:File"><span title="Category"><img alt="" src="//thumb.wikimedia.org/wikipedia/en/thumb/9/96/Symbol_category_class.svg/20px-Symbol_category_class.svg.png?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail" decoding="async" loading="lazy" width="16" height="16" class="mw-file-element" srcset="//thumb.wikimedia.org/wikipedia/en/thumb/9/96/Symbol_category_class.svg/40px-Symbol_category_class.svg.png?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail 2x" data-file-width="180" data-file-height="185" /></span></span> <a href="/wiki/Category:Computer_buses" title="Category:Computer buses">Category</a></div></td></tr></tbody></table></div>
+<div class="navbox-styles"><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1374427404" /><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1377086236" /></div><div role="navigation" class="navbox" aria-labelledby="Hewlett-Packard9251" style="padding:3px"><table class="nowraplinks hlist mw-collapsible mw-collapsed navbox-inner" style="border-spacing:0;background:transparent;color:inherit"><tbody><tr><th scope="col" class="navbox-title" colspan="3"><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1374427404" /><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1239400231" /><div class="navbar plainlinks hlist navbar-mini"><ul><li class="nv-view"><a href="/wiki/Template:Hewlett-Packard" title="Template:Hewlett-Packard"><abbr title="View this template">v</abbr></a></li><li class="nv-talk"><a href="/wiki/Template_talk:Hewlett-Packard" title="Template talk:Hewlett-Packard"><abbr title="Discuss this template">t</abbr></a></li><li class="nv-edit"><a href="/wiki/Special:EditPage/Template:Hewlett-Packard" title="Special:EditPage/Template:Hewlett-Packard"><abbr title="Edit this template">e</abbr></a></li></ul></div><div id="Hewlett-Packard9251" style="font-size:114%;margin:0 4em"><a href="/wiki/Hewlett-Packard" title="Hewlett-Packard">Hewlett-Packard</a></div></th></tr><tr><td class="navbox-abovebelow" colspan="3"><div>Split into <a href="/wiki/HP_Inc." title="HP Inc.">HP Inc.</a> and <a href="/wiki/Hewlett_Packard_Enterprise" title="Hewlett Packard Enterprise">Hewlett Packard Enterprise</a> in 2015</div></td></tr><tr><th scope="row" class="navbox-group" style="width:1%"><a href="/wiki/List_of_Hewlett-Packard_products" title="List of Hewlett-Packard products">Products</a></th><td class="navbox-list-with-group navbox-list navbox-odd" style="width:100%;padding:0"><div style="padding:0 0.25em"></div><table class="nowraplinks navbox-subgroup" style="border-spacing:0"><tbody><tr><th scope="row" class="navbox-group" style="width:1%">Personal<br />computers</th><td class="navbox-list-with-group navbox-list navbox-odd" style="width:100%;padding:0"><div style="padding:0 0.25em"></div><table class="nowraplinks navbox-subgroup" style="border-spacing:0"><tbody><tr><th scope="row" class="navbox-group" style="width:1%"><a href="/wiki/List_of_HP_business_desktops" title="List of HP business desktops">Desktops</a></th><td class="navbox-list-with-group navbox-list navbox-odd" style="width:100%;padding:0"><div style="padding:0 0.25em">
+<ul><li><a href="/wiki/HP_Blackbird_002" title="HP Blackbird 002">Blackbird 002</a></li>
+<li><a href="/wiki/HP_Brio" title="HP Brio">Brio</a></li>
+<li><a href="/wiki/Compaq" title="Compaq">Compaq series</a>
+<ul><li><a href="/wiki/Compaq_Evo" title="Compaq Evo">Evo</a></li>
+<li><a href="/wiki/HP_Compaq" class="mw-redirect" title="HP Compaq">HP Compaq</a></li>
+<li><a href="/wiki/Compaq_Presario" title="Compaq Presario">Presario</a></li></ul></li>
+<li><a href="/wiki/List_of_HP_business_desktops" title="List of HP business desktops">EliteDesk</a></li>
+<li><a href="/wiki/HP_Envy" title="HP Envy">Envy</a></li>
+<li><a href="/wiki/HP_Mini" title="HP Mini">Mini</a></li>
+<li><a href="/wiki/HP_Omen" title="HP Omen">Omen</a></li>
+<li><a href="/wiki/HP_Pavilion" title="HP Pavilion">Pavilion</a></li>
+<li><a href="/wiki/List_of_HP_business_desktops" title="List of HP business desktops">ProDesk</a></li>
+<li><a href="/wiki/HP_Spectre" title="HP Spectre">Spectre</a></li>
+<li><a href="/wiki/HP_Sprout" title="HP Sprout">Sprout</a></li>
+<li><a href="/wiki/HP_Stream" class="mw-redirect" title="HP Stream">Stream</a></li>
+<li><a href="/wiki/HP_TouchSmart" title="HP TouchSmart">TouchSmart</a></li>
+<li><a href="/wiki/HP_Vectra" title="HP Vectra">Vectra</a></li>
+<li><a href="/wiki/VoodooPC" title="VoodooPC">VoodooPC</a></li>
+<li><a href="/wiki/HP_Z" title="HP Z">Z</a></li></ul>
+</div></td></tr><tr><th scope="row" class="navbox-group" style="width:1%">Laptops</th><td class="navbox-list-with-group navbox-list navbox-even" style="width:100%;padding:0"><div style="padding:0 0.25em">
+<ul><li><a href="/wiki/HP_110" title="HP 110">110</a></li>
+<li><a href="/wiki/HP_2133_Mini-Note_PC" title="HP 2133 Mini-Note PC">2133 Mini-Note PC</a></li>
+<li><a href="/wiki/Compaq" title="Compaq">Compaq series</a>
+<ul><li><a href="/wiki/Compaq_Evo" title="Compaq Evo">Evo</a></li>
+<li><a href="/wiki/HP_Compaq" class="mw-redirect" title="HP Compaq">HP Compaq</a></li>
+<li><a href="/wiki/Compaq_Presario" title="Compaq Presario">Presario</a></li></ul></li>
+<li><a href="/wiki/HP_EliteBook" title="HP EliteBook">EliteBook</a></li>
+<li><a href="/wiki/HP_Envy" title="HP Envy">Envy</a></li>
+<li><a href="/wiki/HP_Essential" title="HP Essential">Essential</a></li>
+<li><a href="/wiki/HP_ProBook" title="HP ProBook">ProBook</a></li>
+<li><a href="/wiki/HP_Omen" title="HP Omen">Omen</a></li>
+<li><a href="/wiki/HP_OmniBook" title="HP OmniBook">OmniBook</a></li>
+<li><a href="/wiki/HP_Pavilion" title="HP Pavilion">Pavilion</a>
+<ul><li><a href="/wiki/HP_Pavilion_dv2z" title="HP Pavilion dv2z">dv2z</a></li>
+<li><a href="/wiki/HP_Pavilion_dv4" title="HP Pavilion dv4">dv4</a></li>
+<li><a href="/wiki/HP_Pavilion_dv5" title="HP Pavilion dv5">dv5</a></li>
+<li><a href="/wiki/HP_Pavilion_dv7" title="HP Pavilion dv7">dv7</a></li>
+<li><a href="/wiki/HP_Pavilion_dv1000_series" title="HP Pavilion dv1000 series">dv1000</a></li>
+<li><a href="/wiki/HP_Pavilion_dv2000_series" title="HP Pavilion dv2000 series">dv2000</a></li>
+<li><a href="/wiki/HP_Pavilion_dv6000_series" class="mw-redirect" title="HP Pavilion dv6000 series">dv6000</a></li>
+<li><a href="/wiki/HP_Pavilion_dv9000_series" title="HP Pavilion dv9000 series">dv9000</a></li>
+<li><a href="/wiki/HP_Pavilion_tx_series" title="HP Pavilion tx series">tx</a></li></ul></li>
+<li><a href="/wiki/HP_ProBook" title="HP ProBook">ProBook</a></li>
+<li><a href="/wiki/HP_Spectre" title="HP Spectre">Spectre</a></li>
+<li><a href="/wiki/HP_Stream" class="mw-redirect" title="HP Stream">Stream</a></li>
+<li><a href="/wiki/Voodoo_Envy" title="Voodoo Envy">Voodoo Envy</a></li>
+<li><a href="/wiki/HP_ZBook" title="HP ZBook">ZBook</a></li></ul>
+</div></td></tr></tbody></table><div></div></td></tr><tr><th scope="row" class="navbox-group" style="width:1%">Workstations<br />and servers</th><td class="navbox-list-with-group navbox-list navbox-odd" style="width:100%;padding:0"><div style="padding:0 0.25em">
+<ul><li><a href="/wiki/HP_250" title="HP 250">250</a></li>
+<li><a href="/wiki/HP_300" title="HP 300">300</a></li>
+<li><a href="/wiki/HP_2100" title="HP 2100">2100</a></li>
+<li><a href="/wiki/HP_2640" title="HP 2640">2640</a></li>
+<li><a href="/wiki/HP_3000" title="HP 3000">3000</a></li>
+<li><a href="/wiki/HP_9000" title="HP 9000">9000</a></li>
+<li><a href="/wiki/HP_9845" title="HP 9845">9845</a></li>
+<li><a href="/wiki/HP_64000" title="HP 64000">64000</a></li>
+<li><a href="/wiki/AlphaServer" title="AlphaServer">AlphaServer</a></li>
+<li><a href="/wiki/HP_Integral_PC" title="HP Integral PC">Integral PC</a></li>
+<li><a href="/wiki/HP_Flexible_Data_Center" title="HP Flexible Data Center">Flexible Data Center</a></li>
+<li><a href="/wiki/HP_Kayak" title="HP Kayak">Kayak</a></li>
+<li><a href="/wiki/HP_Media_Vault" title="HP Media Vault">Media Vault</a></li>
+<li><a href="/wiki/HP_MediaSmart_Server" title="HP MediaSmart Server">MediaSmart Server</a></li>
+<li><a href="/wiki/HP_NetServer" title="HP NetServer">NetServer</a></li>
+<li><a href="/wiki/NonStop_(server_computers)" title="NonStop (server computers)">NonStop</a>*</li>
+<li><a href="/wiki/HP_Performance_Optimized_Datacenter" title="HP Performance Optimized Datacenter">Performance Optimized Datacenter</a></li>
+<li><a href="/wiki/HP_X-Terminals" title="HP X-Terminals">X-Terminals</a></li></ul>
+</div></td></tr><tr><th scope="row" class="navbox-group" style="width:1%">Mobile devices</th><td class="navbox-list-with-group navbox-list navbox-even" style="width:100%;padding:0"><div style="padding:0 0.25em">
+<ul><li><a href="/wiki/Compaq" title="Compaq">Compaq series</a>
+<ul><li><a href="/wiki/Compaq_tc1000" title="Compaq tc1000">tc1000</a></li>
+<li><a href="/wiki/HP_Compaq_tc1100" title="HP Compaq tc1100">tc1100</a></li>
+<li><a href="/wiki/HP_Compaq_tc4400" title="HP Compaq tc4400">tc4400</a></li>
+<li><a href="/wiki/HP_Compaq_tc4200" title="HP Compaq tc4200">tc4200</a></li></ul></li>
+<li><a href="/wiki/HP-75" title="HP-75">75</a></li>
+<li><a href="/wiki/HP_95LX" title="HP 95LX">95LX</a></li>
+<li><a href="/wiki/HP_200LX" title="HP 200LX">200LX</a></li>
+<li><a href="/wiki/HP_300LX" title="HP 300LX">300LX</a></li>
+<li><a href="/wiki/HP_620LX" title="HP 620LX">620LX</a></li>
+<li><a href="/wiki/HP_660LX" title="HP 660LX">660LX</a></li>
+<li><a href="/wiki/HP_calculators" title="HP calculators">Calculators</a></li>
+<li><a href="/wiki/IPAQ" title="IPAQ">iPAQ</a></li>
+<li><a href="/wiki/IPod%2BHP" title="IPod+HP">iPod+HP</a></li>
+<li><a href="/wiki/HP_Elite_x3" title="HP Elite x3">Elite x3</a></li>
+<li><a href="/wiki/HP_Jornada" title="HP Jornada">Jornada</a>
+<ul><li><a href="/wiki/HP_Jornada_560_series" title="HP Jornada 560 series">560</a></li></ul></li>
+<li><a href="/wiki/HP_Pre_3" title="HP Pre 3">Pre 3</a></li>
+<li><a href="/wiki/HP_Slate" title="HP Slate">Slate</a>
+<ul><li><a href="/wiki/HP_Slate_7" class="mw-redirect" title="HP Slate 7">7</a></li>
+<li><a href="/wiki/HP_Slate_21" class="mw-redirect" title="HP Slate 21">21</a></li>
+<li><a href="/wiki/HP_Slate_500" class="mw-redirect" title="HP Slate 500">Slate 500</a></li></ul></li>
+<li><a href="/wiki/HP_TouchPad" title="HP TouchPad">TouchPad</a></li>
+<li><a href="/wiki/HP_Veer" title="HP Veer">Veer</a></li></ul>
+</div></td></tr><tr><th scope="row" class="navbox-group" style="width:1%">Printing<br />and imaging</th><td class="navbox-list-with-group navbox-list navbox-odd" style="width:100%;padding:0"><div style="padding:0 0.25em">
+<ul><li><a href="/wiki/HP_7470" title="HP 7470">7470 Graphics Plotter</a></li>
+<li><a href="/wiki/HP_DeskJet" title="HP DeskJet">DeskJet</a></li>
+<li><a href="/wiki/HP_Indigo_Division" title="HP Indigo Division">Indigo</a></li>
+<li><a href="/wiki/JetDirect" title="JetDirect">JetDirect</a></li>
+<li><a href="/wiki/HP_LaserJet" title="HP LaserJet">LaserJet</a>
+<ul><li><a href="/wiki/HP_LaserJet_4" title="HP LaserJet 4">4</a></li>
+<li><a href="/wiki/HP_LaserJet_5" title="HP LaserJet 5">5</a></li>
+<li><a href="/wiki/HP_LaserJet_1020" title="HP LaserJet 1020">1020</a></li>
+<li><a href="/wiki/HP_LaserJet_2300_series" title="HP LaserJet 2300 series">2300</a></li>
+<li><a href="/wiki/HP_LaserJet_2400_series" title="HP LaserJet 2400 series">2400</a></li>
+<li><a href="/wiki/HP_LaserJet_4000_series" title="HP LaserJet 4000 series">4000</a></li>
+<li><a href="/wiki/HP_LaserJet_P3000_series" title="HP LaserJet P3000 series">P3000</a></li></ul></li>
+<li><a href="/wiki/LightScribe" title="LightScribe">LightScribe</a></li>
+<li><a href="/wiki/HP_Photosmart" title="HP Photosmart">Photosmart</a>
+<ul><li><a href="/wiki/HP_Photosmart_M407" title="HP Photosmart M407">M407</a></li>
+<li><a href="/wiki/HP_PhotoSmart_R607" title="HP PhotoSmart R607">R607</a></li></ul></li>
+<li><a href="/wiki/HP_ScanJet" title="HP ScanJet">ScanJet</a></li>
+<li><a href="/wiki/Scitex_Vision" title="Scitex Vision">Scitex</a></li>
+<li><a href="/wiki/HP_TopShot" title="HP TopShot">TopShot</a></li></ul>
+</div></td></tr><tr><th scope="row" class="navbox-group" style="width:1%">Microprocessors</th><td class="navbox-list-with-group navbox-list navbox-even" style="width:100%;padding:0"><div style="padding:0 0.25em">
+<ul><li><a href="/wiki/Capricorn_(microprocessor)" title="Capricorn (microprocessor)">Capricorn</a></li>
+<li><a href="/wiki/HP_FOCUS" title="HP FOCUS">FOCUS</a></li>
+<li><a href="/wiki/Itanium" title="Itanium">Itanium</a></li>
+<li><a href="/wiki/Hewlett-Packard_Nanoprocessor" title="Hewlett-Packard Nanoprocessor">Nanoprocessor</a></li>
+<li><a href="/wiki/PA-RISC" title="PA-RISC">PA-RISC</a>
+<ul><li><a href="/wiki/PA-7100" title="PA-7100">7100</a></li>
+<li><a href="/wiki/PA-7100LC" title="PA-7100LC">7100LC</a></li>
+<li><a href="/wiki/PA-7200" title="PA-7200">7200</a></li>
+<li><a href="/wiki/PA-8000" title="PA-8000">8000</a></li>
+<li><a href="/wiki/Multimedia_Acceleration_eXtensions" title="Multimedia Acceleration eXtensions">MAX</a></li></ul></li>
+<li><a href="/wiki/HP_Saturn" title="HP Saturn">Saturn</a></li></ul>
+</div></td></tr><tr><th scope="row" class="navbox-group" style="width:1%">Computer buses</th><td class="navbox-list-with-group navbox-list navbox-odd" style="width:100%;padding:0"><div style="padding:0 0.25em">
+<ul><li><a href="/wiki/GSC_bus" title="GSC bus">GSC</a></li>
+<li><a href="/wiki/HIL_bus" title="HIL bus">HP-HIL</a></li>
+<li><a class="mw-selflink selflink">HP-IB</a></li>
+<li><a href="/wiki/HP-IL" title="HP-IL">HP-IL</a></li>
+<li><a href="/wiki/HP_Precision_Bus" title="HP Precision Bus">Precision</a></li>
+<li><a href="/wiki/Runway_bus" title="Runway bus">Runway</a></li></ul>
+</div></td></tr><tr><th scope="row" class="navbox-group" style="width:1%"><a href="/wiki/HP_calculators" title="HP calculators">Calculators</a></th><td class="navbox-list-with-group navbox-list navbox-even" style="width:100%;padding:0"><div style="padding:0 0.25em">
+<ul><li><a href="/wiki/HP_10s" title="HP 10s">HP 10s+</a></li>
+<li><a href="/wiki/HP-12C" title="HP-12C">HP 12c</a></li>
+<li><a href="/wiki/HP-12C" title="HP-12C">HP 12c Platinum</a></li>
+<li><a href="/wiki/HP-15C" title="HP-15C">HP 15C Collector's Edition</a></li>
+<li><a href="/wiki/HP-17B" title="HP-17B">HP 17bII+</a></li>
+<li><a href="/wiki/HP_Prime" title="HP Prime">Prime</a></li></ul>
+</div></td></tr><tr><th scope="row" class="navbox-group" style="width:1%">Other hardware</th><td class="navbox-list-with-group navbox-list navbox-odd" style="width:100%;padding:0"><div style="padding:0 0.25em">
+<ul><li><a href="/wiki/HP_200A" title="HP 200A">200A Audio Oscillator</a></li>
+<li><a href="/wiki/HP_7935" title="HP 7935">7935 Disc Drive</a></li>
+<li><a href="/wiki/DC100" title="DC100">DC100</a></li>
+<li><a href="/wiki/Guardian_Service_Processor" title="Guardian Service Processor">Guardian Service Processor</a></li>
+<li><a href="/wiki/HPE_Integrated_Lights-Out" title="HPE Integrated Lights-Out">Integrated Lights-Out</a>*</li>
+<li><a href="/wiki/HP_Kittyhawk" title="HP Kittyhawk">Kittyhawk</a></li>
+<li><a href="/wiki/HP_Memory_Spot_chip" title="HP Memory Spot chip">Memory Spot</a></li>
+<li><a href="/wiki/NPartition" title="NPartition">nPartition</a>*</li>
+<li><a href="/wiki/ProCurve" title="ProCurve">ProCurve</a></li>
+<li><a href="/wiki/Teramac" title="Teramac">Teramac</a></li>
+<li><a href="/wiki/Visualize_EG" title="Visualize EG">Visualize EG</a></li>
+<li><a href="/wiki/HP_xb3000" title="HP xb3000">xb3000 Notebook Expansion Base</a></li></ul>
+</div></td></tr><tr><th scope="row" class="navbox-group" style="width:1%">Services</th><td class="navbox-list-with-group navbox-list navbox-even" style="width:100%;padding:0"><div style="padding:0 0.25em">
+<ul><li><a href="/wiki/HP_ConvergedSystem" title="HP ConvergedSystem">ConvergedSystem</a></li>
+<li><a href="/wiki/HP_Cloud" title="HP Cloud">Cloud</a></li>
+<li><a href="/wiki/HP_CloudSystem" title="HP CloudSystem">CloudSystem</a>*</li>
+<li><a href="/wiki/HPE_Helion" title="HPE Helion">Helion</a>*</li>
+<li><a href="/wiki/MagCloud" title="MagCloud">MagCloud</a> †</li>
+<li><a href="/wiki/Speechbot" title="Speechbot">Speechbot</a></li>
+<li><a href="/wiki/HP_Utility_Data_Center" title="HP Utility Data Center">Utility Data Center</a></li></ul>
+</div></td></tr></tbody></table><div></div></td><td class="noviewer navbox-image" rowspan="6" style="width:1px;padding:0 0 0 2px"><div><span class="mw-default-size" typeof="mw:File/Frameless"><a href="/wiki/File:HP_logo_1979.svg" class="mw-file-description"><img src="//thumb.wikimedia.org/wikipedia/commons/thumb/9/97/HP_logo_1979.svg/250px-HP_logo_1979.svg.png?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail" decoding="async" loading="lazy" width="130" height="81" style="--mw-file-upright: 0.5" class="mw-file-element mw-file-upright" srcset="//thumb.wikimedia.org/wikipedia/commons/thumb/9/97/HP_logo_1979.svg/330px-HP_logo_1979.svg.png?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail 2x" data-file-width="1000" data-file-height="622" /></a></span></div></td></tr><tr><th scope="row" class="navbox-group" style="width:1%"><a href="/wiki/List_of_Hewlett-Packard_executive_leadership" title="List of Hewlett-Packard executive leadership">CEOs</a></th><td class="navbox-list-with-group navbox-list navbox-odd" style="width:100%;padding:0"><div style="padding:0 0.25em">
+<ul><li><a href="/wiki/Bill_Hewlett" title="Bill Hewlett">Bill Hewlett</a> and <a href="/wiki/David_Packard" title="David Packard">David Packard</a> (co-founders)</li>
+<li><a href="/wiki/John_A._Young" title="John A. Young">John A. Young</a></li>
+<li><a href="/wiki/Lewis_E._Platt" title="Lewis E. Platt">Lewis E. Platt</a></li>
+<li><a href="/wiki/Carly_Fiorina" title="Carly Fiorina">Carly Fiorina</a></li>
+<li><a href="/wiki/Mark_Hurd" title="Mark Hurd">Mark Hurd</a></li>
+<li><a href="/wiki/L%C3%A9o_Apotheker" title="Léo Apotheker">Léo Apotheker</a></li>
+<li><a href="/wiki/Meg_Whitman" title="Meg Whitman">Meg Whitman</a> (final CEO)</li></ul>
+</div></td></tr><tr><th scope="row" class="navbox-group" style="width:1%"><a href="/wiki/List_of_assets_owned_by_HP" title="List of assets owned by HP">Assets</a></th><td class="navbox-list-with-group navbox-list navbox-even" style="width:100%;padding:0"><div style="padding:0 0.25em">
+<ul><li><a href="/wiki/3DA" title="3DA">3DA</a> †</li>
+<li><a href="/wiki/Ericsson_Hewlett_Packard_Telecom" title="Ericsson Hewlett Packard Telecom">Ericsson Hewlett Packard Telecom</a> †</li>
+<li><a href="/wiki/HP_Garage" title="HP Garage">HP Garage</a></li>
+<li><a href="/wiki/HP_Labs" title="HP Labs">HP Labs</a></li></ul>
+</div></td></tr><tr><th scope="row" class="navbox-group" style="width:1%"><a href="/wiki/List_of_acquisitions_by_Hewlett-Packard" title="List of acquisitions by Hewlett-Packard">Acquisitions</a></th><td class="navbox-list-with-group navbox-list navbox-odd" style="width:100%;padding:0"><div style="padding:0 0.25em">
+<ul><li><a href="/wiki/3Com" title="3Com">3Com</a></li>
+<li><a href="/wiki/3PAR" title="3PAR">3PAR</a>*</li>
+<li><a href="/wiki/Apollo_Computer" title="Apollo Computer">Apollo Computer</a></li>
+<li><a href="/wiki/ArcSight" title="ArcSight">ArcSight</a> †</li>
+<li><a href="/wiki/Aruba_Networks" title="Aruba Networks">Aruba Networks</a>*</li>
+<li><a href="/wiki/Autonomy_Corporation" title="Autonomy Corporation">Autonomy</a> †</li>
+<li><a href="/wiki/Bristol_Technology" title="Bristol Technology">Bristol Technology</a></li>
+<li><a href="/wiki/Bromium" title="Bromium">Bromium</a></li>
+<li><a href="/wiki/Compaq" title="Compaq">Compaq</a></li>
+<li><a href="/wiki/Convex_Computer" title="Convex Computer">Convex Computer</a></li>
+<li><a href="/wiki/Colorado_Memory_Systems" title="Colorado Memory Systems">Colorado Memory Systems</a></li>
+<li><a href="/wiki/PathWave_Design" title="PathWave Design">EEsof</a> †</li>
+<li><a href="/wiki/Electronic_Data_Systems" title="Electronic Data Systems">Electronic Data Systems</a> †</li>
+<li><a href="/wiki/Exstream_Software" title="Exstream Software">Exstream Software</a> †</li>
+<li><a href="/wiki/Fortify_Software" title="Fortify Software">Fortify Software</a> †</li>
+<li><a href="/wiki/HP_Indigo_Division" title="HP Indigo Division">Indigo</a></li>
+<li><a href="/wiki/HyperX" class="mw-redirect" title="HyperX">HyperX</a></li>
+<li><a href="/wiki/Knightsbridge_Solutions" title="Knightsbridge Solutions">Knightsbridge Solutions</a></li>
+<li><a href="/wiki/Neoware" title="Neoware">Neoware</a></li>
+<li><a href="/wiki/Opsware" title="Opsware">Opsware</a> †</li>
+<li><a href="/wiki/Mercury_Interactive" title="Mercury Interactive">Mercury Interactive</a> †</li>
+<li><a href="/wiki/Palm,_Inc." title="Palm, Inc.">Palm</a> †</li>
+<li><a href="/wiki/Peregrine_Systems" title="Peregrine Systems">Peregrine Systems</a> †</li>
+<li><a href="/wiki/Plantronics" title="Plantronics">Plantronics</a></li>
+<li><a href="/wiki/RLX_Technologies" title="RLX Technologies">RLX Technologies</a></li>
+<li><a href="/wiki/Scitex_Vision" title="Scitex Vision">Scitex Vision</a></li>
+<li><a href="/wiki/Snapfish" title="Snapfish">Snapfish</a></li>
+<li><a href="/wiki/Stratavia" title="Stratavia">Stratavia</a></li>
+<li><a href="/wiki/Teradici" title="Teradici">Teradici</a></li>
+<li><a href="/wiki/TOWER_Software" title="TOWER Software">TOWER Software</a></li>
+<li><a href="/wiki/Verifone" title="Verifone">Verifone</a> †</li>
+<li><a href="/wiki/Vertica" title="Vertica">Vertica</a> †</li>
+<li><a href="/wiki/VoodooPC" title="VoodooPC">VoodooPC</a></li></ul>
+</div></td></tr><tr><th scope="row" class="navbox-group" style="width:1%">Spin-offs</th><td class="navbox-list-with-group navbox-list navbox-even" style="width:100%;padding:0"><div style="padding:0 0.25em">
+<ul><li><a href="/wiki/Agilent_Technologies" title="Agilent Technologies">Agilent Technologies</a></li>
+<li><a href="/wiki/DXC_Technology" title="DXC Technology">DXC Technology</a></li>
+<li><a href="/wiki/Hewlett_Packard_Enterprise" title="Hewlett Packard Enterprise">Hewlett Packard Enterprise</a></li>
+<li><a href="/wiki/Keysight_Technologies" class="mw-redirect" title="Keysight Technologies">Keysight Technologies</a></li></ul>
+</div></td></tr><tr><th scope="row" class="navbox-group" style="width:1%">Related</th><td class="navbox-list-with-group navbox-list navbox-odd" style="width:100%;padding:0"><div style="padding:0 0.25em">
+<ul><li><i><a href="/wiki/Hewlett-Packard_Journal" title="Hewlett-Packard Journal">Hewlett-Packard Journal</a></i></li>
+<li><a href="/wiki/The_HP_Way" title="The HP Way">The HP Way</a></li>
+<li><a href="/wiki/Encompass" title="Encompass">Encompass</a></li>
+<li><a href="/wiki/HP_Color_Recovery" title="HP Color Recovery">Color Recovery</a></li>
+<li><a href="/wiki/HP_SPaM" title="HP SPaM">SPaM</a></li>
+<li><a href="/wiki/PC_LOAD_LETTER" title="PC LOAD LETTER">PC LOAD LETTER</a></li>
+<li><a href="/wiki/Rules_of_the_garage" title="Rules of the garage">Rules of the garage</a></li>
+<li><a href="/wiki/Mission:_Space" title="Mission: Space">Mission: Space</a></li>
+<li><a href="/wiki/Hewlett-Packard_spying_scandal" title="Hewlett-Packard spying scandal">Spying scandal</a></li>
+<li><a href="/wiki/HP-Interex" title="HP-Interex">HP-Interex</a></li></ul>
+</div></td></tr><tr><td class="navbox-abovebelow" colspan="3"><div>
+<ul><li>Asterisk (*) denotes product lines and companies now property of <a href="/wiki/Hewlett_Packard_Enterprise" title="Hewlett Packard Enterprise">Hewlett Packard Enterprise</a></li>
+<li>Dagger (†) denotes assets or companies divested and sold off</li></ul>
+<ul><li><span class="noviewer" typeof="mw:File"><span title="Template"><img alt="" src="//thumb.wikimedia.org/wikipedia/commons/thumb/8/83/Symbol_template_class_pink.svg/20px-Symbol_template_class_pink.svg.png?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail" decoding="async" loading="lazy" width="16" height="16" class="mw-file-element" srcset="//thumb.wikimedia.org/wikipedia/commons/thumb/8/83/Symbol_template_class_pink.svg/40px-Symbol_template_class_pink.svg.png?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail 2x" data-file-width="180" data-file-height="185" /></span></span> <a href="/wiki/Template:Hewlett_Packard_Enterprise" title="Template:Hewlett Packard Enterprise">Hewlett Packard Enterprise</a></li>
+<li><span class="noviewer" typeof="mw:File"><span title="Template"><img alt="" src="//thumb.wikimedia.org/wikipedia/commons/thumb/8/83/Symbol_template_class_pink.svg/20px-Symbol_template_class_pink.svg.png?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail" decoding="async" loading="lazy" width="16" height="16" class="mw-file-element" srcset="//thumb.wikimedia.org/wikipedia/commons/thumb/8/83/Symbol_template_class_pink.svg/40px-Symbol_template_class_pink.svg.png?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail 2x" data-file-width="180" data-file-height="185" /></span></span> <a href="/wiki/Template:HP" title="Template:HP">HP Inc.</a></li>
+<li><span class="noviewer" typeof="mw:File"><span title="Template"><img alt="" src="//thumb.wikimedia.org/wikipedia/commons/thumb/8/83/Symbol_template_class_pink.svg/20px-Symbol_template_class_pink.svg.png?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail" decoding="async" loading="lazy" width="16" height="16" class="mw-file-element" srcset="//thumb.wikimedia.org/wikipedia/commons/thumb/8/83/Symbol_template_class_pink.svg/40px-Symbol_template_class_pink.svg.png?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail 2x" data-file-width="180" data-file-height="185" /></span></span> <a href="/wiki/Template:Compaq" title="Template:Compaq">Compaq</a></li>
+<li><span class="noviewer" typeof="mw:File"><span title="Template"><img alt="" src="//thumb.wikimedia.org/wikipedia/commons/thumb/8/83/Symbol_template_class_pink.svg/20px-Symbol_template_class_pink.svg.png?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail" decoding="async" loading="lazy" width="16" height="16" class="mw-file-element" srcset="//thumb.wikimedia.org/wikipedia/commons/thumb/8/83/Symbol_template_class_pink.svg/40px-Symbol_template_class_pink.svg.png?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail 2x" data-file-width="180" data-file-height="185" /></span></span> <a href="/wiki/Template:HP_calculators" title="Template:HP calculators">HP calculators</a></li>
+<li><span class="noviewer" typeof="mw:File"><span title="Template"><img alt="" src="//thumb.wikimedia.org/wikipedia/commons/thumb/8/83/Symbol_template_class_pink.svg/20px-Symbol_template_class_pink.svg.png?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail" decoding="async" loading="lazy" width="16" height="16" class="mw-file-element" srcset="//thumb.wikimedia.org/wikipedia/commons/thumb/8/83/Symbol_template_class_pink.svg/40px-Symbol_template_class_pink.svg.png?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail 2x" data-file-width="180" data-file-height="185" /></span></span> <a href="/wiki/Template:Hewlett-Packard_software" title="Template:Hewlett-Packard software">HP software</a></li></ul>
+</div></td></tr></tbody></table></div>
+<div class="navbox-styles"><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1374427404" /><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1377086236" /></div><div role="navigation" class="navbox" aria-labelledby="IEEE&#95;standards6582" style="padding:3px"><table class="nowraplinks hlist mw-collapsible autocollapse navbox-inner" style="border-spacing:0;background:transparent;color:inherit"><tbody><tr><th scope="col" class="navbox-title" colspan="2"><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1374427404" /><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1239400231" /><div class="navbar plainlinks hlist navbar-mini"><ul><li class="nv-view"><a href="/wiki/Template:IEEE_standards" title="Template:IEEE standards"><abbr title="View this template">v</abbr></a></li><li class="nv-talk"><a href="/wiki/Template_talk:IEEE_standards" title="Template talk:IEEE standards"><abbr title="Discuss this template">t</abbr></a></li><li class="nv-edit"><a href="/wiki/Special:EditPage/Template:IEEE_standards" title="Special:EditPage/Template:IEEE standards"><abbr title="Edit this template">e</abbr></a></li></ul></div><div id="IEEE&#95;standards6582" style="font-size:114%;margin:0 4em"><a href="/wiki/IEEE_Standards_Association" title="IEEE Standards Association">IEEE standards</a></div></th></tr><tr><th scope="row" class="navbox-group" style="width:1%">Current</th><td class="navbox-list-with-group navbox-list navbox-odd" style="width:100%;padding:0"><div style="padding:0 0.25em">
+<ul><li><a href="/wiki/IEEE-488" class="mw-redirect" title="IEEE-488">488</a></li>
+<li><a href="/wiki/IEEE_693" title="IEEE 693">693</a></li>
+<li><a href="/wiki/Software_quality_assurance" title="Software quality assurance">730</a></li>
+<li><a href="/wiki/IEEE_754" title="IEEE 754">754</a>
+<ul><li><a href="/wiki/IEEE_754-2008_revision" title="IEEE 754-2008 revision">Revision</a></li></ul></li>
+<li><a href="/wiki/IEEE_854-1987" title="IEEE 854-1987">854</a></li>
+<li><a href="/wiki/Software_configuration_management" title="Software configuration management">828</a></li>
+<li><a href="/wiki/Software_test_documentation" title="Software test documentation">829</a></li>
+<li><a href="/wiki/Futurebus" title="Futurebus">896</a></li>
+<li><a href="/wiki/Single_UNIX_Specification" title="Single UNIX Specification">1003</a></li>
+<li><a href="/wiki/VMEbus" title="VMEbus">1014</a></li>
+<li><a href="/wiki/Software_design_description" title="Software design description">1016</a></li>
+<li><a href="/wiki/VHDL" title="VHDL">1076</a></li>
+<li><a href="/wiki/JTAG" title="JTAG">1149.1</a></li>
+<li><a href="/wiki/PILOT" title="PILOT">1154</a></li>
+<li><a href="/wiki/IEEE_1164" title="IEEE 1164">1164</a></li>
+<li><a href="/wiki/Open_Firmware" title="Open Firmware">1275</a></li>
+<li><a href="/wiki/Distributed_Interactive_Simulation" title="Distributed Interactive Simulation">1278</a></li>
+<li><a href="/wiki/IEEE_1284" title="IEEE 1284">1284</a></li>
+<li><a href="/wiki/IEEE_1355" title="IEEE 1355">1355</a></li>
+<li><a href="/wiki/IEEE_1394" class="mw-redirect" title="IEEE 1394">1394</a></li>
+<li><a href="/wiki/IEEE_1451" title="IEEE 1451">1451</a></li>
+<li><a href="/wiki/Standard_Delay_Format" title="Standard Delay Format">1497</a></li>
+<li><a href="/wiki/High_Level_Architecture" title="High Level Architecture">1516</a></li>
+<li><a href="/wiki/IEEE_1541-2002" class="mw-redirect" title="IEEE 1541-2002">1541</a></li>
+<li><a href="/wiki/IEEE_1547" title="IEEE 1547">1547</a></li>
+<li><a href="/wiki/IEEE_1584" title="IEEE 1584">1584</a></li>
+<li><a href="/wiki/Precision_Time_Protocol" title="Precision Time Protocol">1588</a></li>
+<li><a href="/wiki/Scalable_Coherent_Interface" title="Scalable Coherent Interface">1596</a></li>
+<li><a href="/wiki/Advanced_Library_Format" title="Advanced Library Format">1603</a></li>
+<li><a href="/wiki/IEEE_1613" title="IEEE 1613">1613</a></li>
+<li><a href="/wiki/IEEE_1619" class="mw-redirect" title="IEEE 1619">1619</a></li>
+<li><a href="/wiki/SystemC" title="SystemC">1666</a></li>
+<li><a href="/wiki/IEEE_1667" title="IEEE 1667">1667</a></li>
+<li><a href="/wiki/IEEE_1675-2008" title="IEEE 1675-2008">1675</a></li>
+<li><a href="/wiki/IP-XACT" title="IP-XACT">1685</a></li>
+<li><a href="/wiki/IEEE_1722" class="mw-redirect" title="IEEE 1722">1722</a></li>
+<li><a href="/wiki/IEEE_1733" class="mw-redirect" title="IEEE 1733">1733</a></li>
+<li><a href="/wiki/SystemVerilog" title="SystemVerilog">1800</a></li>
+<li><a href="/wiki/Unified_Power_Format" title="Unified Power Format">1801</a></li>
+<li><a href="/wiki/DNP3" title="DNP3">1815</a></li>
+<li><a href="/wiki/IEEE_1849" title="IEEE 1849">1849</a></li>
+<li><a href="/wiki/Property_Specification_Language" title="Property Specification Language">1850</a></li>
+<li><a href="/wiki/IEEE_1855" title="IEEE 1855">1855</a></li>
+<li><a href="/wiki/DySPAN" title="DySPAN">1900</a></li>
+<li><a href="/wiki/IEEE_1901" title="IEEE 1901">1901</a></li>
+<li><a href="/wiki/RuBee" title="RuBee">1902</a></li>
+<li><a href="/wiki/Service_Interoperability_in_Ethernet_Passive_Optical_Networks" title="Service Interoperability in Ethernet Passive Optical Networks">1904</a></li>
+<li><a href="/wiki/IEEE_1905" title="IEEE 1905">1905</a></li>
+<li><a href="/wiki/IEEE_2030" title="IEEE 2030">2030</a></li>
+<li><a href="/wiki/Micro_T-Kernel" title="Micro T-Kernel">2050</a></li>
+<li><a href="/wiki/ISO/IEEE_11073" title="ISO/IEEE 11073">11073</a></li>
+<li><a href="/wiki/ISO/IEC_12207" title="ISO/IEC 12207">12207</a></li>
+<li><a href="/wiki/Software_maintenance" title="Software maintenance">14764</a></li>
+<li><a href="/wiki/Risk_management" title="Risk management">16085</a></li>
+<li><a href="/wiki/Project_management" title="Project management">16326</a></li>
+<li><a href="/wiki/Requirements_engineering" title="Requirements engineering">29148</a></li>
+<li><a href="/wiki/ISO/IEC_42010" title="ISO/IEC 42010">42010</a></li></ul>
+</div></td></tr><tr><th scope="row" class="navbox-group" style="width:1%"><a href="/wiki/IEEE_802" title="IEEE 802">802 series</a></th><td class="navbox-list-with-group navbox-list navbox-odd" style="width:100%;padding:0"><div style="padding:0 0.25em"></div><table class="nowraplinks navbox-subgroup" style="border-spacing:0"><tbody><tr><th scope="row" class="navbox-group" style="width:1%"><a href="/wiki/IEEE_802" title="IEEE 802">802</a></th><td class="navbox-list-with-group navbox-list navbox-even" style="width:100%;padding:0"><div style="padding:0 0.25em">
+<ul><li><a href="/wiki/IEEE_802.2" title="IEEE 802.2">.2</a></li>
+<li><a href="/wiki/Token_bus_network" title="Token bus network">.4</a></li>
+<li><a href="/wiki/Token_Ring" title="Token Ring">.5</a></li>
+<li><a href="/wiki/IEEE_802.6" title="IEEE 802.6">.6</a></li>
+<li><a href="/wiki/IEEE_802.7" title="IEEE 802.7">.7</a></li>
+<li><a href="/wiki/IEEE_802.8" title="IEEE 802.8">.8</a></li>
+<li><a href="/wiki/IEEE_802.9" title="IEEE 802.9">.9</a></li>
+<li><a href="/wiki/IEEE_802.10" title="IEEE 802.10">.10</a></li>
+<li><a href="/wiki/100BaseVG" title="100BaseVG">.12</a></li>
+<li><a href="/wiki/Cable_modem#IEEE_802.14" title="Cable modem">.14</a></li>
+<li><a href="/wiki/IEEE_802.16" title="IEEE 802.16">.16</a>
+<ul><li><a href="/wiki/WiMAX" title="WiMAX">WiMAX · d · e</a></li></ul></li>
+<li><a href="/wiki/Resilient_Packet_Ring" title="Resilient Packet Ring">.17</a></li>
+<li><a href="/wiki/IEEE_802.18" title="IEEE 802.18">.18</a></li>
+<li><a href="/wiki/IEEE_802.20" title="IEEE 802.20">.20</a></li>
+<li><a href="/wiki/IEEE_802.21" title="IEEE 802.21">.21</a></li>
+<li><a href="/wiki/IEEE_802.22" title="IEEE 802.22">.22</a></li>
+<li><a href="/w/index.php?title=IEEE_802.24&amp;action=edit&amp;redlink=1" class="new" title="IEEE 802.24 (page does not exist)">.24</a></li></ul>
+</div></td></tr><tr><th scope="row" class="navbox-group" style="width:1%"><a href="/wiki/IEEE_802.1" title="IEEE 802.1">802.1</a></th><td class="navbox-list-with-group navbox-list navbox-odd" style="width:100%;padding:0"><div style="padding:0 0.25em">
+<ul><li><a href="/wiki/IEEE_802.1D" title="IEEE 802.1D">D</a></li>
+<li><a href="/wiki/IEEE_P802.1p" title="IEEE P802.1p">p</a></li>
+<li><a href="/wiki/IEEE_802.1Q" title="IEEE 802.1Q">Q</a></li>
+<li><a href="/wiki/IEEE_802.1Qav" class="mw-redirect" title="IEEE 802.1Qav">Qav</a></li>
+<li><a href="/wiki/Stream_Reservation_Protocol" title="Stream Reservation Protocol">Qat</a></li>
+<li><a href="/wiki/Provider_Backbone_Bridge_Traffic_Engineering" title="Provider Backbone Bridge Traffic Engineering">Qay</a></li>
+<li><a href="/wiki/Data_center_bridging#IEEE_Task_Group" title="Data center bridging">Qaz</a></li>
+<li><a href="/wiki/IEEE_802.1Qbb" class="mw-redirect" title="IEEE 802.1Qbb">Qbb</a></li>
+<li><a href="/wiki/Spanning_Tree_Protocol" title="Spanning Tree Protocol">w</a></li>
+<li><a href="/wiki/IEEE_802.1X" title="IEEE 802.1X">X</a></li>
+<li><a href="/wiki/Link_Layer_Discovery_Protocol" title="Link Layer Discovery Protocol">AB</a></li>
+<li><a href="/wiki/IEEE_802.1ad" title="IEEE 802.1ad">ad</a></li>
+<li><a href="/wiki/IEEE_802.1AE" title="IEEE 802.1AE">AE</a></li>
+<li><a href="/wiki/IEEE_802.1ag" title="IEEE 802.1ag">ag</a></li>
+<li><a href="/wiki/IEEE_802.1ah-2008" class="mw-redirect" title="IEEE 802.1ah-2008">ah</a></li>
+<li><a href="/wiki/Multiple_Registration_Protocol" title="Multiple Registration Protocol">ak</a></li>
+<li><a href="/wiki/IEEE_802.1aq" title="IEEE 802.1aq">aq</a></li>
+<li><a href="/wiki/IEEE_802.1AS" class="mw-redirect" title="IEEE 802.1AS">AS</a></li>
+<li><a href="/wiki/Link_aggregation" title="Link aggregation">AX</a> (<a href="/wiki/Link_Aggregation_Control_Protocol" class="mw-redirect" title="Link Aggregation Control Protocol">LACP</a>)</li>
+<li><a href="/wiki/Audio_Video_Bridging" title="Audio Video Bridging">BA</a></li></ul>
+</div></td></tr><tr><th scope="row" class="navbox-group" style="width:1%"><a href="/wiki/IEEE_802.3" title="IEEE 802.3">802.3</a> <br />(<a href="/wiki/Ethernet" title="Ethernet">Ethernet</a>)</th><td class="navbox-list-with-group navbox-list navbox-even" style="width:100%;padding:0"><div style="padding:0 0.25em">
+<ul><li><a href="/wiki/10BASE5" title="10BASE5">-1983</a></li>
+<li><a href="/wiki/802.3a" class="mw-redirect" title="802.3a">a</a></li>
+<li><a href="/wiki/802.3b" class="mw-redirect" title="802.3b">b</a></li>
+<li><a href="/wiki/802.3d" class="mw-redirect" title="802.3d">d</a></li>
+<li><a href="/wiki/802.3e" class="mw-redirect" title="802.3e">e</a></li>
+<li><a href="/wiki/802.3i" class="mw-redirect" title="802.3i">i</a></li>
+<li><a href="/wiki/802.3j" class="mw-redirect" title="802.3j">j</a></li>
+<li><a href="/wiki/802.3u" class="mw-redirect" title="802.3u">u</a></li>
+<li><a href="/wiki/IEEE_802.3x" class="mw-redirect" title="IEEE 802.3x">x</a></li>
+<li><a href="/wiki/802.3y" class="mw-redirect" title="802.3y">y</a></li>
+<li><a href="/wiki/802.3z" class="mw-redirect" title="802.3z">z</a></li>
+<li><a href="/wiki/802.3ab" class="mw-redirect" title="802.3ab">ab</a></li>
+<li><a href="/wiki/802.3ac" class="mw-redirect" title="802.3ac">ac</a></li>
+<li><a href="/wiki/802.3ad" class="mw-redirect" title="802.3ad">ad</a></li>
+<li><a href="/wiki/802.3ae" class="mw-redirect" title="802.3ae">ae</a></li>
+<li><b><a href="/wiki/802.3af" class="mw-redirect" title="802.3af">af</a></b></li>
+<li><a href="/wiki/802.3ah" class="mw-redirect" title="802.3ah">ah</a></li>
+<li><a href="/wiki/802.3ak" class="mw-redirect" title="802.3ak">ak</a></li>
+<li><a href="/wiki/802.3an" class="mw-redirect" title="802.3an">an</a></li>
+<li><a href="/wiki/802.3aq" class="mw-redirect" title="802.3aq">aq</a></li>
+<li><b><a href="/wiki/802.3at" class="mw-redirect" title="802.3at">at</a></b></li>
+<li><a href="/wiki/802.3au" class="mw-redirect" title="802.3au">au</a></li>
+<li><a href="/wiki/802.3av" class="mw-redirect" title="802.3av">av</a></li>
+<li><a href="/wiki/802.3az" class="mw-redirect" title="802.3az">az</a></li>
+<li><a href="/wiki/802.3ba" class="mw-redirect" title="802.3ba">ba</a></li>
+<li><b><a href="/wiki/802.3bt" class="mw-redirect" title="802.3bt">bt</a></b></li>
+<li><a href="/wiki/802.3bu" class="mw-redirect" title="802.3bu">bu</a></li>
+<li><a href="/wiki/802.3by" class="mw-redirect" title="802.3by">by</a></li>
+<li><a href="/wiki/802.3bz" class="mw-redirect" title="802.3bz">bz</a></li>
+<li><a href="/w/index.php?title=802.3ca&amp;action=edit&amp;redlink=1" class="new" title="802.3ca (page does not exist)">ca</a></li>
+<li><a href="/w/index.php?title=802.3cb&amp;action=edit&amp;redlink=1" class="new" title="802.3cb (page does not exist)">cb</a></li>
+<li><a href="/w/index.php?title=802.3cc&amp;action=edit&amp;redlink=1" class="new" title="802.3cc (page does not exist)">cc</a></li>
+<li><a href="/w/index.php?title=802.3cd&amp;action=edit&amp;redlink=1" class="new" title="802.3cd (page does not exist)">cd</a></li>
+<li><a href="/w/index.php?title=802.3ce&amp;action=edit&amp;redlink=1" class="new" title="802.3ce (page does not exist)">ce</a></li>
+<li><a href="/wiki/802.3cg" class="mw-redirect" title="802.3cg">cg</a></li>
+<li><a href="/wiki/802.3ch" class="mw-redirect" title="802.3ch">ch</a></li>
+<li><a href="/w/index.php?title=802.3ck&amp;action=edit&amp;redlink=1" class="new" title="802.3ck (page does not exist)">ck</a></li>
+<li><a href="/w/index.php?title=802.3cm&amp;action=edit&amp;redlink=1" class="new" title="802.3cm (page does not exist)">cm</a></li>
+<li><a href="/w/index.php?title=802.3cn&amp;action=edit&amp;redlink=1" class="new" title="802.3cn (page does not exist)">cn</a></li>
+<li><a href="/w/index.php?title=802.3cp&amp;action=edit&amp;redlink=1" class="new" title="802.3cp (page does not exist)">cp</a></li>
+<li><a href="/wiki/802.3cq" class="mw-redirect" title="802.3cq">cq</a></li>
+<li><a href="/w/index.php?title=802.3cr&amp;action=edit&amp;redlink=1" class="new" title="802.3cr (page does not exist)">cr</a></li>
+<li><a href="/w/index.php?title=802.3cs&amp;action=edit&amp;redlink=1" class="new" title="802.3cs (page does not exist)">cs</a></li>
+<li><a href="/w/index.php?title=802.3ct&amp;action=edit&amp;redlink=1" class="new" title="802.3ct (page does not exist)">ct</a></li>
+<li><a href="/w/index.php?title=802.3cu&amp;action=edit&amp;redlink=1" class="new" title="802.3cu (page does not exist)">cu</a></li>
+<li><a href="/wiki/802.3cv" class="mw-redirect" title="802.3cv">cv</a></li>
+<li><a href="/w/index.php?title=802.3cw&amp;action=edit&amp;redlink=1" class="new" title="802.3cw (page does not exist)">cw</a></li>
+<li><a href="/w/index.php?title=802.3cx&amp;action=edit&amp;redlink=1" class="new" title="802.3cx (page does not exist)">cx</a></li>
+<li><a href="/w/index.php?title=802.3cy&amp;action=edit&amp;redlink=1" class="new" title="802.3cy (page does not exist)">cy</a></li>
+<li><a href="/w/index.php?title=802.3cz&amp;action=edit&amp;redlink=1" class="new" title="802.3cz (page does not exist)">cz</a></li>
+<li><a href="/w/index.php?title=802.3da&amp;action=edit&amp;redlink=1" class="new" title="802.3da (page does not exist)">da</a></li>
+<li><a href="/w/index.php?title=802.3db&amp;action=edit&amp;redlink=1" class="new" title="802.3db (page does not exist)">db</a></li>
+<li><a href="/wiki/802.3dd" class="mw-redirect" title="802.3dd">dd</a></li>
+<li><a href="/w/index.php?title=802.3de&amp;action=edit&amp;redlink=1" class="new" title="802.3de (page does not exist)">de</a></li>
+<li><a href="/w/index.php?title=802.3df&amp;action=edit&amp;redlink=1" class="new" title="802.3df (page does not exist)">df</a></li></ul>
+</div></td></tr><tr><th scope="row" class="navbox-group" style="width:1%"><a href="/wiki/IEEE_802.11" title="IEEE 802.11">802.11</a> <br />(<a href="/wiki/Wi-Fi" title="Wi-Fi">Wi-Fi</a>)</th><td class="navbox-list-with-group navbox-list navbox-odd" style="width:100%;padding:0"><div style="padding:0 0.25em">
+<ul><li><a href="/wiki/IEEE_802.11-1997" class="mw-redirect" title="IEEE 802.11-1997">-1997</a></li>
+<li><a href="/wiki/IEEE_802.11_(legacy_mode)" title="IEEE 802.11 (legacy mode)">legacy mode</a></li>
+<li><a href="/wiki/IEEE_802.11a-1999" title="IEEE 802.11a-1999">a</a></li>
+<li><a href="/wiki/IEEE_802.11b-1999" title="IEEE 802.11b-1999">b</a></li>
+<li><a href="/wiki/IEEE_802.11c" title="IEEE 802.11c">c</a></li>
+<li><a href="/wiki/IEEE_802.11d-2001" title="IEEE 802.11d-2001">d</a></li>
+<li><a href="/wiki/IEEE_802.11e-2005" title="IEEE 802.11e-2005">e</a></li>
+<li><a href="/wiki/Inter-Access_Point_Protocol" title="Inter-Access Point Protocol">f</a></li>
+<li><a href="/wiki/IEEE_802.11g-2003" title="IEEE 802.11g-2003">g</a></li>
+<li><a href="/wiki/IEEE_802.11h-2003" title="IEEE 802.11h-2003">h</a></li>
+<li><a href="/wiki/IEEE_802.11i-2004" title="IEEE 802.11i-2004">i</a></li>
+<li><a href="/wiki/IEEE_802.11j-2004" title="IEEE 802.11j-2004">j</a></li>
+<li><a href="/wiki/IEEE_802.11k-2008" title="IEEE 802.11k-2008">k</a></li>
+<li><b><a href="/wiki/IEEE_802.11n-2009" class="mw-redirect" title="IEEE 802.11n-2009">n</a></b> (<a href="/wiki/Wi-Fi_4" class="mw-redirect" title="Wi-Fi 4">Wi-Fi 4</a>)</li>
+<li><a href="/wiki/IEEE_802.11p" title="IEEE 802.11p">p</a></li>
+<li><a href="/wiki/IEEE_802.11r-2008" title="IEEE 802.11r-2008">r</a></li>
+<li><a href="/wiki/IEEE_802.11s" title="IEEE 802.11s">s</a></li>
+<li><a href="/wiki/IEEE_802.11u" title="IEEE 802.11u">u</a></li>
+<li><a href="/wiki/IEEE_802.11v" class="mw-redirect" title="IEEE 802.11v">v</a></li>
+<li><a href="/wiki/IEEE_802.11w-2009" title="IEEE 802.11w-2009">w</a></li>
+<li><a href="/wiki/IEEE_802.11y-2008" title="IEEE 802.11y-2008">y</a></li>
+<li><a href="/wiki/IEEE_802.11z" class="mw-redirect" title="IEEE 802.11z">z</a></li>
+<li>aa</li>
+<li><b><a href="/wiki/IEEE_802.11ac" title="IEEE 802.11ac">ac</a></b> (<a href="/wiki/Wi-Fi_5" class="mw-redirect" title="Wi-Fi 5">Wi-Fi 5</a>)</li>
+<li><a href="/wiki/IEEE_802.11ad" title="IEEE 802.11ad">ad</a> (<a href="/wiki/WiGig" title="WiGig">WiGig</a>)</li>
+<li>ae</li>
+<li><a href="/wiki/IEEE_802.11af" title="IEEE 802.11af">af</a></li>
+<li><a href="/wiki/IEEE_802.11ah" title="IEEE 802.11ah">ah</a></li>
+<li><a href="/wiki/IEEE_802.11ai" title="IEEE 802.11ai">ai</a></li>
+<li><a href="/wiki/IEEE_802.11aj" class="mw-redirect" title="IEEE 802.11aj">aj</a></li>
+<li>ak</li>
+<li>aq</li>
+<li><b><a href="/wiki/IEEE_802.11ax" class="mw-redirect" title="IEEE 802.11ax">ax</a></b> (<a href="/wiki/Wi-Fi_6" title="Wi-Fi 6">Wi-Fi 6</a>)</li>
+<li><a href="/wiki/IEEE_802.11ay" title="IEEE 802.11ay">ay</a></li>
+<li>az</li>
+<li>ba</li>
+<li><a href="/wiki/IEEE_802.11bb" title="IEEE 802.11bb">bb</a></li>
+<li>bc</li>
+<li>bd</li>
+<li><b><a href="/wiki/IEEE_802.11be" class="mw-redirect" title="IEEE 802.11be">be</a></b> (<a href="/wiki/Wi-Fi_7" title="Wi-Fi 7">Wi-Fi 7</a>)</li>
+<li>bf</li>
+<li>bh</li>
+<li>bi</li>
+<li>bk</li>
+<li><b><a href="/wiki/IEEE_802.11bn" class="mw-redirect" title="IEEE 802.11bn">bn</a></b> (<a href="/wiki/Wi-Fi_8" title="Wi-Fi 8">Wi-Fi 8</a>)</li></ul>
+</div></td></tr><tr><th scope="row" class="navbox-group" style="width:1%"><a href="/wiki/IEEE_802.15" title="IEEE 802.15">802.15</a></th><td class="navbox-list-with-group navbox-list navbox-even" style="width:100%;padding:0"><div style="padding:0 0.25em">
+<ul><li><a href="/wiki/IEEE_802.15.1" class="mw-redirect" title="IEEE 802.15.1">.1</a> (<a href="/wiki/Bluetooth" title="Bluetooth">Bluetooth</a>)</li>
+<li><a href="/wiki/IEEE_802.15.2" class="mw-redirect" title="IEEE 802.15.2">.2</a></li>
+<li><a href="/wiki/IEEE_802.15.3" class="mw-redirect" title="IEEE 802.15.3">.3</a></li>
+<li><a href="/wiki/IEEE_802.15.4" title="IEEE 802.15.4">.4</a> (<a href="/wiki/Zigbee" title="Zigbee">Zigbee</a>)</li>
+<li><a href="/wiki/IEEE_802.15.4a" title="IEEE 802.15.4a">.4a</a></li>
+<li><a href="/w/index.php?title=IEEE_802.15.4b&amp;action=edit&amp;redlink=1" class="new" title="IEEE 802.15.4b (page does not exist)">.4b</a></li>
+<li><a href="/w/index.php?title=IEEE_802.15.4c&amp;action=edit&amp;redlink=1" class="new" title="IEEE 802.15.4c (page does not exist)">.4c</a></li>
+<li><a href="/w/index.php?title=IEEE_802.15.4d&amp;action=edit&amp;redlink=1" class="new" title="IEEE 802.15.4d (page does not exist)">.4d</a></li>
+<li><a href="/w/index.php?title=IEEE_802.15.4e&amp;action=edit&amp;redlink=1" class="new" title="IEEE 802.15.4e (page does not exist)">.4e</a></li>
+<li><a href="/w/index.php?title=IEEE_802.15.4f&amp;action=edit&amp;redlink=1" class="new" title="IEEE 802.15.4f (page does not exist)">.4f</a></li>
+<li><a href="/w/index.php?title=IEEE_802.15.4g&amp;action=edit&amp;redlink=1" class="new" title="IEEE 802.15.4g (page does not exist)">.4g</a></li>
+<li><a href="/w/index.php?title=IEEE_802.15.4z&amp;action=edit&amp;redlink=1" class="new" title="IEEE 802.15.4z (page does not exist)">.4z</a></li>
+<li><a href="/wiki/IEEE_802.15.5" class="mw-redirect" title="IEEE 802.15.5">.5</a></li>
+<li><a href="/wiki/IEEE_802.15.6" title="IEEE 802.15.6">.6</a></li>
+<li><a href="/wiki/IEEE_802.15.7" class="mw-redirect" title="IEEE 802.15.7">.7</a></li></ul>
+</div></td></tr></tbody></table><div></div></td></tr><tr><th scope="row" class="navbox-group" style="width:1%">Proposed</th><td class="navbox-list-with-group navbox-list navbox-odd" style="width:100%;padding:0"><div style="padding:0 0.25em">
+<ul><li><a href="/wiki/IEEE_P1363" title="IEEE P1363">P1363</a></li>
+<li><a href="/wiki/Rosetta-lang" title="Rosetta-lang">P1699</a></li>
+<li><a href="/wiki/Universal_Power_Adapter_for_Mobile_Devices" title="Universal Power Adapter for Mobile Devices">P1823</a></li>
+<li><a href="/wiki/IEEE_P1906.1" title="IEEE P1906.1">P1906.1</a></li></ul>
+</div></td></tr><tr><th scope="row" class="navbox-group" style="width:1%">Superseded</th><td class="navbox-list-with-group navbox-list navbox-even" style="width:100%;padding:0"><div style="padding:0 0.25em">
+<ul><li><a href="/wiki/IEEE_754-1985" title="IEEE 754-1985">754-1985</a></li>
+<li><a href="/wiki/Software_requirements_specification" title="Software requirements specification">830</a></li>
+<li><a href="/wiki/IEEE_1219" class="mw-redirect" title="IEEE 1219">1219</a></li>
+<li><a href="/wiki/Software_requirements_specification" title="Software requirements specification">1233</a></li>
+<li><a href="/wiki/Concept_of_operations" title="Concept of operations">1362</a></li>
+<li><a href="/wiki/Verilog" title="Verilog">1364</a></li>
+<li><a href="/wiki/IEEE_1471" title="IEEE 1471">1471</a></li></ul>
+</div></td></tr><tr><td class="navbox-abovebelow" colspan="2"><div>
+<ul><li><span class="noviewer" typeof="mw:File"><span title="Category"><img alt="" src="//thumb.wikimedia.org/wikipedia/en/thumb/9/96/Symbol_category_class.svg/20px-Symbol_category_class.svg.png?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail" decoding="async" loading="lazy" width="16" height="16" class="mw-file-element" srcset="//thumb.wikimedia.org/wikipedia/en/thumb/9/96/Symbol_category_class.svg/40px-Symbol_category_class.svg.png?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail 2x" data-file-width="180" data-file-height="185" /></span></span> <a href="/wiki/Category:IEEE_standards" title="Category:IEEE standards">Category</a></li></ul>
+</div></td></tr></tbody></table></div>
+<div class="navbox-styles"><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1374427404" /><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1377086236" /></div><div role="navigation" class="navbox authority-control" aria-labelledby="Authority&#95;control&#95;databases&#95;frameless&amp;#124;text-top&amp;#124;10px&amp;#124;alt=Edit&#95;this&#95;at&#95;Wikidata&amp;#124;link=https&amp;#58;//www.wikidata.org/wiki/Q1135192#identifiers&amp;#124;class=noprint&amp;#124;Edit&#95;this&#95;at&#95;Wikidata597" style="padding:3px"><table class="nowraplinks hlist mw-collapsible autocollapse navbox-inner" style="border-spacing:0;background:transparent;color:inherit"><tbody><tr><th scope="col" class="navbox-title" colspan="2"><div id="Authority&#95;control&#95;databases&#95;frameless&amp;#124;text-top&amp;#124;10px&amp;#124;alt=Edit&#95;this&#95;at&#95;Wikidata&amp;#124;link=https&amp;#58;//www.wikidata.org/wiki/Q1135192#identifiers&amp;#124;class=noprint&amp;#124;Edit&#95;this&#95;at&#95;Wikidata597" style="font-size:114%;margin:0 4em"><a href="/wiki/Help:Authority_control" title="Help:Authority control">Authority control databases</a> <span class="mw-valign-text-top noprint" typeof="mw:File/Frameless"><a href="https://www.wikidata.org/wiki/Q1135192#identifiers" title="Edit this at Wikidata"><img alt="Edit this at Wikidata" src="//thumb.wikimedia.org/wikipedia/en/thumb/8/8a/OOjs_UI_icon_edit-ltr-progressive.svg/20px-OOjs_UI_icon_edit-ltr-progressive.svg.png?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail" decoding="async" loading="lazy" width="10" height="10" class="mw-file-element" data-file-width="20" data-file-height="20" /></a></span></div></th></tr><tr><th scope="row" class="navbox-group" style="width:1%">International</th><td class="navbox-list-with-group navbox-list navbox-odd" style="width:100%;padding:0"><div style="padding:0 0.25em"><ul><li><span class="uid"><a rel="nofollow" class="external text" href="https://d-nb.info/gnd/4438949-8">GND</a></span></li></ul></div></td></tr><tr><th scope="row" class="navbox-group" style="width:1%">National</th><td class="navbox-list-with-group navbox-list navbox-even" style="width:100%;padding:0"><div style="padding:0 0.25em"><ul><li><span class="uid"><a rel="nofollow" class="external text" href="https://id.loc.gov/authorities/sh89004775">United States</a></span></li><li><span class="uid"><a rel="nofollow" class="external text" href="https://www.nli.org.il/en/authorities/987007529900905171">Israel</a></span></li></ul></div></td></tr></tbody></table></div>
+<!-- 
+NewPP limit report
+Parsed by mw‐web.eqiad.main‐5fb6d6bf94‐ksq9l
+Cached time: 20260927212925
+Cache expiry: 2592000
+Cache expiry source: Module:Citation/CS1 (os.date(%Y))
+Reduced expiry: false
+Complications: [vary‐revision‐sha1, prevent‐selective‐update, show‐toc]
+CPU time usage: 0.426 seconds
+Real time usage: 0.663 seconds
+Preprocessor visited node count: 4186/1000000
+Revision size: 27066/2097152 bytes
+Post‐expand include size: 184269/2097152 bytes
+Template argument size: 2705/2097152 bytes
+Highest expansion depth: 13/100
+Expensive parser function count: 3/500
+Unstrip recursion depth: 1/20
+Unstrip post‐expand size: 155352/5000000 bytes
+Lua time usage: 0.254/10.000 seconds
+Lua memory usage: 19908835/52428800 bytes
+Number of Wikibase entities loaded: 1/500
+-->
+<!--
+Transclusion expansion time report (%,ms,calls,template)
+100.00%  532.931      1 -total
+ 24.58%  131.018      1 Template:Reflist
+ 17.83%   95.014      8 Template:Annotated_link
+ 13.92%   74.190      6 Template:Navbox
+ 13.67%   72.826     15 Template:Cite_web
+ 11.35%   60.479      1 Template:Computer-bus
+  9.22%   49.138      1 Template:Short_description
+  6.34%   33.798      1 Template:Unreferenced_section
+  5.98%   31.854      2 Template:Pagetype
+  5.69%   30.308      1 Template:Unreferenced
+-->
+
+<!-- Render ID 8304ac8c-baba-11f1-88bc-7ff9c0481c45 -->
+
+<!-- Saved in parser cache with key enwiki:pcache:162183:|#|:idhash:canonical and timestamp 20260927212925 and revision id 1367456819. Rendering was triggered because: unknown
+ -->
+</div>
+</body></html>

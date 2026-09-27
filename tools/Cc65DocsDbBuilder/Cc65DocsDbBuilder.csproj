@@ -22,6 +22,9 @@
     <None Include="SourceHtml\CBook\**\*.html" CopyToOutputDirectory="PreserveNewest" />
     <!-- Curated C64-Wiki articles (see C64WikiPageCatalog) and the GNU FDL text they're under. -->
     <None Include="SourceHtml\C64Wiki\*.html;SourceHtml\C64Wiki\*.txt" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Curated Wikipedia articles (see WikipediaPageCatalog) and VICE manual chapters (see
+         ViceManualPageCatalog). -->
+    <None Include="SourceHtml\Wikipedia\*.html;SourceHtml\Vice\*.html" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

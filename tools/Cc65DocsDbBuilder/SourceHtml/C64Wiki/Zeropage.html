@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <!-- From C64-Wiki (https://www.c64-wiki.com/wiki/Zeropage), revision 38127, last edited 11 December 2021, at 15:58.
      Content is available under the GNU Free Documentation License - see c64wiki/licence.
      Only the article body is kept; retrieved 2026-09-27 for Tedide's Doc Viewer. -->
 <html><head><meta charset="utf-8"><title>Zeropage</title>
-<meta name="c64wiki-page" content="Zeropage"><meta name="c64wiki-revision" content="38127"><meta name="c64wiki-edited" content="11 December 2021, at 15:58">
+<meta name="wiki-page" content="Zeropage"><meta name="wiki-revision" content="38127"><meta name="wiki-edited" content="11 December 2021, at 15:58">
 </head><body>
 <div class="mw-content-ltr mw-parser-output" lang="en" dir="ltr"><p>The first 256 Bytes of the <a href="/wiki/C64" title="C64">C64</a> <a href="/wiki/memory_map" class="mw-redirect" title="memory map">memory map</a> (0-255 or $0000-$00FF) are called <b>zeropage</b> (<b>Page 0</b>). Besides faster fetching and storing from/to these addresses, the 65xx CPUs offer the <a href="/wiki/Indirect-indexed_addressing" title="Indirect-indexed addressing">indirect-indexed addressing mode</a> which only work on zeropage addresses.
 </p><p>The two very first addresses in both zeropage (and the entire address space) of the C64, are "hardwired" in the <a href="/wiki/CPU" title="CPU">CPU</a> to internal registers for use with the 6510's on-chip <a href="/index.php?title=Port&amp;action=edit&amp;redlink=1" class="new" title="Port (page does not exist)">port</a>. Reading and writing to these registers does not affect the attached <a href="/wiki/RAM" title="RAM">RAM</a> chips, and there is no direct way to access addresses 0 and 1 in RAM rather than the internal port registers (but some cunning hardware trickery with the VIC-chip will allow you to do so). This leaves 254 "normal", usable zeropage addresses, and thus potentially 254/2=127 index registers for use with indirect-indexed addressing.

@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <!-- From C64-Wiki (https://www.c64-wiki.com/wiki/Bank_Switching), revision 38213, last edited 4 January 2022, at 22:31.
      Content is available under the GNU Free Documentation License - see c64wiki/licence.
      Only the article body is kept; retrieved 2026-09-27 for Tedide's Doc Viewer. -->
 <html><head><meta charset="utf-8"><title>Bank Switching</title>
-<meta name="c64wiki-page" content="Bank_Switching"><meta name="c64wiki-revision" content="38213"><meta name="c64wiki-edited" content="4 January 2022, at 22:31">
+<meta name="wiki-page" content="Bank_Switching"><meta name="wiki-revision" content="38213"><meta name="wiki-edited" content="4 January 2022, at 22:31">
 </head><body>
 <div class="mw-content-ltr mw-parser-output" lang="en" dir="ltr"><p><b>Bank Switching</b> is a technique which configures the memory accessible by the <a href="/wiki/CPU" title="CPU">CPU</a> at any given time.
 </p><p>As the <a href="/wiki/MOS_6510" class="mw-redirect" title="MOS 6510">MOS 6510</a> <a href="/wiki/CPU" title="CPU">CPU</a> can only access 2<sup>16</sup> = 65536 memory locations ($0000-$FFFF), banks of memory can be switched (which exposes or hides them from the <a href="/wiki/CPU" title="CPU">CPU</a>) in order to provide a greater overall capacity. In its original state the <a href="/wiki/C64" title="C64">C64</a> contains 64 kBytes of <a href="/wiki/RAM" title="RAM">RAM</a>, 20 kBytes of <a href="/wiki/ROM" title="ROM">ROM</a>, and 512 bytes of <a href="/wiki/Color_RAM" title="Color RAM">Color RAM</a>. Through the <a href="/wiki/expansion_port" class="mw-redirect" title="expansion port">expansion port</a>, extensions such as additional <a href="/wiki/ROM" title="ROM">ROM</a> and/or <a href="/wiki/RAM" title="RAM">RAM</a> can be added. Bank switching allows the <a href="/wiki/CPU" title="CPU">CPU</a> to access all of this memory (albeit non-contiguously) to execute a program, and is a common technique in 8-bit microcomputer systems. Unlike memory management by <a href="/index.php?title=paging&amp;action=edit&amp;redlink=1" class="new" title="paging (page does not exist)">paging</a>, data is not exchanged with a storage device but is loaded into memory and remains inaccessible to the <a href="/wiki/CPU" title="CPU">CPU</a> until bank switching is initiated.

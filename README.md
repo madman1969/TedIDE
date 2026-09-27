@@ -422,14 +422,21 @@ dotnet run --project src/Tedide.DocViewer
 ```
 
 A single window: a category/page tree on the left, and the selected page's rendered Markdown on the
-right (via Terminal.Gui's own `Markdown` view). The tree holds three books: every **cc65 manual**,
-**The C Book** (Banahan, Brady & Doran, under its own free-redistribution licence), and a curated
-set of 26 **C64-Wiki** articles - the machine and its CPU, the VIC-II/SID/CIA chips, the memory map
-and bank switching, graphics modes, sprites, raster interrupts, the KERNAL, BASIC, opcodes,
-PETSCII and input - under the GNU Free Documentation License, with a Licence page listing each
-article's source and revision alongside the licence text. All of it comes from `Docs.db`, an
-embedded SQLite database built once ahead of time by `tools/Cc65DocsDbBuilder` from the sources'
-own HTML (checked in under its `SourceHtml/`) - regenerate it (and rebuild) if any of them change.
+right (via Terminal.Gui's own `Markdown` view). The tree holds five books:
+
+| Book | Contents | Licence |
+| --- | --- | --- |
+| **cc65 Manual** | every cc65 manual - the tools, the libraries, each target | cc65's own (zlib) |
+| **The C Book** | Banahan, Brady & Doran's complete C tutorial | its own free-redistribution licence |
+| **C64-Wiki** | 28 articles: the C64 and its CPU, the VIC-II/SID/CIA chips, the memory map and bank switching, graphics modes, sprites, raster interrupts, the KERNAL, BASIC, opcodes, PETSCII, input, and the PET 2001 and IEEE-488 | GNU FDL |
+| **Wikipedia** | 8 articles on the Commodore PET and its hardware: the PET, Commodore BASIC, PETSCII, the 6502, the 6520 PIA, 6522 VIA and 6845 CRTC, and IEEE-488 | CC BY-SA 4.0 |
+| **VICE Manual** | the chapters on running the emulators, each machine's options (PET included), media images and file formats, the monitor and binary monitor, c1541 and petcat | GNU GPL |
+
+Each third-party book ends with its licence: a page listing each article's source and revision
+alongside the licence (C64-Wiki, Wikipedia), or the manual's own Copyright and GPL chapters (VICE).
+All of it comes from `Docs.db`, an embedded SQLite database built once ahead of time by
+`tools/Cc65DocsDbBuilder` from the sources' own HTML (checked in under its `SourceHtml/`) -
+regenerate it (and rebuild) if any of them change.
 
 ![The Doc Viewer showing the cc65 manual's "coding" page: the contents tree on the left with the page selected, and on the right its rendered text with themed headings and syntax-highlighted C and 6502 code blocks](docs/images/docviewer.png)
 

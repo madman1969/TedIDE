@@ -1,13 +1,14 @@
 using Cc65DocsDbBuilder;
 
 // Run from this project's own directory (e.g. `dotnet run` from tools/Cc65DocsDbBuilder) - reads
-// SourceHtml/*.html (the cc65 manuals), SourceHtml/CBook/**/*.html (The C Book) and
-// SourceHtml/C64Wiki/*.html (curated C64-Wiki articles) and writes Docs.db straight into
+// SourceHtml/*.html (the cc65 manuals), SourceHtml/CBook/**/*.html (The C Book),
+// SourceHtml/C64Wiki/*.html and SourceHtml/Wikipedia/*.html (curated wiki articles) and
+// SourceHtml/Vice/*.html (VICE manual chapters) and writes Docs.db straight into
 // src/Tedide.DocViewer/, where it's picked up as loose content next to the built exe. Re-run
 // manually whenever a source tree is updated (e.g. a refreshed download from
-// https://cc65.github.io/doc/, https://publications.gbdirect.co.uk/c_book/ or
-// https://www.c64-wiki.com) - this is a one-time dev-time conversion, not part of the normal
-// solution build.
+// https://cc65.github.io/doc/, https://publications.gbdirect.co.uk/c_book/,
+// https://www.c64-wiki.com, https://en.wikipedia.org or https://vice-emu.sourceforge.io) - this is
+// a one-time dev-time conversion, not part of the normal solution build.
 var sourceHtmlDir = Path.Combine(AppContext.BaseDirectory, "SourceHtml");
 var outputPath = args.Length > 0
     ? args[0]
@@ -17,6 +18,8 @@ var pages = new List<ConvertedPage>();
 pages.AddRange(BuildCc65Pages(sourceHtmlDir));
 pages.AddRange(BuildCBookPages(Path.Combine(sourceHtmlDir, "CBook")));
 pages.AddRange(BuildC64WikiPages(Path.Combine(sourceHtmlDir, "C64Wiki")));
+pages.AddRange(BuildWikipediaPages(Path.Combine(sourceHtmlDir, "Wikipedia")));
+pages.AddRange(BuildVicePages(Path.Combine(sourceHtmlDir, "Vice")));
 
 Console.WriteLine($"Writing {pages.Count} pages to {outputPath}...");
 Directory.CreateDirectory(Path.GetDirectoryName(outputPath)!);
@@ -110,41 +113,68 @@ static List<ConvertedPage> BuildCBookPages(string cBookSourceHtmlDir)
     return pages;
 }
 
-static List<ConvertedPage> BuildC64WikiPages(string c64WikiSourceHtmlDir)
-{
-    const string book = "C64-Wiki";
-    const int bookSortOrder = 2;
+static List<ConvertedPage> BuildC64WikiPages(string sourceDir) =>
+    BuildMediaWikiBook("C64-Wiki", 2, sourceDir, C64WikiPageCatalog.Site, C64WikiPageCatalog.Categories,
+        C64WikiPageCatalog.ArticlePageIds, C64WikiPageCatalog.LicencePageId,
+        html => C64WikiLicencePage(html, File.ReadAllText(Path.Combine(sourceDir, "fdl-1.3.txt"))));
 
-    var htmlByPageId = C64WikiPageCatalog.ArticlePageIds.ToDictionary(
+static List<ConvertedPage> BuildWikipediaPages(string sourceDir) =>
+    BuildMediaWikiBook("Wikipedia", 3, sourceDir, WikipediaPageCatalog.Site, WikipediaPageCatalog.Categories,
+        WikipediaPageCatalog.ArticlePageIds, WikipediaPageCatalog.LicencePageId, WikipediaLicencePage);
+
+/// <summary>A book of MediaWiki articles (C64-Wiki or Wikipedia): each article converted by
+/// <see cref="MediaWikiHtmlToMarkdownConverter"/>, plus the book's generated licence page.</summary>
+static List<ConvertedPage> BuildMediaWikiBook(
+    string book, int bookSortOrder, string sourceDir, MediaWikiSite site, IReadOnlyList<PageCategory> categories,
+    IReadOnlyList<string> articlePageIds, string licencePageId, Func<IReadOnlyDictionary<string, string>, string> licencePage)
+{
+    var htmlByPageId = articlePageIds.ToDictionary(
         id => id,
         id =>
         {
-            var path = Path.Combine(c64WikiSourceHtmlDir, id[C64WikiPageCatalog.PageIdPrefix.Length..] + ".html");
+            var path = Path.Combine(sourceDir, id[site.PageIdPrefix.Length..] + ".html");
             return File.Exists(path)
                 ? File.ReadAllText(path)
-                : throw new InvalidOperationException($"C64WikiPageCatalog references {id}, which has no {path}");
+                : throw new InvalidOperationException($"The {book} catalog references {id}, which has no {path}");
         },
         StringComparer.Ordinal);
-    Console.WriteLine($"Found {htmlByPageId.Count} C64-Wiki articles in {c64WikiSourceHtmlDir}");
+    Console.WriteLine($"Found {htmlByPageId.Count} {book} articles in {sourceDir}");
 
-    Console.WriteLine("Building C64-Wiki cross-page anchor index (pass 1)...");
-    var anchorIndex = C64WikiHtmlToMarkdownConverter.BuildAnchorIndex(htmlByPageId);
+    Console.WriteLine($"Building {book} cross-page anchor index (pass 1)...");
+    var anchorIndex = MediaWikiHtmlToMarkdownConverter.BuildAnchorIndex(htmlByPageId, site);
 
-    Console.WriteLine("Converting C64-Wiki articles to Markdown (pass 2)...");
+    Console.WriteLine($"Converting {book} articles to Markdown (pass 2)...");
     var pages = new List<ConvertedPage>();
-    for (var categoryIndex = 0; categoryIndex < C64WikiPageCatalog.Categories.Count; categoryIndex++)
+    for (var categoryIndex = 0; categoryIndex < categories.Count; categoryIndex++)
     {
-        var category = C64WikiPageCatalog.Categories[categoryIndex];
+        var category = categories[categoryIndex];
         for (var pageIndex = 0; pageIndex < category.Entries.Count; pageIndex++)
         {
             var entry = category.Entries[pageIndex];
-            var markdown = entry.FileName == C64WikiPageCatalog.LicencePageId
-                ? C64WikiLicencePage(htmlByPageId, File.ReadAllText(Path.Combine(c64WikiSourceHtmlDir, "fdl-1.3.txt")))
-                : C64WikiHtmlToMarkdownConverter.Convert(htmlByPageId[entry.FileName], entry.FileName, anchorIndex);
+            var markdown = entry.FileName == licencePageId
+                ? licencePage(htmlByPageId)
+                : MediaWikiHtmlToMarkdownConverter.Convert(htmlByPageId[entry.FileName], entry.FileName, anchorIndex, site);
             pages.Add(new ConvertedPage(entry.FileName, book, bookSortOrder, category.Name, categoryIndex, pageIndex, entry.Description, markdown));
         }
     }
     return pages;
+}
+
+/// <summary>The sources table on a wiki licence page: each article's title, source URL, the exact
+/// revision taken and its history (which lists its authors), and when it was last edited.</summary>
+static string WikiSourcesTable(IReadOnlyDictionary<string, string> htmlByPageId, string articleUrlBase, string indexPhp)
+{
+    var sb = new System.Text.StringBuilder();
+    sb.Append("| Article | Source | Revision | Last edited |\n| --- | --- | --- | --- |\n");
+    foreach (var (_, html) in htmlByPageId)
+    {
+        var page = MediaWikiHtmlToMarkdownConverter.Meta(html, "wiki-page");
+        var revision = MediaWikiHtmlToMarkdownConverter.Meta(html, "wiki-revision");
+        var edited = MediaWikiHtmlToMarkdownConverter.Meta(html, "wiki-edited");
+        sb.Append($"| {MediaWikiHtmlToMarkdownConverter.Title(html)} | {articleUrlBase}{page} | ");
+        sb.Append($"{indexPhp}?oldid={revision} (history: {indexPhp}?title={page}&action=history) | {edited} |\n");
+    }
+    return sb.ToString();
 }
 
 /// <summary>
@@ -164,19 +194,73 @@ static string C64WikiLicencePage(IReadOnlyDictionary<string, string> htmlByPageI
     sb.Append("links to articles not included here keep their text but not the link.\n\n");
     sb.Append("## Sources\n\n");
     sb.Append("The authors of each article are listed in its history on C64-Wiki.\n\n");
-    sb.Append("| Article | Source | Revision | Last edited |\n| --- | --- | --- | --- |\n");
-    foreach (var (_, html) in htmlByPageId)
-    {
-        var page = C64WikiHtmlToMarkdownConverter.Meta(html, "c64wiki-page");
-        var revision = C64WikiHtmlToMarkdownConverter.Meta(html, "c64wiki-revision");
-        var edited = C64WikiHtmlToMarkdownConverter.Meta(html, "c64wiki-edited");
-        sb.Append($"| {C64WikiHtmlToMarkdownConverter.Title(html)} | https://www.c64-wiki.com/wiki/{page} | ");
-        sb.Append($"https://www.c64-wiki.com/index.php?oldid={revision} (history: https://www.c64-wiki.com/index.php?title={page}&action=history) | {edited} |\n");
-    }
+    sb.Append(WikiSourcesTable(htmlByPageId, "https://www.c64-wiki.com/wiki/", "https://www.c64-wiki.com/index.php"));
     sb.Append("\n## GNU Free Documentation License\n\n```\n");
     sb.Append(licenceText.Replace("\r\n", "\n").Trim('\n'));
     sb.Append("\n```\n");
     return sb.ToString();
+}
+
+/// <summary>
+/// The Wikipedia licence page: what CC BY-SA 4.0 asks of a redistributed copy - attribution (each
+/// article's title, source, revision and history), the licence and a link to it, and a note of
+/// what was changed.
+/// </summary>
+static string WikipediaLicencePage(IReadOnlyDictionary<string, string> htmlByPageId)
+{
+    var sb = new System.Text.StringBuilder();
+    sb.Append("# Wikipedia licence and sources\n\n");
+    sb.Append("The articles in this section are from the English **Wikipedia** (https://en.wikipedia.org), ");
+    sb.Append("and are licensed under the **Creative Commons Attribution-ShareAlike 4.0 International License** ");
+    sb.Append("(CC BY-SA 4.0) - https://creativecommons.org/licenses/by-sa/4.0/ (legal code: ");
+    sb.Append("https://creativecommons.org/licenses/by-sa/4.0/legalcode). They're redistributed here under ");
+    sb.Append("that licence, and these adapted versions are under it too.\n\n");
+    sb.Append("## Changes\n\n");
+    sb.Append("Each article has been converted to Markdown for this viewer. Images, the contents box, \"edit\" ");
+    sb.Append("links, hatnotes, navigation boxes, maintenance banners and citation markers are left out, as are ");
+    sb.Append("the References, Notes, Sources, Further reading and External links sections. Links to articles ");
+    sb.Append("not included here keep their text but not the link. The text is otherwise unchanged.\n\n");
+    sb.Append("## Sources\n\n");
+    sb.Append("The authors of each article are listed in its history on Wikipedia.\n\n");
+    sb.Append(WikiSourcesTable(htmlByPageId, "https://en.wikipedia.org/wiki/", "https://en.wikipedia.org/w/index.php"));
+    return sb.ToString();
+}
+
+/// <summary>The bundled VICE manual chapters (see <see cref="ViceManualPageCatalog"/>) - its own
+/// Copyright and GPL chapters included, which serve as this book's licence pages.</summary>
+static List<ConvertedPage> BuildVicePages(string sourceDir)
+{
+    const string book = "VICE Manual";
+    const int bookSortOrder = 4;
+
+    var htmlByPageId = ViceManualPageCatalog.AllChapters.ToDictionary(
+        c => c.PageId,
+        c =>
+        {
+            var path = Path.Combine(sourceDir, $"vice_{c.Number}.html");
+            return File.Exists(path)
+                ? File.ReadAllText(path)
+                : throw new InvalidOperationException($"ViceManualPageCatalog references chapter {c.Number}, which has no {path}");
+        },
+        StringComparer.Ordinal);
+    Console.WriteLine($"Found {htmlByPageId.Count} VICE manual chapters in {sourceDir}");
+
+    Console.WriteLine("Building VICE manual cross-page anchor index (pass 1)...");
+    var anchorIndex = ViceManualHtmlToMarkdownConverter.BuildAnchorIndex(htmlByPageId);
+
+    Console.WriteLine("Converting VICE manual chapters to Markdown (pass 2)...");
+    var pages = new List<ConvertedPage>();
+    for (var categoryIndex = 0; categoryIndex < ViceManualPageCatalog.Categories.Count; categoryIndex++)
+    {
+        var (category, chapters) = ViceManualPageCatalog.Categories[categoryIndex];
+        for (var pageIndex = 0; pageIndex < chapters.Count; pageIndex++)
+        {
+            var chapter = chapters[pageIndex];
+            var markdown = ViceManualHtmlToMarkdownConverter.Convert(htmlByPageId[chapter.PageId], chapter.PageId, anchorIndex);
+            pages.Add(new ConvertedPage(chapter.PageId, book, bookSortOrder, category, categoryIndex, pageIndex, chapter.Description, markdown));
+        }
+    }
+    return pages;
 }
 
 /// <summary>Turns an absolute source file path under <c>SourceHtml/CBook/</c> into the book-relative

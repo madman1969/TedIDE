@@ -4,20 +4,31 @@ using HtmlAgilityPack;
 namespace Cc65DocsDbBuilder;
 
 /// <summary>
-/// Converts one C64-Wiki article (see <see cref="C64WikiPageCatalog"/>) to Markdown for
-/// <c>Terminal.Gui.Views.Markdown</c>. The source files under <c>SourceHtml/C64Wiki/</c> hold just
-/// the article body MediaWiki rendered (<c>div.mw-parser-output</c>) plus the page title, so
-/// extraction is simple; what needs care is MediaWiki's own markup inside it:
+/// A MediaWiki site whose articles are bundled: the page-id prefix its articles get in Docs.db
+/// (<c>c64wiki/</c>, <c>wikipedia/</c>), the redirect titles that lead to bundled articles, and
+/// section headings whose content is left out entirely.
+/// </summary>
+public sealed record MediaWikiSite(string PageIdPrefix, IReadOnlyDictionary<string, string> Redirects, IReadOnlySet<string> DroppedSections);
+
+/// <summary>
+/// Converts one MediaWiki article - from C64-Wiki (see <see cref="C64WikiPageCatalog"/>) or
+/// Wikipedia (see <see cref="WikipediaPageCatalog"/>) - to Markdown for
+/// <c>Terminal.Gui.Views.Markdown</c>. The source files hold just the article body MediaWiki
+/// rendered (<c>div.mw-parser-output</c>) plus the page title, so extraction is simple; what needs
+/// care is MediaWiki's own markup inside it:
 ///
 /// - The page title isn't part of the body, so it's emitted as the page's H1; the body's own
-///   h2/h3/h4 follow. A heading's text and anchor come from its <c>span.mw-headline</c> - the
-///   heading element also holds the "[edit]" link (<c>span.mw-editsection</c>), which is dropped.
+///   h2/h3/h4 follow. A heading's text and anchor come from its <c>span.mw-headline</c> (older
+///   MediaWiki, C64-Wiki) or the heading element's own id (newer, Wikipedia); its "[edit]" link
+///   (<c>span.mw-editsection</c>) is dropped.
 /// - Dropped as navigation or media rather than text: the contents box (<c>div#toc</c> - DocViewer
 ///   has no use for a second table of contents), images and their captions (<c>figure</c>,
-///   <c>img</c>, <c>div.thumb</c>, galleries), citation markers (<c>sup.reference</c>) and print-only
-///   footers.
+///   <c>img</c>, <c>div.thumb</c>, galleries), citation markers and reference lists, hatnotes,
+///   navigation boxes, maintenance banners and print-only footers. A site can also drop whole
+///   sections by heading (<see cref="MediaWikiSite.DroppedSections"/> - Wikipedia's "References",
+///   "External links" and the like are lists of citations with nothing to follow offline).
 /// - Links are MediaWiki paths, <c>/wiki/Page_name#Section</c>. One to a bundled article - directly
-///   or through a known redirect (<see cref="C64WikiPageCatalog.Redirects"/>) - becomes a page link
+///   or through a known redirect (<see cref="MediaWikiSite.Redirects"/>) - becomes a page link
 ///   (<c>c64wiki/Page_name.html#slug</c>, or <c>#slug</c> on the same page), resolved through
 ///   <see cref="BuildAnchorIndex"/> the same way the cc65 manuals' and The C Book's are. Any other
 ///   link - a page not bundled, a missing ("red") page, an external site - keeps its text only:
@@ -25,7 +36,7 @@ namespace Cc65DocsDbBuilder;
 /// - Lists nest (MediaWiki's <c>**</c> items), so nested lists are indented rather than flattened;
 ///   table cells spanning columns are padded out so a row still lines up with its header.
 /// </summary>
-public static class C64WikiHtmlToMarkdownConverter
+public static class MediaWikiHtmlToMarkdownConverter
 {
     /// <summary>A page's heading anchors, mapped to the slug Terminal.Gui's Markdown view will
     /// compute for that heading.</summary>
@@ -55,7 +66,7 @@ public static class C64WikiHtmlToMarkdownConverter
     /// <summary>Pass 1: each page's heading anchors, in the order the headings will be emitted -
     /// the title first, then the body's - so repeated headings get the same "-1", "-2" suffixes
     /// the view gives them.</summary>
-    public static Dictionary<string, PageAnchors> BuildAnchorIndex(IReadOnlyDictionary<string, string> htmlByPageId)
+    public static Dictionary<string, PageAnchors> BuildAnchorIndex(IReadOnlyDictionary<string, string> htmlByPageId, MediaWikiSite site)
     {
         var index = new Dictionary<string, PageAnchors>();
         foreach (var (pageId, html) in htmlByPageId)
@@ -64,7 +75,10 @@ public static class C64WikiHtmlToMarkdownConverter
             MarkdownSlug.MakeUnique(Title(html), slugUseCount);
 
             var slugsByAnchorName = new Dictionary<string, string>();
-            foreach (var heading in LoadContent(html).Descendants().Where(n => IsHeading(n) && !IsSkipped(n)))
+            var headings = KeptContent(LoadContent(html), site)
+                .SelectMany(n => n.DescendantsAndSelf())
+                .Where(n => IsHeading(n) && !IsSkipped(n));
+            foreach (var heading in headings)
             {
                 var text = HeadingText(heading);
                 if (text.Length == 0)
@@ -80,13 +94,13 @@ public static class C64WikiHtmlToMarkdownConverter
     }
 
     /// <summary>Pass 2: the article as Markdown, links resolved through <paramref name="anchorIndex"/>.</summary>
-    public static string Convert(string html, string currentPageId, IReadOnlyDictionary<string, PageAnchors> anchorIndex)
+    public static string Convert(string html, string currentPageId, IReadOnlyDictionary<string, PageAnchors> anchorIndex, MediaWikiSite site)
     {
         var sb = new StringBuilder();
         sb.Append("# ").Append(Title(html)).Append("\n\n");
 
-        var ctx = new Context(sb, currentPageId, anchorIndex);
-        foreach (var child in LoadContent(html).ChildNodes)
+        var ctx = new Context(sb, currentPageId, anchorIndex, site);
+        foreach (var child in KeptContent(LoadContent(html), site))
             AppendNode(child, ctx);
 
         var text = sb.ToString();
@@ -103,11 +117,39 @@ public static class C64WikiHtmlToMarkdownConverter
             ?? throw new InvalidOperationException("Article has no div.mw-parser-output.");
     }
 
-    private sealed class Context(StringBuilder sb, string currentPageId, IReadOnlyDictionary<string, PageAnchors> anchorIndex)
+    /// <summary>
+    /// The body's top-level nodes, minus any section the site drops by heading (see
+    /// <see cref="MediaWikiSite.DroppedSections"/>): from that heading up to the next heading of the
+    /// same or a higher level. A heading is either a bare h2-h5 (older MediaWiki) or wrapped in
+    /// <c>div.mw-heading</c> alongside its edit link (newer).
+    /// </summary>
+    private static IEnumerable<HtmlNode> KeptContent(HtmlNode content, MediaWikiSite site)
+    {
+        int? droppingBelowLevel = null;
+        foreach (var child in content.ChildNodes)
+        {
+            var heading = IsHeading(child) ? child
+                : child.Name == "div" && HasClass(child, "mw-heading") ? child.ChildNodes.FirstOrDefault(IsHeading)
+                : null;
+            if (heading is not null)
+            {
+                var level = heading.Name[1] - '0';
+                if (droppingBelowLevel is { } dropping && level <= dropping)
+                    droppingBelowLevel = null;
+                if (droppingBelowLevel is null && site.DroppedSections.Contains(HeadingText(heading)))
+                    droppingBelowLevel = level;
+            }
+            if (droppingBelowLevel is null)
+                yield return child;
+        }
+    }
+
+    private sealed class Context(StringBuilder sb, string currentPageId, IReadOnlyDictionary<string, PageAnchors> anchorIndex, MediaWikiSite site)
     {
         public readonly StringBuilder Sb = sb;
         public readonly string CurrentPageId = currentPageId;
         public readonly IReadOnlyDictionary<string, PageAnchors> AnchorIndex = anchorIndex;
+        public readonly MediaWikiSite Site = site;
 
         /// <summary>Whether the last text appended ended in whitespace - see
         /// <see cref="HtmlToMarkdownConverter"/>'s equivalent.</summary>
@@ -132,6 +174,12 @@ public static class C64WikiHtmlToMarkdownConverter
         || HasClass(node, "mw-editsection") || HasClass(node, "thumb") || HasClass(node, "gallery")
         || HasClass(node, "reference") || HasClass(node, "printfooter") || HasClass(node, "noprint")
         || HasClass(node, "mw-empty-elt")
+        // Wikipedia's: reference lists, "For other uses..." hatnotes, navigation boxes and
+        // sidebars, and maintenance banners ("This article needs additional citations...").
+        || HasClass(node, "reflist") || HasClass(node, "references") || HasClass(node, "mw-references-wrap")
+        || HasClass(node, "hatnote") || HasClass(node, "navbox") || HasClass(node, "sidebar")
+        || HasClass(node, "ambox") || HasClass(node, "metadata") || HasClass(node, "shortdescription")
+        || node.Name == "link"
         || node.Ancestors().Any(a => a.GetAttributeValue("id", "") == "toc" || HasClass(a, "mw-editsection"));
 
     /// <summary>A heading's text: its <c>span.mw-headline</c> when present (the rest of the element
@@ -283,7 +331,7 @@ public static class C64WikiHtmlToMarkdownConverter
 
     private static void AppendAnchor(Context ctx, HtmlNode node)
     {
-        var url = HasClass(node, "new") ? null : ResolveHref(node.GetAttributeValue("href", ""), ctx.CurrentPageId, ctx.AnchorIndex);
+        var url = HasClass(node, "new") ? null : ResolveHref(node.GetAttributeValue("href", ""), ctx.CurrentPageId, ctx.AnchorIndex, ctx.Site);
         if (url is null)
         {
             AppendChildren(node, ctx);
@@ -310,14 +358,14 @@ public static class C64WikiHtmlToMarkdownConverter
     /// or null if it doesn't lead to a bundled article. A section that can't be matched to a
     /// heading still links to the page itself.
     /// </summary>
-    public static string? ResolveHref(string href, string currentPageId, IReadOnlyDictionary<string, PageAnchors> anchorIndex)
+    public static string? ResolveHref(string href, string currentPageId, IReadOnlyDictionary<string, PageAnchors> anchorIndex, MediaWikiSite site)
     {
         href = HtmlEntity.DeEntitize(href);
         string pageName;
         string fragment;
         if (href.StartsWith('#'))
         {
-            pageName = currentPageId[C64WikiPageCatalog.PageIdPrefix.Length..];
+            pageName = currentPageId[site.PageIdPrefix.Length..];
             fragment = href[1..];
         }
         else if (href.StartsWith("/wiki/", StringComparison.Ordinal))
@@ -332,10 +380,10 @@ public static class C64WikiHtmlToMarkdownConverter
             return null; // external, or an index.php?... action link.
         }
 
-        if (C64WikiPageCatalog.Redirects.TryGetValue(pageName, out var redirectTarget))
+        if (site.Redirects.TryGetValue(pageName, out var redirectTarget))
             pageName = redirectTarget;
 
-        var pageId = C64WikiPageCatalog.PageIdPrefix + pageName;
+        var pageId = site.PageIdPrefix + pageName;
         if (!anchorIndex.TryGetValue(pageId, out var anchors))
             return null;
 
@@ -450,6 +498,8 @@ public static class C64WikiHtmlToMarkdownConverter
             if (cells.Count > 0)
                 rows.Add(cells);
         }
+        // Rows with no text at all - an infobox's image row, say - would only print as empty lines.
+        rows.RemoveAll(r => r.All(c => c.Length == 0));
         if (rows.Count == 0)
             return;
 
@@ -474,12 +524,31 @@ public static class C64WikiHtmlToMarkdownConverter
         ctx.PendingSpace = false;
     }
 
+    /// <summary>A cell's text on one line: inline elements run together as written ("(1977)", not
+    /// "( 1977 )"), line breaks and block boundaries become spaces.</summary>
     private static string CellText(HtmlNode cell)
     {
-        var text = string.Concat(cell.DescendantsAndSelf()
-            .Where(n => n.NodeType == HtmlNodeType.Text && !n.Ancestors().Any(IsSkipped))
-            .Select(n => HtmlEntity.DeEntitize(n.InnerText) + " "));
-        return CollapseWhitespace(text).Trim().Replace("|", "\\|");
+        var sb = new StringBuilder();
+        void Walk(HtmlNode node)
+        {
+            if (IsSkipped(node))
+                return;
+            if (node.NodeType == HtmlNodeType.Text)
+            {
+                sb.Append(HtmlEntity.DeEntitize(node.InnerText));
+                return;
+            }
+            var isBlock = node.Name is "br" or "p" or "div" or "li" or "ul" or "ol" or "dl" or "dt" or "dd" or "table" or "tr" or "td" or "th";
+            if (isBlock)
+                sb.Append(' ');
+            foreach (var child in node.ChildNodes)
+                Walk(child);
+            if (isBlock)
+                sb.Append(' ');
+        }
+        foreach (var child in cell.ChildNodes)
+            Walk(child);
+        return CollapseWhitespace(sb.ToString()).Trim().Replace("|", "\\|");
     }
 
     private static void AppendInlineText(Context ctx, string text, bool leadingSpace)

@@ -9,12 +9,12 @@ namespace Tedide.DocViewer.Tests;
 public class C64WikiConverterTests
 {
     private static string Article(string title, string body) => $"""
-        <html><head><title>{title}</title><meta name="c64wiki-page" content="{title.Replace(' ', '_')}"></head><body>
+        <html><head><title>{title}</title><meta name="wiki-page" content="{title.Replace(' ', '_')}"></head><body>
         <div class="mw-content-ltr mw-parser-output" lang="en">{body}</div>
         </body></html>
         """;
 
-    private static readonly Dictionary<string, C64WikiHtmlToMarkdownConverter.PageAnchors> Anchors = new()
+    private static readonly Dictionary<string, MediaWikiHtmlToMarkdownConverter.PageAnchors> Anchors = new()
     {
         ["c64wiki/VIC"] = new() { SlugsByAnchorName = new() { ["Registers"] = "registers" } },
         ["c64wiki/CIA"] = new() { SlugsByAnchorName = new() { ["CIA_2"] = "cia-2" } },
@@ -22,7 +22,7 @@ public class C64WikiConverterTests
     };
 
     private static string Convert(string body, string pageId = "c64wiki/Sprite") =>
-        C64WikiHtmlToMarkdownConverter.Convert(Article("Sprite", body), pageId, Anchors);
+        MediaWikiHtmlToMarkdownConverter.Convert(Article("Sprite", body), pageId, Anchors, C64WikiPageCatalog.Site);
 
     [Fact]
     public void TitleBecomesTheH1_AndSectionsKeepTheirLevel_WithoutEditLinks()
@@ -66,7 +66,7 @@ public class C64WikiConverterTests
     [InlineData("/index.php?title=VIC&action=edit", null)]
     public void ResolveHref_LinksOnlyToBundledArticles(string href, string? expected)
     {
-        Assert.Equal(expected, C64WikiHtmlToMarkdownConverter.ResolveHref(href, "c64wiki/Sprite", Anchors));
+        Assert.Equal(expected, MediaWikiHtmlToMarkdownConverter.ResolveHref(href, "c64wiki/Sprite", Anchors, C64WikiPageCatalog.Site));
     }
 
     [Fact]
