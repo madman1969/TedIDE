@@ -1,3 +1,4 @@
+using Tedide.Theming;
 using System.Data;
 using Tedide.Core;
 using Terminal.Gui.App;

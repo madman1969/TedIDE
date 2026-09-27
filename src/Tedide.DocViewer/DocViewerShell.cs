@@ -124,6 +124,9 @@ public sealed class DocViewerShell : Window
         _contentFrame = new FrameView
         {
             Title = "Documentation",
+            // Page names are full of underscores (The C Book's "answers/chapter_7") and a title reads
+            // its first "_" as a hotkey marker - it was shown as "answers/chapter7".
+            HotKeySpecifier = new System.Text.Rune(0xFFFF),
             X = Pos.Right(treeFrame),
             Y = Pos.Bottom(menuBar),
             Width = Dim.Fill(),
@@ -258,14 +261,14 @@ public sealed class DocViewerShell : Window
 
         if (_bookmarks.Contains(entry.FileName, null))
         {
-            ToggleAndSave(entry.FileName, "");
+            ToggleAndSave(entry.FileName, null, "");
             return;
         }
 
         var dialog = new AddBookmarkDialog(entry.Description);
         Application.Run(dialog);
         if (dialog.Label is { } label)
-            ToggleAndSave(entry.FileName, label);
+            ToggleAndSave(entry.FileName, null, label);
     }
 
     /// <summary>
@@ -274,16 +277,16 @@ public sealed class DocViewerShell : Window
     /// and the Bookmarks menu, where an escaping exception ended the whole app (confirmed live).
     /// The change still applies for this session - only remembering it for the next one failed.
     /// </summary>
-    private void ToggleAndSave(string fileName, string label)
+    private void ToggleAndSave(string fileName, string? anchor, string label)
     {
         try
         {
-            _bookmarks.Toggle(fileName, null, label);
+            _bookmarks.Toggle(fileName, anchor, label);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
         {
             Serilog.Log.Error(ex, "Could not save bookmarks");
-            MessageBox.ErrorQuery(App!, "Could Not Save Bookmarks",
+            TedideMessageBox.ErrorQuery("Could Not Save Bookmarks",
                 $"The bookmark was changed for this session, but saving it failed:\n{ex.Message}", "OK");
         }
         RefreshBookmarksMenu();
@@ -335,9 +338,32 @@ public sealed class DocViewerShell : Window
         if (_bookmarks.Items.Count == 0)
             return [new MenuItem("(No Bookmarks)", "", () => { }, Key.Empty)];
 
+        // Numbered "_1 label", like Tedide.App's Recent Projects menu: the numeral takes the one
+        // "_" a menu title reads as its hotkey marker, so an underscore in the label itself (often
+        // a page description or name, e.g. "chapter_7") shows literally instead of being swallowed.
         return _bookmarks.Items
-            .Select(b => new MenuItem(b.Label, b.FileName, () => NavigateTo(b.FileName, b.Anchor, pushHistory: true), Key.Empty))
+            .Select((b, i) => new MenuItem($"_{i + 1} {b.Label}", b.FileName, () => OpenBookmark(b), Key.Empty).WithLiteralHelpText())
             .ToList();
+    }
+
+    /// <summary>
+    /// Navigates to a bookmark - or, if its page is no longer in Docs.db (a rebuilt database can
+    /// rename or drop pages), says so and offers to remove it. Choosing one used to silently do
+    /// nothing, and it could never be removed either: Add/Remove only acts on the page on screen.
+    /// </summary>
+    private void OpenBookmark(Bookmark bookmark)
+    {
+        if (_entriesByFileName.ContainsKey(bookmark.FileName))
+        {
+            NavigateTo(bookmark.FileName, bookmark.Anchor, pushHistory: true);
+            return;
+        }
+
+        var choice = TedideMessageBox.ErrorQuery("Page Not Found",
+            $"This bookmark points to '{bookmark.FileName}', which isn't in this version of the documentation.",
+            "_Remove Bookmark", "_Keep");
+        if (choice == 0)
+            ToggleAndSave(bookmark.FileName, bookmark.Anchor, bookmark.Label);
     }
 
     /// <summary>Repopulates the "Saved Bookmarks" submenu in place - deferred the same way (and for

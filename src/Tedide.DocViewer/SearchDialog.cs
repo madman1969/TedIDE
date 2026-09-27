@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Text;
 using Terminal.Gui.App;
 using Terminal.Gui.Drawing;
 using Terminal.Gui.ViewBase;
@@ -54,19 +55,32 @@ public sealed class SearchDialog : Dialog
             e.Handled = true;
         };
 
-        _statusLabel = new Label { Text = string.Empty, X = 0, Y = 4, Width = Dim.Fill() };
+        // HotKeySpecifier disabled: the label echoes the search term, and a Label reads its first
+        // "_" as a hotkey marker - "get_ostype" was shown as "getostype".
+        _statusLabel = new Label { Text = string.Empty, X = 0, Y = 4, Width = Dim.Fill(), HotKeySpecifier = new Rune(0xFFFF) };
 
-        var resultsFrame = new FrameView { Title = "Results (Enter to open)", X = 0, Y = 6, Width = Dim.Fill(1), Height = Dim.Fill(2) };
+        // The list draws its own border and title rather than sitting inside a FrameView: Tab only
+        // moves between peers of the same SuperView, so a list nested alone in a frame was
+        // unreachable from the keyboard (confirmed live - Tab went Search -> Open, skipping it).
         _resultsList = new ListView
         {
+            Title = "Results (Enter to open)",
+            BorderStyle = LineStyle.Single,
             X = 0,
-            Y = 0,
-            Width = Dim.Fill(),
-            Height = Dim.Fill(),
+            Y = 6,
+            Width = Dim.Fill(1),
+            Height = Dim.Fill(2),
             ViewportSettings = ViewportSettingsFlags.HasScrollBars,
         };
-        _resultsList.Accepted += (_, _) => AcceptSelection();
-        resultsFrame.Add(_resultsList);
+        // Accepting (handled), not Accepted: now that the list is a direct peer of the dialog's own
+        // controls, an unhandled Accept from it is read by the Dialog as "close me" before Accepted
+        // ever fires - Enter on a result closed the dialog without opening it (confirmed live).
+        // Same reason the search field handles its own Accepting.
+        _resultsList.Accepting += (_, e) =>
+        {
+            AcceptSelection();
+            e.Handled = true;
+        };
 
         var openButton = new Button { Text = "_Open", SchemeName = "Accent", X = Pos.Center() - 13, Y = Pos.AnchorEnd(1), Width = 12 };
         openButton.Accepting += (_, e) =>
@@ -82,7 +96,7 @@ public sealed class SearchDialog : Dialog
             e.Handled = true;
         };
 
-        Add([searchLabel, _searchField, searchButton, _statusLabel, resultsFrame, openButton, closeButton]);
+        Add([searchLabel, _searchField, searchButton, _statusLabel, _resultsList, openButton, closeButton]);
         _searchField.SetFocus();
     }
 
@@ -100,13 +114,24 @@ public sealed class SearchDialog : Dialog
             : $"{_results.Count} match(es).";
         _statusLabel.SchemeName = _results.Count == 0 ? "Error" : "Accent";
         _statusLabel.SetNeedsDraw();
+
+        // Straight to the results, top one selected: type, Enter, Enter opens the best match,
+        // and Shift+Tab goes back to refine the search.
+        if (_results.Count > 0)
+        {
+            _resultsList.SelectedItem = 0;
+            _resultsList.SetFocus();
+        }
     }
 
+    /// <summary>Opens the selected result - or the first, if none is selected yet, rather than
+    /// silently doing nothing (which is what Open used to do before a result had been clicked).</summary>
     private void AcceptSelection()
     {
-        if (_resultsList.SelectedItem is not { } index || index < 0 || index >= _results.Count)
+        if (_results.Count == 0)
             return;
 
+        var index = _resultsList.SelectedItem is { } selected && selected >= 0 && selected < _results.Count ? selected : 0;
         SelectedResult = _results[index];
         Application.RequestStop(this);
     }

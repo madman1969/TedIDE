@@ -1,3 +1,4 @@
+using Tedide.Theming;
 using System.Collections.ObjectModel;
 using Tedide.Build;
 using Tedide.Core;

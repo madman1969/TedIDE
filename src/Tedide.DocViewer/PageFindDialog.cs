@@ -15,10 +15,10 @@ namespace Tedide.DocViewer;
 /// The content pane is a read-only <see cref="Terminal.Gui.Views.Markdown"/> renderer, not an
 /// editable text view, so there's no caret to move onto an exact match the way Editor's Find
 /// does - matches are found against the raw Markdown source (<see cref="Markdown.Text"/>), and
-/// the view is scrolled to the match's approximate position (its fractional offset within the raw
-/// source, scaled against the view's own rendered <see cref="Markdown.LineCount"/>) rather than a
-/// precise highlighted location, since headings/tables/word-wrapping mean a raw character offset
-/// doesn't map exactly to a rendered row.
+/// the view is scrolled to the nearest heading above the match, then down by an estimate of the
+/// remaining distance (see <see cref="ScrollToApproximateMatch"/>), rather than to a precise
+/// highlighted location: word-wrapping and tables mean a raw source line doesn't map exactly to a
+/// rendered row, and the rendered rows themselves aren't public.
 /// </summary>
 public sealed class PageFindDialog : Dialog
 {
@@ -50,7 +50,9 @@ public sealed class PageFindDialog : Dialog
             e.Handled = true;
         };
 
-        _statusLabel = new Label { Text = string.Empty, X = 0, Y = 4, Width = Dim.Fill(1) };
+        // HotKeySpecifier disabled: the "not found" message echoes the search term, and a Label
+        // reads its first "_" as a hotkey marker.
+        _statusLabel = new Label { Text = string.Empty, X = 0, Y = 4, Width = Dim.Fill(1), HotKeySpecifier = new System.Text.Rune(0xFFFF) };
 
         var findNextButton = new Button { Text = "Find _Next", IsDefault = true, SchemeName = "Accent", X = Pos.Center() - 13, Y = Pos.AnchorEnd(1), Width = 12 };
         findNextButton.Accepting += (_, e) =>
@@ -105,11 +107,114 @@ public sealed class PageFindDialog : Dialog
         _statusLabel.SetNeedsDraw();
     }
 
+    /// <summary>
+    /// Scrolls the match into view. The rendered lines aren't public in Terminal.Gui 2.4.17, so
+    /// the nearest heading above the match is used as an exact reference point instead - the view
+    /// can scroll to a heading precisely via <see cref="Markdown.ScrollToAnchor"/> - and only the
+    /// short distance from that heading is estimated, from source lines. Word-wrapping only ever
+    /// adds rendered lines, so that estimate lands at or just above the match; a small margin
+    /// keeps it clear of the top edge. Before, the whole page's position was estimated from the
+    /// match's character offset, which on a long manual could land screens away.
+    /// </summary>
     private void ScrollToApproximateMatch(string text, int matchIndex)
     {
+        if (FindHeadingAbove(text, matchIndex) is { } heading && TryScrollToHeading(heading.Slugs))
+        {
+            var sourceLinesBelow = CountNewlines(text, heading.EndIndex, matchIndex);
+            var y = Math.Clamp(_contentView.Viewport.Y + Math.Max(0, sourceLinesBelow - 2), 0, Math.Max(0, _contentView.LineCount - 1));
+            _contentView.Viewport = _contentView.Viewport with { Y = y };
+            return;
+        }
+
+        // No usable heading (or the anchor didn't match): estimate from the character offset.
         var fraction = text.Length == 0 ? 0.0 : (double)matchIndex / text.Length;
         var targetY = (int)(fraction * _contentView.LineCount);
         targetY = Math.Clamp(targetY, 0, Math.Max(0, _contentView.LineCount - 1));
         _contentView.Viewport = _contentView.Viewport with { Y = targetY };
+    }
+
+    private bool TryScrollToHeading(IEnumerable<string> candidateSlugs) =>
+        candidateSlugs.Any(_contentView.ScrollToAnchor);
+
+    /// <summary>The last ATX heading ("## Title") that starts before <paramref name="index"/>, skipping
+    /// fenced code blocks (a C "# comment" or "#define" there is not a heading), with its anchor
+    /// slug under each of the two slug schemes it might have been rendered with - Terminal.Gui's
+    /// own (each space a hyphen, underscores kept) and the docs builder's MarkdownSlug (runs of
+    /// separators collapsed) - both with GitHub-style "-1", "-2" suffixes for repeated headings.
+    /// Whichever the view actually accepts is used; if neither, the caller falls back.</summary>
+    internal static (int EndIndex, string[] Slugs)? FindHeadingAbove(string text, int index)
+    {
+        var terminalGuiCounts = new Dictionary<string, int>();
+        var builderCounts = new Dictionary<string, int>();
+        (int, string[])? last = null;
+        var inFence = false;
+
+        var lineStart = 0;
+        while (lineStart < index && lineStart < text.Length)
+        {
+            var lineEnd = text.IndexOf('\n', lineStart);
+            if (lineEnd < 0)
+                lineEnd = text.Length;
+            var line = text[lineStart..lineEnd].TrimEnd('\r');
+
+            var trimmed = line.TrimStart();
+            if (trimmed.StartsWith("```", StringComparison.Ordinal) || trimmed.StartsWith("~~~", StringComparison.Ordinal))
+                inFence = !inFence;
+            else if (!inFence && HeadingText(line) is { } heading)
+                last = (lineEnd, [Unique(TerminalGuiSlug(heading), terminalGuiCounts), Unique(BuilderSlug(heading), builderCounts)]);
+
+            lineStart = lineEnd + 1;
+        }
+        return last;
+    }
+
+    private static string? HeadingText(string line)
+    {
+        var hashes = 0;
+        while (hashes < line.Length && line[hashes] == '#')
+            hashes++;
+        if (hashes is 0 or > 6 || hashes >= line.Length || line[hashes] != ' ')
+            return null;
+        return line[(hashes + 1)..].Trim().TrimEnd('#').Trim();
+    }
+
+    private static string TerminalGuiSlug(string heading) =>
+        System.Text.RegularExpressions.Regex.Replace(heading.Trim().ToLowerInvariant(), @"[^\w\s-]", "")
+            .Replace(' ', '-').Trim('-');
+
+    private static string BuilderSlug(string heading)
+    {
+        var sb = new System.Text.StringBuilder();
+        var lastWasSeparator = true;
+        foreach (var ch in heading.ToLowerInvariant())
+        {
+            if (char.IsLetterOrDigit(ch))
+            {
+                sb.Append(ch);
+                lastWasSeparator = false;
+            }
+            else if ((ch == ' ' || ch == '-') && !lastWasSeparator)
+            {
+                sb.Append('-');
+                lastWasSeparator = true;
+            }
+        }
+        return sb.ToString().TrimEnd('-');
+    }
+
+    private static string Unique(string slug, Dictionary<string, int> counts)
+    {
+        var count = counts.GetValueOrDefault(slug);
+        counts[slug] = count + 1;
+        return count == 0 ? slug : $"{slug}-{count}";
+    }
+
+    private static int CountNewlines(string text, int from, int to)
+    {
+        var count = 0;
+        for (var i = Math.Max(0, from); i < to && i < text.Length; i++)
+            if (text[i] == '\n')
+                count++;
+        return count;
     }
 }

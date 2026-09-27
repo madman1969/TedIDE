@@ -126,6 +126,9 @@ public sealed class AppShell : Window
         _editorFrame = new FrameView
         {
             Title = NoFileOpenTitle,
+            // The title is the open file's name, and a title reads its first "_" as a hotkey
+            // marker - "sound_fx.c" would show as "soundfx.c".
+            HotKeySpecifier = new System.Text.Rune(0xFFFF),
             X = Pos.Right(explorerFrame),
             Y = Pos.Bottom(_menuBar),
             Width = Dim.Percent(Math.Clamp(_layoutSettings.ExplorerEditorSplitPercent, 10, 90)),
@@ -421,14 +424,26 @@ public sealed class AppShell : Window
     /// </summary>
     protected override bool OnKeyDown(Key key)
     {
+        Action? action = null;
         if (key == Key.F5.WithShift)
-            _ = StartDebuggingAsync();
+            action = () => _ = StartDebuggingAsync();
         else if (key == Key.F5.WithCtrl)
-            _ = ContinueDebuggingAsync();
+            action = () => _ = ContinueDebuggingAsync();
         else if (key == FindInFilesKey)
-            ShowFindInFiles();
-        else
+            action = () => ShowFindInFiles();
+
+        if (action is null)
             return base.OnKeyDown(key);
+
+        // Run on the next main-loop pass, not inside this key event: opening a modal from within
+        // the keypress that's still being dispatched left Find in Files' search field without
+        // focus - typing went nowhere (confirmed live; the same dialog opened from the Edit menu
+        // was fine). Start Debugging can open a message box too, so all three are deferred.
+        Application.AddTimeout(TimeSpan.Zero, () =>
+        {
+            action();
+            return false;
+        });
         return true;
     }
 
@@ -591,7 +606,7 @@ public sealed class AppShell : Window
             $"_{i + 1} {Path.GetFileName(path)}",
             Path.GetDirectoryName(path) ?? "",
             () => OpenProjectOrSolution(path),
-            Key.Empty)).ToList();
+            Key.Empty).WithLiteralHelpText()).ToList();
     }
 
     /// <summary>

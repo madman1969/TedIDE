@@ -4,7 +4,7 @@ using Terminal.Gui.Drawing;
 using Terminal.Gui.ViewBase;
 using Terminal.Gui.Views;
 
-namespace Tedide.App.Views;
+namespace Tedide.Theming;
 
 /// <summary>
 /// Tedide's own replacement for Terminal.Gui's built-in <see cref="MessageBox"/> static helper -

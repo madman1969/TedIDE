@@ -21,7 +21,26 @@ AppDomain.CurrentDomain.UnhandledException += (_, e) =>
 
 Log.Information("Tedide DocViewer starting up");
 
-using var database = new DocDatabase(Path.Combine(AppContext.BaseDirectory, "Docs.db"));
+// Checked before any UI exists, so the reason goes to the console (and the log) rather than as a
+// raw stack trace: SQLite reports a missing file as "unable to open database file".
+var databasePath = Path.Combine(AppContext.BaseDirectory, "Docs.db");
+DocDatabase database;
+try
+{
+    if (!File.Exists(databasePath))
+        throw new FileNotFoundException("Docs.db was not found next to the program.", databasePath);
+    database = new DocDatabase(databasePath);
+}
+catch (Exception ex) when (ex is FileNotFoundException or Microsoft.Data.Sqlite.SqliteException or IOException or UnauthorizedAccessException)
+{
+    Log.Error(ex, "Could not open the documentation database {Path}", databasePath);
+    Console.Error.WriteLine($"Tedide DocViewer can't start: the documentation database '{databasePath}' could not be opened.");
+    Console.Error.WriteLine(ex.Message);
+    Console.Error.WriteLine("Rebuild or reinstall the Doc Viewer to restore it (see tools/Cc65DocsDbBuilder).");
+    Log.CloseAndFlush();
+    return 1;
+}
+using var _ = database;
 
 Application.Init();
 try
@@ -37,3 +56,5 @@ finally
     Log.Information("Tedide DocViewer shutting down");
     Log.CloseAndFlush();
 }
+
+return 0;

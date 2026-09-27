@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Text;
 using Tedide.Core;
 using Terminal.Gui.App;
 using Terminal.Gui.Drawing;
@@ -80,21 +81,34 @@ public sealed class FindInFilesDialog : Dialog
             e.Handled = true;
         };
 
-        _statusLabel = new Label { Text = string.Empty, X = 0, Y = 4, Width = Dim.Fill() };
+        // HotKeySpecifier disabled: the label echoes the search term, and a Label reads its first
+        // "_" as a hotkey marker - searching for "sound_fx" would report "soundfx".
+        _statusLabel = new Label { Text = string.Empty, X = 0, Y = 4, Width = Dim.Fill(), HotKeySpecifier = new Rune(0xFFFF) };
 
-        var resultsFrame = new FrameView { Title = "Results (Enter to open)", X = 0, Y = 6, Width = Dim.Fill(1), Height = Dim.Fill(2) };
+        // The list draws its own border and title rather than sitting inside a FrameView: Tab only
+        // moves between peers of the same SuperView, so a list nested alone in a frame couldn't be
+        // reached from the keyboard at all (confirmed live in the Doc Viewer's identical dialog).
         _resultsList = new ListView
         {
+            Title = "Results (Enter to open)",
+            BorderStyle = LineStyle.Single,
             X = 0,
-            Y = 0,
-            Width = Dim.Fill(),
-            Height = Dim.Fill(),
+            Y = 6,
+            Width = Dim.Fill(1),
+            Height = Dim.Fill(2),
             // Auto-shown (only appears once the match list overflows the viewport) - same as
             // EditorPane's editor and the Output pane.
             ViewportSettings = ViewportSettingsFlags.HasScrollBars,
         };
-        _resultsList.Accepted += (_, _) => AcceptSelection();
-        resultsFrame.Add(_resultsList);
+        // Accepting (handled), not Accepted: now that the list is a direct peer of the dialog's own
+        // controls, an unhandled Accept from it is read by the Dialog as "close me" before Accepted
+        // ever fires - Enter on a result closed the dialog without opening it (confirmed live).
+        // Same reason the search field handles its own Accepting.
+        _resultsList.Accepting += (_, e) =>
+        {
+            AcceptSelection();
+            e.Handled = true;
+        };
 
         var openButton = new Button { Text = "_Open", SchemeName = "Accent", X = Pos.Center() - 13, Y = Pos.AnchorEnd(1), Width = 12 };
         openButton.Accepting += (_, e) =>
@@ -113,7 +127,7 @@ public sealed class FindInFilesDialog : Dialog
             e.Handled = true;
         };
 
-        Add([searchLabel, _searchField, findButton, _statusLabel, resultsFrame, openButton, closeButton]);
+        Add([searchLabel, _searchField, findButton, _statusLabel, _resultsList, openButton, closeButton]);
         _searchField.SetFocus();
 
         if (initialSearchText.Length > 0)
@@ -144,6 +158,14 @@ public sealed class FindInFilesDialog : Dialog
         // not just from the wording - a red "no matches" vs. a highlighted match count.
         _statusLabel.SchemeName = _matches.Count == 0 ? "Error" : "Accent";
         _statusLabel.SetNeedsDraw();
+
+        // Straight to the results, top match selected: type, Enter, Enter opens the first match,
+        // and Shift+Tab goes back to refine the search.
+        if (_matches.Count > 0)
+        {
+            _resultsList.SelectedItem = 0;
+            _resultsList.SetFocus();
+        }
     }
 
     private IEnumerable<Match> FindMatches(string term)
@@ -183,11 +205,14 @@ public sealed class FindInFilesDialog : Dialog
         }
     }
 
+    /// <summary>Opens the selected match - or the first, if none is selected yet, rather than
+    /// silently doing nothing.</summary>
     private void AcceptSelection()
     {
-        if (_resultsList.SelectedItem is not { } index || index < 0 || index >= _matches.Count)
+        if (_matches.Count == 0)
             return;
 
+        var index = _resultsList.SelectedItem is { } selected && selected >= 0 && selected < _matches.Count ? selected : 0;
         SelectedMatch = _matches[index];
         Application.RequestStop(this);
     }
