@@ -664,6 +664,8 @@ The **Theme** menu switches between nine color themes at runtime, with no restar
 checkmark next to the active one always reflects the current theme, in both Tedide.App and
 Tedide.DocViewer:
 
+![The Theme menu listing the nine themes, with a checkmark next to the active one, Solarized Light](docs/images/themes-menu.png)
+
 | Theme | Look |
 | --- | --- |
 | VS2026 Dark / VS2026 Light | Modern true-color palettes similar to current Visual Studio/VS Code themes. |
@@ -673,25 +675,35 @@ Tedide.DocViewer:
 | Commodore 64 | The C64's own boot-screen look (Pepto palette): blue background, light-blue text. |
 | Amber Phosphor | A monochrome amber-on-black CRT terminal look, evoking early 6502-era terminals. |
 
-Themes are implemented in `Tedide.App/Theming` (`ThemeSwitcher`) by registering five named
-`Scheme`s ("Base", "Menu", "Dialog", "Accent", "Error") with Terminal.Gui's `SchemeManager`;
-views resolve their scheme by name at draw time, so switching themes recolors every open view
-immediately. The last-selected theme persists across runs (`ThemeSettings`, under the OS's
-per-user application data folder, alongside the Recent Projects and Solutions list).
+![All nine themes side by side, each showing the same view: the CBMInfo sample with video.c open in the editor, the Solution Explorer, and a successful build in the Output tab](docs/images/themes-gallery.png)
 
-Two things worth knowing:
+Themes are implemented in the shared `Tedide.Theming` project (`ThemeSwitcher`) by registering six
+named `Scheme`s ("Base", "Menu", "Dialog", "Accent", "Error", "Warning") with Terminal.Gui's
+`SchemeManager`; views resolve their scheme by name at draw time, so switching themes recolors
+every open view immediately. The last-selected theme persists across runs (`ThemeSettings`, under
+the OS's per-user application data folder, alongside the Recent Projects and Solutions list), and
+is shared by Tedide.App and Tedide.DocViewer.
 
-- **Terminal color depth matters.** A plain `cmd.exe` console window reports no ANSI color
-  capability and forces 16-color rendering, which flattens the true-color themes' subtle grays
-  down to near-identical blacks/whites. Run the app in a terminal that advertises true color
-  (Windows Terminal, or the VS Code integrated terminal) to see them as designed. Borland Turbo C,
-  Commodore 64 and Amber Phosphor look correct everywhere, since they're built from a 16-color (or
-  monochrome) palette to begin with.
-- **Syntax-token colors don't change with theme.** Both the bundled C/C++ highlighting definition
-  and Tedide's own 6502/ca65 one (see "Editing" above) hardcode literal colors for keywords/
-  strings/comments rather than resolving them through the Scheme system, so those specific hues
-  stay fixed across themes - only the editor's background/plain-text colors (and all surrounding
-  chrome) follow the theme.
+The theme covers more than the window chrome:
+
+- **Syntax highlighting.** Each theme has its own token palette - VS Code's Dark+/Light+ colors for
+  the VS2026 themes, the canonical Monokai, Dracula and Solarized accent colors, other colors from
+  the real C64 palette for Commodore 64, the 16 ANSI colors for Borland, and brightness alone for
+  Amber - and every file type the editor highlights (C, 6502 assembly, listings, linker maps,
+  label files, linker configs) maps its tokens onto it (see "Editing" above). The Solution
+  Explorer's folders and the Doc Viewer's headings and links take their colors from the same
+  palette.
+- **Readability.** Where a theme's own colors are too close to read comfortably, Tedide nudges the
+  lightness of the text or its background (keeping the hue) until body text reaches the WCAG AA
+  contrast ratio of 4.5:1, and hotkey letters, disabled text and comments reach 3:1. Where a hotkey
+  letter can't be told apart from the text around it, it's underlined instead. Themes whose colors
+  already pass are left exactly as designed.
+- **Terminal color depth matters.** The themes are true-color. Terminal.Gui treats Windows
+  Terminal as a legacy console and would draw everything in its 16 standard colors, so Tedide
+  switches true color back on whenever it detects Windows Terminal (`TerminalColors`). In a classic
+  console window, Terminal.Gui's own detection decides, and the true-color themes may be rounded
+  to 16 colors. Borland Turbo C, Commodore 64 and Amber Phosphor look right either way, since
+  they're built from a 16-color (or monochrome) palette to begin with.
 
 ## Status
 
