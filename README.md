@@ -707,22 +707,39 @@ The theme covers more than the window chrome:
 
 ## Status
 
-Project/solution model, cc65 build integration with diagnostic parsing, VICE emulator launching,
-the core IDE layout (resizable explorer / editor / output/error-list/symbols/debug panes), a
-6502/ca65 syntax highlighter, Find in Files, Go To Line, source-level debugging against VICE's
-binary monitor protocol (breakpoints with persistent in-editor highlighting, registers with decoded
-status flags, enclosing function name resolution, memory watches, a stop history, source-line
-stepping, a read-only editor and auto-centered current line while a session is active), a symbol
-browser for linker maps/labels, a Recent Projects and Solutions list, nine runtime-switchable
-themes, file-based logging for crash diagnosis, and standalone-executable publish tasks for both
-Tedide.App and Tedide.DocViewer are all in place and tested. Not yet implemented: true
-multi-project solution builds (a loaded solution's *first* project is always the one Build/Clean/
-Run/Debug act on), and a visual editor for `.cfg` linker configs (syntax highlighting only today -
-see "Editing" above).
+In place and tested:
 
-Note: this app is built against **prerelease** builds of
-[Terminal.Gui v2](https://github.com/gui-cs/Terminal.Gui) (`2.4.17`) and
-[Terminal.Gui.Editor](https://github.com/tui-cs/Editor) (`2.5.7`, pinned to that same
-Terminal.Gui version), since that's the current state of the only mature C#/.NET TUI framework
-with the widget set (docking panes, tree views, tabs, menus, a real code editor) this kind of
-IDE needs. Expect some API churn if you bump either package version.
+- **Projects** - the project/solution model; File > New Project scaffolding with the samples'
+  `src`/`include`/`lib`/`bin` layout; a Recent Projects and Solutions list; the seven-tab Project
+  Settings dialog; and a Solution Explorer folder tree with a Generated Files node and New File,
+  Add Existing Item, Rename and Delete.
+- **Editing** - a single-document editor with syntax highlighting for C, 6502/ca65 assembly,
+  assembler listings, linker maps, VICE label files and linker configs, all colored by the active
+  theme; Find/Replace, Find in Files and Go To Line.
+- **Building and running** - per-file `cl65` builds with live output, diagnostics parsed into the
+  Error List, Cancel Build and Clean Project; a symbol browser for linker maps and labels; and
+  Run in the VICE emulator matching the target, with the right memory configuration for the VIC-20,
+  C16 and Plus/4.
+- **Debugging** - source-level debugging against VICE's binary monitor protocol: breakpoints with
+  persistent in-editor highlighting and a Breakpoints dialog; stepping by source line (Step Into
+  runs straight through cc65's runtime library); registers with decoded status flags; the
+  enclosing function name; memory watches; a Locals table of the stopped function's parameters
+  and local variables with their types and values; a stop history; and a read-only editor with
+  the current line auto-centered while a session is active.
+- **Tedide.DocViewer** - the cc65 manuals and The C Book in a category tree, with full-text
+  search, bookmarks, Find on Page, Back/Forward history and syntax-highlighted code blocks.
+- **Themes** - nine runtime-switchable themes shared by both apps, covering syntax highlighting,
+  adjusted for readability, and drawn in true color inside Windows Terminal.
+- **Everything else** - file-based logging for crash diagnosis, standalone-executable publish tasks
+  for both apps, and about 520 unit tests across five test projects (`dotnet test Tedide.slnx`).
+
+Not yet implemented: true multi-project solution builds (a loaded solution's *first* project is
+always the one Build/Clean/Run/Debug act on), and a visual editor for `.cfg` linker configs
+(syntax highlighting only today - see "Editing" above).
+
+Note: this app is built against [Terminal.Gui v2](https://github.com/tui-cs/Terminal.Gui)
+(`2.4.17`) and [Terminal.Gui.Editor](https://github.com/tui-cs/Editor) (`2.5.7`, pinned to that
+same Terminal.Gui version), since that's the only mature C#/.NET TUI framework with the widget set
+(docking panes, tree views, tabs, menus, a real code editor) this kind of IDE needs. Both are still
+evolving quickly - newer development builds already exist - so expect some API changes if you bump
+either package version.
