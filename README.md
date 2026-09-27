@@ -426,7 +426,7 @@ right (via Terminal.Gui's own `Markdown` view). The tree holds five books:
 
 | Book | Contents | Licence |
 | --- | --- | --- |
-| **cc65 Manual** | every cc65 manual - the tools, the libraries, each target | cc65's own (zlib) |
+| **cc65 Manual** | every cc65 manual - the tools, the libraries, each target - plus a Plus/4 and C16 memory map (TED registers, TED colours, the Plus/4's ACIA, and the zero-page and system locations cc65 uses), generated from cc65's own headers | cc65's own (zlib) |
 | **The C Book** | Banahan, Brady & Doran's complete C tutorial | its own free-redistribution licence |
 | **C64-Wiki** | 34 articles: the C64 and its CPU, the VIC-II/SID/CIA chips, the memory map and bank switching, graphics modes, sprites, raster interrupts, the KERNAL, BASIC, opcodes, PETSCII and input; the PET 2001 and IEEE-488; and the C16, 116 and Plus/4, their TED chip, the TEDMON monitor and the 1551 drive | GNU FDL |
 | **Wikipedia** | 13 articles on the PET, C16 and Plus/4 and their hardware: the PET, Commodore BASIC, PETSCII, the 6502, the 6520 PIA, 6522 VIA and 6845 CRTC, IEEE-488; the Plus/4, Commodore 16, TED chip, 6510 family (the C16/Plus/4's 7501/8501) and 1551 drive | CC BY-SA 4.0 |

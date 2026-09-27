@@ -25,6 +25,9 @@
     <!-- Curated Wikipedia articles (see WikipediaPageCatalog) and VICE manual chapters (see
          ViceManualPageCatalog). -->
     <None Include="SourceHtml\Wikipedia\*.html;SourceHtml\Vice\*.html" CopyToOutputDirectory="PreserveNewest" />
+    <!-- cc65's own Plus/4 / C16 headers, copied unchanged, that the generated memory map page is
+         built from (see Plus4MemoryMapGenerator). -->
+    <None Include="SourceHtml\Cc65Defs\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

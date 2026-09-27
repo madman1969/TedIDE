@@ -40,7 +40,7 @@ static List<ConvertedPage> BuildCc65Pages(string sourceHtmlDir)
         File.ReadAllText,
         StringComparer.Ordinal);
 
-    var missing = PageCatalog.AllFileNames.Where(f => !htmlByFileName.ContainsKey(f)).ToList();
+    var missing = PageCatalog.AllFileNames.Where(f => !htmlByFileName.ContainsKey(f) && !PageCatalog.GeneratedFileNames.Contains(f)).ToList();
     if (missing.Count > 0)
         throw new InvalidOperationException($"PageCatalog references files with no SourceHtml/*.html: {string.Join(", ", missing)}");
 
@@ -55,7 +55,9 @@ static List<ConvertedPage> BuildCc65Pages(string sourceHtmlDir)
         for (var pageIndex = 0; pageIndex < category.Entries.Count; pageIndex++)
         {
             var entry = category.Entries[pageIndex];
-            var markdown = HtmlToMarkdownConverter.Convert(htmlByFileName[entry.FileName], entry.FileName, anchorIndex, PageCatalog.AllFileNames);
+            var markdown = entry.FileName == Plus4MemoryMapGenerator.PageId
+                ? Plus4MemoryMapGenerator.Generate(Path.Combine(sourceHtmlDir, "Cc65Defs"))
+                : HtmlToMarkdownConverter.Convert(htmlByFileName[entry.FileName], entry.FileName, anchorIndex, PageCatalog.AllFileNames);
             pages.Add(new ConvertedPage(
                 entry.FileName,
                 book,
