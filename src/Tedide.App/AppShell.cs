@@ -61,6 +61,11 @@ public sealed class AppShell : Window
     /// <see cref="ViceMonitorClient.SetCheckpointAsync"/> returned for it, so it can be deleted
     /// again later - see <see cref="SyncCheckpointsWithViceAsync"/>.</summary>
     private readonly Dictionary<BreakpointEntry, uint> _checkpointNumbers = new();
+    /// <summary>Serializes every set/delete pass over VICE's checkpoints (and so every access to
+    /// <see cref="_checkpointNumbers"/>) - toggling two breakpoints in quick succession otherwise
+    /// runs two fire-and-forget <see cref="SyncCheckpointsWithViceAsync"/> passes interleaved across
+    /// their awaits, one clearing the dictionary while the other is still enumerating it.</summary>
+    private readonly SemaphoreSlim _checkpointLock = new(1, 1);
     /// <summary>User-added memory watches for the active debug session - see <see cref="WatchEntry"/>'s
     /// own doc comment for why these aren't persisted the way <see cref="_breakpoints"/> is.</summary>
     private readonly List<WatchEntry> _watches = new();
@@ -1193,8 +1198,11 @@ public sealed class AppShell : Window
     /// actually reaches <see cref="_debugPanel"/>.</summary>
     private async Task<List<string>> FormatWatchesAsync(ViceMonitorClient debugClient)
     {
-        var formatted = new List<string>(_watches.Count);
-        foreach (var watch in _watches)
+        // A snapshot, not _watches itself - the awaits below give the UI thread a chance to add
+        // or clear watches mid-loop, which would otherwise throw "Collection was modified".
+        var watches = _watches.ToList();
+        var formatted = new List<string>(watches.Count);
+        foreach (var watch in watches)
         {
             try
             {
@@ -1230,8 +1238,25 @@ public sealed class AppShell : Window
     /// connects <see cref="_debugClient"/>, sets every enabled breakpoint (resolved to an address
     /// via <see cref="_dbgFile"/>), and starts it running. Requires <see cref="TedideProject.GenerateDebugInfo"/>
     /// to be on - without it there's no .dbg file to resolve breakpoints/addresses against.
+    /// Every caller fires this and forgets it, so any exception is caught and reported here and
+    /// whatever was already set up is torn down - otherwise e.g. VICE not being installed would
+    /// leave the Debug tab showing a half-started session with no error at all.
     /// </summary>
     private async Task StartDebuggingAsync()
+    {
+        try
+        {
+            await StartDebuggingCoreAsync();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error starting debug session");
+            Application.Invoke(() => AppendOutputLine($"Could not start debugging: {ex.Message}"));
+            await EndDebugSessionAsync();
+        }
+    }
+
+    private async Task StartDebuggingCoreAsync()
     {
         var project = _workspace.ActiveProject;
         if (project is null)
@@ -1353,7 +1378,15 @@ public sealed class AppShell : Window
             });
         }
 
-        await SetAllEnabledCheckpointsAsync(_dbgFile, _debugClient);
+        await _checkpointLock.WaitAsync();
+        try
+        {
+            await SetAllEnabledCheckpointsAsync(_dbgFile, _debugClient);
+        }
+        finally
+        {
+            _checkpointLock.Release();
+        }
 
         Application.Invoke(() => _debugPanel.SetStatus("Running..."));
         await _debugClient.ContinueAsync();
@@ -1362,10 +1395,13 @@ public sealed class AppShell : Window
     /// <summary>Sets a VICE checkpoint for every currently-enabled breakpoint, recording each one's
     /// VICE-assigned checkpoint number in <see cref="_checkpointNumbers"/> so it can later be
     /// deleted again (see <see cref="SyncCheckpointsWithViceAsync"/>). Shared between the initial
-    /// setup in <see cref="StartDebuggingAsync"/> and re-syncing after a breakpoint changes mid-session.</summary>
+    /// setup in <see cref="StartDebuggingAsync"/> and re-syncing after a breakpoint changes mid-session.
+    /// Callers must hold <see cref="_checkpointLock"/>.</summary>
     private async Task SetAllEnabledCheckpointsAsync(DbgFile dbgFile, ViceMonitorClient debugClient)
     {
-        foreach (var breakpoint in _breakpoints.Breakpoints.Where(b => b.Enabled))
+        // Snapshotted (ToList) before the first await - the UI thread can toggle a breakpoint
+        // while this loop is waiting on VICE, which would otherwise throw "Collection was modified".
+        foreach (var breakpoint in _breakpoints.Breakpoints.Where(b => b.Enabled).ToList())
         {
             var address = dbgFile.FindAddressForSourceLine(breakpoint.SourceFile, breakpoint.Line);
             if (address is { } addr)
@@ -1396,23 +1432,15 @@ public sealed class AppShell : Window
         if (_debugClient is not { } debugClient || _dbgFile is not { } dbgFile || !_isDebugging)
             return;
 
+        await _checkpointLock.WaitAsync();
         try
         {
-            foreach (var number in _checkpointNumbers.Values)
-            {
-                try
-                {
-                    await debugClient.DeleteCheckpointAsync(number);
-                }
-                catch (Exception ex)
-                {
-                    // VICE may already be gone, or may have dropped this checkpoint on its own
-                    // (e.g. a "temporary" one) - not fatal, the re-set pass below is what matters.
-                    Log.Debug(ex, "Could not delete checkpoint #{Number} while re-syncing", number);
-                }
-            }
-            _checkpointNumbers.Clear();
+            // Re-checked under the lock: a Stop Debugging that ran while this call was waiting
+            // has already deleted every checkpoint and disposed this client.
+            if (!_isDebugging || _debugClient != debugClient)
+                return;
 
+            await DeleteAllCheckpointsAsync(debugClient);
             await SetAllEnabledCheckpointsAsync(dbgFile, debugClient);
         }
         catch (Exception ex)
@@ -1420,6 +1448,30 @@ public sealed class AppShell : Window
             Log.Error(ex, "Error re-syncing breakpoints with VICE");
             Application.Invoke(() => AppendOutputLine($"Error updating breakpoints in the running debug session: {ex.Message}"));
         }
+        finally
+        {
+            _checkpointLock.Release();
+        }
+    }
+
+    /// <summary>Deletes every checkpoint this app has set in VICE (<see cref="_checkpointNumbers"/>)
+    /// and forgets them. Individual failures are logged and skipped - VICE may already be gone, or
+    /// may have dropped a checkpoint on its own (e.g. a "temporary" one). Callers must hold
+    /// <see cref="_checkpointLock"/>.</summary>
+    private async Task DeleteAllCheckpointsAsync(ViceMonitorClient debugClient)
+    {
+        foreach (var number in _checkpointNumbers.Values.ToList())
+        {
+            try
+            {
+                await debugClient.DeleteCheckpointAsync(number);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug(ex, "Could not delete checkpoint #{Number}", number);
+            }
+        }
+        _checkpointNumbers.Clear();
     }
 
     /// <summary>Builds a "Stopped [in {function}] at {where}" status string, prepending the
@@ -1619,16 +1671,44 @@ public sealed class AppShell : Window
         if (_debugClient is null)
             return;
 
-        try { await _debugClient.ContinueAsync(); }
-        catch { /* VICE may already be gone - fine, we're tearing down the connection either way. */ }
+        await EndDebugSessionAsync();
+    }
 
-        await _debugClient.DisposeAsync();
-        _debugClient = null;
-        _dbgFile = null;
+    /// <summary>
+    /// Tears down a debug session, however far it got - shared by Stop Debugging and by
+    /// <see cref="StartDebuggingAsync"/>'s own failure path, where there may be no connected
+    /// client yet at all.
+    /// </summary>
+    private async Task EndDebugSessionAsync()
+    {
+        // Cleared first so any SyncCheckpointsWithViceAsync already queued behind the lock
+        // below bails out on its own re-check instead of re-arming checkpoints afterward.
         _isDebugging = false;
         _isStopped = false;
-        // Stale once the connection's gone - StartDebuggingAsync repopulates this from scratch.
-        _checkpointNumbers.Clear();
+
+        if (_debugClient is { } debugClient)
+        {
+            // Deleted before resuming, not just forgotten - VICE keeps its checkpoints after the
+            // connection closes, so the now-detached program would otherwise still halt at every
+            // breakpoint, dropping the user into VICE's own monitor with no debugger attached.
+            await _checkpointLock.WaitAsync();
+            try
+            {
+                await DeleteAllCheckpointsAsync(debugClient);
+            }
+            finally
+            {
+                _checkpointLock.Release();
+            }
+
+            try { await debugClient.ContinueAsync(); }
+            catch { /* VICE may already be gone - fine, we're tearing down the connection either way. */ }
+
+            await debugClient.DisposeAsync();
+        }
+
+        _debugClient = null;
+        _dbgFile = null;
         // A watch's address was resolved against this session's own _dbgFile - stale the moment
         // it's gone (a rebuild can shift where a symbol ends up), so watches are re-entered per
         // session rather than carried forward, same as WatchEntry's own doc comment says.

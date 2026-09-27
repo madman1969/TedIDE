@@ -3,6 +3,7 @@
     <Project Path="src/Tedide.App/Tedide.App.csproj" />
     <Project Path="src/Tedide.Build/Tedide.Build.csproj" />
     <Project Path="src/Tedide.Core/Tedide.Core.csproj" />
+    <Project Path="src/Tedide.Debug/Tedide.Debug.csproj" />
     <Project Path="src/Tedide.DocViewer/Tedide.DocViewer.csproj" />
     <Project Path="src/Tedide.Theming/Tedide.Theming.csproj" />
   </Folder>
@@ -10,6 +11,7 @@
     <Project Path="tests/Tedide.App.Tests/Tedide.App.Tests.csproj" />
     <Project Path="tests/Tedide.Build.Tests/Tedide.Build.Tests.csproj" />
     <Project Path="tests/Tedide.Core.Tests/Tedide.Core.Tests.csproj" />
+    <Project Path="tests/Tedide.Debug.Tests/Tedide.Debug.Tests.csproj" />
   </Folder>
   <Folder Name="/tools/">
     <Project Path="tools/Cc65DocsDbBuilder/Cc65DocsDbBuilder.csproj" />
