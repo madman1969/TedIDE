@@ -31,6 +31,9 @@ public sealed class AppShell : Window
 {
     private readonly Workspace _workspace = new();
     private readonly Cc65Toolchain _toolchain = new();
+    /// <summary>Non-null only while a build is running - see <see cref="BuildActiveProjectAsync"/>
+    /// and <see cref="CancelBuild"/>.</summary>
+    private volatile CancellationTokenSource? _buildCancellation;
     // Not inline-initialized (unlike its siblings below) - its BinDirectory depends on
     // ToolchainSettings, applied in the constructor via ApplyToolchainSettings (also reapplied
     // after every ProjectSettingsDialog save - see ShowProjectSettings).
@@ -322,19 +325,24 @@ public sealed class AppShell : Window
         var buildMenu = new MenuBarItem("_Build", new List<MenuItem>
         {
             new("_Build Project", "", () => _ = BuildActiveProjectAsync(), Key.F5),
+            new("C_ancel Build", "", CancelBuild, Key.Empty),
             new("_Clean Project", "", CleanActiveProject, Key.Empty),
             new("_Run Project", "", () => _ = RunActiveProjectAsync(), Key.F6),
         });
 
         // F5/F6 above are already Build/Run - Start Debugging/Continue/Step use keys of their own.
+        // The keys shown here are only labels: F10/F7 fire via their status-bar Shortcuts and
+        // Shift+F5/Ctrl+F5 via OnKeyDown, because BindKeyToApplication never fires for this menu's
+        // items (confirmed live - see OnKeyDown). Adding it back would risk double-firing if it
+        // ever starts working.
         var debugMenu = new MenuBarItem("_Debug", new List<View>
         {
-            new MenuItem("_Start Debugging", "", () => _ = StartDebuggingAsync(), Key.F5.WithShift) { BindKeyToApplication = true },
-            new MenuItem("_Continue", "", () => _ = ContinueDebuggingAsync(), Key.F5.WithCtrl) { BindKeyToApplication = true },
-            new MenuItem("Step _Over", "", () => _ = StepDebuggingAsync(stepInto: false), Key.F10) { BindKeyToApplication = true },
+            new MenuItem("_Start Debugging", "", () => _ = StartDebuggingAsync(), Key.F5.WithShift),
+            new MenuItem("_Continue", "", () => _ = ContinueDebuggingAsync(), Key.F5.WithCtrl),
+            new MenuItem("Step _Over", "", () => _ = StepDebuggingAsync(stepInto: false), Key.F10),
             // F7, not Visual Studio's F11 - Windows Terminal claims F11 for its own full-screen
             // toggle before the app ever sees it. F7/F8 is also the Turbo Pascal/Borland pairing.
-            new MenuItem("Step _Into", "", () => _ = StepDebuggingAsync(stepInto: true), Key.F7) { BindKeyToApplication = true },
+            new MenuItem("Step _Into", "", () => _ = StepDebuggingAsync(stepInto: true), Key.F7),
             new MenuItem("Sto_p Debugging", "", () => _ = StopDebuggingAsync(), Key.Empty),
             new Line(),
             new MenuItem("_Toggle Breakpoint", "", ToggleBreakpointAtCursor, Key.F9),
@@ -369,13 +377,43 @@ public sealed class AppShell : Window
         // constructed with), so AddAt(0, ...) inserts it before Find the same way the library adds
         // its own items via Add().
         var editMenuItems = menuBar.EditMenu.PopoverMenu!.Root!;
-        editMenuItems.AddAt(0, new MenuItem("_Find in Files...", "", () => ShowFindInFiles(), Key.F.WithCtrl.WithShift) { BindKeyToApplication = true });
+        editMenuItems.AddAt(0, new MenuItem("_Find in Files...", "", () => ShowFindInFiles(), FindInFilesKey));
         editMenuItems.AddAt(1, new MenuItem("_Go To Line...", "", ShowGoToLine, Key.G.WithCtrl));
         menuBar.Menus = [fileMenu, menuBar.EditMenu, menuBar.ViewMenu, buildMenu, debugMenu, projectMenu, themeMenu, helpMenu];
         menuBar.X = 0;
         menuBar.Y = 0;
         menuBar.Width = Dim.Fill();
         return menuBar;
+    }
+
+    /// <summary>
+    /// Find in Files' key. Not Visual Studio's Ctrl+Shift+F: Windows Terminal claims that for its
+    /// own Find bar before the app sees it, and more generally a Ctrl+Shift+letter arrives with
+    /// the Shift dropped (Ctrl+Shift+G reads as Ctrl+G, Ctrl+Shift+H as Ctrl+Backspace) - both
+    /// confirmed live. Alt+Shift+F arrives intact.
+    /// </summary>
+    private static readonly Key FindInFilesKey = Key.F.WithAlt.WithShift;
+
+    /// <summary>
+    /// App-wide keys that have no status-bar Shortcut to carry them. A key reaches this only after
+    /// the focused view declines it, and never while a dialog is open (a dialog is its own
+    /// top-level runnable), so these can't fire behind a modal. They're handled here rather than
+    /// via MenuItem.BindKeyToApplication, which - confirmed live against 2.4.17 - never fires for
+    /// the Debug menu's items even though the keys do arrive (Shift+F5 and Ctrl+F5 did nothing,
+    /// while File menu's Ctrl+N worked). Its app-level registration goes through a null-conditional
+    /// App?.Keyboard, so it's silently skipped for a menu item that has no App yet when it runs.
+    /// </summary>
+    protected override bool OnKeyDown(Key key)
+    {
+        if (key == Key.F5.WithShift)
+            _ = StartDebuggingAsync();
+        else if (key == Key.F5.WithCtrl)
+            _ = ContinueDebuggingAsync();
+        else if (key == FindInFilesKey)
+            ShowFindInFiles();
+        else
+            return base.OnKeyDown(key);
+        return true;
     }
 
     private EditorStatusBar BuildStatusBar()
@@ -1850,7 +1888,11 @@ public sealed class AppShell : Window
         _workspace.SaveAll();
     }
 
-    /// <summary>Builds the active project. Returns null (having already reported it) if none is loaded.</summary>
+    /// <summary>
+    /// Builds the active project. Returns null (having already reported why) if none is loaded,
+    /// another build is still running, or the build was cancelled via <see cref="CancelBuild"/> -
+    /// callers (Run, Start Debugging) treat that the same as a failed build and stop there.
+    /// </summary>
     private async Task<BuildResult?> BuildActiveProjectAsync()
     {
         var project = _workspace.ActiveProject;
@@ -1859,13 +1901,37 @@ public sealed class AppShell : Window
             AppendOutputLine("No project loaded. Use File > Open Project or File > New Project first.");
             return null;
         }
+        // Two builds at once would have two sets of cl65 processes writing the same obj/ files.
+        if (_buildCancellation is not null)
+        {
+            AppendOutputLine("A build is already running - wait for it, or use Build > Cancel Build.");
+            return null;
+        }
 
         SaveAll();
         _outputView.Clear();
         _errorListView.SetDiagnostics([]);
         AppendOutputLine($"------ Build started: {project.Name} ({project.Target.ToCl65Id()}) ------");
 
-        var result = await _toolchain.BuildAsync(project, onOutputLine: AppendOutputLine);
+        var cancellation = new CancellationTokenSource();
+        _buildCancellation = cancellation;
+        BuildResult result;
+        try
+        {
+            result = await _toolchain.BuildAsync(project, onOutputLine: AppendOutputLine, cancellation.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            // Cc65Toolchain has already killed the cl65 process tree; what it left in obj/ is
+            // partial, but the next build simply overwrites it.
+            AppendOutputLine("------ Build cancelled ------");
+            return null;
+        }
+        finally
+        {
+            _buildCancellation = null;
+            cancellation.Dispose();
+        }
 
         // Past the await, so not on the UI thread - see OnUiThread.
         OnUiThread(() =>
@@ -1886,6 +1952,25 @@ public sealed class AppShell : Window
         });
 
         return result;
+    }
+
+    /// <summary>Build > Cancel Build: stops the running build, if any (see <see cref="BuildActiveProjectAsync"/>).</summary>
+    private void CancelBuild()
+    {
+        if (_buildCancellation is not { } cancellation)
+        {
+            AppendOutputLine("No build is running.");
+            return;
+        }
+
+        try
+        {
+            cancellation.Cancel();
+        }
+        catch (ObjectDisposedException)
+        {
+            // The build finished on its own between the check above and here - nothing left to cancel.
+        }
     }
 
     /// <summary>Builds the active project, then launches it in the VICE emulator matching its target if the build succeeded.</summary>

@@ -268,7 +268,9 @@ finishes; a successful build additionally reports the output binary's size in by
 diagnostic `cl65`/`ca65`/`ld65` reported is also parsed into the **Error List** tab (severity/file/
 line/message columns); activating a row jumps straight to that line, the file opened if it isn't
 already. A source file that fails to compile doesn't stop the rest from being compiled too - only
-the link step is skipped, so a single build surfaces every file's errors at once. **Build > Clean
+the link step is skipped, so a single build surfaces every file's errors at once. **Build > Cancel
+Build** stops a running build, killing `cl65` and every compiler/assembler process it started (only
+one build runs at a time - pressing F5 again mid-build says so rather than starting a second). **Build > Clean
 Project** deletes the project's build artifacts (each source file's object file and assembler
 listing, linker map, label file, debug info file, and the linked output binary) without
 rebuilding. **F6** (or **Build > Run Project**) builds first, then launches the built output in
@@ -294,7 +296,7 @@ editing of those files themselves - activating a row opens the underlying file a
 matching line. **Debug** shows the active debugging session's registers and status - see
 "Debugging" below.
 
-**Edit > Find in Files...** (Ctrl+Shift+F) searches every source/header/assembly file across the
+**Edit > Find in Files...** (Alt+Shift+F - not Ctrl+Shift+F, which Windows Terminal keeps for its own Find bar) searches every source/header/assembly file across the
 loaded project(s) for a case-insensitive substring and lists every matching line; activating a
 result opens that file and jumps the caret straight to the match. The editor's own right-click
 context menu (alongside the library's default Undo/Redo/Cut/Copy/Paste/Select All) has Find,
@@ -340,7 +342,7 @@ line, not just launching the emulator and watching it run.
    register snapshot and status (`Stopped at <file>:<line>`), and the editor jumps to and
    vertically centers the current line (highlighted via a `Terminal.Gui.Editor` line transformer,
    not the gutter - see step 2; the same centering happens for every other stop below, not just the
-   first). **Continue** (Ctrl+F5) resumes; **Step** (F10) advances by *source line*, not raw 6502
+   first). **Continue** (Ctrl+F5) resumes; **Step Over** (F10) and **Step Into** (F7 - Windows Terminal keeps F11 for full screen) advance by *source line*, not raw 6502
    instruction - it single-steps repeatedly until the resolved location changes to a *different* C
    line (skipping over addresses that only resolve to cl65's own generated assembly, e.g. a
    function's prologue, so it doesn't stop one instruction early), so one Step press is one C
