@@ -191,6 +191,67 @@ public class DbgFileTests
         Assert.Null(name);
     }
 
+    /// <summary>Every address in CBMInfo.dbg covered by a line record against cc65's runtime
+    /// library macro file (asminc/generic.mac, at the path of the machine that built the
+    /// library) - e.g. inside _heapmemavail, which memory.c calls.</summary>
+    private static List<long> AddressesWithMacroFileLineRecords(DbgFile dbg)
+    {
+        var macroFiles = dbg.Files.Where(f => f.Name.EndsWith(".mac", StringComparison.OrdinalIgnoreCase)).Select(f => f.Id).ToHashSet();
+        var macroSpans = dbg.Lines.Where(l => macroFiles.Contains(l.File)).SelectMany(l => l.Spans).ToHashSet();
+        var segments = dbg.Segments.ToDictionary(s => s.Id);
+        return dbg.Spans.Where(s => macroSpans.Contains(s.Id))
+            .SelectMany(s => Enumerable.Range(0, (int)s.Size).Select(i => segments[s.Seg].Start + s.Start + i))
+            .ToList();
+    }
+
+    [Fact]
+    public void FindSourceLocationForAddress_NeverResolvesToTheRuntimeLibrarysMacroFiles()
+    {
+        // Resolving to "generic.mac:4" used to make Step Into stop inside _heapmemavail and move
+        // the current-line highlight to line 4 of whatever file was open.
+        var dbg = DbgFile.Parse(LoadCBMInfoFixture());
+        var addresses = AddressesWithMacroFileLineRecords(dbg);
+        Assert.NotEmpty(addresses);
+
+        foreach (var address in addresses)
+        {
+            var location = dbg.FindSourceLocationForAddress(address);
+            Assert.False(location is { } l && l.FilePath.EndsWith(".mac", StringComparison.OrdinalIgnoreCase),
+                $"${address:X4} resolved to {location}");
+        }
+    }
+
+    [Fact]
+    public void FindProjectSourceLocationForAddress_ResolvesProjectCode_AndNotTheRuntimeLibrary()
+    {
+        var dbg = DbgFile.Parse(LoadCBMInfoFixture());
+        var projectDirectory = Path.Combine(Path.GetTempPath(), "TedideDbgFileTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(projectDirectory, "src"));
+        File.WriteAllText(Path.Combine(projectDirectory, "src", "main.c"), "");
+        try
+        {
+            var main = dbg.Symbols.First(s => s.Name == "_main" && s.Type == "lab").Value!.Value;
+            Assert.Equal("src/main.c", dbg.FindProjectSourceLocationForAddress(main, projectDirectory)?.FilePath);
+
+            // The library's own .s files ("common/_heapmemavail.s") aren't in the project.
+            Assert.All(AddressesWithMacroFileLineRecords(dbg),
+                address => Assert.Null(dbg.FindProjectSourceLocationForAddress(address, projectDirectory)));
+        }
+        finally
+        {
+            Directory.Delete(projectDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void FindProjectSourceLocationForAddress_ReturnsNull_WhenTheSourceFileIsntInTheProject()
+    {
+        var dbg = DbgFile.Parse(LoadCBMInfoFixture());
+        var main = dbg.Symbols.First(s => s.Name == "_main" && s.Type == "lab").Value!.Value;
+
+        Assert.Null(dbg.FindProjectSourceLocationForAddress(main, Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"))));
+    }
+
     [Fact]
     public void FindSourceLocationForAddress_ReturnsNull_ForAnAddressOutsideEverySegment()
     {

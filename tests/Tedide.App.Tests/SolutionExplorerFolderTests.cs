@@ -53,7 +53,7 @@ public sealed class SolutionExplorerFolderTests : IDisposable
 
         explorer.Rebuild(workspace);
 
-        var project = Assert.Single(explorer.Objects);
+        var project = Assert.Single(explorer.Objects!);
         var children = project.Children.ToList();
         Assert.Contains(children, n => n is SolutionExplorerTree.FolderNode && n.Text == "src");
         Assert.Contains(children, n => n is SolutionExplorerTree.FolderNode && n.Text == "include");

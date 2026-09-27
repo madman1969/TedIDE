@@ -237,6 +237,7 @@ public sealed class DbgFile
                 .Where(s => offsetInSegment >= s.Start && offsetInSegment < s.Start + s.Size);
 
             (string FilePath, int Line)? assemblyFallback = null;
+            var fallbackIsMacro = false;
             foreach (var span in matchingSpans)
             {
                 // A span compiled from C source can also carry TWO line records against the exact
@@ -247,8 +248,13 @@ public sealed class DbgFile
                 // when that's genuinely the only source for this span (a hand-written .s file with
                 // no C counterpart, e.g. HelloCBM's border.s, which has its own module and no paired
                 // .c line record for its spans).
+                // Among assembly candidates, a routine's own .s/.asm beats a macro/include file it
+                // expanded (the runtime library's _mappederrno has both "_mappederrno.s:24" and
+                // "generic.mac:51" on one span).
                 var candidates = _linesBySpan.GetValueOrDefault(span.Id, []);
-                var line = candidates.FirstOrDefault(l => !IsAssemblyFile(l.File)) ?? candidates.FirstOrDefault();
+                var line = candidates.FirstOrDefault(l => !IsAssemblyFile(l.File))
+                    ?? candidates.FirstOrDefault(l => !IsMacroFile(l.File))
+                    ?? candidates.FirstOrDefault();
                 if (line is null)
                     continue;
 
@@ -258,7 +264,9 @@ public sealed class DbgFile
                 if (!IsAssemblyFile(line.File))
                     return (file.Name, line.Line);
 
-                assemblyFallback ??= (file.Name, line.Line);
+                var isMacro = IsMacroFile(line.File);
+                if (assemblyFallback is null || (fallbackIsMacro && !isMacro))
+                    (assemblyFallback, fallbackIsMacro) = ((file.Name, line.Line), isMacro);
             }
 
             if (assemblyFallback is { } fallback)
@@ -302,12 +310,40 @@ public sealed class DbgFile
         return null;
     }
 
+    /// <summary>
+    /// Assembly source, including ca65's macro (.mac) and include (.inc) files: cc65's own runtime
+    /// library carries line records against its asminc/generic.mac (at the path of whichever
+    /// machine built the library, e.g. "/home/runner/work/cc65/cc65/asminc/generic.mac"), and
+    /// treating those as C-like source let them win over the routine's own .s record - Step Into
+    /// then stopped inside e.g. _heapmemavail at "generic.mac:4" instead of running it back out.
+    /// </summary>
     private bool IsAssemblyFile(int fileId)
     {
         var extension = Path.GetExtension(_filesById.GetValueOrDefault(fileId)?.Name);
-        return string.Equals(extension, ".s", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(extension, ".asm", StringComparison.OrdinalIgnoreCase);
+        return extension is not null && AssemblyExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase);
     }
+
+    private static readonly string[] AssemblyExtensions = [".s", ".asm", ".mac", ".inc"];
+
+    private bool IsMacroFile(int fileId)
+    {
+        var extension = Path.GetExtension(_filesById.GetValueOrDefault(fileId)?.Name);
+        return string.Equals(extension, ".mac", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(extension, ".inc", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// <see cref="FindSourceLocationForAddress"/>, but only if the resolved file exists in the
+    /// project at <paramref name="projectDirectory"/> - null for code whose source isn't part of
+    /// it, above all cc65's runtime library, whose line records name its own .s files
+    /// ("common/_heapmemavail.s") and paths on the machine that built it. That's what a debugger
+    /// wants: such code has nothing to show, so stepping should run through it, and the editor
+    /// shouldn't be sent to a line number from a file it can't open.
+    /// </summary>
+    public (string FilePath, int Line)? FindProjectSourceLocationForAddress(long address, string projectDirectory) =>
+        FindSourceLocationForAddress(address) is { } location && File.Exists(Path.Combine(projectDirectory, location.FilePath))
+            ? location
+            : null;
 
     /// <summary>
     /// Splits a record's comma-separated <c>key=value</c> fields, treating commas inside a

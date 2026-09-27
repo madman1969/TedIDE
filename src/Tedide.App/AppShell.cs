@@ -1716,7 +1716,11 @@ public sealed class AppShell : Window
         _debugPanel.SetWatches(watchLines);
 
         var project = _workspace.ActiveProject;
-        var location = pc is { } pcForLookup ? _dbgFile?.FindSourceLocationForAddress(pcForLookup) : null;
+        // Project files only: a line record from cc65's runtime library can't be opened, and used
+        // to move the current-line highlight to its line number in whatever file was open.
+        var location = pc is { } pcForLookup && project is not null
+            ? _dbgFile?.FindProjectSourceLocationForAddress(pcForLookup, project.Directory)
+            : null;
         Log.Debug("Stopped: PC={PC:X4}, location={Location}",
             pc, location is { } loc ? $"{loc.FilePath}:{loc.Line}" : "(unresolved)");
 
@@ -1755,8 +1759,15 @@ public sealed class AppShell : Window
     /// </summary>
     private async Task StepDebuggingAsync(bool stepInto)
     {
-        if (_debugClient is not { } debugClient || _dbgFile is not { } dbgFile || !_isDebugging || !_isStopped)
+        if (_debugClient is not { } debugClient || _dbgFile is not { } dbgFile || !_isDebugging || !_isStopped
+            || _workspace.ActiveProject is not { } project)
             return;
+
+        // "Has source" means source in this project - cc65's runtime library has line records too
+        // (its own .s files, and macro files at paths from the machine that built it), and Step
+        // Into must run through that code, not stop in it. See FindProjectSourceLocationForAddress.
+        (string FilePath, int Line)? SourceLocation(long address) =>
+            dbgFile.FindProjectSourceLocationForAddress(address, project.Directory);
 
         // See the Resumed handler's own comment in StartDebuggingAsync for why this guard exists -
         // each single-step's own Resumed event must not touch UI state that this method (still
@@ -1765,7 +1776,7 @@ public sealed class AppShell : Window
         try
         {
             var startPc = (await debugClient.GetRegistersAsync())["PC"];
-            var startLocation = startPc is { } s ? dbgFile.FindSourceLocationForAddress(s) : null;
+            var startLocation = startPc is { } s ? SourceLocation(s) : null;
             // main.c has 6 line records in HelloCBM.dbg against main.s's 22 for the same code -
             // cl65's generated .s intermediate is tracked at far finer granularity than the
             // original C source. Single-stepping from a C line legitimately passes through
@@ -1781,7 +1792,7 @@ public sealed class AppShell : Window
                 // StepAsync waits for VICE to actually stop again and hands back the PC from that
                 // Stopped event - one round trip per instruction, no separate register read.
                 var pc = await debugClient.StepAsync(stepOverSubroutines: !stepInto);
-                var location = dbgFile.FindSourceLocationForAddress(pc);
+                var location = SourceLocation(pc);
 
                 if (stepInto && location is null && startLocation is not null)
                 {
@@ -1791,7 +1802,7 @@ public sealed class AppShell : Window
                     while (location is null && i++ < MaxStepInstructions)
                     {
                         pc = await debugClient.ExecuteUntilReturnAsync();
-                        location = dbgFile.FindSourceLocationForAddress(pc);
+                        location = SourceLocation(pc);
                     }
                 }
 
