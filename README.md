@@ -423,7 +423,7 @@ dotnet run --project src/Tedide.DocViewer
 
 A single window: a category/page tree on the left, and the selected page's rendered Markdown on the
 right (via Terminal.Gui's own `Markdown` view). The border between them is a draggable divider,
-and its position is remembered between runs. The tree holds five books:
+and its position is remembered between runs, as is which books you've collapsed in the tree. The tree holds five books:
 
 | Book | Contents | Licence |
 | --- | --- | --- |

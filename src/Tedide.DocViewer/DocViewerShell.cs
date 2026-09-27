@@ -43,6 +43,7 @@ public sealed class DocViewerShell : Window
     private readonly Dictionary<string, TreeNode> _nodesByFileName = [];
 
     private readonly TreeView _tree = new();
+    private readonly List<BookNode> _bookNodes = [];
     private readonly FindableMarkdown _contentView = new();
     private readonly FrameView _contentFrame;
     private readonly ThemedMarkdownHighlighter _syntaxHighlighter = new();
@@ -88,9 +89,15 @@ public sealed class DocViewerShell : Window
         };
         _tree.Width = Dim.Fill();
         _tree.Height = Dim.Fill();
+        // Book titles stand out in the theme's highlight colour, like the Solution Explorer's
+        // folders; a selected book keeps the tree's own selection look. Read at draw time, so a
+        // theme switch restyles them immediately. Every other node gets the tree's scheme
+        // explicitly: returning null (documented as "use the default") draws white-on-black
+        // whatever the theme.
+        _tree.ColorGetter = node => node is BookNode ? BookScheme(_tree.GetScheme()) : _tree.GetScheme();
         foreach (var book in _database.LoadCatalog())
         {
-            var bookNode = new TreeNode { Text = book.Name };
+            var bookNode = new BookNode { Text = book.Name };
             foreach (var category in book.Categories)
             {
                 var categoryNode = new TreeNode { Text = category.Name };
@@ -104,8 +111,13 @@ public sealed class DocViewerShell : Window
                 bookNode.Children.Add(categoryNode);
             }
             _tree.AddObject(bookNode);
+            _bookNodes.Add(bookNode);
         }
         _tree.ExpandAll();
+        // Books start expanded unless the user collapsed them last time - recording the collapsed
+        // ones (not the expanded ones) means a book added to Docs.db later still shows up open.
+        foreach (var bookNode in _bookNodes.Where(b => _layoutSettings.CollapsedBooks.Contains(b.Text)))
+            _tree.Collapse(bookNode);
         _tree.SelectionChanged += (_, _) =>
         {
             if (_tree.SelectedObject is TreeNode { Tag: PageEntry entry })
@@ -197,17 +209,26 @@ public sealed class DocViewerShell : Window
         Add([menuBar, treeFrame, _contentFrame, statusBar]);
     }
 
+    /// <summary>A book's top-level node in the Contents tree - drawn with <see cref="BookScheme"/>.</summary>
+    internal sealed class BookNode : TreeNode;
+
+    /// <summary>
+    /// <paramref name="treeScheme"/> with unselected text in the theme's highlight colour - the same
+    /// look as Tedide.App's Solution Explorer folders (see <see cref="TreeNodeSchemes.Emphasised"/>).
+    /// </summary>
+    internal static Scheme BookScheme(Scheme treeScheme) => TreeNodeSchemes.Emphasised(treeScheme);
+
     /// <summary>
     /// Records the Contents/Documentation divider's current position (as a percentage of the
-    /// window's width) so the next run starts where this one left off. Called once, from
-    /// Program.cs, right after <c>Application.Run(shell)</c> returns - i.e. when the user quits.
+    /// window's width) and which books are collapsed in the tree, so the next run starts where
+    /// this one left off. Called once, from Program.cs, right after <c>Application.Run(shell)</c>
+    /// returns - i.e. when the user quits.
     /// </summary>
     public void SaveLayoutSettings()
     {
-        if (Frame.Width <= 0)
-            return;
-
-        _layoutSettings.ContentPaneWidthPercent = _contentFrame.Frame.Width * 100 / Frame.Width;
+        if (Frame.Width > 0)
+            _layoutSettings.ContentPaneWidthPercent = _contentFrame.Frame.Width * 100 / Frame.Width;
+        _layoutSettings.CollapsedBooks = _bookNodes.Where(b => !_tree.IsExpanded(b)).Select(b => b.Text).ToList();
         _layoutSettings.Save();
     }
 

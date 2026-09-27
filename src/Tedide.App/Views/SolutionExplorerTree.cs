@@ -1,5 +1,6 @@
 using System.Drawing;
 using Tedide.Core;
+using Tedide.Theming;
 using Terminal.Gui.App;
 using Terminal.Gui.Input;
 using Terminal.Gui.ViewBase;
@@ -125,14 +126,10 @@ public sealed class SolutionExplorerTree : TreeView
     internal sealed class FolderNode : TreeNode;
 
     /// <summary>
-    /// <paramref name="treeScheme"/> with unselected text in the theme's type color (CodeType - the
-    /// same readability-checked color type names get in the editor: teal in VS2026 Dark, yellow in
-    /// Solarized, light green in Commodore 64). Selected rows keep the tree's own Focus/Active look.
+    /// <paramref name="treeScheme"/> with unselected text in the theme's type color - see
+    /// <see cref="TreeNodeSchemes.Emphasised"/>, which the Doc Viewer's book titles share.
     /// </summary>
-    internal static Scheme FolderScheme(Scheme treeScheme) => new(treeScheme)
-    {
-        Normal = new Terminal.Gui.Drawing.Attribute(treeScheme.CodeType.Foreground, treeScheme.Normal.Background, treeScheme.Normal.Style),
-    };
+    internal static Scheme FolderScheme(Scheme treeScheme) => TreeNodeSchemes.Emphasised(treeScheme);
 
     public void Rebuild(Workspace workspace)
     {

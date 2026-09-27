@@ -3,9 +3,9 @@ using System.Text.Json;
 namespace Tedide.DocViewer;
 
 /// <summary>
-/// Persists the draggable Contents/Documentation divider's position across runs, as the
-/// Documentation pane's percentage of the window's width so it still makes sense after resizing
-/// the terminal - the same way <c>Tedide.App.LayoutSettings</c> persists the IDE's splitters, in
+/// Persists the Doc Viewer's layout across runs: the draggable Contents/Documentation divider's
+/// position, as the Documentation pane's percentage of the window's width so it still makes sense
+/// after resizing the terminal, and which books are collapsed in the Contents tree - the same way <c>Tedide.App.LayoutSettings</c> persists the IDE's splitters, in
 /// its own file (<c>docviewer-layout.json</c>) so the two apps' settings don't collide.
 /// </summary>
 public sealed class DocViewerLayoutSettings
@@ -16,6 +16,10 @@ public sealed class DocViewerLayoutSettings
     /// <summary>The Documentation pane's width, as a percentage of the window's width (the
     /// Contents tree gets the rest).</summary>
     public int ContentPaneWidthPercent { get; set; } = 70;
+
+    /// <summary>The names of the books collapsed in the Contents tree; every other book starts
+    /// expanded.</summary>
+    public List<string> CollapsedBooks { get; set; } = [];
 
     /// <summary><see cref="ContentPaneWidthPercent"/> kept within bounds that leave both panes
     /// usable, whatever a hand-edited settings file says.</summary>

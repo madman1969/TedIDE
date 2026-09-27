@@ -19,6 +19,16 @@ public class DocViewerLayoutSettingsTests : IDisposable
     }
 
     [Fact]
+    public void CollapsedBooks_AreRestoredOnTheNextLoad_AndDefaultToNone()
+    {
+        Assert.Empty(DocViewerLayoutSettings.Load(_path).CollapsedBooks);
+
+        new DocViewerLayoutSettings { CollapsedBooks = ["The C Book", "VICE Manual"] }.Save(_path);
+
+        Assert.Equal(["The C Book", "VICE Manual"], DocViewerLayoutSettings.Load(_path).CollapsedBooks);
+    }
+
+    [Fact]
     public void MissingOrCorruptFile_FallsBackToTheDefault()
     {
         Assert.Equal(70, DocViewerLayoutSettings.Load(_path).ContentPaneWidthPercent);
