@@ -673,4 +673,63 @@ public class Cc65ToolchainTests
             dir.Delete(recursive: true);
         }
     }
+
+    [Fact]
+    public async Task BuildAsync_KillsTheWholeCl65ProcessTree_WhenCancelled()
+    {
+        // A stand-in "cl65" that, like the real one, hands the work to a child process - here a
+        // PowerShell that records its own PID and then just sleeps - so the test can check that
+        // cancelling kills the child too, not only the process BuildAsync started directly.
+        var dir = Directory.CreateTempSubdirectory();
+        try
+        {
+            var pidFile = Path.Combine(dir.FullName, "child.pid");
+            var fakeCl65 = Path.Combine(dir.FullName, "fake-cl65.cmd");
+            File.WriteAllText(fakeCl65,
+                $"@powershell -NoProfile -Command \"$PID | Set-Content -LiteralPath '{pidFile}'; Start-Sleep -Seconds 60\"\r\n");
+
+            var project = new TedideProject { Name = "Test", Target = Cc65Target.C64, SourceFiles = ["main.c"] };
+            project.Save(Path.Combine(dir.FullName, "Test.tproj"));
+
+            using var cts = new CancellationTokenSource();
+            var build = new Cc65Toolchain(fakeCl65).BuildAsync(project, cancellationToken: cts.Token);
+
+            var deadline = DateTime.UtcNow.AddSeconds(20);
+            while (!File.Exists(pidFile) || new FileInfo(pidFile).Length == 0)
+            {
+                Assert.True(DateTime.UtcNow < deadline, "The fake cl65's child process never started.");
+                await Task.Delay(100);
+            }
+            var childPid = int.Parse(File.ReadAllText(pidFile).Trim());
+
+            cts.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => build);
+
+            Assert.True(await HasExitedAsync(childPid, TimeSpan.FromSeconds(5)),
+                $"cl65's child process (PID {childPid}) was still running after the build was cancelled.");
+        }
+        finally
+        {
+            dir.Delete(recursive: true);
+        }
+    }
+
+    private static async Task<bool> HasExitedAsync(int pid, TimeSpan timeout)
+    {
+        try
+        {
+            using var process = System.Diagnostics.Process.GetProcessById(pid);
+            using var cts = new CancellationTokenSource(timeout);
+            await process.WaitForExitAsync(cts.Token);
+            return true;
+        }
+        catch (ArgumentException)
+        {
+            return true; // No such process any more.
+        }
+        catch (OperationCanceledException)
+        {
+            return false;
+        }
+    }
 }

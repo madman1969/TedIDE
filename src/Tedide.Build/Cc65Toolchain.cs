@@ -130,10 +130,10 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
         foreach (var arg in arguments)
             startInfo.ArgumentList.Add(arg);
 
-        Process process;
+        Process? started;
         try
         {
-            process = Process.Start(startInfo)
+            started = Process.Start(startInfo)
                 ?? throw new InvalidOperationException($"Failed to start '{Cl65Path}'.");
         }
         catch (Win32Exception ex)
@@ -142,12 +142,28 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
             return null;
         }
 
+        using var process = started;
         process.OutputDataReceived += (_, e) => capture(e.Data);
         process.ErrorDataReceived += (_, e) => capture(e.Data);
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
 
-        await process.WaitForExitAsync(cancellationToken);
+        try
+        {
+            await process.WaitForExitAsync(cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            // WaitForExitAsync only stops *waiting* on cancellation - cl65 itself (and the
+            // cc65/ca65/ld65 children it spawns) would otherwise keep running in the background,
+            // still writing the very .o/.lst/output files a follow-up build is about to produce.
+            try { process.Kill(entireProcessTree: true); }
+            catch (Exception ex) when (ex is InvalidOperationException or Win32Exception)
+            {
+                // Already exited on its own between the cancellation and the Kill - nothing to do.
+            }
+            throw;
+        }
         return process.ExitCode;
     }
 

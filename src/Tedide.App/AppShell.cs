@@ -1305,6 +1305,7 @@ public sealed class AppShell : Window
 
         _debugClient = new ViceMonitorClient();
         _debugClient.CheckpointHit += OnCheckpointHit;
+        _debugClient.EventHandlerFailed += ex => Log.Error(ex, "Debug event handler failed");
         _debugClient.Resumed += pc => Application.Invoke(() =>
         {
             Log.Debug("Resumed event: PC={PC:X4}, _isStepping={IsStepping}", pc, _isStepping);

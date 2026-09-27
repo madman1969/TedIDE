@@ -25,6 +25,9 @@ public sealed class ViceMonitorClient : IAsyncDisposable
     private NetworkStream? _stream;
     private Task? _readLoop;
     private int _nextRequestId;
+    /// <summary>Set (once) by the read loop when the connection goes away - see <see cref="SendAsync"/>
+    /// for why a request sent after this point has to check it rather than just waiting.</summary>
+    private volatile IOException? _closedException;
 
     /// <summary>Raised when a checkpoint stops execution - the same event fires whether the
     /// checkpoint was set by this client or already existed in VICE.</summary>
@@ -36,6 +39,12 @@ public sealed class ViceMonitorClient : IAsyncDisposable
     /// <summary>Raised when VICE's monitor resumes execution, with the PC it resumed from.</summary>
     public event Action<ushort>? Resumed;
 
+    /// <summary>Raised (on the read-loop thread) when a <see cref="CheckpointHit"/>/<see cref="Stopped"/>/
+    /// <see cref="Resumed"/> subscriber throws. The exception is contained rather than propagated -
+    /// letting it escape into the read loop would tear down the whole connection and fail every
+    /// pending request over what's only a bug in one subscriber - so this is how it gets reported.</summary>
+    public event Action<Exception>? EventHandlerFailed;
+
     public async Task ConnectAsync(string host = "127.0.0.1", int port = 6502, CancellationToken cancellationToken = default)
     {
         await _tcpClient.ConnectAsync(host, port, cancellationToken);
@@ -45,7 +54,7 @@ public sealed class ViceMonitorClient : IAsyncDisposable
 
     public async Task<bool> PingAsync(CancellationToken cancellationToken = default)
     {
-        var (_, errorCode, _) = await SendAsync(ViceMonitorCommand.Ping, ReadOnlyMemory<byte>.Empty, cancellationToken);
+        var (_, errorCode, _) = await SendAsync(ViceMonitorCommand.Ping, ReadOnlyMemory<byte>.Empty, cancellationToken, throwOnError: false);
         return errorCode == 0;
     }
 
@@ -115,7 +124,14 @@ public sealed class ViceMonitorClient : IAsyncDisposable
     public async Task ContinueAsync(CancellationToken cancellationToken = default) =>
         await SendAsync(ViceMonitorCommand.ExitMonitor, ReadOnlyMemory<byte>.Empty, cancellationToken);
 
-    private async Task<(byte ResponseType, byte ErrorCode, byte[] Body)> SendAsync(ViceMonitorCommand command, ReadOnlyMemory<byte> body, CancellationToken cancellationToken)
+    /// <summary>
+    /// Sends one request and awaits its reply. Throws <see cref="ViceMonitorException"/> if VICE
+    /// answers with a nonzero error code (unless <paramref name="throwOnError"/> is false, for
+    /// callers like <see cref="PingAsync"/> that report the error code themselves), or
+    /// <see cref="IOException"/> if the connection is or goes away before a reply arrives.
+    /// </summary>
+    private async Task<(byte ResponseType, byte ErrorCode, byte[] Body)> SendAsync(
+        ViceMonitorCommand command, ReadOnlyMemory<byte> body, CancellationToken cancellationToken, bool throwOnError = true)
     {
         if (_stream is null)
             throw new InvalidOperationException("Not connected - call ConnectAsync first.");
@@ -123,21 +139,40 @@ public sealed class ViceMonitorClient : IAsyncDisposable
         var requestId = (uint)Interlocked.Increment(ref _nextRequestId);
         var completion = new TaskCompletionSource<(byte, byte, byte[])>(TaskCreationOptions.RunContinuationsAsynchronously);
         _pending[requestId] = completion;
-
-        var request = ViceMonitorProtocol.EncodeRequest(requestId, command, body.Span);
-        await _writeLock.WaitAsync(cancellationToken);
         try
         {
-            await _stream.WriteAsync(request, cancellationToken);
+            // Checked *after* registering in _pending: the read loop sets _closedException before
+            // failing everything in _pending, so a request registered too late for that sweep is
+            // guaranteed to see the flag here instead of waiting forever for a reply that can't come.
+            if (_closedException is { } closed)
+                throw new IOException(closed.Message, closed);
+
+            var request = ViceMonitorProtocol.EncodeRequest(requestId, command, body.Span);
+            await _writeLock.WaitAsync(cancellationToken);
+            try
+            {
+                await _stream.WriteAsync(request, cancellationToken);
+            }
+            finally
+            {
+                _writeLock.Release();
+            }
+
+            (byte ResponseType, byte ErrorCode, byte[] Body) response;
+            await using (cancellationToken.Register(() => completion.TrySetCanceled(cancellationToken)))
+            {
+                response = await completion.Task;
+            }
+
+            if (throwOnError && response.ErrorCode != 0)
+                throw new ViceMonitorException(command, response.ErrorCode);
+            return response;
         }
         finally
         {
-            _writeLock.Release();
-        }
-
-        await using (cancellationToken.Register(() => completion.TrySetCanceled(cancellationToken)))
-        {
-            return await completion.Task;
+            // A no-op after a normal reply (Dispatch already removed it), but a cancelled or failed
+            // request would otherwise leave its entry in _pending for the rest of the session.
+            _pending.TryRemove(requestId, out _);
         }
     }
 
@@ -158,12 +193,15 @@ public sealed class ViceMonitorClient : IAsyncDisposable
                 Dispatch(header, bodyBuffer);
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             // Connection closed (VICE exited, or DisposeAsync tore it down) - every still-pending
             // request would otherwise hang forever, so fail them all instead of leaving them stuck.
+            // The flag is set first so a request that registers after this sweep fails too - see SendAsync.
+            var closed = new IOException("VICE monitor connection closed.", ex);
+            _closedException = closed;
             foreach (var pending in _pending.Values)
-                pending.TrySetException(new IOException("VICE monitor connection closed."));
+                pending.TrySetException(closed);
         }
     }
 
@@ -179,18 +217,40 @@ public sealed class ViceMonitorClient : IAsyncDisposable
         switch ((ViceMonitorEventType)header.ResponseType)
         {
             case ViceMonitorEventType.Stopped:
-                Stopped?.Invoke(ViceMonitorProtocol.DecodeProgramCounterBody(body));
+                RaiseSafely(Stopped, ViceMonitorProtocol.DecodeProgramCounterBody(body));
                 break;
             case ViceMonitorEventType.Resumed:
-                Resumed?.Invoke(ViceMonitorProtocol.DecodeProgramCounterBody(body));
+                RaiseSafely(Resumed, ViceMonitorProtocol.DecodeProgramCounterBody(body));
                 break;
             default:
                 // A checkpoint hit is reported by resending the same "Checkpoint info" (0x11) shape
                 // used for SetCheckpointAsync's own reply, just unsolicited this time - see
                 // ViceMonitorProtocol's doc comment.
                 if (header.ResponseType == (byte)ViceMonitorCommand.CheckpointGet)
-                    CheckpointHit?.Invoke(new CheckpointHitEventArgs(ViceMonitorProtocol.DecodeCheckpointInfoBody(body)));
+                    RaiseSafely(CheckpointHit, new CheckpointHitEventArgs(ViceMonitorProtocol.DecodeCheckpointInfoBody(body)));
                 break;
+        }
+    }
+
+    /// <summary>Invokes each subscriber separately, containing any exception one throws (reported
+    /// via <see cref="EventHandlerFailed"/>) so it can neither skip the remaining subscribers nor
+    /// escape into <see cref="ReadLoopAsync"/>, where it would close the connection.</summary>
+    private void RaiseSafely<T>(Action<T>? handlers, T args)
+    {
+        if (handlers is null)
+            return;
+
+        foreach (var handler in handlers.GetInvocationList().Cast<Action<T>>())
+        {
+            try
+            {
+                handler(args);
+            }
+            catch (Exception ex)
+            {
+                try { EventHandlerFailed?.Invoke(ex); }
+                catch { /* A failing error reporter mustn't take the connection down either. */ }
+            }
         }
     }
 
