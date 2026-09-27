@@ -26,11 +26,16 @@ public sealed class ThemeSettings
     /// or the file can't be read - a missing/corrupt settings file should never stop the app from
     /// starting.
     /// </summary>
-    public static ThemeSettings Load()
+    public static ThemeSettings Load() => Load(FilePath);
+
+    public void Save() => Save(FilePath);
+
+    /// <summary>The path-taking forms, so tests never touch the user's real settings file.</summary>
+    internal static ThemeSettings Load(string path)
     {
         try
         {
-            var json = File.ReadAllText(FilePath);
+            var json = File.ReadAllText(path);
             return JsonSerializer.Deserialize<ThemeSettings>(json, JsonOptions) ?? new ThemeSettings();
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
@@ -39,9 +44,9 @@ public sealed class ThemeSettings
         }
     }
 
-    public void Save()
+    internal void Save(string path)
     {
-        Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
-        File.WriteAllText(FilePath, JsonSerializer.Serialize(this, JsonOptions));
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(path, JsonSerializer.Serialize(this, JsonOptions));
     }
 }
