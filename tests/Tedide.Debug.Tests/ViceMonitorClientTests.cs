@@ -115,11 +115,30 @@ public class ViceMonitorClientTests
 
         await using var client = new ViceMonitorClient();
         await client.ConnectAsync("127.0.0.1", server.Port);
+        await server.WaitForClientAsync();
 
         server.Dispose();
         await Task.Delay(300); // Let the client's read loop notice the connection is gone.
 
         // WaitAsync turns a hang into a TimeoutException, which ThrowsAnyAsync<IOException> rejects.
+        await Assert.ThrowsAnyAsync<IOException>(() => client.PingAsync().WaitAsync(TimeSpan.FromSeconds(5)));
+    }
+
+    [Fact]
+    public async Task FakeServer_ClosesTheConnection_EvenWhenDisposedBeforeItFinishedAccepting()
+    {
+        // The harness race behind Requests_FailWithIOException_...'s occasional failure under load:
+        // Dispose ran while the accept was still completing, so the socket accepted afterwards was
+        // never closed and the client's request hung until its 5-second timeout.
+        var server = new FakeViceMonitorServer { DelayAfterAccept = TimeSpan.FromMilliseconds(300) };
+        await server.StartAsync();
+
+        await using var client = new ViceMonitorClient();
+        await client.ConnectAsync("127.0.0.1", server.Port);
+
+        server.Dispose();
+        await Task.Delay(600); // Past DelayAfterAccept, then time for the client to notice.
+
         await Assert.ThrowsAnyAsync<IOException>(() => client.PingAsync().WaitAsync(TimeSpan.FromSeconds(5)));
     }
 
@@ -204,8 +223,9 @@ public class ViceMonitorClientTests
         await using var client = new ViceMonitorClient();
         await client.ConnectAsync("127.0.0.1", server.Port);
 
+        await server.WaitForClientAsync();
         var step = client.StepAsync();
-        await Task.Delay(200);
+        await Task.Delay(200); // Let the step's request go out and its reply come back first.
         server.Dispose();
 
         await Assert.ThrowsAnyAsync<IOException>(() => step.WaitAsync(TimeSpan.FromSeconds(5)));
@@ -252,7 +272,7 @@ public class ViceMonitorClientTests
         var disconnected = new TaskCompletionSource();
         client.Disconnected += () => disconnected.TrySetResult();
         await client.ConnectAsync("127.0.0.1", server.Port);
-        await Task.Delay(200); // Let the server accept before it's torn down.
+        await server.WaitForClientAsync();
 
         server.Dispose();
 
@@ -281,8 +301,15 @@ public class ViceMonitorClientTests
         private TcpClient? _accepted;
         private NetworkStream? _stream;
         private Func<uint, ViceMonitorCommand, byte[], byte[]>? _handler;
+        private readonly Lock _gate = new();
+        private readonly TaskCompletionSource _clientConnected = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private bool _disposed;
 
         public int Port => ((IPEndPoint)_listener.LocalEndpoint).Port;
+
+        /// <summary>Test hook: widens the window between the accept completing and the server
+        /// recording the connection - the race behind an intermittent 5-second hang.</summary>
+        public TimeSpan DelayAfterAccept { get; init; }
 
         public async Task StartAsync()
         {
@@ -303,8 +330,31 @@ public class ViceMonitorClientTests
 
         private async Task AcceptAndServeAsync()
         {
-            _accepted = await _listener.AcceptTcpClientAsync();
-            _stream = _accepted.GetStream();
+            TcpClient accepted;
+            try
+            {
+                accepted = await _listener.AcceptTcpClientAsync();
+            }
+            catch (Exception ex) when (ex is ObjectDisposedException or SocketException)
+            {
+                return; // Disposed before anyone connected.
+            }
+            if (DelayAfterAccept > TimeSpan.Zero)
+                await Task.Delay(DelayAfterAccept);
+
+            lock (_gate)
+            {
+                // Disposed while the accept was completing: close this late connection too, or the
+                // client never sees the server go away and its next request hangs.
+                if (_disposed)
+                {
+                    accepted.Dispose();
+                    return;
+                }
+                _accepted = accepted;
+                _stream = _accepted.GetStream();
+            }
+            _clientConnected.TrySetResult();
 
             var headerBuffer = new byte[ViceMonitorProtocol.RequestHeaderLength];
             while (true)
@@ -338,10 +388,18 @@ public class ViceMonitorClientTests
             return true;
         }
 
+        /// <summary>Completes once the client's connection has been accepted - wait for this rather
+        /// than a fixed delay before tearing the server down.</summary>
+        public Task WaitForClientAsync() => _clientConnected.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
         public void Dispose()
         {
-            _stream?.Dispose();
-            _accepted?.Dispose();
+            lock (_gate)
+            {
+                _disposed = true;
+                _stream?.Dispose();
+                _accepted?.Dispose();
+            }
             _listener.Stop();
         }
     }
