@@ -15,8 +15,8 @@
     "src/input.c"
   ],
   "OutputFile": "bin/C128_80.prg",
-  "ExtraArguments": [
-    "-I",
+  "IncludePaths": [
     "include"
-  ]
+  ],
+  "ExtraArguments": []
 }

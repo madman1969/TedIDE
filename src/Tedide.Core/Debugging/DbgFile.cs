@@ -85,6 +85,35 @@ public sealed class DbgFile
         Segments = segments;
         Symbols = symbols;
         Scopes = scopes;
+
+        // Indexes for the lookups below, which run on every debugger stop and every instruction
+        // of a Step - built once here rather than re-scanning every list each time. Each keeps
+        // its source list's order, and the first record wins on a duplicate id, so results match
+        // the straightforward FirstOrDefault-over-the-list versions exactly.
+        _filesById = IndexById(files, f => f.Id);
+        _spansById = IndexById(spans, s => s.Id);
+        _segmentsById = IndexById(segments, s => s.Id);
+        _spansBySegment = spans.GroupBy(s => s.Seg).ToDictionary(g => g.Key, g => g.ToList());
+        _linesBySpan = lines
+            .SelectMany(l => l.Spans.Distinct().Select(spanId => (spanId, l)))
+            .GroupBy(x => x.spanId)
+            .ToDictionary(g => g.Key, g => g.Select(x => x.l).ToList());
+        _linesByFileAndLine = lines.ToLookup(l => (l.File, l.Line));
+    }
+
+    private readonly Dictionary<int, DbgFileEntry> _filesById;
+    private readonly Dictionary<int, DbgSpan> _spansById;
+    private readonly Dictionary<int, DbgSegment> _segmentsById;
+    private readonly Dictionary<int, List<DbgSpan>> _spansBySegment;
+    private readonly Dictionary<int, List<DbgLine>> _linesBySpan;
+    private readonly ILookup<(int File, int Line), DbgLine> _linesByFileAndLine;
+
+    private static Dictionary<int, T> IndexById<T>(IEnumerable<T> items, Func<T, int> id)
+    {
+        var index = new Dictionary<int, T>();
+        foreach (var item in items)
+            index.TryAdd(id(item), item);
+        return index;
     }
 
     public static DbgFile Parse(string text)
@@ -172,16 +201,14 @@ public sealed class DbgFile
         if (file is null)
             return null;
 
-        var line = Lines.FirstOrDefault(l => l.File == file.Id && l.Line == lineNumber && l.Spans.Count > 0);
+        var line = _linesByFileAndLine[(file.Id, lineNumber)].FirstOrDefault(l => l.Spans.Count > 0);
         if (line is null)
             return null;
 
-        var span = Spans.FirstOrDefault(s => s.Id == line.Spans[0]);
-        if (span is null)
+        if (!_spansById.TryGetValue(line.Spans[0], out var span))
             return null;
 
-        var segment = Segments.FirstOrDefault(s => s.Id == span.Seg);
-        return segment is null ? null : segment.Start + span.Start;
+        return _segmentsById.TryGetValue(span.Seg, out var segment) ? segment.Start + span.Start : null;
     }
 
     /// <summary>
@@ -206,8 +233,8 @@ public sealed class DbgFile
             // would, can land on the .s-only one even though a wider .c-paired span also covers this
             // exact address. Check every matching span and prefer whichever ultimately resolves to a
             // non-assembly file.
-            var matchingSpans = Spans.Where(s =>
-                s.Seg == segment.Id && offsetInSegment >= s.Start && offsetInSegment < s.Start + s.Size);
+            var matchingSpans = _spansBySegment.GetValueOrDefault(segment.Id, [])
+                .Where(s => offsetInSegment >= s.Start && offsetInSegment < s.Start + s.Size);
 
             (string FilePath, int Line)? assemblyFallback = null;
             foreach (var span in matchingSpans)
@@ -220,13 +247,12 @@ public sealed class DbgFile
                 // when that's genuinely the only source for this span (a hand-written .s file with
                 // no C counterpart, e.g. HelloCBM's border.s, which has its own module and no paired
                 // .c line record for its spans).
-                var candidates = Lines.Where(l => l.Spans.Contains(span.Id)).ToList();
+                var candidates = _linesBySpan.GetValueOrDefault(span.Id, []);
                 var line = candidates.FirstOrDefault(l => !IsAssemblyFile(l.File)) ?? candidates.FirstOrDefault();
                 if (line is null)
                     continue;
 
-                var file = Files.FirstOrDefault(f => f.Id == line.File);
-                if (file is null)
+                if (!_filesById.TryGetValue(line.File, out var file))
                     continue;
 
                 if (!IsAssemblyFile(line.File))
@@ -262,12 +288,7 @@ public sealed class DbgFile
 
             foreach (var spanId in scope.Spans)
             {
-                var span = Spans.FirstOrDefault(s => s.Id == spanId);
-                if (span is null)
-                    continue;
-
-                var segment = Segments.FirstOrDefault(s => s.Id == span.Seg);
-                if (segment is null)
+                if (!_spansById.TryGetValue(spanId, out var span) || !_segmentsById.TryGetValue(span.Seg, out var segment))
                     continue;
 
                 var absoluteStart = segment.Start + span.Start;
@@ -283,7 +304,7 @@ public sealed class DbgFile
 
     private bool IsAssemblyFile(int fileId)
     {
-        var extension = Path.GetExtension(Files.FirstOrDefault(f => f.Id == fileId)?.Name);
+        var extension = Path.GetExtension(_filesById.GetValueOrDefault(fileId)?.Name);
         return string.Equals(extension, ".s", StringComparison.OrdinalIgnoreCase)
             || string.Equals(extension, ".asm", StringComparison.OrdinalIgnoreCase);
     }

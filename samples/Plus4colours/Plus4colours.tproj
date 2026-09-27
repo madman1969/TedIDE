@@ -10,8 +10,8 @@
     "src/main.c"
   ],
   "OutputFile": "bin/Plus4colours.prg",
-  "ExtraArguments": [
-    "-I",
+  "IncludePaths": [
     "include"
-  ]
+  ],
+  "ExtraArguments": []
 }

@@ -61,7 +61,7 @@ public sealed class Workspace
             Target = target,
             SourceFiles = [mainSourceName],
             OutputFile = $"bin/{name}{target.DefaultOutputExtension()}",
-            ExtraArguments = ["-I", "include"],
+            IncludePaths = ["include"],
         };
         project.Save(Path.Combine(directory, name + TedideProject.FileExtension));
 

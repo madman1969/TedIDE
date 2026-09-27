@@ -28,6 +28,11 @@ public sealed class ViceMonitorClient : IAsyncDisposable
     /// <summary>Set (once) by the read loop when the connection goes away - see <see cref="SendAsync"/>
     /// for why a request sent after this point has to check it rather than just waiting.</summary>
     private volatile IOException? _closedException;
+    /// <summary>Armed by <see cref="RunUntilStoppedAsync"/> just before it sends a command that
+    /// resumes the CPU, and completed with the PC from VICE's next Stopped event.</summary>
+    private TaskCompletionSource<ushort>? _pendingStop;
+    /// <summary>Fetched once per connection - see <see cref="GetRegistersAsync"/>.</summary>
+    private IReadOnlyList<RegisterDescriptor>? _registerDescriptors;
 
     /// <summary>Raised when a checkpoint stops execution - the same event fires whether the
     /// checkpoint was set by this client or already existed in VICE.</summary>
@@ -82,10 +87,12 @@ public sealed class ViceMonitorClient : IAsyncDisposable
         return ViceMonitorProtocol.DecodeRegistersAvailableBody(responseBody);
     }
 
-    /// <summary>Reads every register's current value, resolved to names via <see cref="GetAvailableRegistersAsync"/> (VICE assigns register ids dynamically per session, so this is fetched fresh each call rather than cached).</summary>
+    /// <summary>Reads every register's current value, resolved to names via <see cref="GetAvailableRegistersAsync"/>.
+    /// VICE assigns register ids dynamically per session, so that mapping is fetched on the first
+    /// call and reused for the rest of this connection rather than re-requested every time.</summary>
     public async Task<RegisterSnapshot> GetRegistersAsync(CancellationToken cancellationToken = default)
     {
-        var descriptors = await GetAvailableRegistersAsync(cancellationToken);
+        var descriptors = _registerDescriptors ??= await GetAvailableRegistersAsync(cancellationToken);
         var body = ViceMonitorProtocol.EncodeRegistersGetBody();
         var (_, _, responseBody) = await SendAsync(ViceMonitorCommand.RegistersGet, body, cancellationToken);
         var valuesById = ViceMonitorProtocol.DecodeRegistersGetBody(responseBody);
@@ -113,11 +120,46 @@ public sealed class ViceMonitorClient : IAsyncDisposable
         await SendAsync(ViceMonitorCommand.MemorySet, body, cancellationToken);
     }
 
-    /// <summary>Executes one instruction (or steps over the next subroutine call, if <paramref name="stepOverSubroutines"/> is true) and stops again.</summary>
-    public async Task StepAsync(bool stepOverSubroutines = false, CancellationToken cancellationToken = default)
+    /// <summary>Executes one instruction (or a whole subroutine call as one, if
+    /// <paramref name="stepOverSubroutines"/> is true), and returns the PC once VICE has stopped again.</summary>
+    public Task<ushort> StepAsync(bool stepOverSubroutines = false, CancellationToken cancellationToken = default) =>
+        RunUntilStoppedAsync(
+            ViceMonitorCommand.AdvanceInstructions,
+            ViceMonitorProtocol.EncodeAdvanceInstructionsBody(instructionCount: 1, stepOverSubroutines),
+            cancellationToken);
+
+    /// <summary>Runs until just after the next RTS/RTI executes, and returns the PC it stopped at.
+    /// "Next" isn't nesting-aware: from inside a routine that itself calls others, the first
+    /// nested call's RTS is where this stops, so a caller wanting the routine's own return must
+    /// repeat it until the PC lands somewhere it recognizes.</summary>
+    public Task<ushort> ExecuteUntilReturnAsync(CancellationToken cancellationToken = default) =>
+        RunUntilStoppedAsync(ViceMonitorCommand.ExecuteUntilReturn, ReadOnlyMemory<byte>.Empty, cancellationToken);
+
+    /// <summary>
+    /// Sends a command that resumes the CPU and waits for VICE to stop again, returning the PC
+    /// from its Stopped event. Waiting for the command's own reply isn't enough: verified against
+    /// a live VICE 3.9, the reply to Advance Instructions/Execute Until Return arrives immediately,
+    /// *before* the CPU has run - the Stopped event follows up to tens of milliseconds later (a
+    /// step over a JSR). Reading registers on the reply alone would catch VICE mid-run, and any
+    /// command sent then halts it wherever it happens to be.
+    /// </summary>
+    private async Task<ushort> RunUntilStoppedAsync(ViceMonitorCommand command, ReadOnlyMemory<byte> body, CancellationToken cancellationToken)
     {
-        var body = ViceMonitorProtocol.EncodeAdvanceInstructionsBody(instructionCount: 1, stepOverSubroutines);
-        await SendAsync(ViceMonitorCommand.AdvanceInstructions, body, cancellationToken);
+        // Armed before sending, so a Stopped event that arrives right after the reply can't be missed.
+        var stop = new TaskCompletionSource<ushort>(TaskCreationOptions.RunContinuationsAsynchronously);
+        Volatile.Write(ref _pendingStop, stop);
+        if (_closedException is { } closed)
+            stop.TrySetException(new IOException(closed.Message, closed));
+
+        try
+        {
+            await SendAsync(command, body, cancellationToken);
+            return await stop.Task.WaitAsync(cancellationToken);
+        }
+        finally
+        {
+            Interlocked.CompareExchange(ref _pendingStop, null, stop);
+        }
     }
 
     /// <summary>Resumes emulation until the next checkpoint (or the user pausing it again) - VICE's binary monitor protocol calls this "exit monitor" (0xaa), not a separate "continue" command.</summary>
@@ -202,6 +244,7 @@ public sealed class ViceMonitorClient : IAsyncDisposable
             _closedException = closed;
             foreach (var pending in _pending.Values)
                 pending.TrySetException(closed);
+            Volatile.Read(ref _pendingStop)?.TrySetException(closed);
         }
     }
 
@@ -217,7 +260,9 @@ public sealed class ViceMonitorClient : IAsyncDisposable
         switch ((ViceMonitorEventType)header.ResponseType)
         {
             case ViceMonitorEventType.Stopped:
-                RaiseSafely(Stopped, ViceMonitorProtocol.DecodeProgramCounterBody(body));
+                var pc = ViceMonitorProtocol.DecodeProgramCounterBody(body);
+                Volatile.Read(ref _pendingStop)?.TrySetResult(pc);
+                RaiseSafely(Stopped, pc);
                 break;
             case ViceMonitorEventType.Resumed:
                 RaiseSafely(Resumed, ViceMonitorProtocol.DecodeProgramCounterBody(body));

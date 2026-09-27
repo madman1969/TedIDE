@@ -17,10 +17,9 @@
   ],
   "OutputFile": "bin/CBMInfo.prg",
   "LinkerConfigPath": null,
-  "IncludePaths": [],
-  "PreprocessorDefines": [],
-  "ExtraArguments": [
-    "-I",
+  "IncludePaths": [
     "include"
-  ]
+  ],
+  "PreprocessorDefines": [],
+  "ExtraArguments": []
 }

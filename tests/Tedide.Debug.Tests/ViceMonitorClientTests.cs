@@ -146,6 +146,103 @@ public class ViceMonitorClientTests
         Assert.True(await client.PingAsync().WaitAsync(TimeSpan.FromSeconds(5)));
     }
 
+    [Fact]
+    public async Task StepAsync_WaitsForTheStoppedEvent_AndReturnsItsPc_RatherThanCompletingOnTheReply()
+    {
+        // Matches a live VICE 3.9: the Advance Instructions reply arrives immediately, before the
+        // CPU has run - only the later Stopped event says where it ended up.
+        using var server = new FakeViceMonitorServer();
+        await server.StartAsync();
+        server.OnRequest((requestId, command, body) =>
+        {
+            Assert.Equal(ViceMonitorCommand.AdvanceInstructions, command);
+            Assert.Equal(1, body[0]); // step-over flag
+            return ViceMonitorProtocol.EncodeResponse(requestId, (byte)command, errorCode: 0, body: []);
+        });
+
+        await using var client = new ViceMonitorClient();
+        await client.ConnectAsync("127.0.0.1", server.Port);
+
+        var step = client.StepAsync(stepOverSubroutines: true);
+        await Task.Delay(200);
+        Assert.False(step.IsCompleted, "StepAsync completed on the reply alone, before any Stopped event.");
+
+        await server.SendUnsolicitedAsync((byte)ViceMonitorEventType.Stopped, [0x49, 0x08]);
+
+        Assert.Equal((ushort)0x0849, await step.WaitAsync(TimeSpan.FromSeconds(5)));
+    }
+
+    [Fact]
+    public async Task ExecuteUntilReturnAsync_SendsCommand0x73_AndReturnsThePcItStoppedAt()
+    {
+        using var server = new FakeViceMonitorServer();
+        await server.StartAsync();
+        server.OnRequest((requestId, command, _) =>
+        {
+            Assert.Equal(ViceMonitorCommand.ExecuteUntilReturn, command);
+            return
+            [
+                .. ViceMonitorProtocol.EncodeResponse(requestId, (byte)command, errorCode: 0, body: []),
+                .. ViceMonitorProtocol.EncodeResponse(ViceMonitorProtocol.EventRequestId, (byte)ViceMonitorEventType.Stopped, 0, [0x49, 0x08]),
+            ];
+        });
+
+        await using var client = new ViceMonitorClient();
+        await client.ConnectAsync("127.0.0.1", server.Port);
+
+        Assert.Equal((ushort)0x0849, await client.ExecuteUntilReturnAsync().WaitAsync(TimeSpan.FromSeconds(5)));
+    }
+
+    [Fact]
+    public async Task StepAsync_FailsInsteadOfHanging_WhenTheConnectionClosesBeforeVICEStops()
+    {
+        var server = new FakeViceMonitorServer();
+        await server.StartAsync();
+        server.OnRequest((requestId, command, _) =>
+            ViceMonitorProtocol.EncodeResponse(requestId, (byte)command, errorCode: 0, body: []));
+
+        await using var client = new ViceMonitorClient();
+        await client.ConnectAsync("127.0.0.1", server.Port);
+
+        var step = client.StepAsync();
+        await Task.Delay(200);
+        server.Dispose();
+
+        await Assert.ThrowsAnyAsync<IOException>(() => step.WaitAsync(TimeSpan.FromSeconds(5)));
+    }
+
+    [Fact]
+    public async Task GetRegistersAsync_FetchesTheRegisterNamesOncePerConnection()
+    {
+        using var server = new FakeViceMonitorServer();
+        await server.StartAsync();
+        var availableRequests = 0;
+        server.OnRequest((requestId, command, _) =>
+        {
+            byte[] body = command switch
+            {
+                // One register: id 3, 16 bits, named "PC".
+                ViceMonitorCommand.RegistersAvailable => [1, 0, 5, 3, 16, 2, (byte)'P', (byte)'C'],
+                // One value: id 3 = $0846.
+                ViceMonitorCommand.RegistersGet => [1, 0, 3, 3, 0x46, 0x08],
+                _ => [],
+            };
+            if (command == ViceMonitorCommand.RegistersAvailable)
+                Interlocked.Increment(ref availableRequests);
+            return ViceMonitorProtocol.EncodeResponse(requestId, (byte)command, errorCode: 0, body: body);
+        });
+
+        await using var client = new ViceMonitorClient();
+        await client.ConnectAsync("127.0.0.1", server.Port);
+
+        var first = await client.GetRegistersAsync();
+        var second = await client.GetRegistersAsync();
+
+        Assert.Equal((ushort)0x0846, first["PC"]);
+        Assert.Equal((ushort)0x0846, second["PC"]);
+        Assert.Equal(1, availableRequests);
+    }
+
     private sealed class FakeViceMonitorServer : IDisposable
     {
         private readonly TcpListener _listener = new(IPAddress.Loopback, 0);

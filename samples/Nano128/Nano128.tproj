@@ -16,9 +16,10 @@
     "src/vblank.c"
   ],
   "OutputFile": "bin/Nano128.prg",
+  "IncludePaths": [
+    "include"
+  ],
   "ExtraArguments": [
-    "-I",
-    "include",
     "-Cl"
   ]
 }

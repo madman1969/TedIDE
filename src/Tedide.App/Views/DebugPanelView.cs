@@ -37,7 +37,9 @@ public sealed class DebugPanelView : View
 
     public DebugPanelView()
     {
-        _statusLabel = new Label { X = 0, Y = 0, Width = Dim.Fill(), Text = "Not debugging." };
+        // HotKeySpecifier disabled: a Label reads "_" as a hotkey marker by default, which turned
+        // "Stopped in animation_step" into "animationstep" - function names are full of underscores.
+        _statusLabel = new Label { X = 0, Y = 0, Width = Dim.Fill(), Text = "Not debugging.", HotKeySpecifier = new System.Text.Rune(0xFFFF) };
         _breakpointsLabel = new Label { X = 0, Y = 1, Width = Dim.Fill(), Text = "Breakpoints: none" };
         _watchesLabel = new Label { X = 0, Y = 2, Width = Dim.Fill(), Text = "Watches: none" };
         _historyList = new ListView

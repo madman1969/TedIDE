@@ -342,8 +342,8 @@ public sealed class DocViewerShell : Window
     private StatusBar BuildStatusBar()
     {
         var statusBar = new StatusBar();
-        statusBar.Add(new Shortcut(Key.Q.WithCtrl, "~^Q~ Quit", () => Application.RequestStop(this)));
-        statusBar.Add(new Shortcut(Key.F.WithCtrl, "~^F~ Search", ShowSearchDialog));
+        statusBar.Add(new Shortcut(Key.Q.WithCtrl, "Quit", () => Application.RequestStop(this)));
+        statusBar.Add(new Shortcut(Key.F.WithCtrl, "Search", ShowSearchDialog));
         statusBar.X = 0;
         statusBar.Y = Pos.AnchorEnd(1);
         statusBar.Width = Dim.Fill();

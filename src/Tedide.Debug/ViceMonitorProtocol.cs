@@ -14,6 +14,7 @@ internal enum ViceMonitorCommand : byte
     RegistersGet = 0x31,
     RegistersSet = 0x32,
     AdvanceInstructions = 0x71,
+    ExecuteUntilReturn = 0x73,
     Ping = 0x81,
     RegistersAvailable = 0x83,
     ExitMonitor = 0xaa,

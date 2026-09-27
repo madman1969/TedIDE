@@ -10,8 +10,8 @@
     "src/main.c"
   ],
   "OutputFile": "bin/c16colours.prg",
-  "ExtraArguments": [
-    "-I",
+  "IncludePaths": [
     "include"
-  ]
+  ],
+  "ExtraArguments": []
 }

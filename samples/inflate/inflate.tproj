@@ -10,8 +10,8 @@
     "src/inflate.c"
   ],
   "OutputFile": "bin/inflate.prg",
-  "ExtraArguments": [
-    "-I",
+  "IncludePaths": [
     "include"
-  ]
+  ],
+  "ExtraArguments": []
 }

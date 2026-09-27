@@ -137,15 +137,9 @@ public sealed class ProjectSettingsDialog : Dialog
             project.Name = _nameField.Text.Trim();
             project.Target = target;
             project.OutputFile = string.IsNullOrWhiteSpace(_outputFileField.Text) ? null : _outputFileField.Text.Trim();
-            project.ExtraArguments = _extraArgumentsField.Text
-                .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .ToList();
-            project.IncludePaths = _includePathsField.Text
-                .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .ToList();
-            project.PreprocessorDefines = _preprocessorDefinesField.Text
-                .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .ToList();
+            project.ExtraArguments = ArgumentText.Split(_extraArgumentsField.Text);
+            project.IncludePaths = ArgumentText.Split(_includePathsField.Text);
+            project.PreprocessorDefines = ArgumentText.Split(_preprocessorDefinesField.Text);
             project.OptimizationLevel = optimizationLevel;
             project.GenerateAssemblyListing = _generateListingField.Value == CheckState.Checked;
             project.AddSourceAsComment = _addSourceAsCommentField.Value == CheckState.Checked;
@@ -224,13 +218,13 @@ public sealed class ProjectSettingsDialog : Dialog
         outputFileField = new TextField { X = 0, Y = 10, Width = Dim.Fill(1), Text = project.OutputFile ?? string.Empty };
 
         var extraArgsLabel = new Label { Text = "Extra cl65 arguments:", X = 0, Y = 12 };
-        extraArgumentsField = new TextField { X = 0, Y = 14, Width = Dim.Fill(1), Text = string.Join(' ', project.ExtraArguments) };
+        extraArgumentsField = new TextField { X = 0, Y = 14, Width = Dim.Fill(1), Text = ArgumentText.Join(project.ExtraArguments) };
 
-        var includePathsLabel = new Label { Text = "Include paths (-I, space-separated):", X = 0, Y = 16 };
-        includePathsField = new TextField { X = 0, Y = 18, Width = Dim.Fill(1), Text = string.Join(' ', project.IncludePaths) };
+        var includePathsLabel = new Label { Text = "Include paths (-I, space-separated - quote any containing spaces):", X = 0, Y = 16 };
+        includePathsField = new TextField { X = 0, Y = 18, Width = Dim.Fill(1), Text = ArgumentText.Join(project.IncludePaths) };
 
         var definesLabel = new Label { Text = "Preprocessor defines (-D, space-separated, NAME or NAME=VALUE):", X = 0, Y = 20 };
-        preprocessorDefinesField = new TextField { X = 0, Y = 22, Width = Dim.Fill(1), Text = string.Join(' ', project.PreprocessorDefines) };
+        preprocessorDefinesField = new TextField { X = 0, Y = 22, Width = Dim.Fill(1), Text = ArgumentText.Join(project.PreprocessorDefines) };
 
         var infoLabel = new Label
         {

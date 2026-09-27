@@ -10,8 +10,8 @@
     "src/bounce.c"
   ],
   "OutputFile": "bin/bounce.prg",
-  "ExtraArguments": [
-    "-I",
+  "IncludePaths": [
     "include"
-  ]
+  ],
+  "ExtraArguments": []
 }

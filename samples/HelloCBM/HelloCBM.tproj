@@ -15,8 +15,8 @@
     "src/border.s"
   ],
   "OutputFile": "bin/HelloCBM.prg",
-  "ExtraArguments": [
-    "-I",
+  "IncludePaths": [
     "include"
-  ]
+  ],
+  "ExtraArguments": []
 }

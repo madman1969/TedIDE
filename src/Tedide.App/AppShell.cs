@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Net.Sockets;
 using Serilog;
 using Tedide.Theming;
 using Tedide.App.Views;
@@ -330,7 +331,10 @@ public sealed class AppShell : Window
         {
             new MenuItem("_Start Debugging", "", () => _ = StartDebuggingAsync(), Key.F5.WithShift) { BindKeyToApplication = true },
             new MenuItem("_Continue", "", () => _ = ContinueDebuggingAsync(), Key.F5.WithCtrl) { BindKeyToApplication = true },
-            new MenuItem("S_tep", "", () => _ = StepDebuggingAsync(), Key.F10) { BindKeyToApplication = true },
+            new MenuItem("Step _Over", "", () => _ = StepDebuggingAsync(stepInto: false), Key.F10) { BindKeyToApplication = true },
+            // F7, not Visual Studio's F11 - Windows Terminal claims F11 for its own full-screen
+            // toggle before the app ever sees it. F7/F8 is also the Turbo Pascal/Borland pairing.
+            new MenuItem("Step _Into", "", () => _ = StepDebuggingAsync(stepInto: true), Key.F7) { BindKeyToApplication = true },
             new MenuItem("Sto_p Debugging", "", () => _ = StopDebuggingAsync(), Key.Empty),
             new Line(),
             new MenuItem("_Toggle Breakpoint", "", ToggleBreakpointAtCursor, Key.F9),
@@ -382,22 +386,23 @@ public sealed class AppShell : Window
         // both active would let this dropdown silently overwrite our custom Schemes. Hide it; the
         // Theme menu above is our one theme switcher.
         statusBar.ThemeDropDown.Visible = false;
-        statusBar.Add(new Shortcut(Key.F5, "~F5~ Build", () => _ = BuildActiveProjectAsync()));
+        statusBar.Add(new Shortcut(Key.F5, "Build", () => _ = BuildActiveProjectAsync()));
         // A plain MenuItem's Key only acts as a hotkey while its menu is already open - a Shortcut
         // is what actually makes a key global, the same reason Build's F5 above needs one too. F6
         // Run and Ctrl+S Save had the same gap (menu-only, never worked while the editor had focus)
         // until it was reported and fixed here alongside F9/Ctrl+G.
-        statusBar.Add(new Shortcut(Key.F6, "~F6~ Run", () => _ = RunActiveProjectAsync()));
-        statusBar.Add(new Shortcut(Key.F9, "~F9~ Breakpoint", ToggleBreakpointAtCursor));
+        statusBar.Add(new Shortcut(Key.F6, "Run", () => _ = RunActiveProjectAsync()));
+        statusBar.Add(new Shortcut(Key.F9, "Breakpoint", ToggleBreakpointAtCursor));
         // Debug > Step's own MenuItem key (BindKeyToApplication = true) never actually fired in a
         // live test even after removing MenuBar's competing F10 HotKeyBinding above - unclear why
         // (possibly the same App-not-yet-set-at-construction-time risk noted elsewhere for that
         // mechanism), but a status-bar Shortcut is proven to work for every other debugging hotkey
         // here, so use it rather than keep chasing the object-initializer path for this one key.
-        statusBar.Add(new Shortcut(Key.F10, "~F10~ Step", () => _ = StepDebuggingAsync()));
-        statusBar.Add(new Shortcut(Key.S.WithCtrl, "~^S~ Save", SaveAll));
-        statusBar.Add(new Shortcut(Key.G.WithCtrl, "~^G~ Go To Line", ShowGoToLine));
-        statusBar.Add(new Shortcut(Key.Q.WithCtrl, "~^Q~ Quit", () => Application.RequestStop(this)));
+        statusBar.Add(new Shortcut(Key.F10, "Step", () => _ = StepDebuggingAsync(stepInto: false)));
+        statusBar.Add(new Shortcut(Key.F7, "Into", () => _ = StepDebuggingAsync(stepInto: true)));
+        statusBar.Add(new Shortcut(Key.S.WithCtrl, "Save", SaveAll));
+        statusBar.Add(new Shortcut(Key.G.WithCtrl, "Go To Line", ShowGoToLine));
+        statusBar.Add(new Shortcut(Key.Q.WithCtrl, "Quit", () => Application.RequestStop(this)));
         statusBar.X = 0;
         statusBar.Y = Pos.AnchorEnd(1);
         statusBar.Width = Dim.Fill();
@@ -1301,53 +1306,38 @@ public sealed class AppShell : Window
         // ("Collection was modified; enumeration operation may not execute" inside TextView's own
         // draw, racing OutputView._lines against the UI thread's concurrent draw-time enumeration
         // of it). RunActiveProjectAsync's own _vice.Launch call already gets this right.
-        _vice.Launch(project, line => Application.Invoke(() => AppendOutputLine(line)), enableBinaryMonitor: true);
+        var viceProcess = _vice.Launch(project, line => Application.Invoke(() => AppendOutputLine(line)), enableBinaryMonitor: true);
 
-        _debugClient = new ViceMonitorClient();
-        _debugClient.CheckpointHit += OnCheckpointHit;
-        _debugClient.EventHandlerFailed += ex => Log.Error(ex, "Debug event handler failed");
-        _debugClient.Resumed += pc => Application.Invoke(() =>
-        {
-            Log.Debug("Resumed event: PC={PC:X4}, _isStepping={IsStepping}", pc, _isStepping);
-            // VICE's "Advance Instructions" (single-step) resumes and re-halts the CPU just like
-            // Continue does, so it raises this same unsolicited Resumed event - without this guard,
-            // its queued "Running..."/CurrentLineNumber=null update was landing *after*
-            // StepDebuggingAsync's own "Stopped at ..." update (this handler is queued via
-            // Application.Invoke from the background read-loop thread, so it can run on the UI
-            // thread after Step's own synchronous continuation already finished), clobbering the
-            // status text and un-highlighting the line it had just moved to, and leaving
-            // _isStopped incorrectly false so the *next* Step silently no-op'd on its own guard.
-            if (_isStepping)
-                return;
-
-            _isStopped = false;
-            _debugLineTransformer.CurrentLineNumber = null;
-            _debugPanel.SetStatus("Running...");
-            _editorPane.Editor.SetNeedsDraw();
-        });
-
-        _debugPanel.SetStatus("Connecting to VICE...");
-        var connected = false;
+        OnUiThread(() => _debugPanel.SetStatus("Connecting to VICE..."));
         // VICE needs a moment to start listening on its binary monitor port after the process
-        // starts - retry rather than failing on the first attempt.
-        for (var attempt = 0; attempt < 20 && !connected; attempt++)
+        // starts - retry rather than failing on the first attempt. A fresh client per attempt: a
+        // TcpClient whose connect has failed isn't reliably reusable. And give up straight away
+        // if VICE has already exited (e.g. it rejected a ROM or command-line option) rather than
+        // spending the whole retry budget knocking on a port nothing will ever open.
+        for (var attempt = 0; attempt < 20 && _debugClient is null && !viceProcess.HasExited; attempt++)
         {
+            var client = CreateDebugClient();
             try
             {
-                await _debugClient.ConnectAsync();
-                connected = true;
+                await client.ConnectAsync();
+                _debugClient = client;
             }
-            catch
+            catch (Exception ex) when (ex is SocketException or IOException)
             {
+                await client.DisposeAsync();
                 await Task.Delay(250);
             }
         }
-        if (!connected)
+        if (_debugClient is null)
         {
-            AppendOutputLine("Could not connect to VICE's binary monitor - is VICE installed and did it launch correctly?");
-            await _debugClient.DisposeAsync();
-            _debugClient = null;
-            _debugPanel.SetStatus("Not debugging.");
+            var reason = viceProcess.HasExited
+                ? $"VICE exited during startup (exit code {viceProcess.ExitCode}) - see its output above."
+                : "Could not connect to VICE's binary monitor - is VICE installed and did it launch correctly?";
+            Application.Invoke(() =>
+            {
+                AppendOutputLine(reason);
+                _debugPanel.SetStatus("Not debugging.");
+            });
             return;
         }
 
@@ -1357,7 +1347,8 @@ public sealed class AppShell : Window
         // prompt in ConfirmReplaceCurrentFile (via OpenFile) can never fire/get cancelled while a
         // breakpoint/step tries to jump to a different file, since no further edits are possible
         // once this is set (the BuildActiveProjectAsync call above already saved everything).
-        _editorPane.Editor.ReadOnly = true;
+        // Invoked: this continuation is past several awaits, so it isn't on the UI thread.
+        Application.Invoke(() => _editorPane.Editor.ReadOnly = true);
 
         // Show the C source containing main() as the session comes up, before anything actually
         // runs - the same _main label every C program has, resolved back to its source location
@@ -1391,6 +1382,31 @@ public sealed class AppShell : Window
 
         Application.Invoke(() => _debugPanel.SetStatus("Running..."));
         await _debugClient.ContinueAsync();
+    }
+
+    /// <summary>A new, not-yet-connected monitor client with this shell's event handlers attached.</summary>
+    private ViceMonitorClient CreateDebugClient()
+    {
+        var client = new ViceMonitorClient();
+        client.CheckpointHit += OnCheckpointHit;
+        client.EventHandlerFailed += ex => Log.Error(ex, "Debug event handler failed");
+        client.Resumed += pc => Application.Invoke(() =>
+        {
+            Log.Debug("Resumed event: PC={PC:X4}, _isStepping={IsStepping}", pc, _isStepping);
+            // Stepping resumes and re-halts the CPU just like Continue does, so it raises this same
+            // unsolicited Resumed event - without this guard, its queued "Running..." update could
+            // land after StepDebuggingAsync's own "Stopped at ..." one, clobbering the status and
+            // un-highlighting the line it had just moved to. (ShowStoppedAt also re-asserts
+            // _isStopped, for a Resumed that slips in just after _isStepping is cleared.)
+            if (_isStepping)
+                return;
+
+            _isStopped = false;
+            _debugLineTransformer.CurrentLineNumber = null;
+            _debugPanel.SetStatus("Running...");
+            _editorPane.Editor.SetNeedsDraw();
+        });
+        return client;
     }
 
     /// <summary>Sets a VICE checkpoint for every currently-enabled breakpoint, recording each one's
@@ -1519,40 +1535,12 @@ public sealed class AppShell : Window
                 // doesn't restore it. Confirmed via a real crash here ("Call from invalid thread"
                 // inside OpenSymbol) - re-marshal explicitly with a nested Invoke rather than
                 // assuming the outer one's thread-affinity survives an internal await.
+                // "PC" is VICE's register name for the 6502 program counter on the main memspace -
+                // confirmed against a live VICE 3.9 instance (its ids are assigned dynamically per
+                // the binary monitor protocol docs, but this name was stable).
                 Application.Invoke(() =>
                 {
-                    _debugPanel.SetRegisters(registers);
-                    _debugPanel.SetWatches(watchLines);
-
-                    // "PC" is VICE's register name for the 6502 program counter on the main
-                    // memspace - confirmed for real against a live VICE 3.9 instance during
-                    // implementation (its ids are assigned dynamically per the binary monitor
-                    // protocol docs, but this name was stable), not just inferred from community
-                    // tooling.
-                    var project = _workspace.ActiveProject;
-                    var pc = registers["PC"];
-                    var location = pc is { } pcForLookup ? _dbgFile?.FindSourceLocationForAddress(pcForLookup) : null;
-                    Log.Debug("CheckpointHit resolving: PC={PC:X4}, project={HasProject}, location={Location}",
-                        pc, project is not null, location is { } loc ? $"{loc.FilePath}:{loc.Line}" : "(unresolved)");
-                    if (project is not null && location is { } resolved)
-                    {
-                        var resolvedPath = Path.Combine(project.Directory, resolved.FilePath);
-                        OpenSymbol((resolvedPath, resolved.Line));
-                        CenterEditorOnLine(resolvedPath, resolved.Line);
-                        _debugLineTransformer.CurrentLineNumber = resolved.Line;
-                        var where = $"{resolved.FilePath}:{resolved.Line}";
-                        var status = FunctionAwareStoppedAt(pc, where) + $" (checkpoint #{args.Checkpoint.Number})";
-                        _debugPanel.SetStatus(status);
-                        _debugPanel.AddHistoryEntry(status);
-                    }
-                    else
-                    {
-                        _debugLineTransformer.CurrentLineNumber = null;
-                        var status = pc is { } pcv ? $"Stopped at ${pcv:X4} (checkpoint #{args.Checkpoint.Number})" : "Stopped.";
-                        _debugPanel.SetStatus(status);
-                        _debugPanel.AddHistoryEntry(status);
-                    }
-                    _editorPane.Editor.SetNeedsDraw();
+                    ShowStoppedAt(registers, watchLines, registers["PC"], $" (checkpoint #{args.Checkpoint.Number})");
                     Log.Debug("CheckpointHit done: status is now {Status}", _debugPanel.StatusText);
                 });
             }
@@ -1577,14 +1565,60 @@ public sealed class AppShell : Window
     }
 
     /// <summary>
-    /// Steps by source line, not raw instruction: single-steps repeatedly until the resolved
-    /// location changes from where it started (or the step count safety cap is hit - an address
-    /// with no line mapping, e.g. inside a library routine with no debug info, would otherwise
-    /// single-step forever).
+    /// Updates the Debug panel and editor to show where execution has stopped: registers, watches,
+    /// the source line <paramref name="pc"/> resolves to (opened, centered and highlighted), and a
+    /// "Stopped [in function] at file:line" status plus history entry, with
+    /// <paramref name="statusSuffix"/> appended (e.g. which checkpoint fired). Falls back to a bare
+    /// address when the PC has no source line. Must run on the UI thread - it touches
+    /// Editor/TextDocument state, which enforces single-thread ownership.
     /// </summary>
-    private async Task StepDebuggingAsync()
+    private void ShowStoppedAt(RegisterSnapshot registers, List<string> watchLines, ushort? pc, string statusSuffix)
     {
-        if (_debugClient is null || _dbgFile is null || !_isDebugging || !_isStopped)
+        _isStopped = true;
+        _debugPanel.SetRegisters(registers);
+        _debugPanel.SetWatches(watchLines);
+
+        var project = _workspace.ActiveProject;
+        var location = pc is { } pcForLookup ? _dbgFile?.FindSourceLocationForAddress(pcForLookup) : null;
+        Log.Debug("Stopped: PC={PC:X4}, location={Location}",
+            pc, location is { } loc ? $"{loc.FilePath}:{loc.Line}" : "(unresolved)");
+
+        string status;
+        if (project is not null && location is { } resolved)
+        {
+            var resolvedPath = Path.Combine(project.Directory, resolved.FilePath);
+            OpenSymbol((resolvedPath, resolved.Line));
+            CenterEditorOnLine(resolvedPath, resolved.Line);
+            _debugLineTransformer.CurrentLineNumber = resolved.Line;
+            status = FunctionAwareStoppedAt(pc, $"{resolved.FilePath}:{resolved.Line}") + statusSuffix;
+        }
+        else
+        {
+            _debugLineTransformer.CurrentLineNumber = null;
+            status = (pc is { } pcv ? $"Stopped at ${pcv:X4}" : "Stopped.") + statusSuffix;
+        }
+        _debugPanel.SetStatus(status);
+        _debugPanel.AddHistoryEntry(status);
+        _editorPane.Editor.SetNeedsDraw();
+    }
+
+    /// <summary>The most instructions one Step will execute looking for the next source line
+    /// before giving up and showing wherever it got to - an address with no line mapping reached by
+    /// a path Step doesn't recognize would otherwise single-step forever.</summary>
+    private const int MaxStepInstructions = 500;
+
+    /// <summary>
+    /// Steps by source line, not raw instruction: steps repeatedly until the resolved location
+    /// changes from where it started. <paramref name="stepInto"/> false (Step Over) executes each
+    /// subroutine call as a single instruction, so calls on the line run to completion. true (Step
+    /// Into) follows calls into functions that have source; a call into code with no source at
+    /// all - almost always cc65's runtime library, which the line itself calls constantly for
+    /// things like argument pushing - is run to its return rather than stopped in, so stepping
+    /// into a line with no user function calls on it behaves just like stepping over it.
+    /// </summary>
+    private async Task StepDebuggingAsync(bool stepInto)
+    {
+        if (_debugClient is not { } debugClient || _dbgFile is not { } dbgFile || !_isDebugging || !_isStopped)
             return;
 
         // See the Resumed handler's own comment in StartDebuggingAsync for why this guard exists -
@@ -1593,8 +1627,8 @@ public sealed class AppShell : Window
         _isStepping = true;
         try
         {
-            var startRegisters = await _debugClient.GetRegistersAsync();
-            var startLocation = startRegisters["PC"] is { } startPc ? _dbgFile.FindSourceLocationForAddress(startPc) : null;
+            var startPc = (await debugClient.GetRegistersAsync())["PC"];
+            var startLocation = startPc is { } s ? dbgFile.FindSourceLocationForAddress(s) : null;
             // main.c has 6 line records in HelloCBM.dbg against main.s's 22 for the same code -
             // cl65's generated .s intermediate is tracked at far finer granularity than the
             // original C source. Single-stepping from a C line legitimately passes through
@@ -1604,55 +1638,44 @@ public sealed class AppShell : Window
             // stops one instruction early and shows the generated .s file instead of the .c one.
             var startedInAssembly = startLocation is null || IsAssemblySourceFile(startLocation.Value.FilePath);
 
-            for (var i = 0; i < 500; i++)
+            var reachedNewLine = false;
+            for (var i = 0; i < MaxStepInstructions && !reachedNewLine; i++)
             {
-                await _debugClient.StepAsync();
-                var registers = await _debugClient.GetRegistersAsync();
-                if (registers["PC"] is not { } pc)
-                    break;
+                // StepAsync waits for VICE to actually stop again and hands back the PC from that
+                // Stopped event - one round trip per instruction, no separate register read.
+                var pc = await debugClient.StepAsync(stepOverSubroutines: !stepInto);
+                var location = dbgFile.FindSourceLocationForAddress(pc);
 
-                var location = _dbgFile.FindSourceLocationForAddress(pc);
+                if (stepInto && location is null && startLocation is not null)
+                {
+                    // Stepped from source into code with none: run it back out. Execute Until
+                    // Return stops after the *next* RTS, which is a nested call's if this routine
+                    // makes any, so keep going until the PC is somewhere with source again.
+                    while (location is null && i++ < MaxStepInstructions)
+                    {
+                        pc = await debugClient.ExecuteUntilReturnAsync();
+                        location = dbgFile.FindSourceLocationForAddress(pc);
+                    }
+                }
+
                 if (!startedInAssembly && location is { } candidate && IsAssemblySourceFile(candidate.FilePath))
                     continue;
 
-                if (location is null || location != startLocation)
-                {
-                    // Pure network I/O against VICE, same as StepAsync/GetRegistersAsync above -
-                    // fetched here rather than inside the nested Invoke below, which is UI-only.
-                    var watchLines = await FormatWatchesAsync(_debugClient);
-
-                    // Re-marshal onto the UI thread before touching Editor/TextDocument state -
-                    // see OnCheckpointHit's own comment on this same pattern. The awaits above
-                    // (StepAsync/GetRegistersAsync) don't guarantee this loop iteration is still
-                    // running on the UI thread even though StepDebuggingAsync itself was originally
-                    // invoked from one.
-                    Application.Invoke(() =>
-                    {
-                        _debugPanel.SetRegisters(registers);
-                        _debugPanel.SetWatches(watchLines);
-                        var project = _workspace.ActiveProject;
-                        if (project is not null && location is { } loc)
-                        {
-                            var locPath = Path.Combine(project.Directory, loc.FilePath);
-                            OpenSymbol((locPath, loc.Line));
-                            CenterEditorOnLine(locPath, loc.Line);
-                            _debugLineTransformer.CurrentLineNumber = loc.Line;
-                            var status = FunctionAwareStoppedAt(pc, $"{loc.FilePath}:{loc.Line}");
-                            _debugPanel.SetStatus(status);
-                            _debugPanel.AddHistoryEntry(status);
-                        }
-                        else
-                        {
-                            _debugLineTransformer.CurrentLineNumber = null;
-                            var status = $"Stopped at ${pc:X4}";
-                            _debugPanel.SetStatus(status);
-                            _debugPanel.AddHistoryEntry(status);
-                        }
-                        _editorPane.Editor.SetNeedsDraw();
-                    });
-                    return;
-                }
+                reachedNewLine = location is null || location != startLocation;
             }
+
+            var registers = await debugClient.GetRegistersAsync();
+            var watchLines = await FormatWatchesAsync(debugClient);
+            // Re-marshal onto the UI thread before touching Editor/TextDocument state - the awaits
+            // above leave this continuation on whatever thread completed them (Terminal.Gui
+            // installs no SynchronizationContext to bring it back).
+            Application.Invoke(() => ShowStoppedAt(registers, watchLines, registers["PC"],
+                reachedNewLine ? "" : $" (step limit of {MaxStepInstructions} instructions reached)"));
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error while stepping");
+            Application.Invoke(() => AppendOutputLine($"Error while stepping: {ex.Message}"));
         }
         finally
         {
@@ -1836,22 +1859,25 @@ public sealed class AppShell : Window
         _errorListView.SetDiagnostics([]);
         AppendOutputLine($"------ Build started: {project.Name} ({project.Target.ToCl65Id()}) ------");
 
-        var result = await _toolchain.BuildAsync(project, onOutputLine: line =>
-            Application.Invoke(() => AppendOutputLine(line)));
+        var result = await _toolchain.BuildAsync(project, onOutputLine: AppendOutputLine);
 
-        _errorListView.SetDiagnostics(result.Diagnostics);
-        AppendOutputLine(result.Succeeded
-            ? $"------ Build succeeded in {result.Duration.TotalSeconds:0.0}s ------"
-            : $"------ Build FAILED ({result.Errors.Count()} error(s)) in {result.Duration.TotalSeconds:0.0}s ------");
+        // Past the await, so not on the UI thread - see OnUiThread.
+        OnUiThread(() =>
+        {
+            _errorListView.SetDiagnostics(result.Diagnostics);
+            AppendOutputLine(result.Succeeded
+                ? $"------ Build succeeded in {result.Duration.TotalSeconds:0.0}s ------"
+                : $"------ Build FAILED ({result.Errors.Count()} error(s)) in {result.Duration.TotalSeconds:0.0}s ------");
 
-        if (result.Succeeded && new FileInfo(project.ResolvedOutputFile) is { Exists: true } outputFile)
-            AppendOutputLine($"{Path.GetFileName(project.ResolvedOutputFile)}: {outputFile.Length} bytes");
+            if (result.Succeeded && new FileInfo(project.ResolvedOutputFile) is { Exists: true } outputFile)
+                AppendOutputLine($"{Path.GetFileName(project.ResolvedOutputFile)}: {outputFile.Length} bytes");
 
-        // Refreshes the Solution Explorer's "Generated Files" node - e.g. newly-written
-        // assembler listings (see SolutionExplorerTree.AddGeneratedFilesNode) only appear once
-        // the tree is rebuilt after this build actually wrote them.
-        _solutionExplorer.Rebuild(_workspace);
-        _symbolPanel.Refresh(project);
+            // Refreshes the Solution Explorer's "Generated Files" node - e.g. newly-written
+            // assembler listings (see SolutionExplorerTree.AddGeneratedFilesNode) only appear once
+            // the tree is rebuilt after this build actually wrote them.
+            _solutionExplorer.Rebuild(_workspace);
+            _symbolPanel.Refresh(project);
+        });
 
         return result;
     }
@@ -2049,7 +2075,25 @@ public sealed class AppShell : Window
         }
     }
 
-    private void AppendOutputLine(string line) => _outputView.AppendLine(line);
+    /// <summary>Safe to call from any thread - see <see cref="OnUiThread"/>.</summary>
+    private void AppendOutputLine(string line) => OnUiThread(() => _outputView.AppendLine(line));
+
+    /// <summary>
+    /// Runs <paramref name="action"/> right away if already on the UI thread, otherwise posts it
+    /// there via Application.Invoke. Needed by any UI update that follows an await: Terminal.Gui
+    /// 2.x installs no SynchronizationContext, so an async method started from a menu or key
+    /// handler carries on after its first await on whichever thread-pool thread completed the
+    /// awaited task, not the UI thread - where touching a view races its draw (confirmed crashes:
+    /// "Collection was modified" in OutputView, "Call from invalid thread" in TextDocument).
+    /// Posted work runs in order, after anything already queued.
+    /// </summary>
+    private static void OnUiThread(Action action)
+    {
+        if (Environment.CurrentManagedThreadId == Application.MainThreadId)
+            action();
+        else
+            Application.Invoke(action);
+    }
 
     /// <summary>
     /// Switches the Output/Error List pane to its "Output" tab and gives the output view itself

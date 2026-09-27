@@ -53,7 +53,8 @@ public sealed class ViceEmulator(string binDirectory = ViceEmulator.DefaultBinDi
     /// <paramref name="onOutputLine"/> is given) rather than blocking on it. Throws
     /// <see cref="NotSupportedException"/> if the target has no VICE emulator, or
     /// <see cref="FileNotFoundException"/> if that emulator isn't installed at
-    /// <see cref="BinDirectory"/>.
+    /// <see cref="BinDirectory"/>. Returns the emulator's process, e.g. so a caller waiting for it
+    /// to open its binary monitor port can tell it has already exited instead of waiting in vain.
     /// </summary>
     /// <param name="project">The project whose built output to auto-start.</param>
     /// <param name="onOutputLine">
@@ -66,7 +67,7 @@ public sealed class ViceEmulator(string binDirectory = ViceEmulator.DefaultBinDi
     /// so a debugging session (Tedide.Debug's ViceMonitorClient) can connect to this instance.
     /// Defaults to false so a plain Build &gt; Run Project launch is unaffected.
     /// </param>
-    public void Launch(TedideProject project, Action<string>? onOutputLine = null, bool enableBinaryMonitor = false)
+    public Process Launch(TedideProject project, Action<string>? onOutputLine = null, bool enableBinaryMonitor = false)
     {
         var executableName = ExecutableNameFor(project.Target, project.EnableSuperCpu)
             ?? throw new NotSupportedException($"VICE has no emulator for target '{project.Target.ToCl65Id()}'.");
@@ -96,15 +97,17 @@ public sealed class ViceEmulator(string binDirectory = ViceEmulator.DefaultBinDi
         }
 
         if (onOutputLine is null)
-            return;
+            return process;
 
+        // Exited is hooked before output reading starts, so a VICE that dies instantly (e.g. a bad
+        // ROM path) still reports it rather than exiting before the handler was attached.
+        process.EnableRaisingEvents = true;
+        process.Exited += (_, _) => onOutputLine($"------ {executableName} exited (code {process.ExitCode}) ------");
         process.OutputDataReceived += (_, e) => { if (e.Data is not null) onOutputLine(e.Data); };
         process.ErrorDataReceived += (_, e) => { if (e.Data is not null) onOutputLine(e.Data); };
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
-
-        process.EnableRaisingEvents = true;
-        process.Exited += (_, _) => onOutputLine($"------ {executableName} exited (code {process.ExitCode}) ------");
+        return process;
     }
 
     /// <summary>The VICE command-line arguments for launching <paramref name="project"/>'s built output - a pure function, split out from <see cref="Launch"/> so it's directly unit-testable without spawning a process.</summary>
