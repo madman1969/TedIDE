@@ -118,7 +118,7 @@ public sealed class PageFindDialog : Dialog
     /// </summary>
     private void ScrollToApproximateMatch(string text, int matchIndex)
     {
-        if (FindHeadingAbove(text, matchIndex) is { } heading && TryScrollToHeading(heading.Slugs))
+        if (FindHeadingAbove(text, matchIndex) is { } heading && TryScrollToHeading(heading.Slug))
         {
             var sourceLinesBelow = CountNewlines(text, heading.EndIndex, matchIndex);
             var y = Math.Clamp(_contentView.Viewport.Y + Math.Max(0, sourceLinesBelow - 2), 0, Math.Max(0, _contentView.LineCount - 1));
@@ -133,20 +133,16 @@ public sealed class PageFindDialog : Dialog
         _contentView.Viewport = _contentView.Viewport with { Y = targetY };
     }
 
-    private bool TryScrollToHeading(IEnumerable<string> candidateSlugs) =>
-        candidateSlugs.Any(_contentView.ScrollToAnchor);
+    private bool TryScrollToHeading(string slug) => _contentView.ScrollToAnchor(slug);
 
     /// <summary>The last ATX heading ("## Title") that starts before <paramref name="index"/>, skipping
-    /// fenced code blocks (a C "# comment" or "#define" there is not a heading), with its anchor
-    /// slug under each of the two slug schemes it might have been rendered with - Terminal.Gui's
-    /// own (each space a hyphen, underscores kept) and the docs builder's MarkdownSlug (runs of
-    /// separators collapsed) - both with GitHub-style "-1", "-2" suffixes for repeated headings.
-    /// Whichever the view actually accepts is used; if neither, the caller falls back.</summary>
-    internal static (int EndIndex, string[] Slugs)? FindHeadingAbove(string text, int index)
+    /// fenced code blocks (a C "# comment" or "#define" there is not a heading), with the anchor
+    /// slug the Markdown view gives it - see <see cref="Slug"/> - including the "-1", "-2" suffixes
+    /// for repeated headings. Null if there's no heading above the match.</summary>
+    internal static (int EndIndex, string Slug)? FindHeadingAbove(string text, int index)
     {
-        var terminalGuiCounts = new Dictionary<string, int>();
-        var builderCounts = new Dictionary<string, int>();
-        (int, string[])? last = null;
+        var counts = new Dictionary<string, int>();
+        (int, string)? last = null;
         var inFence = false;
 
         var lineStart = 0;
@@ -161,7 +157,7 @@ public sealed class PageFindDialog : Dialog
             if (trimmed.StartsWith("```", StringComparison.Ordinal) || trimmed.StartsWith("~~~", StringComparison.Ordinal))
                 inFence = !inFence;
             else if (!inFence && HeadingText(line) is { } heading)
-                last = (lineEnd, [Unique(TerminalGuiSlug(heading), terminalGuiCounts), Unique(BuilderSlug(heading), builderCounts)]);
+                last = (lineEnd, Unique(Slug(heading), counts));
 
             lineStart = lineEnd + 1;
         }
@@ -178,29 +174,13 @@ public sealed class PageFindDialog : Dialog
         return line[(hashes + 1)..].Trim().TrimEnd('#').Trim();
     }
 
-    private static string TerminalGuiSlug(string heading) =>
+    /// <summary>The anchor slug Terminal.Gui's Markdown view gives a heading (its own
+    /// GenerateAnchorSlug is internal): lowercase, drop everything but word characters, whitespace
+    /// and hyphens, and turn each space into a hyphen. The docs builder's MarkdownSlug produces the
+    /// same, and the Doc Viewer tests check both against the view's own function.</summary>
+    internal static string Slug(string heading) =>
         System.Text.RegularExpressions.Regex.Replace(heading.Trim().ToLowerInvariant(), @"[^\w\s-]", "")
             .Replace(' ', '-').Trim('-');
-
-    private static string BuilderSlug(string heading)
-    {
-        var sb = new System.Text.StringBuilder();
-        var lastWasSeparator = true;
-        foreach (var ch in heading.ToLowerInvariant())
-        {
-            if (char.IsLetterOrDigit(ch))
-            {
-                sb.Append(ch);
-                lastWasSeparator = false;
-            }
-            else if ((ch == ' ' || ch == '-') && !lastWasSeparator)
-            {
-                sb.Append('-');
-                lastWasSeparator = true;
-            }
-        }
-        return sb.ToString().TrimEnd('-');
-    }
 
     private static string Unique(string slug, Dictionary<string, int> counts)
     {

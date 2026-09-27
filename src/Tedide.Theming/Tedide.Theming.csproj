@@ -4,6 +4,11 @@
     <PackageReference Include="Terminal.Gui" Version="2.4.17" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- ThemeSchemeTests checks every theme's colors via ThemeSwitcher.SchemesFor. -->
+    <InternalsVisibleTo Include="Tedide.App.Tests" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>

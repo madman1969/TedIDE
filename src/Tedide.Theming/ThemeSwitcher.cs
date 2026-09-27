@@ -49,19 +49,7 @@ public static class ThemeSwitcher
     /// </param>
     public static void Apply(AppTheme theme, bool persist = true)
     {
-        var palette = theme switch
-        {
-            AppTheme.Vs2026Dark => Vs2026Dark(),
-            AppTheme.Vs2026Light => Vs2026Light(),
-            AppTheme.BorlandTurboC => BorlandTurboC(),
-            AppTheme.Monokai => Monokai(),
-            AppTheme.Dracula => Dracula(),
-            AppTheme.SolarizedDark => SolarizedDark(),
-            AppTheme.SolarizedLight => SolarizedLight(),
-            AppTheme.Commodore64 => Commodore64(),
-            AppTheme.AmberPhosphor => AmberPhosphor(),
-            _ => throw new ArgumentOutOfRangeException(nameof(theme), theme, null),
-        };
+        var palette = PaletteFor(theme);
 
         SchemeManager.AddScheme("Base", palette.Base);
         SchemeManager.AddScheme("Menu", palette.Menu);
@@ -89,14 +77,87 @@ public static class ThemeSwitcher
     private readonly record struct Palette(Scheme Base, Scheme Menu, Scheme Dialog, Scheme Accent, Scheme Error, Scheme Warning);
 
     /// <summary>
+    /// Every scheme <paramref name="theme"/> registers, by slot name - what <see cref="Apply"/>
+    /// installs, exposed so tests can check the colors without a running app.
+    /// </summary>
+    private static Palette PaletteFor(AppTheme theme) => theme switch
+    {
+        AppTheme.Vs2026Dark => Vs2026Dark(),
+        AppTheme.Vs2026Light => Vs2026Light(),
+        AppTheme.BorlandTurboC => BorlandTurboC(),
+        AppTheme.Monokai => Monokai(),
+        AppTheme.Dracula => Dracula(),
+        AppTheme.SolarizedDark => SolarizedDark(),
+        AppTheme.SolarizedLight => SolarizedLight(),
+        AppTheme.Commodore64 => Commodore64(),
+        AppTheme.AmberPhosphor => AmberPhosphor(),
+        _ => throw new ArgumentOutOfRangeException(nameof(theme), theme, null),
+    };
+
+    internal static IReadOnlyDictionary<string, Scheme> SchemesFor(AppTheme theme)
+    {
+        var palette = PaletteFor(theme);
+        return new Dictionary<string, Scheme>
+        {
+            ["Base"] = palette.Base, ["Menu"] = palette.Menu, ["Dialog"] = palette.Dialog,
+            ["Accent"] = palette.Accent, ["Error"] = palette.Error, ["Warning"] = palette.Warning,
+        };
+    }
+
+    /// <summary>
+    /// The attribute a hotkey letter is drawn with on text styled <paramref name="text"/>: the
+    /// theme's hot color - unless that can't be told apart from the background or the surrounding
+    /// text, in which case the letter keeps the text's own color and is underlined instead. Several
+    /// themes use one accent color for both hotkeys and the focus highlight, which made a focused
+    /// item's hotkey letter vanish into its own background (Solarized Light/Dark and Dracula menus,
+    /// several themes' error/warning boxes - seen live as "ile" for File, "ookmarks", "emove").
+    /// </summary>
+    private static GuiAttribute HotkeyAttribute(GuiAttribute hot, GuiAttribute text) =>
+        Indistinguishable(hot.Foreground, text.Background) || Indistinguishable(hot.Foreground, text.Foreground)
+            ? new GuiAttribute(text.Foreground, text.Background, text.Style | TextStyle.Underline)
+            : new GuiAttribute(hot.Foreground, text.Background, hot.Style);
+
+    /// <summary>
+    /// Whether two colors are too alike to tell apart: a perceptual (CIELAB ΔE76) difference under
+    /// 20. Perceptual, because neither brightness nor raw RGB distance tracks what the eye sees -
+    /// Borland Turbo C's red hotkeys on gray are about equal in brightness yet plainly visible, and
+    /// Solarized's accent blue on its gray text is close in RGB yet obviously a different color
+    /// (ΔE about 38), while Amber Phosphor's light amber on amber really is hard to see (about 19).
+    /// </summary>
+    internal static bool Indistinguishable(Color a, Color b)
+    {
+        var (l1, a1, b1) = ToLab(a);
+        var (l2, a2, b2) = ToLab(b);
+        return Math.Sqrt((l1 - l2) * (l1 - l2) + (a1 - a2) * (a1 - a2) + (b1 - b2) * (b1 - b2)) < 20;
+    }
+
+    /// <summary>sRGB to CIELAB (D65 white point).</summary>
+    private static (double L, double A, double B) ToLab(Color c)
+    {
+        static double Linear(int v)
+        {
+            var s = v / 255.0;
+            return s <= 0.04045 ? s / 12.92 : Math.Pow((s + 0.055) / 1.055, 2.4);
+        }
+        var (r, g, b) = (Linear(c.R), Linear(c.G), Linear(c.B));
+        var x = (0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047;
+        var y = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        var z = (0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883;
+        static double F(double t) => t > 0.008856 ? Math.Cbrt(t) : 7.787 * t + 16.0 / 116;
+        var (fx, fy, fz) = (F(x), F(y), F(z));
+        return (116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz));
+    }
+
+
+    /// <summary>
     /// Builds a full Scheme from just the handful of colors that actually vary between slots:
     /// the normal (unfocused) look, the focus/selection look, an accent color for hot keys and
     /// keyword-ish code roles, and a dimmed color for disabled/comment-ish roles.
     /// </summary>
     private static Scheme BuildScheme(GuiAttribute normal, GuiAttribute focus, GuiAttribute hot, GuiAttribute disabled, GuiAttribute? codeNumber = null)
     {
-        var hotNormal = new GuiAttribute(hot.Foreground, normal.Background, hot.Style);
-        var hotFocus = new GuiAttribute(hot.Foreground, focus.Background, hot.Style);
+        var hotNormal = HotkeyAttribute(hot, normal);
+        var hotFocus = HotkeyAttribute(hot, focus);
 
         return new Scheme(normal)
         {
