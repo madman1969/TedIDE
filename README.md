@@ -4,6 +4,8 @@
 ![Platform: Windows](https://img.shields.io/badge/platform-Windows-0078D6)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 
+![Tedide paused in a VICE debugging session: the HelloCBM sample's animation.c open with the current line highlighted, the Solution Explorer on the left, and the Debug panel showing the step history and 6502 registers](docs/images/tedide.png)
+
 A terminal (TUI) IDE for [cc65](https://cc65.github.io/) development, modeled loosely
 on Visual Studio: a resizable solution explorer, a single-file source editor with 6502/ca65
 syntax highlighting, a build output pane (with a separate Error List and a symbol browser) and a
