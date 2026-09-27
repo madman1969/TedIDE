@@ -154,6 +154,8 @@ From the **File** menu:
   empty - drop a prebuilt cc65 `.lib` archive in it and it's linked in automatically, no `.tproj`
   change needed (every `.lib` file found there is passed to `ld65` after the compiled object
   files). `OutputFile` points at `bin/<Name><target extension>`.
+
+  ![The New Project dialog: a project name, its destination directory with a Browse button, and a Commodore target platform picker set to c64](docs/images/running-new-project.png)
 - **Open Project...** and pick `samples/HelloCBM/HelloCBM.tsln` (or `samples/HelloCBM/HelloCBM.tproj`) for a
   working example - it's deliberately split across several `.c`/`.h`/`.s` files (see layout above) to
   show off the Solution Explorer's folder tree even though only one of them can be open for editing
@@ -235,6 +237,8 @@ From the **File** menu:
   (persisted per-user, independent of any one project), numbered for Alt+1..9 accelerators like
   Visual Studio's own list. Selecting a stale entry (moved/deleted on disk) drops it from the list
   with an error instead of crashing.
+
+  ![The File menu open with its Recent Projects and Solutions submenu, listing ten numbered sample solutions and projects with their folders](docs/images/running-file-menu.png)
 - **Close Project** clears the currently loaded project(s) from the session (closing the open file
   first, prompting to save if modified) without touching anything on disk.
 
@@ -259,6 +263,8 @@ the new name's extension isn't one cl65 compiles, added under the new path if it
 e.g. `main.c` to `main.h` (or vice versa) is tracked correctly too, not just a same-extension
 rename. The border between the Solution Explorer and the editor is a draggable splitter - drag it
 to resize both panes.
+
+![The Solution Explorer for the CBMInfo sample: include, src and Generated Files folders, with the right-click menu open on the src folder offering New File... and Add Existing Item...](docs/images/running-solution-explorer.png)
 
 Press **F5** (or **Build > Build Project**) to invoke `cl65` - once per source file (`-c`, compile
 and assemble but don't link) so each gets its own assembler listing, then once more to link the
@@ -289,12 +295,20 @@ fallback for it even with no custom config set). Every one of these is passed ex
 launch, rather than relying on whatever VICE's own persisted settings last had configured, since
 that has nothing to do with which project is actually running.
 
+![The Output tab after a successful build: build started, build succeeded in 0.5s, and the output binary's size](docs/images/running-build-output.png)
+
+![The Error List tab after a failed build: warnings and errors with their severity, file, line and message](docs/images/running-error-list.png)
+
+![The CBMInfo sample running in VICE's C64 emulator, listing the machine's model, CPU, clock speed, memory, video and sound details](docs/images/running-vice.png)
+
 Two more tabs sit alongside Output/Error List: **Symbols** parses the project's `lnk.map`/`.lbl`
 (if "Generate linker map file"/"Export labels" are on - see "Project Settings dialog" below) into a
 filterable table of every module/segment/export/import/label, without disturbing the plain-text
 editing of those files themselves - activating a row opens the underlying file and jumps to the
 matching line. **Debug** shows the active debugging session's registers and status - see
 "Debugging" below.
+
+![The Symbols tab listing the CBMInfo build's modules - its own object files and the cc65 library members linked in - with their segment counts](docs/images/running-symbols.png)
 
 **Edit > Find in Files...** (Alt+Shift+F - not Ctrl+Shift+F, which Windows Terminal keeps for its own Find bar) searches every source/header/assembly file across the
 loaded project(s) for a case-insensitive substring and lists every matching line; activating a
@@ -305,6 +319,8 @@ Edit menu's own (`Editor.InvokeCommand(Command.Find/Replace)`, exactly what that
 Find in Files pre-populates the search field with the current selection - just its first line, if
 the selection spans more than one - and runs the search immediately, rather than opening to a
 blank field.
+
+![The Find in Files dialog after searching for "screensize": two matches in two files, each listed with its file, line and column](docs/images/running-find-in-files.png)
 
 **Edit > Go To Line...** (Ctrl+G) prompts for a line number (pre-filled with the caret's current
 line, validated against the open document's actual line count) and jumps straight there.
