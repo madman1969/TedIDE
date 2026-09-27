@@ -990,9 +990,12 @@ public sealed class AppShell : Window
     /// Project Settings save) - not on every build, since breakpoints don't change from a build.</summary>
     private void LoadBreakpointsForActiveProject()
     {
+        string? problem = null;
         _breakpoints = _workspace.ActiveProject is { } project
-            ? BreakpointsFile.Load(project.ResolvedBreakpointsFile)
+            ? BreakpointsFile.LoadOrRecover(project.ResolvedBreakpointsFile, out problem)
             : new BreakpointsFile();
+        if (problem is not null)
+            AppendOutputLine(problem);
         RefreshBreakpointHighlights();
     }
 
@@ -1025,9 +1028,12 @@ public sealed class AppShell : Window
     /// reopen-after-rename handling (see <see cref="RenameProjectFolder"/>).</summary>
     private void LoadLastOpenFileForActiveProject()
     {
+        string? problem = null;
         _sessionState = _workspace.ActiveProject is { } project
-            ? SessionStateFile.Load(project.ResolvedSessionFile)
+            ? SessionStateFile.LoadOrRecover(project.ResolvedSessionFile, out problem)
             : new SessionStateFile();
+        if (problem is not null)
+            AppendOutputLine(problem);
 
         var fullPath = _workspace.ActiveProject is { } activeProject && _sessionState.LastOpenFile is { } relativePath
             ? Path.Combine(activeProject.Directory, relativePath)

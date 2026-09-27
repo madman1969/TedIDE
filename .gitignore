@@ -22,3 +22,8 @@ obj/
 !tests/Tedide.Core.Tests/Fixtures/*.lbl
 !tests/Tedide.Core.Tests/Fixtures/*.dbg
 /TestResults/
+# Per-user, per-project IDE state written beside each .tproj (see BreakpointsFile/SessionStateFile)
+# - not build configuration, and different for everyone who opens the project.
+*.breakpoints.json
+*.session.json
+*.corrupt

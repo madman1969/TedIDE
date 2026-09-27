@@ -225,12 +225,14 @@ public sealed class ViceMonitorClient : IAsyncDisposable
         {
             while (true)
             {
-                await ReadExactlyAsync(stream, headerBuffer);
+                // ReadExactlyAsync throws EndOfStreamException (an IOException) if VICE closes the
+                // connection mid-frame - handled below like any other closed connection.
+                await stream.ReadExactlyAsync(headerBuffer);
                 var header = ViceMonitorProtocol.DecodeResponseHeader(headerBuffer);
 
                 var bodyBuffer = header.BodyLength == 0 ? [] : new byte[header.BodyLength];
                 if (header.BodyLength > 0)
-                    await ReadExactlyAsync(stream, bodyBuffer);
+                    await stream.ReadExactlyAsync(bodyBuffer);
 
                 Dispatch(header, bodyBuffer);
             }
@@ -296,18 +298,6 @@ public sealed class ViceMonitorClient : IAsyncDisposable
                 try { EventHandlerFailed?.Invoke(ex); }
                 catch { /* A failing error reporter mustn't take the connection down either. */ }
             }
-        }
-    }
-
-    private static async Task ReadExactlyAsync(NetworkStream stream, Memory<byte> buffer)
-    {
-        var read = 0;
-        while (read < buffer.Length)
-        {
-            var n = await stream.ReadAsync(buffer[read..]);
-            if (n == 0)
-                throw new IOException("VICE monitor connection closed while reading a response.");
-            read += n;
         }
     }
 

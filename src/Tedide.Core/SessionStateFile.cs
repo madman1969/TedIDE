@@ -27,5 +27,10 @@ public sealed class SessionStateFile
         return JsonSerializer.Deserialize<SessionStateFile>(json, JsonOptions) ?? new SessionStateFile();
     }
 
+    /// <summary>Like <see cref="Load"/>, but never throws for a corrupt or unreadable file - see
+    /// <see cref="SidecarFile.LoadOrSetAside"/>. <paramref name="problem"/> is non-null when that happened.</summary>
+    public static SessionStateFile LoadOrRecover(string path, out string? problem) =>
+        SidecarFile.LoadOrSetAside(path, Load, () => new SessionStateFile(), out problem);
+
     public void Save(string path) => File.WriteAllText(path, JsonSerializer.Serialize(this, JsonOptions));
 }

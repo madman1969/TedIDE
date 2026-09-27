@@ -30,8 +30,17 @@ public sealed class BreakpointsFile
             return new BreakpointsFile();
 
         var json = File.ReadAllText(path);
-        return JsonSerializer.Deserialize<BreakpointsFile>(json, JsonOptions) ?? new BreakpointsFile();
+        var file = JsonSerializer.Deserialize<BreakpointsFile>(json, JsonOptions) ?? new BreakpointsFile();
+        // Valid JSON can still hold nulls where the rest of the app assumes values
+        // ("Breakpoints": null, a null entry, an entry with no file) - drop them here, once.
+        file.Breakpoints = (file.Breakpoints ?? []).Where(b => b?.SourceFile is not null).ToList();
+        return file;
     }
+
+    /// <summary>Like <see cref="Load"/>, but never throws for a corrupt or unreadable file - see
+    /// <see cref="SidecarFile.LoadOrSetAside"/>. <paramref name="problem"/> is non-null when that happened.</summary>
+    public static BreakpointsFile LoadOrRecover(string path, out string? problem) =>
+        SidecarFile.LoadOrSetAside(path, Load, () => new BreakpointsFile(), out problem);
 
     public void Save(string path) => File.WriteAllText(path, JsonSerializer.Serialize(this, JsonOptions));
 }
