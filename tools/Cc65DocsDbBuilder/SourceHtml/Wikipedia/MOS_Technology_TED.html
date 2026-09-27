@@ -1,0 +1,479 @@
+﻿<!DOCTYPE html>
+<!-- From Wikipedia (https://en.wikipedia.org/wiki/MOS_Technology_TED), revision 1362608405, last edited 2026-07-05 02:57 UTC.
+     Text is available under the Creative Commons Attribution-ShareAlike 4.0 License - see wikipedia/licence.
+     Only the article body is kept; retrieved 2026-09-27 for Tedide's Doc Viewer. -->
+<html><head><meta charset="utf-8"><title>MOS Technology TED</title>
+<meta name="wiki-page" content="MOS_Technology_TED"><meta name="wiki-revision" content="1362608405"><meta name="wiki-edited" content="2026-07-05 02:57 UTC">
+</head><body>
+<div class="mw-content-ltr mw-parser-output" lang="en" dir="ltr"><div class="shortdescription nomobile noexcerpt noprint searchaux" style="display:none">Integrated circuit made by MOS Technology</div>
+<figure class="mw-halign-right" typeof="mw:File/Thumb"><a href="/wiki/File:7360_pinout.svg" class="mw-file-description"><img src="//thumb.wikimedia.org/wikipedia/commons/thumb/3/30/7360_pinout.svg/330px-7360_pinout.svg.png?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail" decoding="async" loading="lazy" width="300" height="473" class="mw-file-element" srcset="//thumb.wikimedia.org/wikipedia/commons/thumb/3/30/7360_pinout.svg/960px-7360_pinout.svg.png?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail 2x" data-file-width="396" data-file-height="624" /></a><figcaption>TED pinout</figcaption></figure>
+<p>The <b>7360/8360 TExt Display</b> (<b>TED</b>) was an <a href="/wiki/Integrated_circuit" title="Integrated circuit">integrated circuit</a> made by <a href="/wiki/MOS_Technology" title="MOS Technology">MOS Technology, Inc.</a> It was a <a href="/wiki/Video_Display_Controller" class="mw-redirect" title="Video Display Controller">video chip</a> that also contained <a href="/wiki/Sound_chip" title="Sound chip">sound generation</a> hardware, <a href="/wiki/Dynamic_random-access_memory" title="Dynamic random-access memory">DRAM</a> refresh circuitry, <a href="/wiki/Programmable_interval_timer" title="Programmable interval timer">interval timers</a>, and <a href="/wiki/Computer_keyboard" title="Computer keyboard">keyboard</a> input handling. It was designed for the <a href="/wiki/Commodore_16" title="Commodore 16">Commodore 16</a> and <a href="/wiki/Plus/4" title="Plus/4">Plus/4</a>. Packaging consisted of a <a href="/wiki/JEDEC" title="JEDEC">JEDEC</a>-standard 48-pin <a href="/wiki/Dual_in-line_package" title="Dual in-line package">DIP</a>.
+</p><p>The only difference between models 7360 and 8360 is the manufacturing technology used; model 8360 is more common.<sup id="cite&#95;ref-1" class="reference"><a href="#cite_note-1"><span class="cite-bracket">&#91;</span>1<span class="cite-bracket">&#93;</span></a></sup>
+</p>
+<meta property="mw:PageProp/toc" />
+<div class="mw-heading mw-heading2"><h2 id="Video_capabilities">Video capabilities</h2><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/w/index.php?title=MOS_Technology_TED&amp;action=edit&amp;section=1" title="Edit section: Video capabilities"><span>edit</span></a><span class="mw-editsection-bracket">]</span></span></div>
+<p>The video capabilities provided by the TED were largely a subset of those in the <a href="/wiki/MOS_Technology_VIC-II" title="MOS Technology VIC-II">VIC-II</a>. The TED supported five video modes:<sup id="cite&#95;ref-datasheet&#95;2-0" class="reference"><a href="#cite_note-datasheet-2"><span class="cite-bracket">&#91;</span>2<span class="cite-bracket">&#93;</span></a></sup>
+</p>
+<ul><li>Text mode of 40 × 25 characters with 8 × 8 pixels</li>
+<li>Multicolor text (4 × 8 pixels per character, double pixel width in the x-direction)</li>
+<li>Extended background color mode (8 × 8 pixels per character)</li>
+<li>Multicolor Graphics 160 × 200 pixels</li>
+<li>Hi-Res Graphics 320 × 200 pixels</li>
+<li><span class="nowrap"><span data-sort-value="6995460000000000000♠"></span>46&#160;<a href="/wiki/Microsecond" title="Microsecond">μs</a></span> of the <span class="nowrap"><span data-sort-value="6995519999999999999♠"></span>52&#160;μs</span> long visible part of the scan lines is filled with pixels</li></ul>
+<p>These modes were largely unchanged from the corresponding VIC-II modes aside from different register and memory mappings (see the article on the VIC-II for information on graphics modes). However, the TED lacked the <a href="/wiki/Sprite_(computer_graphics)" title="Sprite (computer graphics)">sprite</a> capabilities of the VIC-II, and so game animation had to be done exclusively with custom character sets like on the VIC-20. This restricted the graphics of C16/Plus 4 games versus the C64. On the VIC-II, sprites used two thirds of the die area pushing the transistor count over that of the CPU. In contrast, the TED caches the color attributes on-chip, increasing the SRAM from <span class="nowrap"><span data-sort-value="7001400000000000000♠"></span>40 to 75&#160;<a href="/wiki/Bytes" class="mw-redirect" title="Bytes">bytes</a></span> and does away with the external color RAM. 
+</p><p>The TED did include two features that the VIC-II lacked: <a href="/wiki/Luminance" title="Luminance">luminance</a> control and blinking text. 
+</p><p>It generated 16 base colors by variations of <a href="/wiki/YPbPr" title="YPbPr">Pb</a> and <a href="/wiki/YPbPr" title="YPbPr">Pr</a> <a href="/wiki/Chrominance" title="Chrominance">chroma</a> signals (with 8 possible steps, ranging from 0, +-0.3826834, +-0.7071068 to +-1.0). Fifteen of these 16 colors (black being the exception) could be assigned one of 8 <a href="/wiki/YPbPr" title="YPbPr">Y</a> <a href="/wiki/Luma_(video)" title="Luma (video)">luma</a> values (0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0), thus making the TED capable of displaying a far wider array of colors than the VIC-II.  The full palette of 121 <a href="/wiki/YPbPr" title="YPbPr">YPbPr</a> colors is shown below.<sup id="cite&#95;ref-3" class="reference"><a href="#cite_note-3"><span class="cite-bracket">&#91;</span>3<span class="cite-bracket">&#93;</span></a></sup>
+</p>
+<dl><dd><table class="wikitable sortable toccolours">
+<caption>MOS Technology TED YPbPr composite palette
+</caption>
+<tbody><tr>
+<th rowspan="2">hue #
+</th>
+<th rowspan="2"><a href="/wiki/YPbPr" title="YPbPr">Pb</a> (rel.)
+</th>
+<th rowspan="2"><a href="/wiki/YPbPr" title="YPbPr">Pr</a> (rel.)
+</th>
+<th colspan="8"><a href="/wiki/Luma_(video)" title="Luma (video)">Y</a>
+</th></tr>
+<tr>
+<th>0.125</th>
+<th>0.25</th>
+<th>0.375</th>
+<th>0.5</th>
+<th>0.625</th>
+<th>0.75</th>
+<th>0.875</th>
+<th>1
+</th></tr>
+
+<tr>
+<th>0 — black</th>
+<th>0</th>
+<th>0
+</th>
+<td style="color:white; background: #000000;"><u>0,0</u>
+</td>
+<td style="color:white; background: #000000;">0,1
+</td>
+<td style="color:white; background: #000000;">0,2
+</td>
+<td style="color:white; background: #000000;">0,3
+</td>
+<td style="color:white; background: #000000;">0,4
+</td>
+<td style="color:white; background: #000000;">0,5
+</td>
+<td style="color:white; background: #000000;">0,6
+</td>
+<td style="color:white; background: #000000;">0,7
+</td></tr>
+
+<tr>
+<th>1 — white</th>
+<th>0</th>
+<th>0
+</th>
+<td style="color:white; background: #202020;">1,0
+</td>
+<td style="color:white; background: #404040;">1,1
+</td>
+<td style="color:white; background: #606060;">1,2
+</td>
+<td style="color:white; background: #808080;">1,3
+</td>
+<td style="color:white; background: #9F9F9F;">1,4
+</td>
+<td style="color:black; background: #BFBFBF;">1,5
+</td>
+<td style="color:black; background: #DFDFDF;">1,6
+</td>
+<td style="color:black; background: #FFFFFF;"><u>1,7</u>
+</td></tr>
+
+<tr>
+<th>2 — red</th>
+<th>−0.3826834</th>
+<th>0.9238795
+</th>
+<td style="color:white; background: #720000;">2,0
+</td>
+<td style="color:white; background: #921E15;">2,1
+</td>
+<td style="color:white; background: #B23E34;">2,2
+</td>
+<td style="color:white; background: #D25E54;"><u>2,3</u>
+</td>
+<td style="color:white; background: #F27E74;">2,4
+</td>
+<td style="color:black; background: #FF9E94;">2,5
+</td>
+<td style="color:black; background: #FFBDB4;">2,6*
+</td>
+<td style="color:black; background: #FFDDD4;">2,7*
+</td></tr>
+
+<tr>
+<th>3 — cyan</th>
+<th>0.3826834</th>
+<th>−0.9238795
+</th>
+<td style="color:white; background: #00424B;">3,0*
+</td>
+<td style="color:white; background: #00616B;">3,1
+</td>
+<td style="color:white; background: #0D818B;">3,2
+</td>
+<td style="color:white; background: #2DA1AB;">3,3
+</td>
+<td style="color:white; background: #4DC1CB;">3,4
+</td>
+<td style="color:black; background: #6DE1EA;">3,5
+</td>
+<td style="color:black; background: #8DFFFF;"><u>3,6</u>
+</td>
+<td style="color:black; background: #ACFFFF;">3,7*
+</td></tr>
+<tr>
+<th>4 — purple</th>
+<th>0.7071068</th>
+<th>0.7071068
+</th>
+<td style="color:white; background: #5F0070;">4,0*
+</td>
+<td style="color:white; background: #7F1090;">4,1
+</td>
+<td style="color:white; background: #9F30B0;">4,2
+</td>
+<td style="color:white; background: #BF50CF;">4,3
+</td>
+<td style="color:white; background: #DF70EF;"><u>4,4</u>
+</td>
+<td style="color:black; background: #FE8FFF;">4,5
+</td>
+<td style="color:black; background: #FFAFFF;">4,6*
+</td>
+<td style="color:black; background: #FFCFFF;">4,7*
+</td></tr>
+
+<tr>
+<th>5 — green</th>
+<th>−0.7071068</th>
+<th>−0.7071068
+</th>
+<td style="color:white; background: #005000;">5,0*
+</td>
+<td style="color:white; background: #017000;">5,1
+</td>
+<td style="color:white; background: #208F10;">5,2
+</td>
+<td style="color:white; background: #40AF30;"><u>5,3</u>
+</td>
+<td style="color:white; background: #60CF4F;">5,4
+</td>
+<td style="color:black; background: #80EF6F;">5,5
+</td>
+<td style="color:black; background: #A0FF8F;">5,6*
+</td>
+<td style="color:black; background: #C0FFAF;">5,7*
+</td></tr>
+
+<tr>
+<th>6 — blue</th>
+<th>1</th>
+<th>0
+</th>
+<td style="color:white; background: #200A91;">6,0
+</td>
+<td style="color:white; background: #402AB1;">6,1
+</td>
+<td style="color:white; background: #604AD1;">6,2
+</td>
+<td style="color:white; background: #8069F0;">6,3
+</td>
+<td style="color:white; background: #9F89FF;"><u>6,4</u>
+</td>
+<td style="color:black; background: #BFA9FF;">6,5*
+</td>
+<td style="color:black; background: #DFC9FF;">6,6*
+</td>
+<td style="color:black; background: #FFE9FF;">6,7*
+</td></tr>
+
+<tr>
+<th>7 — yellow</th>
+<th>−1</th>
+<th>0
+</th>
+<td style="color:white; background: #203600;">7,0*
+</td>
+<td style="color:white; background: #405600;">7,1*
+</td>
+<td style="color:white; background: #607600;">7,2
+</td>
+<td style="color:white; background: #80960F;">7,3
+</td>
+<td style="color:white; background: #9FB52E;">7,4
+</td>
+<td style="color:black; background: #BFD54E;">7,5
+</td>
+<td style="color:black; background: #DFF56E;">7,6
+</td>
+<td style="color:black; background: #FFFF8E;"><u>7,7</u>*
+</td></tr>
+
+<tr>
+<th>8 — orange</th>
+<th>−0.7071068</th>
+<th>0.7071068
+</th>
+<td style="color:white; background: #5F0F00;">8,0*
+</td>
+<td style="color:white; background: #7F2F00;">8,1
+</td>
+<td style="color:white; background: #9F4F10;">8,2
+</td>
+<td style="color:white; background: #BF6F30;">8,3
+</td>
+<td style="color:white; background: #DF8F4F;">8,4
+</td>
+<td style="color:black; background: #FEAF6F;">8,5
+</td>
+<td style="color:black; background: #FFCF8F;">8,6*
+</td>
+<td style="color:black; background: #FFEEAF;">8,7*
+</td></tr>
+<tr>
+<th>9 — brown</th>
+<th>−0.9238795</th>
+<th>0.3826834
+</th>
+<td style="color:white; background: #422300;">9,0*
+</td>
+<td style="color:white; background: #624300;">9,1*
+</td>
+<td style="color:white; background: #826300;">9,2
+</td>
+<td style="color:white; background: #A28217;">9,3
+</td>
+<td style="color:white; background: #C2A237;">9,4
+</td>
+<td style="color:black; background: #E1C257;">9,5
+</td>
+<td style="color:black; background: #FFE277;">9,6
+</td>
+<td style="color:black; background: #FFFF97;">9,7*
+</td></tr>
+
+<tr>
+<th>10 — yellow-green</th>
+<th>−0.9238795</th>
+<th>−0.3826834
+</th>
+<td style="color:white; background: #004600;">10,0*
+</td>
+<td style="color:white; background: #1E6600;">10,1*
+</td>
+<td style="color:white; background: #3D8500;">10,2
+</td>
+<td style="color:white; background: #5DA517;">10,3
+</td>
+<td style="color:white; background: #7DC537;">10,4
+</td>
+<td style="color:black; background: #9DE557;">10,5
+</td>
+<td style="color:black; background: #BDFF77;">10,6
+</td>
+<td style="color:black; background: #DDFF97;">10,7*
+</td></tr>
+
+<tr>
+<th>11 — pink</th>
+<th>0</th>
+<th>1
+</th>
+<td style="color:white; background: #790020;">11,0
+</td>
+<td style="color:white; background: #991240;">11,1
+</td>
+<td style="color:white; background: #B93260;">11,2
+</td>
+<td style="color:white; background: #D95280;">11,3
+</td>
+<td style="color:white; background: #F9729F;">11,4
+</td>
+<td style="color:black; background: #FF92BF;">11,5
+</td>
+<td style="color:black; background: #FFB2DF;">11,6*
+</td>
+<td style="color:black; background: #FFD1FF;">11,7*
+</td></tr>
+
+<tr>
+<th>12 — blue-green</th>
+<th>0</th>
+<th>−1
+</th>
+<td style="color:white; background: #004D20;">12,0*
+</td>
+<td style="color:white; background: #006D40;">12,1
+</td>
+<td style="color:white; background: #068D60;">12,2
+</td>
+<td style="color:white; background: #26AD80;">12,3
+</td>
+<td style="color:white; background: #46CD9F;">12,4
+</td>
+<td style="color:black; background: #66EDBF;"><u>12,5</u>
+</td>
+<td style="color:black; background: #86FFDF;">12,6
+</td>
+<td style="color:black; background: #A6FFFF;">12,7*
+</td></tr>
+
+<tr>
+<th>13 — light blue</th>
+<th>0.7071068</th>
+<th>−0.7071068
+</th>
+<td style="color:white; background: #003070;">13,0*
+</td>
+<td style="color:white; background: #015090;">13,1
+</td>
+<td style="color:white; background: #2070B0;">13,2
+</td>
+<td style="color:white; background: #4090CF;">13,3
+</td>
+<td style="color:white; background: #60B0EF;">13,4
+</td>
+<td style="color:black; background: #80D0FF;">13,5
+</td>
+<td style="color:black; background: #A0F0FF;"><u>13,6</u>*
+</td>
+<td style="color:black; background: #C0FFFF;">13,7*
+</td></tr>
+
+<tr>
+<th>14 — dark blue</th>
+<th>0.9238795</th>
+<th>0.3826834
+</th>
+<td style="color:white; background: #420088;">14,0
+</td>
+<td style="color:white; background: #621AA8;">14,1
+</td>
+<td style="color:white; background: #823AC8;"><u>14,2</u>
+</td>
+<td style="color:white; background: #A25AE8;">14,3
+</td>
+<td style="color:white; background: #C27AFF;">14,4
+</td>
+<td style="color:black; background: #E199FF;">14,5*
+</td>
+<td style="color:black; background: #FFB9FF;">14,6*
+</td>
+<td style="color:black; background: #FFD9FF;">14,7*
+</td></tr>
+
+<tr>
+<th>15 — light green</th>
+<th>−0.3826834</th>
+<th>−0.9238795
+</th>
+<td style="color:white; background: #005200;">15,0*
+</td>
+<td style="color:white; background: #007215;">15,1
+</td>
+<td style="color:white; background: #0D9234;">15,2
+</td>
+<td style="color:white; background: #2DB254;">15,3
+</td>
+<td style="color:white; background: #4DD274;">15,4
+</td>
+<td style="color:black; background: #6DF294;"><u>15,5</u>
+</td>
+<td style="color:black; background: #8DFFB4;">15,6*
+</td>
+<td style="color:black; background: #ACFFD4;">15,7*
+</td></tr></tbody></table> <i><small>Note: colors marked with an <a href="/wiki/Asterisk" title="Asterisk">asterisk</a> (*) are out of the <a href="/wiki/RGB" class="mw-redirect" title="RGB">RGB</a> <a href="/wiki/Gamut" title="Gamut">gamut</a>.</small></i></dd></dl>
+<p><br />
+</p>
+<div class="mw-heading mw-heading2"><h2 id="Sound_capabilities">Sound capabilities</h2><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/w/index.php?title=MOS_Technology_TED&amp;action=edit&amp;section=2" title="Edit section: Sound capabilities"><span>edit</span></a><span class="mw-editsection-bracket">]</span></span></div>
+<p>The TED featured a simple <a href="/wiki/Tone_generator" class="mw-redirect" title="Tone generator">tone generator</a> that produced two channels of audio. The first channel produced a <a href="/wiki/Square_wave_(waveform)" title="Square wave (waveform)">square wave</a>, and the second could produce either a square wave or <a href="/wiki/White_noise" title="White noise">white noise</a>. Between the two channels you could hear either two tones or one tone plus noise.  This tone generator was designed for business applications, and did not provide the extensive sound features found in the <a href="/wiki/MOS_Technology_6581" title="MOS Technology 6581">SID</a> chip.
+</p>
+<div class="mw-heading mw-heading2"><h2 id="Other_features">Other features</h2><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/w/index.php?title=MOS_Technology_TED&amp;action=edit&amp;section=3" title="Edit section: Other features"><span>edit</span></a><span class="mw-editsection-bracket">]</span></span></div>
+<p>The TED includes three <a href="/wiki/16-bit" class="mw-redirect" title="16-bit">16-bit</a> interval timers, which consist of <a href="/wiki/Counter_(digital)" title="Counter (digital)">down counters</a> operating at the master clock frequency. They can generate <a href="/wiki/Interrupt_request" title="Interrupt request">IRQs</a> on underflow as can a <a href="/wiki/Raster_interrupt" title="Raster interrupt">raster register</a> on equality with the current scan line. The chip also contains an <a href="/wiki/I/O_port" class="mw-redirect" title="I/O port">I/O port</a>, which is used on the Plus/4 and 16 to control the IEC bus (for connecting Floppy Disk Drives) and the Datassette (Tape Recorder).
+</p><p>TED has a higher priority on DRAM access than the CPU. Thus in the borders the CPU is able to run at full speed, but in the active display area it is throttled down to half the clock rate. An undesirable feature of the chip is its well-known tendency to destroy itself through overheating. To preserve a computer which employs this chip in working order, it is recommended to improve its cooling.<sup id="cite&#95;ref-4" class="reference"><a href="#cite_note-4"><span class="cite-bracket">&#91;</span>4<span class="cite-bracket">&#93;</span></a></sup>
+</p><p>As TED chips are not produced anymore, its internal architecture has been investigated and replicated by Hungarian developer Istvan Hegedus using verilog HDL in a project called FPGATED.<sup id="cite&#95;ref-5" class="reference"><a href="#cite_note-5"><span class="cite-bracket">&#91;</span>5<span class="cite-bracket">&#93;</span></a></sup> The source code of this project has been made open source which led to a C16 implementation on the <a href="/wiki/MiSTer" title="MiSTer">MiSTer</a> platform and a working prototype drop-in chip replacement by the original code developer.
+</p><p>There was another TED replacement in development based on the original source code by the "ThED project", but this has been put on hold because of difficulties with component supplies.<sup id="cite&#95;ref-6" class="reference"><a href="#cite_note-6"><span class="cite-bracket">&#91;</span>6<span class="cite-bracket">&#93;</span></a></sup>
+</p>
+<div class="mw-heading mw-heading2"><h2 id="Notes">Notes</h2><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/w/index.php?title=MOS_Technology_TED&amp;action=edit&amp;section=4" title="Edit section: Notes"><span>edit</span></a><span class="mw-editsection-bracket">]</span></span></div>
+<div class="mw-references-wrap"><ol class="references">
+<li id="cite&#95;note-1"><span class="mw-cite-backlink"><b><a href="#cite_ref-1">^</a></b></span> <span class="reference-text"><style data-mw-deduplicate="TemplateStyles:r1333433106">.mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free.id-lock-free a{background:url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited.id-lock-limited a,.mw-parser-output .id-lock-registration.id-lock-registration a{background:url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription.id-lock-subscription a{background:url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}body:not(.skin-timeless):not(.skin-minerva) .mw-parser-output .id-lock-free a,body:not(.skin-timeless):not(.skin-minerva) .mw-parser-output .id-lock-limited a,body:not(.skin-timeless):not(.skin-minerva) .mw-parser-output .id-lock-registration a,body:not(.skin-timeless):not(.skin-minerva) .mw-parser-output .id-lock-subscription a,body:not(.skin-timeless):not(.skin-minerva) .mw-parser-output .cs1-ws-icon a{background-size:contain;padding:0 1em 0 0}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:var(--color-error,#bf3c2c)}.mw-parser-output .cs1-visible-error{color:var(--color-error,#bf3c2c)}.mw-parser-output .cs1-maint{display:none;color:#085;margin-left:0.3em}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}@media screen{.mw-parser-output .cs1-format{font-size:95%}html.skin-theme-clientpref-night .mw-parser-output .cs1-maint{color:#18911f}}@media screen and (prefers-color-scheme:dark){html.skin-theme-clientpref-os .mw-parser-output .cs1-maint{color:#18911f}}</style><cite class="citation web cs1"><a rel="nofollow" class="external text" href="https://plus4world.powweb.com/hardware/MOS_73608360">"MOS 7360/8360"</a>. <i>Commodore Plus/4 World</i><span class="reference-accessdate">. Retrieved <span class="nowrap">2022-10-30</span></span>.</cite><span title="ctx&#95;ver=Z39.88-2004&amp;rft&#95;val&#95;fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Ajournal&amp;rft.genre=unknown&amp;rft.jtitle=Commodore+Plus%2F4+World&amp;rft.atitle=MOS+7360%2F8360&amp;rft&#95;id=https%3A%2F%2Fplus4world.powweb.com%2Fhardware%2FMOS&#95;73608360&amp;rfr&#95;id=info%3Asid%2Fen.wikipedia.org%3AMOS+Technology+TED" class="Z3988"></span></span>
+</li>
+<li id="cite&#95;note-datasheet-2"><span class="mw-cite-backlink"><b><a href="#cite_ref-datasheet_2-0">^</a></b></span> <span class="reference-text"><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1333433106" /><cite class="citation web cs1"><a rel="nofollow" class="external text" href="https://www.karlstechnology.com/commodore/TED7360-datasheet.pdf">"TED 7360 Data Sheet"</a> <span class="cs1-format">(PDF)</span>. Commodore Semiconductor Group<span class="reference-accessdate">. Retrieved <span class="nowrap">May 21,</span> 2019</span>.</cite><span title="ctx&#95;ver=Z39.88-2004&amp;rft&#95;val&#95;fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Abook&amp;rft.genre=unknown&amp;rft.btitle=TED+7360+Data+Sheet&amp;rft.pub=Commodore+Semiconductor+Group&amp;rft&#95;id=https%3A%2F%2Fwww.karlstechnology.com%2Fcommodore%2FTED7360-datasheet.pdf&amp;rfr&#95;id=info%3Asid%2Fen.wikipedia.org%3AMOS+Technology+TED" class="Z3988"></span></span>
+</li>
+<li id="cite&#95;note-3"><span class="mw-cite-backlink"><b><a href="#cite_ref-3">^</a></b></span> <span class="reference-text">Color values are taken from the source code to the <a rel="nofollow" class="external text" href="http://yape.plus4.net/">YAPE</a> Plus/4 emulator.</span>
+</li>
+<li id="cite&#95;note-4"><span class="mw-cite-backlink"><b><a href="#cite_ref-4">^</a></b></span> <span class="reference-text"><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1333433106" /><cite id="CITEREFBucci" class="citation web cs1">Bucci, Davide. <a rel="nofollow" class="external text" href="http://davbucci.chez-alice.fr/index.php?argument=varie/plus4/plus4.inc&amp;language=English">"CPU and TED temperatures in a Commodore Plus/4"</a><span class="reference-accessdate">. Retrieved <span class="nowrap">May 21,</span> 2019</span>.</cite><span title="ctx&#95;ver=Z39.88-2004&amp;rft&#95;val&#95;fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Abook&amp;rft.genre=unknown&amp;rft.btitle=CPU+and+TED+temperatures+in+a+Commodore+Plus%2F4&amp;rft.aulast=Bucci&amp;rft.aufirst=Davide&amp;rft&#95;id=http%3A%2F%2Fdavbucci.chez-alice.fr%2Findex.php%3Fargument%3Dvarie%2Fplus4%2Fplus4.inc%26language%3DEnglish&amp;rfr&#95;id=info%3Asid%2Fen.wikipedia.org%3AMOS+Technology+TED" class="Z3988"></span></span>
+</li>
+<li id="cite&#95;note-5"><span class="mw-cite-backlink"><b><a href="#cite_ref-5">^</a></b></span> <span class="reference-text"><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1333433106" /><cite class="citation web cs1"><a rel="nofollow" class="external text" href="https://hackaday.io/project/11460-fpgated">"FPGATED reimplement the TED chip of Commodore 264 series in FPGA"</a><span class="reference-accessdate">. Retrieved <span class="nowrap">May 14,</span> 2022</span>.</cite><span title="ctx&#95;ver=Z39.88-2004&amp;rft&#95;val&#95;fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Abook&amp;rft.genre=unknown&amp;rft.btitle=FPGATED+reimplement+the+TED+chip+of+Commodore+264+series+in+FPGA&amp;rft&#95;id=https%3A%2F%2Fhackaday.io%2Fproject%2F11460-fpgated&amp;rfr&#95;id=info%3Asid%2Fen.wikipedia.org%3AMOS+Technology+TED" class="Z3988"></span></span>
+</li>
+<li id="cite&#95;note-6"><span class="mw-cite-backlink"><b><a href="#cite_ref-6">^</a></b></span> <span class="reference-text"><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1333433106" /><cite class="citation web cs1"><a rel="nofollow" class="external text" href="https://retrohax.net/thed-mos-technology-ted-replacement-for-commodore-264-series/">"ThED – MOS technology TED replacement for Commodore 264 series"</a>. 5 December 2019<span class="reference-accessdate">. Retrieved <span class="nowrap">Oct 29,</span> 2021</span>.</cite><span title="ctx&#95;ver=Z39.88-2004&amp;rft&#95;val&#95;fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Abook&amp;rft.genre=unknown&amp;rft.btitle=ThED+%E2%80%93+MOS+technology+TED+replacement+for+Commodore+264+series&amp;rft.date=2019-12-05&amp;rft&#95;id=https%3A%2F%2Fretrohax.net%2Fthed-mos-technology-ted-replacement-for-commodore-264-series%2F&amp;rfr&#95;id=info%3Asid%2Fen.wikipedia.org%3AMOS+Technology+TED" class="Z3988"></span></span>
+</li>
+</ol></div>
+<div class="mw-heading mw-heading2"><h2 id="External_links">External links</h2><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/w/index.php?title=MOS_Technology_TED&amp;action=edit&amp;section=5" title="Edit section: External links"><span>edit</span></a><span class="mw-editsection-bracket">]</span></span></div>
+<ul><li><a rel="nofollow" class="external text" href="http://mclauchlan.site.net.au/scott/C=Hacking/C-Hacking12/gfx.html">Talking to TED: The MOS 7360/8360 Text Display ICs</a></li>
+<li><a rel="nofollow" class="external text" href="http://www.zimmers.net/anonftp/pub/cbm/plus4/programming/manual/manual.html">Commodore plus/4 Hardware Manual</a></li>
+<li><a rel="nofollow" class="external text" href="https://patentimages.storage.googleapis.com/pdfs/US4569019.pdf">U.S. Patent 4,569,019</a></li></ul>
+<div class="navbox-styles"><style data-mw-deduplicate="TemplateStyles:r1374427404">.mw-parser-output .hlist dl,.mw-parser-output .hlist ol,.mw-parser-output .hlist ul{margin:0;padding:0}.mw-parser-output .hlist dd,.mw-parser-output .hlist dt,.mw-parser-output .hlist li{margin:0;display:inline}.mw-parser-output .hlist.inline,.mw-parser-output .hlist.inline dl,.mw-parser-output .hlist.inline ol,.mw-parser-output .hlist.inline ul,.mw-parser-output .hlist dl dl,.mw-parser-output .hlist dl ol,.mw-parser-output .hlist dl ul,.mw-parser-output .hlist ol dl,.mw-parser-output .hlist ol ol,.mw-parser-output .hlist ol ul,.mw-parser-output .hlist ul dl,.mw-parser-output .hlist ul ol,.mw-parser-output .hlist ul ul{display:inline}.mw-parser-output .hlist .mw-empty-li{display:none}.mw-parser-output .hlist dt::after{content:": "}.mw-parser-output .hlist dd::after,.mw-parser-output .hlist li::after{content:"\a0 · ";font-weight:bold}.mw-parser-output .hlist dd:last-child::after,.mw-parser-output .hlist dt:last-child::after,.mw-parser-output .hlist li:last-child::after{content:none}.mw-parser-output .hlist dd dd:first-child::before,.mw-parser-output .hlist dd dt:first-child::before,.mw-parser-output .hlist dd li:first-child::before,.mw-parser-output .hlist dt dd:first-child::before,.mw-parser-output .hlist dt dt:first-child::before,.mw-parser-output .hlist dt li:first-child::before,.mw-parser-output .hlist li dd:first-child::before,.mw-parser-output .hlist li dt:first-child::before,.mw-parser-output .hlist li li:first-child::before{content:" (";font-weight:normal}.mw-parser-output .hlist dd dd:last-child::after,.mw-parser-output .hlist dd dt:last-child::after,.mw-parser-output .hlist dd li:last-child::after,.mw-parser-output .hlist dt dd:last-child::after,.mw-parser-output .hlist dt dt:last-child::after,.mw-parser-output .hlist dt li:last-child::after,.mw-parser-output .hlist li dd:last-child::after,.mw-parser-output .hlist li dt:last-child::after,.mw-parser-output .hlist li li:last-child::after{content:")";font-weight:normal}.mw-parser-output .hlist ol{counter-reset:listitem}.mw-parser-output .hlist ol>li{counter-increment:listitem}.mw-parser-output .hlist ol>li::before{content:" "counter(listitem)"\a0 "}.mw-parser-output .hlist dd ol>li:first-child::before,.mw-parser-output .hlist dt ol>li:first-child::before,.mw-parser-output .hlist li ol>li:first-child::before{content:" ("counter(listitem)"\a0 "}</style><style data-mw-deduplicate="TemplateStyles:r1377086236">.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox-styles+.navbox,.mw-parser-output .navbox+span.mw-empty-elt+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd;color:inherit}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf;color:inherit}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf;color:inherit}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff;color:inherit}.mw-parser-output .navbox-even{background-color:#f7f7f7;color:inherit}.mw-parser-output .navbox-odd{background-color:transparent;color:inherit}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}body.skin--responsive .mw-parser-output .navbox-image img{max-width:none!important}@media print{body.ns-0 .mw-parser-output .navbox{display:none!important}}</style></div><div role="navigation" class="navbox" aria-labelledby="Video/sound&#95;chips&#95;from&#95;MOS&#95;Technology&#95;and&#95;second&#95;source/clone&#95;vendors402" style="padding:3px"><table class="nowraplinks mw-collapsible autocollapse navbox-inner" style="border-spacing:0;background:transparent;color:inherit"><tbody><tr><th scope="col" class="navbox-title" colspan="2"><link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r1374427404" /><style data-mw-deduplicate="TemplateStyles:r1239400231">.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}html.skin-theme-clientpref-night .mw-parser-output .navbar li a abbr{color:var(--color-base)!important}@media(prefers-color-scheme:dark){html.skin-theme-clientpref-os .mw-parser-output .navbar li a abbr{color:var(--color-base)!important}}@media print{.mw-parser-output .navbar{display:none!important}}</style><div class="navbar plainlinks hlist navbar-mini"><ul><li class="nv-view"><a href="/wiki/Template:MOS_Video/Sound" title="Template:MOS Video/Sound"><abbr title="View this template">v</abbr></a></li><li class="nv-talk"><a href="/wiki/Template_talk:MOS_Video/Sound" title="Template talk:MOS Video/Sound"><abbr title="Discuss this template">t</abbr></a></li><li class="nv-edit"><a href="/wiki/Special:EditPage/Template:MOS_Video/Sound" title="Special:EditPage/Template:MOS Video/Sound"><abbr title="Edit this template">e</abbr></a></li></ul></div><div id="Video/sound&#95;chips&#95;from&#95;MOS&#95;Technology&#95;and&#95;second&#95;source/clone&#95;vendors402" style="font-size:114%;margin:0 4em"><a href="/wiki/Video_display_controller" title="Video display controller">Video</a>/<a href="/wiki/Sound_chip" title="Sound chip">sound</a> <a href="/wiki/Integrated_circuit" title="Integrated circuit">chips</a> from <a href="/wiki/MOS_Technology" title="MOS Technology">MOS Technology</a> and second source/clone vendors</div></th></tr><tr><td colspan="2" class="navbox-list navbox-odd hlist" style="width:100%;padding:0"><div style="padding:0 0.25em">
+<ul><li><a href="/wiki/Motorola_6845" title="Motorola 6845">6545 CRTC</a></li>
+<li><a href="/wiki/MOS_Technology_VIC" title="MOS Technology VIC">6560 VIC</a></li>
+<li><a href="/wiki/MOS_Technology_VIC-II" title="MOS Technology VIC-II">6567 VIC-II</a></li>
+<li><a href="/wiki/MOS_Technology_6581" title="MOS Technology 6581">6581 SID</a></li>
+<li><a class="mw-selflink selflink">7360 TED</a></li>
+<li><a href="/wiki/MOS_Technology_8563" title="MOS Technology 8563">8563 VDC</a></li>
+<li><a href="/wiki/MOS_Technology_8568" title="MOS Technology 8568">8568 VDC</a></li></ul>
+</div></td></tr></tbody></table></div>
+<!-- 
+NewPP limit report
+Parsed by mw‐web.eqiad.main‐5fb6d6bf94‐5wmgw
+Cached time: 20260927213947
+Cache expiry: 2592000
+Cache expiry source: Module:Citation/CS1 (os.date(%Y))
+Reduced expiry: false
+Complications: [vary‐revision‐sha1, show‐toc]
+CPU time usage: 0.264 seconds
+Real time usage: 0.336 seconds
+Preprocessor visited node count: 2174/1000000
+Revision size: 24390/2097152 bytes
+Post‐expand include size: 14373/2097152 bytes
+Template argument size: 478/2097152 bytes
+Highest expansion depth: 8/100
+Expensive parser function count: 0/500
+Unstrip recursion depth: 1/20
+Unstrip post‐expand size: 25219/5000000 bytes
+Lua time usage: 0.140/10.000 seconds
+Lua memory usage: 6025252/52428800 bytes
+Number of Wikibase entities loaded: 0/500
+-->
+<!--
+Transclusion expansion time report (%,ms,calls,template)
+100.00%  288.104      1 -total
+ 25.06%   72.187      5 Template:Cite_web
+ 22.25%   64.107      1 Template:Short_description
+ 14.24%   41.023      2 Template:Pagetype
+ 13.12%   37.809      3 Template:Val
+  9.25%   26.652      1 Template:MOS_Video/Sound
+  8.76%   25.250      1 Template:Navbox
+  2.89%    8.312      2 Template:Main_other
+  2.23%    6.433      1 Template:SDcat
+  1.14%    3.285      1 Template:Short_description/lowercasecheck
+-->
+
+<!-- Render ID f5c25f63-babb-11f1-81f9-3373b8d220a5 -->
+
+<!-- Saved in parser cache with key enwiki:pcache:3403854:|#|:idhash:canonical and timestamp 20260927213947 and revision id 1362608405. Rendering was triggered because: unknown
+ -->
+</div>
+</body></html>

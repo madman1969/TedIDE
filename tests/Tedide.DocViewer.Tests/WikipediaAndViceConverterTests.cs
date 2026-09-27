@@ -128,6 +128,23 @@ public class WikipediaAndViceConverterTests
         Assert.Contains("PET-specific commands and settings", database.GetMarkdown("vice/machine_specific"));
     }
 
+    [Theory]
+    [InlineData("Commodore_Plus/4", "Commodore_Plus%2F4.html")]
+    [InlineData("TED", "TED.html")]
+    public void SourceFileName_EscapesTheSlashInPageNamesLikePlus4(string pageName, string expected)
+    {
+        Assert.Equal(expected, C64WikiPageCatalog.SourceFileName(pageName));
+    }
+
+    [Fact]
+    public void DocsDb_ServesThePlus4Pages_ByTheirSlashIds()
+    {
+        using var database = new DocDatabase(DocsDbPath());
+
+        Assert.StartsWith("# Commodore Plus/4", database.GetMarkdown("c64wiki/Commodore_Plus/4"));
+        Assert.StartsWith("# Plus/4", database.GetMarkdown("wikipedia/Plus/4"));
+    }
+
     private static string DocsDbPath()
     {
         var beside = Path.Combine(AppContext.BaseDirectory, "Docs.db");

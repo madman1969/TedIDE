@@ -37,6 +37,14 @@ public static class WikipediaPageCatalog
         [
             new PageEntry("wikipedia/GPIB", "IEEE-488 (GPIB), the PET's disk and printer bus"),
         ]),
+        new PageCategory("C16 and Plus/4",
+        [
+            new PageEntry("wikipedia/Plus/4", "The Commodore Plus/4 - hardware, built-in software and history"),
+            new PageEntry("wikipedia/Commodore_16", "The Commodore 16 and 116"),
+            new PageEntry("wikipedia/MOS_Technology_TED", "The TED (7360/8360) video, sound and timer chip"),
+            new PageEntry("wikipedia/MOS_Technology_6510", "The 6510 CPU family, including the C16/Plus/4's 7501/8501"),
+            new PageEntry("wikipedia/Commodore_1551", "The 1551 parallel disk drive"),
+        ]),
         new PageCategory("Licence",
         [
             new PageEntry(LicencePageId, "Wikipedia licence (CC BY-SA 4.0), sources and revisions"),
@@ -65,6 +73,11 @@ public static class WikipediaPageCatalog
         ["GPIB"] = ["IEEE_488", "General-Purpose_Instrumentation_Bus", "General_Purpose_Instrumentation_Bus", "Hewlett-Packard_Instrumentation_Bus", "Hewlett_Packard_Instrumentation_Bus", "IEEE-488", "HP-IB", "IEEE-4888", "Hewlett-Packard_Interface_Bus", "GP-IB", "HPIB", "Ieee_448", "IEC_60488", "IEC_60625", "IEC-60488", "IEC-625", "General_Purpose_Interface", "IEEE488", "IEC-60625", "IEC_625", "General_Purpose_Interface_Bus"],
         ["Commodore_BASIC"] = ["Commodore_BASIC_programming_language", "CBM_BASIC", "BASIC_2.0", "BASIC_7.0", "PET_BASIC"],
         ["PETSCII"] = ["PET_ASCII", "CBM_ASCII", "PETASCII"],
+        ["Plus/4"] = ["Commodore_264", "Commodore_364", "Commodore_Plus_4", "Commodore_+4", "Commodore_Plus4", "Commodore_Plus/4"],
+        ["Commodore_16"] = ["Commodore_116", "C116", "Commodore_C16", "C16_(computer)", "C-16_(computer)"],
+        ["MOS_Technology_TED"] = ["MOS_7360", "MOS_Technology_7360", "Commodore_TED"],
+        ["MOS_Technology_6510"] = ["6510", "MOS_Technologies_6510", "MOS_Technology_8500", "MOS_6510", "MOS_Technology_7501", "MOS_Technology_8501", "MOS_8501", "MOS_7501", "MOS_8500"],
+        ["Commodore_1551"] = ["SFS_481", "SFS-481", "C1551", "C-1551"],
         ["MOS_Technology_6502"] = ["MOS_Technology_6501", "MOS_Technology_65xx", "6502_microprocessor", "6502", "6501", "65xx", "MOS_Technologies_6501", "MOS_Technologies_6502", "MOS_Technologies_650x", "MOS_Technology_650x", "650x", "M6502", "MOS_6502", "Motorola_M6502", "6502_architecture_computer", "6502_Processor", "6502_assembly", "MOS_Technology_6502C", "MOS_6502C", "6502C", "MOS_6512", "6502A", "MOS_Technology_6512", "6502_processor", "MOS_6501", "MOS_Technology_6502A"],
     });
 

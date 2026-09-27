@@ -428,8 +428,8 @@ right (via Terminal.Gui's own `Markdown` view). The tree holds five books:
 | --- | --- | --- |
 | **cc65 Manual** | every cc65 manual - the tools, the libraries, each target | cc65's own (zlib) |
 | **The C Book** | Banahan, Brady & Doran's complete C tutorial | its own free-redistribution licence |
-| **C64-Wiki** | 28 articles: the C64 and its CPU, the VIC-II/SID/CIA chips, the memory map and bank switching, graphics modes, sprites, raster interrupts, the KERNAL, BASIC, opcodes, PETSCII, input, and the PET 2001 and IEEE-488 | GNU FDL |
-| **Wikipedia** | 8 articles on the Commodore PET and its hardware: the PET, Commodore BASIC, PETSCII, the 6502, the 6520 PIA, 6522 VIA and 6845 CRTC, and IEEE-488 | CC BY-SA 4.0 |
+| **C64-Wiki** | 34 articles: the C64 and its CPU, the VIC-II/SID/CIA chips, the memory map and bank switching, graphics modes, sprites, raster interrupts, the KERNAL, BASIC, opcodes, PETSCII and input; the PET 2001 and IEEE-488; and the C16, 116 and Plus/4, their TED chip, the TEDMON monitor and the 1551 drive | GNU FDL |
+| **Wikipedia** | 13 articles on the PET, C16 and Plus/4 and their hardware: the PET, Commodore BASIC, PETSCII, the 6502, the 6520 PIA, 6522 VIA and 6845 CRTC, IEEE-488; the Plus/4, Commodore 16, TED chip, 6510 family (the C16/Plus/4's 7501/8501) and 1551 drive | CC BY-SA 4.0 |
 | **VICE Manual** | the chapters on running the emulators, each machine's options (PET included), media images and file formats, the monitor and binary monitor, c1541 and petcat | GNU GPL |
 
 Each third-party book ends with its licence: a page listing each article's source and revision

@@ -71,6 +71,15 @@ public static class C64WikiPageCatalog
             new PageEntry("c64wiki/PET_2001", "The Commodore PET 2001 - models, hardware and history"),
             new PageEntry("c64wiki/IEEE-488", "IEEE-488, the PET's disk and printer bus"),
         ]),
+        new PageCategory("C16 and Plus/4",
+        [
+            new PageEntry("c64wiki/Commodore_Plus/4", "The Commodore Plus/4"),
+            new PageEntry("c64wiki/Commodore_16", "The Commodore 16"),
+            new PageEntry("c64wiki/Commodore_116", "The Commodore 116"),
+            new PageEntry("c64wiki/TED", "TED, the C16/Plus/4 video, sound and timer chip"),
+            new PageEntry("c64wiki/TEDMON", "TEDMON, the machine-code monitor in the C16/Plus/4 ROM"),
+            new PageEntry("c64wiki/Commodore_1551", "The 1551 parallel disk drive"),
+        ]),
         new PageCategory("Licence",
         [
             new PageEntry(LicencePageId, "C64-Wiki licence (GNU FDL), sources and revisions"),
@@ -99,7 +108,18 @@ public static class C64WikiPageCatalog
         ["Char"] = "Character_set",
         ["KERNAL"] = "Kernal",
         ["Commodore_PET"] = "PET_2001",
+        ["Plus/4"] = "Commodore_Plus/4",
+        ["C16"] = "Commodore_16",
+        ["C116"] = "Commodore_116",
+        ["BASIC_3.5"] = "BASIC",
     };
+
+    /// <summary>
+    /// The source file under <c>SourceHtml/C64Wiki/</c> (or <c>SourceHtml/Wikipedia/</c>) for a page
+    /// name: the name itself, except that a "/" (as in "Commodore_Plus/4") can't be in a file name,
+    /// so it's written as "%2F" - page ids and links keep the real name.
+    /// </summary>
+    public static string SourceFileName(string pageName) => pageName.Replace("/", "%2F") + ".html";
 
     /// <summary>C64-Wiki as <see cref="MediaWikiHtmlToMarkdownConverter"/> sees it; no sections dropped.</summary>
     public static readonly MediaWikiSite Site = new(PageIdPrefix, Redirects, new HashSet<string>());

@@ -132,7 +132,7 @@ static List<ConvertedPage> BuildMediaWikiBook(
         id => id,
         id =>
         {
-            var path = Path.Combine(sourceDir, id[site.PageIdPrefix.Length..] + ".html");
+            var path = Path.Combine(sourceDir, C64WikiPageCatalog.SourceFileName(id[site.PageIdPrefix.Length..]));
             return File.Exists(path)
                 ? File.ReadAllText(path)
                 : throw new InvalidOperationException($"The {book} catalog references {id}, which has no {path}");

@@ -1,0 +1,199 @@
+﻿<!DOCTYPE html>
+<!-- From C64-Wiki (https://www.c64-wiki.com/wiki/TEDMON), revision 42196, last edited 8 January 2025, at 05:39.
+     Content is available under the GNU Free Documentation License - see c64wiki/licence.
+     Only the article body is kept; retrieved 2026-09-27 for Tedide's Doc Viewer. -->
+<html><head><meta charset="utf-8"><title>TEDMON</title>
+<meta name="wiki-page" content="TEDMON"><meta name="wiki-revision" content="42196"><meta name="wiki-edited" content="8 January 2025, at 05:39">
+</head><body>
+<div class="mw-content-ltr mw-parser-output" lang="en" dir="ltr"><figure class="mw-halign-right" typeof="mw:File/Thumb"><a href="/wiki/File:c128tedmon.png" class="mw-file-description"><img src="https://www.c64-wiki.com/images/thumb/b/bd/c128tedmon.png/300px-c128tedmon.png" decoding="async" loading="lazy" width="300" height="213" class="mw-file-element" srcset="https://www.c64-wiki.com/images/thumb/b/bd/c128tedmon.png/450px-c128tedmon.png 1.5x, https://www.c64-wiki.com/images/thumb/b/bd/c128tedmon.png/600px-c128tedmon.png 2x" /></a><figcaption>TEDMON on a C128.</figcaption></figure> 
+<p><a href="/wiki/BASIC" title="BASIC">BASIC</a> version <a href="/wiki/BASIC_3.5" class="mw-redirect" title="BASIC 3.5">BASIC 3.5</a> has an integrated <a href="/wiki/machine_code_monitor" class="mw-redirect" title="machine code monitor">machine code monitor</a> called <b>TEDMON</b>, launched by the <a href="/wiki/BASIC" title="BASIC">BASIC</a> commands <code><a href="/wiki/MONITOR" title="MONITOR">MONITOR</a></code> or <code><a href="/wiki/SYS" title="SYS">SYS</a> 1024</code> or during <a href="/wiki/Reset" class="mw-redirect" title="Reset">Reset</a>/power-on while pressing <span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;"><a href="/wiki/RUN/STOP" title="RUN/STOP">RUN/STOP</a></span>&#160;. <br /> TEDMON is embedded in the <a href="/wiki/home_computer" class="mw-redirect" title="home computer">home computer</a> systems <a href="/wiki/C16" class="mw-redirect" title="C16">C16</a>/<a href="/wiki/C116" class="mw-redirect" title="C116">116</a>, <a href="/wiki/C128" class="mw-redirect" title="C128">C128</a>/D/<a href="/wiki/C128DCR" title="C128DCR">DCR</a> and <a href="/wiki/Plus/4" class="mw-redirect" title="Plus/4">Plus/4</a>.
+</p><p>The monitor is also called using the BREAK vector if the <a href="/wiki/CPU" title="CPU">CPU</a> encounters the <a href="/wiki/BRK" title="BRK">BRK</a> <a href="/wiki/opcode" class="mw-redirect" title="opcode">opcode</a>. This kind of entry will be shown in the register display preceded with line stating <tt>BREAK</tt>.  This can be used on the one hand as an entry from BASIC via <a href="/wiki/SYS" title="SYS">SYS</a> command (to any address containing zero) or on the other hand for debugging purposes. The monitor does not provide any special commands for breakpoints or step-by-step code walk-through. This can be done manually by temporarily patching a BRK opcode to the appropriate code section.
+</p>
+<div id="toc" class="toc" role="navigation" aria-labelledby="mw-toc-heading"><input type="checkbox" role="button" id="toctogglecheckbox" class="toctogglecheckbox" style="display:none" /><div class="toctitle" lang="en" dir="ltr"><h2 id="mw-toc-heading">Contents</h2><span class="toctogglespan"><label class="toctogglelabel" for="toctogglecheckbox"></label></span></div>
+<ul>
+<li class="toclevel-1 tocsection-1"><a href="#Register_Display"><span class="tocnumber">1</span> <span class="toctext">Register Display</span></a></li>
+<li class="toclevel-1 tocsection-2"><a href="#Commands"><span class="tocnumber">2</span> <span class="toctext">Commands</span></a></li>
+<li class="toclevel-1 tocsection-3"><a href="#Number_Base"><span class="tocnumber">3</span> <span class="toctext">Number Base</span></a></li>
+<li class="toclevel-1 tocsection-4"><a href="#Addresses"><span class="tocnumber">4</span> <span class="toctext">Addresses</span></a></li>
+</ul>
+</div>
+
+<p><br clear="all" />
+</p>
+<h2><span class="mw-headline" id="Register_Display">Register Display</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=TEDMON&amp;veaction=edit&amp;section=1" title="Edit section: Register Display" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=TEDMON&amp;action=edit&amp;section=1" title="Edit section&#39;s source code: Register Display">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p>On entry of the monitor the following message is shown: <br />
+</p>
+<dl><dt><a href="/wiki/BASIC_3.5" class="mw-redirect" title="BASIC 3.5">BASIC 3.5</a> (C16)</dt>
+<dd></dd></dl>
+<pre>    PC SR AC XR YR SP
+; 0004 30 00 00 00 F6
+</pre>
+<dl><dt><a href="/wiki/BASIC_7.0" class="mw-redirect" title="BASIC 7.0">BASIC 7.0</a> (C128)</dt>
+<dd></dd></dl>
+<pre>    PC  SR AC XR YR SP
+; FB000 00 00 00 00 F8
+</pre>
+<p>The first line states the CPU <a href="/index.php?title=register&amp;action=edit&amp;redlink=1" class="new" title="register (page does not exist)">registers</a> and the second one shows their current contents which is also used if the execution continues with command "G".
+</p><p>The abbreviations in the register line have following meaning:
+</p>
+<ul><li>PC:  <a href="/wiki/Program_Counter" title="Program Counter"><b>P</b>rogram <b>C</b>ounter</a>; memory address of the next assembler command. On the C128, the first hex digit is the bank number.</li>
+<li>SR:  Content of <a href="/wiki/Status_Register" class="mw-redirect" title="Status Register"><b>S</b>tatus <b>R</b>egister</a></li>
+<li>AC:  Content of <a href="/wiki/accumulator" class="mw-redirect" title="accumulator"><b>AC</b>cumulator</a></li>
+<li>XR:  Content of <a href="/wiki/X_index_register" title="X index register"><b>X</b> index <b>R</b>egister</a></li>
+<li>YR:  Content of <a href="/wiki/Y_index_register" class="mw-redirect" title="Y index register"><b>Y</b> index <b>R</b>egister</a></li>
+<li>SP:  Content of <a href="/wiki/Stack_Pointer" title="Stack Pointer"><b>S</b>tack <b>P</b>ointer</a></li>
+<li>IRQ: <a href="/wiki/IRQ" class="mw-redirect" title="IRQ">Interrupt vector</a></li></ul>
+<p>All values, numbers and addresses are shown and processed in <a href="/wiki/hexadecimal" class="mw-redirect" title="hexadecimal">hexadecimal</a> notation.
+</p>
+<h2><span class="mw-headline" id="Commands">Commands</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=TEDMON&amp;veaction=edit&amp;section=2" title="Edit section: Commands" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=TEDMON&amp;action=edit&amp;section=2" title="Edit section&#39;s source code: Commands">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<figure class="mw-halign-right" typeof="mw:File/Thumb"><a href="/wiki/File:plus4tedmon.png" class="mw-file-description"><img src="https://www.c64-wiki.com/images/thumb/3/34/plus4tedmon.png/300px-plus4tedmon.png" decoding="async" loading="lazy" width="300" height="226" class="mw-file-element" srcset="https://www.c64-wiki.com/images/thumb/3/34/plus4tedmon.png/450px-plus4tedmon.png 1.5x, https://www.c64-wiki.com/images/thumb/3/34/plus4tedmon.png/600px-plus4tedmon.png 2x" /></a><figcaption>TEDMON on the Plus/4.</figcaption></figure> 
+<figure class="mw-halign-right" typeof="mw:File/Thumb"><a href="/wiki/File:C128tedmon80zeichen.png" class="mw-file-description"><img src="https://www.c64-wiki.com/images/thumb/8/83/C128tedmon80zeichen.png/400px-C128tedmon80zeichen.png" decoding="async" loading="lazy" width="400" height="267" class="mw-file-element" srcset="https://www.c64-wiki.com/images/thumb/8/83/C128tedmon80zeichen.png/600px-C128tedmon80zeichen.png 1.5x, https://www.c64-wiki.com/images/thumb/8/83/C128tedmon80zeichen.png/800px-C128tedmon80zeichen.png 2x" /></a><figcaption>TEDMON on the C128 (80 char mode).</figcaption></figure>
+<p>The following commands can used:
+</p>
+<ul><li><b>A</b>  - <b>A</b>ssemble a <a href="/wiki/mnemonic" class="mw-redirect" title="mnemonic">mnemonics</a> line into <a href="/wiki/machine_code" class="mw-redirect" title="machine code">machine code</a>.
+<ul><li><b>A</b> &lt;address&gt; &lt;command&gt; [&lt;operand&gt;]</li>
+<li>Numbers for operands need a preceding $ sign, on a C128 this may be omitted or a value with an appropriate <a href="#Number_Base">numberbase</a> could be given.</li>
+<li>Exit with empty input (<span style="padding:0.25em 0.6em; border:1px solid #ccc; font-variant-numeric: slashed-zero; font-family:Arial,Helvetica,sans-serif; background-color:#f7f7f7; color:#fffff; -moz-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -webkit-box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; box-shadow:0 1px 0px rgba(0, 0, 0, 0.2),0 0 0 2px #ffffff inset; -moz-border-radius:3px; -webkit-border-radius:3px; border-radius:3px; display:inline-block; margin:0 0.1em; text-shadow:0 1px 0 #fff; line-height:1.4; white-space:nowrap;text-transform: uppercase;"><a href="/wiki/RETURN_(Key)" title="RETURN (Key)">RETURN</a></span>&#160; only)</li></ul></li>
+<li><b>C</b>  - <b>C</b>ompare two memory areas and display the difference.
+<ul><li><b>C</b> &lt;start address&gt; &lt;end address&gt; &lt;start address for comparison&gt;</li></ul></li>
+<li><b>D</b>  - <b>D</b>isassemble a machine code line into mnemonics.
+<ul><li><b>D</b> [&lt;start address &gt; [&lt;end address&gt;]]</li></ul></li>
+<li><b>F</b>  - <b>F</b>ill up a memory area with the given byte.
+<ul><li><b>F</b> &lt;start address&gt; &lt;end address&gt; &lt;Byte&gt;</li></ul></li>
+<li><b>G</b>  - <b>G</b>o to the memory address, also start a machine code program at the input memory address with the register contents shown by command R.
+<ul><li><b>G</b> &lt;address&gt;</li></ul></li>
+<li><b>H</b>  - <b>H</b>unt a memory area - Search through a memory area for a certain value and show all memory locations found.
+<ul><li><b>H</b> &lt;start address&gt; &lt;end address&gt; <data> (data are multiple hexadecimal numbers separated with empty spaces and <a href="/wiki/string" class="mw-redirect" title="string">strings</a> separated with the apostrophe prefix <b>'</b>)</data></li></ul></li>
+<li><b>J</b>  - Only C128: <b>J</b>ump to subroutine  - start a machine code program at the memory address. Similar to  <b>G</b>, however when the processor hits an <a href="/wiki/RTS" title="RTS">RTS</a>, control returns to the monitor.
+<ul><li><b>J</b> &lt;address&gt;</li></ul></li>
+<li><b>L</b>  - <b>L</b>oad a file from <a href="/wiki/disk" class="mw-redirect" title="disk">disk</a> or <a href="/wiki/datasette" class="mw-redirect" title="datasette">datasette</a> into the memory.
+<ul><li><b>L</b> "&lt;<a href="/index.php?title=filename&amp;action=edit&amp;redlink=1" class="new" title="filename (page does not exist)">filename</a>&gt;",&lt;<a href="/wiki/device_number" class="mw-redirect" title="device number">device number</a> ($1-$F)&gt;,&lt;load memory address at C128&gt;</li></ul></li>
+<li><b>M</b>  - <b>M</b>emory is shown in <a href="/wiki/hexadecimal" class="mw-redirect" title="hexadecimal">hexadecimal</a> numbers and values.
+<ul><li><b>M</b> [&lt;start address&gt; [&lt;end address&gt;]] (without an address the first 12 lines are shown)</li></ul></li>
+<li><b>R</b>  - <b>R</b>egisters is shown again.</li>
+<li><b>S</b>  - <b>S</b>ave the input memory area into a file on <a href="/wiki/disk" class="mw-redirect" title="disk">disk</a> or <a href="/wiki/datasette" class="mw-redirect" title="datasette">datasette</a>.
+<ul><li><b>S</b> "&lt;file iname&gt;",&lt;device number&gt;,&lt;start address&gt;,&lt;end address+1&gt;</li></ul></li>
+<li><b>T</b>  - <b>T</b>ransfer) or copy a memory area into another.
+<ul><li><b>T</b> &lt;start address&gt; &lt;end address&gt; &lt;destination address&gt;</li></ul></li>
+<li><b>V</b>  - <b>V</b>erify a saved file on disk or datasette with the memory area.
+<ul><li><b>V</b> "&lt;file name&gt;",&lt;device number ($1-$F)&gt;,&lt;start address at C128&gt;</li></ul></li>
+<li><b>X</b>  - e<b>X</b>it TEDMON into BASIC <a href="/wiki/direct_mode" class="mw-redirect" title="direct mode">direct mode</a>.</li>
+<li><b>&gt;</b>  - Modify up to eight bytes at a memory address (after M command).
+<ul><li><b>&gt;</b> &lt;address&gt; &lt;byte1&gt; &lt;byte2&gt; ... &lt;byte8&gt;</li></ul></li>
+<li><b>.</b>  - Same as the A command.</li>
+<li><b>;</b>  - Change the register contents (after R command).</li>
+<li><b>@</b>  - Only C128: Displays the <a href="/wiki/disk_drive" class="mw-redirect" title="disk drive">disk drive</a> status or for using floppy commands.
+<ul><li><b>@</b>[device number ($8-$F)][,[ <a href="/wiki/floppy_command" class="mw-redirect" title="floppy command">floppy command</a> ]] <br /> Standard device number is 8.</li></ul></li></ul>
+<p>TEDMON has no input <a href="/index.php?title=prompt&amp;action=edit&amp;redlink=1" class="new" title="prompt (page does not exist)">prompt</a>! Only a blinking <a href="/index.php?title=cursor&amp;action=edit&amp;redlink=1" class="new" title="cursor (page does not exist)">cursor</a> on the screen's leftmost column shows that the machine code monitor is ready for input.<br />
+If a wrong input is given (unknown command) a question mark (<b><tt>?</tt></b>) appears.
+</p>
+<h2><span class="mw-headline" id="Number_Base">Number Base</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=TEDMON&amp;veaction=edit&amp;section=3" title="Edit section: Number Base" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=TEDMON&amp;action=edit&amp;section=3" title="Edit section&#39;s source code: Number Base">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p>The <a href="/wiki/C128" class="mw-redirect" title="C128">C128</a> version of TEDMON several numerical systems (number bases) can be selected by using the according prefix. Normally numbers are always in hexadecimal notation. Following prefixes exist:
+</p>
+<ul><li><b>$</b>&#160;: <a href="/wiki/Hexadecimal" title="Hexadecimal">Hexadecimal</a> numbers (base 16)</li>
+<li><b>+</b>&#160;: Decimal numbers (base 10)</li>
+<li><b>&amp;</b>&#160;: <a href="/index.php?title=Octal_Number&amp;action=edit&amp;redlink=1" class="new" title="Octal Number (page does not exist)">Octal numbers</a> (base 8)</li>
+<li><b>%</b>&#160;: <a href="/wiki/Binary_Number" title="Binary Number">Binary numbers</a> (base 2)</li></ul>
+<h2><span class="mw-headline" id="Addresses">Addresses</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="/index.php?title=TEDMON&amp;veaction=edit&amp;section=4" title="Edit section: Addresses" class="mw-editsection-visualeditor">edit</a><span class="mw-editsection-divider"> | </span><a href="/index.php?title=TEDMON&amp;action=edit&amp;section=4" title="Edit section&#39;s source code: Addresses">edit source</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p>Usually four-digit addresses are used to cover the whole 64 KByte address range of the CPU.
+</p><p>On a <a href="/wiki/C128" class="mw-redirect" title="C128">C128</a> with up to 16 banks (see also <a href="/wiki/BASIC_7.0" class="mw-redirect" title="BASIC 7.0">BASIC 7.0</a> command <a href="/wiki/BANK" title="BANK">BANK</a>) of 64 KByte in size addresses could consist of hexadecimal 5 digits. The leading <a href="/wiki/nibble" class="mw-redirect" title="nibble">nibble</a> designates the currently selected bank:
+</p>
+<table class="wikitable">
+
+<tbody><tr>
+<th>Bank
+</th>
+<th>Access to
+</th></tr>
+<tr>
+<td>0</td>
+<td>RAM 0
+</td></tr>
+<tr>
+<td>1</td>
+<td>RAM 1
+</td></tr>
+<tr>
+<td>2</td>
+<td>RAM 2
+</td></tr>
+<tr>
+<td>3</td>
+<td>RAM 3
+</td></tr>
+<tr>
+<td>4</td>
+<td>INT ROM, RAM 0, I/O
+</td></tr>
+<tr>
+<td>5</td>
+<td>INT ROM, RAM 1, I/O
+</td></tr>
+<tr>
+<td>6</td>
+<td>INT ROM, RAM 2, I/O
+</td></tr>
+<tr>
+<td>7</td>
+<td>INT ROM, RAM 3, I/O
+</td></tr>
+<tr>
+<td>8</td>
+<td>EXT ROM, RAM 0, I/O
+</td></tr>
+<tr>
+<td>9</td>
+<td>EXT ROM, RAM 1, I/O
+</td></tr>
+<tr>
+<td>A</td>
+<td>EXT ROM, RAM 2, I/O
+</td></tr>
+<tr>
+<td>B</td>
+<td>EXT ROM, RAM 3, I/O
+</td></tr>
+<tr>
+<td>C</td>
+<td>KERNAL + INT (lo), RAM 0, I/O
+</td></tr>
+<tr>
+<td>D</td>
+<td>KERNAL + EXT (lo), RAM 0, I/O
+</td></tr>
+<tr>
+<td>E</td>
+<td>KERNAL + BASIC, RAM 0, CHARROM
+</td></tr>
+<tr>
+<td>F</td>
+<td>KERNAL + BASIC, RAM 0, I/O
+</td></tr></tbody></table>
+<!-- 
+NewPP limit report
+Cached time: 20260927152836
+Cache expiry: 86400
+Reduced expiry: false
+Complications: [show‐toc]
+CPU time usage: 0.030 seconds
+Real time usage: 0.033 seconds
+Preprocessor visited node count: 88/1000000
+Post‐expand include size: 1239/2097152 bytes
+Template argument size: 35/2097152 bytes
+Highest expansion depth: 3/100
+Expensive parser function count: 0/100
+Unstrip recursion depth: 0/20
+Unstrip post‐expand size: 0/5000000 bytes
+-->
+<!--
+Transclusion expansion time report (%,ms,calls,template)
+100.00%    3.313      1 -total
+ 58.68%    1.944      2 Template:Key
+ 31.63%    1.048      1 Template:-
+-->
+
+<!-- Saved in parser cache with key c64?hwiki?hen-wiki_:pcache:idhash:5226-0!canonical!svUser=0!asDate=20260927 and timestamp 20260927152836 and revision id 42196. Rendering was triggered because: page-view
+ -->
+</div>
+</div>
+</body></html>
