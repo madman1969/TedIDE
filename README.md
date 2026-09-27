@@ -523,8 +523,12 @@ single Save/Cancel footer:
 
 - **Settings** - display name, target platform, output file override, extra `cl65` arguments,
   include paths, and preprocessor defines.
+
+  ![The Settings tab for CBMInfo: name, c64 target, bin/CBMInfo.prg output file, extra cl65 arguments, the include path and preprocessor defines, and a count of the project's source files](docs/images/project-settings-settings.png)
 - **Optimizer** - the `OptimizationLevel` preset, with inline help text explaining what each of
   cc65's `-O`/`-Oi`/`-Or`/`-Os`/`-Ox`/`-Oirs` flags does.
+
+  ![The Optimizer tab with -Oirs (maximum optimization) selected and a line of help for each optimization flag](docs/images/project-settings-optimizer.png)
 - **Compiler** - two checkboxes: *Generate assembly listing file* (`-l`, written under the project's
   `obj/` folder, e.g. `src/Foo.c` -> `obj/src/Foo.c.lst`, and surfaced in the Solution Explorer's
   Generated Files node once at least one exists) and *Include C source as comments in generated
@@ -537,6 +541,8 @@ single Save/Cancel footer:
   bare `cl65 -c src/foo.c` - that writes its intermediate `foo.s` beside the source and deletes it
   afterward, silently destroying a hand-written `src/foo.s`. **Clean Project** deletes those
   build outputs from `obj/` (anything else in it is left alone), plus any `.o`/`.lst` older builds left beside the sources.
+
+  ![The Compiler tab with "Generate assembly listing file" and "Include C source as comments in generated assembly" both ticked, each with a short explanation](docs/images/project-settings-compiler.png)
 - **Linker** - *Generate linker map file* (`-m`), *Export labels* (`-Ln`), *Generate debug info*
   (`-g`/`--dbgfile` - needed for the debugger, see "Debugging" above), and a custom linker config
   file path (`-C`) - its own **Browse** button opens straight to CC65_HOME's `cfg/` folder, at the
@@ -552,16 +558,26 @@ single Save/Cancel footer:
   memory map is unlikely to still be valid for a different one (blank already means "use cl65's
   built-in target default", so this is the safe choice, not a written-out path that would go stale
   if CC65_HOME later changed).
+
+  ![The Linker tab with "Generate linker map file", "Export labels" and "Generate debug info" ticked, and the custom linker config field with its Browse button](docs/images/debugging-linker-settings.png)
+
+  ![The linker config file picker opened from Browse: CC65_HOME's cfg folder, filtered to "c64 Configs" and listing c64-asm.cfg, c64-overlay.cfg and c64.cfg](docs/images/project-settings-linker-browse.png)
 - **SuperCPU** - a single *Enable SuperCPU support* checkbox (`EnableSuperCpu`) - greyed out (and
   force-unchecked) unless the Settings tab's own Target is C64, since the SuperCPU is a C64-specific
   accelerator cartridge; kept in sync live if you change Target while this dialog is still open, not
   just from whatever it was when the dialog opened. While on, Build > Run Project and Debug > Start
   Debugging launch VICE's dedicated `xscpu64.exe` instead of `x64sc.exe`.
+
+  ![The SuperCPU tab: an "Enable SuperCPU support" checkbox and an explanation that it's only available for the C64 target](docs/images/project-settings-supercpu.png)
 - **CC65** - the `CC65_HOME` environment variable (where cl65 finds target headers/libraries) -
   a per-machine toolchain setting, not project state, so it's saved once and applies to every
   project (see "Prerequisites" above).
+
+  ![The CC65 tab: the CC65_HOME folder (c:\CC65) with a Browse button and an explanation of what it's used for](docs/images/project-settings-cc65.png)
 - **VICE** - the VICE bin directory - likewise per-machine, not project state (see "Prerequisites"
   above).
+
+  ![The VICE tab: the VICE bin directory (C:\GTK3VICE-3.9-win64\bin) with a Browse button and an explanation](docs/images/project-settings-vice.png)
 
 Saving writes every project-bound field (all tabs except CC65/VICE, which are per-machine settings
 saved separately) to the `.tproj` in one go. If the display name changed, the project's own folder
