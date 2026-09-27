@@ -43,6 +43,7 @@ catch (Exception ex) when (ex is FileNotFoundException or Microsoft.Data.Sqlite.
 using var _ = database;
 
 Application.Init();
+TerminalColors.UseTrueColorInWindowsTerminal(Application.Driver);
 try
 {
     // The theme still applies if it can't be saved; it just isn't remembered - see ThemeSwitcher.SaveFailed.

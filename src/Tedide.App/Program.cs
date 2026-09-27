@@ -23,6 +23,7 @@ AppDomain.CurrentDomain.UnhandledException += (_, e) =>
 Log.Information("Tedide starting up");
 
 Application.Init();
+TerminalColors.UseTrueColorInWindowsTerminal(Application.Driver);
 try
 {
     Cc65AssemblyHighlighting.Register();
