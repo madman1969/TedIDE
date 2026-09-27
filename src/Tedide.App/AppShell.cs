@@ -1353,6 +1353,89 @@ public sealed class AppShell : Window
         return formatted;
     }
 
+    /// <summary>Each generated .s file's parsed stack frames, keyed by path - parsed on first stop
+    /// in it and kept for the session (cleared when a new session's build replaces them).</summary>
+    private readonly Dictionary<string, IReadOnlyList<FunctionFrame>> _assemblyFrames = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// The Locals table for a stop: the parameters and function-level locals of the C function
+    /// the PC is in, read from cc65's software stack. Where each one lives comes from the frame
+    /// depth at the stopped instruction in cl65's generated .s (see <see cref="GeneratedAssemblyFrames"/>),
+    /// its type from its declaration in the C source (see <see cref="CDeclarations"/>) - cc65's
+    /// debug info has neither. Empty outside a project's C code (assembly, the runtime library)
+    /// or if anything needed is missing; never throws - locals are a convenience, not worth
+    /// failing a stop over.
+    /// </summary>
+    private async Task<IReadOnlyList<LocalRow>> ReadLocalsAsync(ViceMonitorClient debugClient, RegisterSnapshot registers)
+    {
+        try
+        {
+            if (_dbgFile is not { } dbgFile || _workspace.ActiveProject is not { } project || registers["PC"] is not { } pc)
+                return [];
+
+            var cLocation = dbgFile.FindProjectSourceLocationForAddress(pc, project.Directory);
+            var assemblyLine = dbgFile.FindAssemblyLineForAddress(pc);
+            if (cLocation is not { } c || assemblyLine is not { } asm)
+                return [];
+
+            var asmPath = Path.Combine(project.Directory, asm.FilePath);
+            if (!_assemblyFrames.TryGetValue(asmPath, out var frames))
+            {
+                if (!File.Exists(asmPath))
+                    return [];
+                frames = GeneratedAssemblyFrames.Parse(await File.ReadAllTextAsync(asmPath));
+                _assemblyFrames[asmPath] = frames;
+            }
+
+            var frame = frames.FirstOrDefault(f => asm.Line >= f.FirstLine && asm.Line <= f.LastLine);
+            if (frame is null || frame.Symbols.Count == 0)
+                return [];
+            if (!frame.Reliable || frame.DepthAt(asm.Line) is not { } depth)
+                return [new LocalRow("(locals unavailable)", "", $"{frame.Name} uses stack code Tedide can't follow")];
+
+            // cc65's software stack pointer: "sp" in cc65 2.19, renamed "c_sp" in later versions.
+            var spSymbol = dbgFile.Symbols.FirstOrDefault(s => s.Name is "sp" or "c_sp" && s.Type == "lab" && s.Value is not null);
+            if (spSymbol is null)
+                return [];
+            var spBytes = await debugClient.GetMemoryAsync((ushort)spSymbol.Value!.Value, (ushort)(spSymbol.Value.Value + 1));
+            var sp = (ushort)(spBytes[0] | spBytes[1] << 8);
+
+            var source = await File.ReadAllTextAsync(Path.Combine(project.Directory, c.FilePath));
+            var types = CDeclarations.FindTypes(source, frame.Name, frame.Symbols.Select(s => s.Name), c.Line);
+            var slots = frame.SlotsAt(depth, sp, types);
+
+            var rows = new List<LocalRow>(slots.Count);
+            foreach (var slot in slots)
+            {
+                var typeText = slot.Type?.Text ?? "?";
+                string value;
+                if (slot.Address is { } address)
+                {
+                    var bytes = await debugClient.GetMemoryAsync(address, (ushort)(address + slot.Size - 1));
+                    value = LocalValueFormatter.Format(bytes, slot.Type);
+                }
+                else if (slot.Symbol is { IsParameter: true, Offset: 0 } && registers["A"] is { } a)
+                {
+                    // cc65's fastcall: the last parameter arrives in A (low) / X (high) and is only
+                    // pushed by the function's first instruction.
+                    byte[] bytes = slot.Size == 1 ? [(byte)a] : [(byte)a, (byte)(registers["X"] ?? 0)];
+                    value = LocalValueFormatter.Format(bytes, slot.Type) + " [in A/X]";
+                }
+                else
+                {
+                    value = "(not yet on the stack)";
+                }
+                rows.Add(new LocalRow(slot.Symbol.IsParameter ? $"{slot.Symbol.Name} (param)" : slot.Symbol.Name, typeText, value));
+            }
+            return rows;
+        }
+        catch (Exception ex)
+        {
+            Log.Debug(ex, "Could not read locals");
+            return [];
+        }
+    }
+
     /// <summary>Fire-and-forget refresh for when a watch is added/cleared outside the normal
     /// stop/step flow - a no-op unless a session is both connected and currently stopped (reading
     /// memory while running would race the emulator).</summary>
@@ -1426,6 +1509,7 @@ public sealed class AppShell : Window
             return;
         }
         _dbgFile = DbgFile.Parse(File.ReadAllText(project.ResolvedDebugInfoFile));
+        _assemblyFrames.Clear(); // this build's generated .s files replace the last session's
 
         // Application.Invoke, not AppendOutputLine directly: Process.OutputDataReceived/
         // ErrorDataReceived (what ViceEmulator.Launch's onOutputLine ultimately wraps) fire on a
@@ -1664,6 +1748,7 @@ public sealed class AppShell : Window
                 // just above, with none of the UI-thread affinity concerns that block touching
                 // Editor/TextDocument state after an await (see the nested-Invoke comment below).
                 var watchLines = await FormatWatchesAsync(_debugClient);
+                var locals = await ReadLocalsAsync(_debugClient, registers);
 
                 // Everything below touches Editor/TextDocument state, which enforces single-thread
                 // ownership (TextDocument.VerifyAccess). Application.Invoke only guarantees the UI
@@ -1677,7 +1762,7 @@ public sealed class AppShell : Window
                 // the binary monitor protocol docs, but this name was stable).
                 Application.Invoke(() =>
                 {
-                    ShowStoppedAt(registers, watchLines, registers["PC"], $" (checkpoint #{args.Checkpoint.Number})");
+                    ShowStoppedAt(registers, watchLines, locals, registers["PC"], $" (checkpoint #{args.Checkpoint.Number})");
                     Log.Debug("CheckpointHit done: status is now {Status}", _debugPanel.StatusText);
                 });
             }
@@ -1709,11 +1794,12 @@ public sealed class AppShell : Window
     /// address when the PC has no source line. Must run on the UI thread - it touches
     /// Editor/TextDocument state, which enforces single-thread ownership.
     /// </summary>
-    private void ShowStoppedAt(RegisterSnapshot registers, List<string> watchLines, ushort? pc, string statusSuffix)
+    private void ShowStoppedAt(RegisterSnapshot registers, List<string> watchLines, IReadOnlyList<LocalRow> locals, ushort? pc, string statusSuffix)
     {
         _isStopped = true;
         _debugPanel.SetRegisters(registers);
         _debugPanel.SetWatches(watchLines);
+        _debugPanel.SetLocals(locals);
 
         var project = _workspace.ActiveProject;
         // Project files only: a line record from cc65's runtime library can't be opened, and used
@@ -1814,10 +1900,11 @@ public sealed class AppShell : Window
 
             var registers = await debugClient.GetRegistersAsync();
             var watchLines = await FormatWatchesAsync(debugClient);
+            var locals = await ReadLocalsAsync(debugClient, registers);
             // Re-marshal onto the UI thread before touching Editor/TextDocument state - the awaits
             // above leave this continuation on whatever thread completed them (Terminal.Gui
             // installs no SynchronizationContext to bring it back).
-            Application.Invoke(() => ShowStoppedAt(registers, watchLines, registers["PC"],
+            Application.Invoke(() => ShowStoppedAt(registers, watchLines, locals, registers["PC"],
                 reachedNewLine ? "" : $" (step limit of {MaxStepInstructions} instructions reached)"));
         }
         catch (Exception ex)
@@ -1893,6 +1980,7 @@ public sealed class AppShell : Window
             _debugPanel.SetStatus("Not debugging.");
             _debugPanel.SetRegisters(null);
             _debugPanel.SetWatches([]);
+            _debugPanel.SetLocals([]);
             _debugPanel.ClearHistory();
             // Only if a file is actually open - EditorPane itself keeps ReadOnly true with nothing
             // open (see its constructor), and this shouldn't override that.

@@ -333,6 +333,31 @@ public sealed class DbgFile
     }
 
     /// <summary>
+    /// The assembly-source line of the instruction at <paramref name="address"/> - for C code,
+    /// the line in cl65's generated .s (which has a line record per instruction, where the C
+    /// source has one per statement). Picks the narrowest matching span. Used to locate a stop
+    /// within <see cref="GeneratedAssemblyFrames"/>.
+    /// </summary>
+    public (string FilePath, int Line)? FindAssemblyLineForAddress(long address)
+    {
+        foreach (var segment in Segments)
+        {
+            if (address < segment.Start || address >= segment.Start + segment.Size)
+                continue;
+
+            var offsetInSegment = address - segment.Start;
+            var best = _spansBySegment.GetValueOrDefault(segment.Id, [])
+                .Where(s => offsetInSegment >= s.Start && offsetInSegment < s.Start + s.Size)
+                .OrderBy(s => s.Size)
+                .SelectMany(s => _linesBySpan.GetValueOrDefault(s.Id, []))
+                .FirstOrDefault(l => IsAssemblyFile(l.File) && !IsMacroFile(l.File));
+            if (best is not null && _filesById.TryGetValue(best.File, out var file))
+                return (file.Name, best.Line);
+        }
+        return null;
+    }
+
+    /// <summary>
     /// <see cref="FindSourceLocationForAddress"/>, but only if the resolved file exists in the
     /// project at <paramref name="projectDirectory"/> - null for code whose source isn't part of
     /// it, above all cc65's runtime library, whose line records name its own .s files

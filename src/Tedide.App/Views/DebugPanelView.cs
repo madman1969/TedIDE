@@ -14,6 +14,10 @@ namespace Tedide.App.Views;
 /// carrying stale addresses forward.</summary>
 public sealed record WatchEntry(string Label, ushort Address, int Size);
 
+/// <summary>One row of the Locals table: a parameter or local of the function execution stopped
+/// in, with its declared type (or "?" when the source didn't say) and formatted value.</summary>
+public sealed record LocalRow(string Name, string Type, string Value);
+
 /// <summary>
 /// The "Debug" tab: a status line (not debugging / connecting / running / stopped-at-file:line,
 /// now including the enclosing function name when it's resolvable), a compact breakpoints strip
@@ -30,6 +34,7 @@ public sealed class DebugPanelView : View
     private readonly Label _breakpointsLabel;
     private readonly Label _watchesLabel;
     private readonly ListView _historyList;
+    private readonly TableView _localsTable;
     private readonly TableView _registersTable;
     private readonly ObservableCollection<string> _history = [];
 
@@ -48,14 +53,34 @@ public sealed class DebugPanelView : View
             ViewportSettings = ViewportSettingsFlags.HasScrollBars,
         };
         _historyList.SetSource(_history);
-        _registersTable = new TableView
+        _localsTable = new TableView
         {
-            X = 0, Y = Pos.Bottom(_historyList), Width = Dim.Fill(), Height = Dim.Fill(),
+            X = 0, Y = Pos.Bottom(_historyList), Width = Dim.Percent(60), Height = Dim.Fill(),
             FullRowSelect = true,
             ViewportSettings = ViewportSettingsFlags.HasScrollBars,
         };
-        Add(_statusLabel, _breakpointsLabel, _watchesLabel, _historyList, _registersTable);
+        _registersTable = new TableView
+        {
+            X = Pos.Right(_localsTable) + 1, Y = Pos.Bottom(_historyList), Width = Dim.Fill(), Height = Dim.Fill(),
+            FullRowSelect = true,
+            ViewportSettings = ViewportSettingsFlags.HasScrollBars,
+        };
+        Add(_statusLabel, _breakpointsLabel, _watchesLabel, _historyList, _localsTable, _registersTable);
+        SetLocals([]);
         SetRegisters(null);
+    }
+
+    /// <summary>Replaces the Locals table - the stopped function's parameters and locals, refreshed
+    /// on every stop like the registers; an empty list clears it.</summary>
+    public void SetLocals(IReadOnlyList<LocalRow> locals)
+    {
+        var table = new DataTable();
+        table.Columns.Add("Local");
+        table.Columns.Add("Type");
+        table.Columns.Add("Value");
+        foreach (var local in locals)
+            table.Rows.Add(local.Name, local.Type, local.Value);
+        _localsTable.Table = new DataTableSource(table);
     }
 
     public void SetStatus(string text) => _statusLabel.Text = text;

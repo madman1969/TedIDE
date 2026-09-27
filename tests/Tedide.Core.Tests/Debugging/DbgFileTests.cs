@@ -253,6 +253,21 @@ public class DbgFileTests
     }
 
     [Fact]
+    public void FindAssemblyLineForAddress_ResolvesCCodeToItsGeneratedAssemblyInstruction()
+    {
+        // The generated .s has a line record per instruction; this is how a stop is located
+        // within GeneratedAssemblyFrames for the Locals table.
+        var dbg = DbgFile.Parse(LoadCBMInfoFixture());
+        var main = dbg.Symbols.First(s => s.Name == "_main" && s.Type == "lab").Value!.Value;
+
+        var line = dbg.FindAssemblyLineForAddress(main);
+
+        Assert.NotNull(line);
+        Assert.EndsWith(".s", line.Value.FilePath);
+        Assert.Null(dbg.FindAssemblyLineForAddress(0xFFFF));
+    }
+
+    [Fact]
     public void FindSourceLocationForAddress_ReturnsNull_ForAnAddressOutsideEverySegment()
     {
         var dbg = DbgFile.Parse(LoadFixture());
