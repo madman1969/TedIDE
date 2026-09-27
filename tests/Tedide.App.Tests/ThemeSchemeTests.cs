@@ -76,6 +76,30 @@ public class ThemeSchemeTests
         Assert.True(problems.Count == 0, $"{theme}: {string.Join("; ", problems)}");
     }
 
+    [Theory]
+    [MemberData(nameof(AllThemes))]
+    public void EveryCodeRole_IsThemedExplicitly_AndReadable(AppTheme theme)
+    {
+        // Terminal.Gui.Editor only uses a scheme's color for a token when the role is explicitly
+        // set - a role left equal to Normal isn't, and the xshd's fixed light-background colors
+        // (DarkBlue numbers, DarkGreen punctuation) showed through on dark themes instead.
+        var editor = ThemeSwitcher.SchemesFor(theme)["Base"];
+        var problems = new List<string>();
+        foreach (var role in Enum.GetValues<VisualRole>().Where(r => r.ToString().StartsWith("Code")))
+        {
+            if (!editor.TryGetExplicitlySetAttributeForRole(role, out var attribute))
+            {
+                problems.Add($"{role} not explicit");
+                continue;
+            }
+            var ratio = ThemeSwitcher.ContrastRatio(attribute!.Value.Foreground, attribute.Value.Background);
+            if (ratio < ThemeSwitcher.MutedContrast)
+                problems.Add($"{role} {ratio:F2}:1");
+        }
+
+        Assert.True(problems.Count == 0, $"{theme}: {string.Join("; ", problems)}");
+    }
+
     [Fact]
     public void BorlandTurboC_KeepsItsRedHotkeys()
     {

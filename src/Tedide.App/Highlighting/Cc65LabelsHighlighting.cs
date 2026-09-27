@@ -24,8 +24,8 @@ public static class Cc65LabelsHighlighting
         <?xml version="1.0"?>
         <SyntaxDefinition name="VICE Label File" extensions=".lbl" xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
         	<Color name="Command" foreground="#FF0000FF" fontWeight="bold" />
-        	<Color name="Address" foreground="DarkBlue" />
-        	<Color name="Symbol" foreground="#FF800080" fontWeight="bold" />
+        	<Color name="Address" category="CodeNumber" foreground="DarkBlue" />
+        	<Color name="Symbol" category="CodeFunctionName" foreground="#FF800080" fontWeight="bold" />
         	<RuleSet ignoreCase="false">
         		<Rule color="Command">^al\b</Rule>
         		<Rule color="Address">\b[0-9A-Fa-f]{6}\b</Rule>

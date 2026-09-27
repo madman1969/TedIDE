@@ -25,14 +25,14 @@ public static class Cc65CfgHighlighting
     private const string DefinitionXml = """
         <?xml version="1.0"?>
         <SyntaxDefinition name="cc65 Linker Config" extensions=".cfg" xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
-        	<Color name="BlockKeyword" foreground="DarkCyan" fontWeight="bold" />
-        	<Color name="AttributeName" foreground="#FF0000FF" fontWeight="bold" />
-        	<Color name="AttributeValue" foreground="#FF800080" />
-        	<Color name="Placeholder" foreground="#FF008B8B" fontWeight="bold" />
+        	<Color name="BlockKeyword" category="CodeKeyword" foreground="DarkCyan" fontWeight="bold" />
+        	<Color name="AttributeName" category="CodeAttribute" foreground="#FF0000FF" fontWeight="bold" />
+        	<Color name="AttributeValue" category="CodeConstant" foreground="#FF800080" />
+        	<Color name="Placeholder" category="CodePreprocessor" foreground="#FF008B8B" fontWeight="bold" />
         	<Color name="Number" foreground="DarkBlue" />
         	<Color name="String" foreground="Green" />
         	<Color name="Comment" foreground="Gray" fontStyle="italic" />
-        	<Color name="AreaName" foreground="Maroon" fontWeight="bold" />
+        	<Color name="AreaName" category="CodeFunctionName" foreground="Maroon" fontWeight="bold" />
         	<RuleSet ignoreCase="false">
         		<Span color="Comment" begin="#" />
         		<Span color="String" begin="&quot;" end="&quot;" />

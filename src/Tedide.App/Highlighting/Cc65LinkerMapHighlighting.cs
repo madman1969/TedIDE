@@ -31,15 +31,15 @@ public static class Cc65LinkerMapHighlighting
     private const string DefinitionXml = """
         <?xml version="1.0"?>
         <SyntaxDefinition name="cc65 Linker Map" extensions=".map" xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
-        	<Color name="SectionHeader" foreground="DarkCyan" fontWeight="bold" />
-        	<Color name="Separator" foreground="Gray" />
-        	<Color name="ModuleName" foreground="#FF800080" fontWeight="bold" />
-        	<Color name="Field" foreground="#FF008B8B" fontWeight="bold" />
-        	<Color name="SegmentName" foreground="#FF0000FF" fontWeight="bold" />
-        	<Color name="Address" foreground="DarkBlue" />
-        	<Color name="Flag" foreground="Maroon" />
-        	<Color name="Path" foreground="Green" />
-        	<Color name="LinkerGenerated" foreground="Gray" />
+        	<Color name="SectionHeader" category="CodeKeyword" foreground="DarkCyan" fontWeight="bold" />
+        	<Color name="Separator" category="CodeComment" foreground="Gray" />
+        	<Color name="ModuleName" category="CodeFunctionName" foreground="#FF800080" fontWeight="bold" />
+        	<Color name="Field" category="CodeAttribute" foreground="#FF008B8B" fontWeight="bold" />
+        	<Color name="SegmentName" category="CodeType" foreground="#FF0000FF" fontWeight="bold" />
+        	<Color name="Address" category="CodeNumber" foreground="DarkBlue" />
+        	<Color name="Flag" category="CodeConstant" foreground="Maroon" />
+        	<Color name="Path" category="CodeString" foreground="Green" />
+        	<Color name="LinkerGenerated" category="CodeComment" foreground="Gray" />
         	<RuleSet ignoreCase="false">
         		<Rule color="SectionHeader">^(Modules\ list:|Segment\ list:|Exports\ list\ by\ name:|Exports\ list\ by\ value:|Imports\ list:|Name\ +Start\ +End\ +Size\ +Align)$</Rule>
         		<Rule color="Separator">^-+$</Rule>

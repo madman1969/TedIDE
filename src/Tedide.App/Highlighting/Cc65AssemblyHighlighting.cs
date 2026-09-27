@@ -17,10 +17,12 @@ namespace Tedide.App.Highlighting;
 /// rather than an exhaustive list, since ca65 has 100+ pseudo-ops), labels ("name:", plus ca65's
 /// cheap local "@name:" and its uses), hex/binary/decimal numeric literals ("$d020", "%1010",
 /// "10"), the 56 official 6502 mnemonics plus the 65C02 additions (bra, phx, stz, ...), and common
-/// assembly punctuation. Like the bundled definitions, colors are literal values baked into the
-/// XML rather than resolved through Tedide's own Scheme-based themes (see ThemeSwitcher) - so
-/// switching app themes restyles the editor's background/chrome but not these token colors,
-/// consistent with how the bundled C highlighting already behaves.
+/// assembly punctuation. Each color maps to a Terminal.Gui code role - by name ("Comment",
+/// "Number", ...) through Terminal.Gui.Editor's built-in table, or by an explicit category= for the
+/// assembly-specific ones (mnemonics as keywords, directives as types, labels as function names) -
+/// so the active theme's syntax colors are what's drawn (see ThemeSwitcher.BuildScheme); the
+/// literal foreground values are only the fallback for a scheme that doesn't set a role. The other
+/// cc65 definitions (.lst, .map, .lbl, .cfg) follow the same convention.
 /// </summary>
 public static class Cc65AssemblyHighlighting
 {
@@ -30,9 +32,9 @@ public static class Cc65AssemblyHighlighting
         	<Color name="Comment" foreground="Green" />
         	<Color name="String" foreground="Fuchsia" />
         	<Color name="Character" foreground="Fuchsia" />
-        	<Color name="Mnemonic" foreground="#FF0000FF" fontWeight="bold" />
-        	<Color name="Directive" foreground="#FF008B8B" fontWeight="bold" />
-        	<Color name="Label" foreground="#FF800080" fontWeight="bold" />
+        	<Color name="Mnemonic" category="CodeKeyword" foreground="#FF0000FF" fontWeight="bold" />
+        	<Color name="Directive" category="CodeType" foreground="#FF008B8B" fontWeight="bold" />
+        	<Color name="Label" category="CodeFunctionName" foreground="#FF800080" fontWeight="bold" />
         	<Color name="Number" foreground="DarkBlue" />
         	<Color name="Punctuation" foreground="DarkGreen" />
         	<RuleSet ignoreCase="true">

@@ -37,13 +37,13 @@ public static class Cc65ListingHighlighting
     private const string DefinitionXml = """
         <?xml version="1.0"?>
         <SyntaxDefinition name="cc65 Listing" extensions=".lst" xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
-        	<Color name="Address" foreground="Gray" />
+        	<Color name="Address" category="CodeComment" foreground="Gray" />
         	<Color name="Comment" foreground="Green" />
         	<Color name="String" foreground="Fuchsia" />
         	<Color name="Character" foreground="Fuchsia" />
-        	<Color name="Mnemonic" foreground="#FF0000FF" fontWeight="bold" />
-        	<Color name="Directive" foreground="#FF008B8B" fontWeight="bold" />
-        	<Color name="Label" foreground="#FF800080" fontWeight="bold" />
+        	<Color name="Mnemonic" category="CodeKeyword" foreground="#FF0000FF" fontWeight="bold" />
+        	<Color name="Directive" category="CodeType" foreground="#FF008B8B" fontWeight="bold" />
+        	<Color name="Label" category="CodeFunctionName" foreground="#FF800080" fontWeight="bold" />
         	<Color name="Number" foreground="DarkBlue" />
         	<Color name="Punctuation" foreground="DarkGreen" />
         	<RuleSet ignoreCase="true">

@@ -277,7 +277,7 @@ public static class ThemeSwitcher
     /// the normal (unfocused) look, the focus/selection look, an accent color for hot keys and
     /// keyword-ish code roles, and a dimmed color for disabled/comment-ish roles.
     /// </summary>
-    private static Scheme BuildScheme(GuiAttribute normal, GuiAttribute focus, GuiAttribute hot, GuiAttribute disabled, GuiAttribute? codeNumber = null)
+    private static Scheme BuildScheme(GuiAttribute normal, GuiAttribute focus, GuiAttribute hot, GuiAttribute disabled, Syntax? syntax = null)
     {
         // Readability first, so everything below is derived from the adjusted colors - see
         // Readable/WithReadableForeground. A theme whose colors already pass is left untouched.
@@ -285,11 +285,18 @@ public static class ThemeSwitcher
         normal = Readable(normal, TextContrast);
         focus = Readable(focus, TextContrast);
         disabled = WithReadableForeground(Follow(disabled, authoredNormalBackground, normal.Background), MutedContrast);
-        if (codeNumber is { } number)
-            codeNumber = WithReadableForeground(Follow(number, authoredNormalBackground, normal.Background), MutedContrast);
 
         var hotNormal = HotkeyAttribute(hot, normal);
         var hotFocus = HotkeyAttribute(hot, focus);
+
+        // Terminal.Gui.Editor only themes a token whose role the scheme sets explicitly, and a role
+        // set to exactly Normal doesn't count as explicit - so plain-text roles get Normal's color
+        // nudged by one imperceptible step, or the xshd's own light-background colors (DarkBlue
+        // numbers, DarkGreen punctuation...) show through on a dark theme.
+        var plain = new GuiAttribute(Nudged(normal.Foreground), normal.Background, normal.Style);
+        GuiAttribute Token(Color? color) => color is { } c && !SameColor(c, normal.Foreground)
+            ? WithReadableForeground(new GuiAttribute(c, normal.Background), TextContrast)
+            : plain;
 
         return new Scheme(normal)
         {
@@ -306,22 +313,30 @@ public static class ThemeSwitcher
             Code = normal,
             CodeComment = disabled,
             CodeKeyword = hotNormal,
-            CodeString = normal,
-            // Numeric literals ("Digits" in the bundled C/C++ highlighting, mapped through
-            // Terminal.Gui.Editor's XshdRoleMap to VisualRole.CodeNumber) default to plain text
-            // color like every other unstyled Code* role, but individual themes can override this
-            // to something more distinctive - see Monokai() for the one theme that currently does.
-            CodeNumber = codeNumber ?? normal,
-            CodeOperator = normal,
-            CodeType = hotNormal,
+            CodeString = Token(syntax?.String),
+            CodeNumber = Token(syntax?.Number),
+            CodeOperator = plain,
+            CodeType = syntax is null ? hotNormal : Token(syntax.Type),
             CodePreprocessor = disabled,
-            CodeIdentifier = normal,
-            CodeConstant = normal,
-            CodePunctuation = normal,
-            CodeFunctionName = hotNormal,
-            CodeAttribute = normal,
+            CodeIdentifier = plain,
+            CodeConstant = Token(syntax?.Constant),
+            CodePunctuation = plain,
+            CodeFunctionName = syntax is null ? hotNormal : Token(syntax.Function),
+            CodeAttribute = Token(syntax?.Attribute),
         };
     }
+
+    /// <summary>
+    /// A theme's syntax-highlighting colors beyond keyword (its hot color) and comment/preprocessor
+    /// (its dimmed color) - only the editing (Base) scheme has them. Each is lightness-adjusted to
+    /// <see cref="TextContrast"/> against the editor background like any other text. Tedide's own
+    /// cc65 highlighting definitions map their token kinds onto these same roles (see
+    /// Tedide.App.Highlighting), so every file type follows the theme.
+    /// </summary>
+    private sealed record Syntax(Color Type, Color String, Color Number, Color Constant, Color Function, Color Attribute);
+
+    /// <summary><paramref name="color"/> moved by one step in its blue channel - visually identical.</summary>
+    private static Color Nudged(Color color) => new(color.R, color.G, color.B < 255 ? color.B + 1 : color.B - 1);
 
     private static Palette Vs2026Dark()
     {
@@ -343,12 +358,18 @@ public static class ThemeSwitcher
         Color warningBg = new(80, 66, 20);
         Color warningFg = new(255, 204, 84);
 
+        // Visual Studio's own Dark+ token colors.
+        var syntax = new Syntax(
+            Type: new Color(78, 201, 176), String: new Color(206, 145, 120), Number: new Color(181, 206, 168),
+            Constant: new Color(79, 193, 255), Function: new Color(220, 220, 170), Attribute: new Color(156, 220, 254));
+
         return new Palette(
             Base: BuildScheme(
                 normal: new GuiAttribute(editorFg, editorBg),
                 focus: new GuiAttribute(Color.White, selectionBg),
                 hot: new GuiAttribute(accent, editorBg),
-                disabled: new GuiAttribute(dimmed, editorBg)),
+                disabled: new GuiAttribute(dimmed, editorBg),
+                syntax),
             Menu: BuildScheme(
                 normal: new GuiAttribute(chromeFg, chromeBg),
                 focus: new GuiAttribute(Color.White, chromeAccentBg),
@@ -395,12 +416,18 @@ public static class ThemeSwitcher
         Color warningBg = new(255, 244, 206);
         Color warningFg = new(156, 110, 3);
 
+        // Visual Studio's own Light+ token colors.
+        var syntax = new Syntax(
+            Type: new Color(38, 127, 153), String: new Color(163, 21, 21), Number: new Color(9, 134, 88),
+            Constant: new Color(0, 112, 193), Function: new Color(121, 94, 38), Attribute: new Color(0, 16, 128));
+
         return new Palette(
             Base: BuildScheme(
                 normal: new GuiAttribute(editorFg, editorBg),
                 focus: new GuiAttribute(Color.Black, selectionBg),
                 hot: new GuiAttribute(accent, editorBg),
-                disabled: new GuiAttribute(dimmed, editorBg)),
+                disabled: new GuiAttribute(dimmed, editorBg),
+                syntax),
             Menu: BuildScheme(
                 normal: new GuiAttribute(editorFg, chromeBg),
                 focus: new GuiAttribute(Color.White, chromeAccentBg),
@@ -454,8 +481,14 @@ public static class ThemeSwitcher
         var warningNormal = new GuiAttribute(ColorName16.Black, ColorName16.BrightYellow);
         var warningFocus = new GuiAttribute(ColorName16.BrightYellow, ColorName16.Black);
 
+        // Turbo C 2.0 had no syntax highlighting; these stay within the same 16-color ANSI palette
+        // (Borland's later IDEs' bright-on-blue style).
+        var syntax = new Syntax(
+            Type: new Color(ColorName16.BrightCyan), String: new Color(ColorName16.BrightGreen), Number: new Color(ColorName16.BrightMagenta),
+            Constant: new Color(ColorName16.BrightMagenta), Function: new Color(ColorName16.BrightCyan), Attribute: new Color(ColorName16.Gray));
+
         return new Palette(
-            Base: BuildScheme(editorNormal, editorFocus, editorHot, editorDisabled),
+            Base: BuildScheme(editorNormal, editorFocus, editorHot, editorDisabled, syntax),
             Menu: BuildScheme(chromeNormal, chromeFocus, chromeHot, chromeDisabled),
             Dialog: BuildScheme(chromeNormal, chromeFocus, chromeHot, chromeDisabled),
             Accent: BuildScheme(accentNormal, accentFocus, chromeHot, editorDisabled),
@@ -484,10 +517,11 @@ public static class ThemeSwitcher
         Color warningBg = new(70, 62, 20);
         Color warningFg = new(230, 219, 116);
 
-        // Monokai's own signature cyan-blue accent (the color Monokai itself uses for classes/
-        // constants in its canonical Sublime Text palette) - paler than a plain saturated blue,
-        // so numeric literals read clearly against the theme's dark background without clashing.
-        Color numberFg = new(102, 217, 239);
+        // Monokai's canonical Sublime Text token colors: cyan types, yellow strings, purple
+        // numbers/constants, green functions.
+        var syntax = new Syntax(
+            Type: new Color(102, 217, 239), String: new Color(230, 219, 116), Number: new Color(174, 129, 255),
+            Constant: new Color(174, 129, 255), Function: new Color(166, 226, 46), Attribute: new Color(166, 226, 46));
 
         return new Palette(
             Base: BuildScheme(
@@ -495,7 +529,7 @@ public static class ThemeSwitcher
                 focus: new GuiAttribute(Color.White, selectionBg),
                 hot: new GuiAttribute(accent, editorBg),
                 disabled: new GuiAttribute(dimmed, editorBg),
-                codeNumber: new GuiAttribute(numberFg, editorBg)),
+                syntax),
             Menu: BuildScheme(
                 normal: new GuiAttribute(chromeFg, chromeBg),
                 focus: new GuiAttribute(Color.White, chromeAccentBg),
@@ -544,10 +578,11 @@ public static class ThemeSwitcher
         Color warningBg = new(64, 58, 20);
         Color warningFg = new(241, 250, 140);
 
-        // Dracula's own signature pale cyan-blue (the color Dracula itself uses for classes/types
-        // in its canonical palette, draculatheme.com) - paler than a plain saturated blue, so
-        // numeric literals read clearly against the theme's dark background without clashing.
-        Color numberFg = new(139, 233, 253);
+        // Dracula's canonical palette (draculatheme.com): cyan types, yellow strings, orange
+        // numbers/constants, green functions/attributes.
+        var syntax = new Syntax(
+            Type: new Color(139, 233, 253), String: new Color(241, 250, 140), Number: new Color(255, 184, 108),
+            Constant: new Color(255, 184, 108), Function: new Color(80, 250, 123), Attribute: new Color(80, 250, 123));
 
         return new Palette(
             Base: BuildScheme(
@@ -555,7 +590,7 @@ public static class ThemeSwitcher
                 focus: new GuiAttribute(Color.White, selectionBg),
                 hot: new GuiAttribute(accent, editorBg),
                 disabled: new GuiAttribute(dimmed, editorBg),
-                codeNumber: new GuiAttribute(numberFg, editorBg)),
+                syntax),
             Menu: BuildScheme(
                 normal: new GuiAttribute(chromeFg, chromeBg),
                 focus: new GuiAttribute(editorBg, chromeAccentBg),
@@ -583,6 +618,12 @@ public static class ThemeSwitcher
                 disabled: new GuiAttribute(dimmed, warningBg)));
     }
 
+    /// <summary>Solarized's own accent colors, shared by both variants: yellow types, cyan strings,
+    /// magenta numbers, orange constants, violet attributes (functions keep the blue hot color).</summary>
+    private static readonly Syntax SolarizedSyntax = new(
+        Type: new Color(181, 137, 0), String: new Color(42, 161, 152), Number: new Color(211, 54, 130),
+        Constant: new Color(203, 75, 22), Function: new Color(38, 139, 210), Attribute: new Color(108, 113, 196));
+
     /// <summary>Ethan Schoonover's Solarized (dark variant) - a low-contrast, accessibility-minded palette.</summary>
     private static Palette SolarizedDark()
     {
@@ -604,18 +645,13 @@ public static class ThemeSwitcher
         Color warningBg = new(48, 40, 10);
         Color warningFg = new(203, 161, 45);
 
-        // A paler tint of Solarized's own blue accent (#268bd2) - keeps numeric literals in the
-        // same hue family as the theme's keyword/hot color, just lighter, so they read distinctly
-        // against the very dark editor background without introducing an unrelated color.
-        Color numberFg = new(108, 182, 224);
-
         return new Palette(
             Base: BuildScheme(
                 normal: new GuiAttribute(editorFg, editorBg),
                 focus: new GuiAttribute(Color.White, chromeAccentBg),
                 hot: new GuiAttribute(accent, editorBg),
                 disabled: new GuiAttribute(dimmed, editorBg),
-                codeNumber: new GuiAttribute(numberFg, editorBg)),
+                SolarizedSyntax),
             Menu: BuildScheme(
                 normal: new GuiAttribute(chromeFg, chromeBg),
                 focus: new GuiAttribute(Color.White, chromeAccentBg),
@@ -668,7 +704,8 @@ public static class ThemeSwitcher
                 normal: new GuiAttribute(editorFg, editorBg),
                 focus: new GuiAttribute(Color.White, chromeAccentBg),
                 hot: new GuiAttribute(accent, editorBg),
-                disabled: new GuiAttribute(dimmed, editorBg)),
+                disabled: new GuiAttribute(dimmed, editorBg),
+                SolarizedSyntax),
             Menu: BuildScheme(
                 normal: new GuiAttribute(editorFg, chromeBg),
                 focus: new GuiAttribute(Color.White, chromeAccentBg),
@@ -721,13 +758,15 @@ public static class ThemeSwitcher
         var warningNormal = new GuiAttribute(new Color(53, 40, 121), new Color(184, 199, 111));
         var warningFocus = new GuiAttribute(new Color(184, 199, 111), new Color(53, 40, 121));
 
-        // C64 palette color 14, "light blue" - already used above for the chrome/accent
-        // background - reused here as a paler blue than the lavender-purple editor foreground,
-        // so numeric literals read distinctly against the dark blue-purple editor background.
-        var editorNumber = new GuiAttribute(new Color(112, 164, 178), new Color(53, 40, 121));
+        // Other colors of the C64's own 16-color (Pepto) palette: light green types, yellow
+        // strings, cyan-ish "light blue" numbers (also the chrome/accent background), light red
+        // constants, light gray functions/attributes.
+        var syntax = new Syntax(
+            Type: new Color(154, 210, 132), String: new Color(184, 199, 111), Number: new Color(112, 164, 178),
+            Constant: new Color(154, 103, 89), Function: new Color(149, 149, 149), Attribute: new Color(149, 149, 149));
 
         return new Palette(
-            Base: BuildScheme(editorNormal, editorFocus, editorHot, editorDisabled, editorNumber),
+            Base: BuildScheme(editorNormal, editorFocus, editorHot, editorDisabled, syntax),
             Menu: BuildScheme(chromeNormal, chromeFocus, chromeHot, chromeDisabled),
             Dialog: BuildScheme(chromeNormal, chromeFocus, chromeHot, chromeDisabled),
             Accent: BuildScheme(accentNormal, accentFocus, chromeHot, editorDisabled),
@@ -768,12 +807,13 @@ public static class ThemeSwitcher
         var warningFocus = new GuiAttribute(brightAmber, Color.Black);
 
         // Amber-on-black is already the theme's whole palette (see the Warning scheme's comment
-        // above), so numeric literals stand out via brightness, not an introduced hue - the same
-        // brightAmber used for keywords/hot text, not a new color.
-        var editorNumber = new GuiAttribute(brightAmber, background);
+        // above), so tokens stand out via brightness, not an introduced hue - literals in the
+        // same brightAmber as keywords, everything else plain amber.
+        var syntax = new Syntax(
+            Type: amber, String: brightAmber, Number: brightAmber, Constant: brightAmber, Function: amber, Attribute: amber);
 
         return new Palette(
-            Base: BuildScheme(editorNormal, editorFocus, editorHot, editorDisabled, editorNumber),
+            Base: BuildScheme(editorNormal, editorFocus, editorHot, editorDisabled, syntax),
             Menu: BuildScheme(chromeNormal, chromeFocus, chromeHot, chromeDisabled),
             Dialog: BuildScheme(chromeNormal, chromeFocus, chromeHot, chromeDisabled),
             Accent: BuildScheme(accentNormal, chromeFocus, chromeHot, editorDisabled),

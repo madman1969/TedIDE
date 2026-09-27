@@ -50,6 +50,22 @@ public class HighlightingTests
 
     [Theory]
     [InlineData(".s")]
+    [InlineData(".lst")]
+    [InlineData(".map")]
+    [InlineData(".lbl")]
+    [InlineData(".cfg")]
+    public void EveryColor_MapsToAThemeRole(string extension)
+    {
+        // A color without a role is drawn in its fixed xshd color on every theme - see
+        // ThemeSwitcher.BuildScheme.
+        var unmapped = HighlightingManager.Instance.GetDefinitionByExtension(extension)!.NamedHighlightingColors
+            .Where(c => c.Role is null).Select(c => c.Name);
+
+        Assert.Empty(unmapped);
+    }
+
+    [Theory]
+    [InlineData(".s")]
     [InlineData(".asm")]
     [InlineData(".lst")]
     [InlineData(".map")]

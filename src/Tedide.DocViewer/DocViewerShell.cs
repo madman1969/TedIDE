@@ -141,6 +141,10 @@ public sealed class DocViewerShell : Window
         // whichever of the app's own themes is active (see UpdateSyntaxHighlighterTheme) rather than
         // a fixed light/dark choice.
         _contentView.SyntaxHighlighter = _syntaxHighlighter;
+        // Otherwise the whole pane is filled with the TextMate theme's own editor background (pure
+        // white for Light+, near-black for Dark+) instead of the app theme's - Solarized Light's
+        // cream, Commodore 64's blue - so the pane stood out from everything around it.
+        _contentView.UseThemeBackground = false;
         UpdateSyntaxHighlighterTheme();
         ThemeSwitcher.Changed += UpdateSyntaxHighlighterTheme;
         _contentView.Text = "Select a topic on the left to view its documentation.\n\n" +
