@@ -596,9 +596,10 @@ Source files open in a [`Terminal.Gui.Editor`](https://github.com/tui-cs/Editor)
 by file extension via `HighlightingManager.GetDefinitionByExtension` - `.c`/`.h` map to the
 bundled C++ definition (close enough for C keywords), and `.s`/`.asm` get a hand-written 6502/ca65
 definition of Tedide's own (`Tedide.App.Highlighting.Cc65AssemblyHighlighting`), covering line
-comments, string/character literals, ca65 directives, labels, numeric literals (hex/binary/
-decimal) and the 56 official 6502 mnemonics, since Terminal.Gui.Editor ships nothing for 6502
-assembly itself. `.lst` gets a third definition built on top of that one
+comments, string/character literals, ca65 directives, labels (including ca65's `@cheap` local
+labels), numeric literals (hex/binary/decimal) and the 56 official 6502 mnemonics plus the 65C02
+additions (`bra`, `phx`, `stz`...), since Terminal.Gui.Editor ships nothing for 6502 assembly
+itself. `.lst` gets a third definition built on top of that one
 (`Tedide.App.Highlighting.Cc65ListingHighlighting`): each line's ca65-generated address/byte-dump
 prefix (e.g. `0000A5r 1  A9 08` - see "Running" above) is its own muted color, and everything after
 it - the assembled source line, including interleaved C source turned into ordinary `;`-comments
@@ -608,6 +609,22 @@ when `AddSourceAsComment` is on - is colored with the same rules as `.s`/`.asm`.
 `.lbl` (see "Symbols" under "Running" above) keep their own highlighters
 (`Cc65LinkerMapHighlighting`/`Cc65LabelsHighlighting`) when opened directly as plain text, even
 though the Symbols tab is usually the more convenient way to browse them.
+
+Every one of these colors its tokens from the active theme rather than fixed colors: each token
+kind maps to one of Terminal.Gui's code roles (keyword, type, string, number, comment, function
+name...) - mnemonics as keywords, directives as types, labels as function names and so on for the
+cc65 file types - and each theme gives those roles its own palette (see "Themes" below), so a C
+file, an assembly file and a listing all read consistently in whichever theme is active.
+
+![A C file in the editor: the video.c raster loop with keywords, types, numbers and comments each in their own theme color, and fold markers beside the line numbers](docs/images/editing-c.png)
+
+![A 6502 assembly file: HelloCBM's border.s with its comments, ca65 directives, hex addresses, the label and the inc/rts mnemonics highlighted](docs/images/editing-assembly.png)
+
+![An assembler listing: video.c.lst with each line's address and byte-dump prefix muted, the interleaved C source as comments, and the generated 6502 instructions highlighted like assembly](docs/images/editing-listing.png)
+
+![The linker map lnk.map: module names, segment names, and each segment's Offs/Size/Align/Fill values highlighted](docs/images/editing-linker-map.png)
+
+![A VICE label file: al commands, addresses and symbol names each highlighted](docs/images/editing-labels.png)
 
 Tedide is deliberately single-document: only one file can be open at a time. Selecting a
 different file in the Solution Explorer (or opening one that's already open, which is a no-op)
@@ -622,6 +639,8 @@ documents - confirmed by direct comparison against ted's source, down to matchin
 editor itself is never given a custom `Cursor`/`CursorStyle` - ted doesn't either, relying
 entirely on the library's own default cursor behavior.
 
+![The Unsaved Changes prompt - "Save changes to border.s?" with Save, Discard and Cancel - shown after editing border.s and selecting main.c in the Solution Explorer](docs/images/editing-unsaved-prompt.png)
+
 The menu and status bars are Terminal.Gui.Editor's own `EditorMenuBar`/`EditorStatusBar` - the
 same components ted uses - rather than hand-rolled equivalents. Their auto-generated Edit/View
 menus (Find/Replace/Undo/Redo/Cut/Copy/Paste/Select All; Line Numbers/Fold Indicators/Word Wrap/
@@ -634,6 +653,10 @@ appended to its own Edit menu, and Build/Project/Theme menus are added alongside
 Terminal.Gui's own `ConfigurationManager`-based `ThemeManager` - a separate system from our own
 `SchemeManager`-based theme switcher below, and leaving both active would let it silently
 overwrite our custom themes.
+
+![The Edit menu: Find in Files and Go To Line added at the top, then Find, Replace, Undo, Redo, Cut, Copy, Paste and Select All, each with its shortcut](docs/images/editing-edit-menu.png)
+
+![The View menu's editor toggles: Line Numbers, Fold Indicators, Word Wrap, Show Tabs and Scrollbars](docs/images/editing-view-menu.png)
 
 ## Themes
 
