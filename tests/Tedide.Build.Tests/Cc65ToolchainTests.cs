@@ -5,7 +5,7 @@ namespace Tedide.Build.Tests;
 public class Cc65ToolchainTests
 {
     [Fact]
-    public void BuildCompileArguments_PlacesExtraArgumentsBeforeTheSourceFile()
+    public void CompileSteps_PlacesExtraArgumentsBeforeTheSourceFile()
     {
         // cl65 applies flags left-to-right as it encounters them on the command line, so an
         // "-I" include path (or any other ExtraArguments flag) only affects source files listed
@@ -18,7 +18,7 @@ public class Cc65ToolchainTests
             ExtraArguments = ["-I", "include"],
         };
 
-        var args = Cc65Toolchain.BuildCompileArguments(project, "src/main.c");
+        var args = GenerateStep(project, "src/main.c");
 
         var extraArgIndex = args.IndexOf("-I");
         var sourceFileIndex = args.IndexOf("src/main.c");
@@ -28,11 +28,10 @@ public class Cc65ToolchainTests
     }
 
     [Fact]
-    public void BuildCompileArguments_CompilesOnlyOneSourceFile_WithDashC()
+    public void CompileSteps_CompilesOnlyOneSourceFile()
     {
-        // -c stops cl65 after assembling (no link step), and only the one source file passed in
-        // should appear - BuildAsync calls this once per source file, not once for the project's
-        // whole SourceFiles list.
+        // BuildAsync calls this once per source file, not once for the project's whole
+        // SourceFiles list - only the one source file passed in should appear.
         var project = new TedideProject
         {
             Name = "Test",
@@ -40,15 +39,99 @@ public class Cc65ToolchainTests
             SourceFiles = ["src/main.c", "src/screen.c"],
         };
 
-        var args = Cc65Toolchain.BuildCompileArguments(project, "src/main.c");
+        var args = Cc65Toolchain.BuildCompileSteps(project, "src/main.c").SelectMany(a => a).ToList();
 
-        Assert.Contains("-c", args);
         Assert.Contains("src/main.c", args);
         Assert.DoesNotContain("src/screen.c", args);
     }
 
     [Fact]
-    public void BuildCompileArguments_OmitsOptimizationFlag_WhenLevelIsNone()
+    public void CompileSteps_CompilesACFileToAssemblyInObj_ThenAssemblesThatWithDashC()
+    {
+        // Never a single "cl65 -c src/foo.c": cl65 writes that compile's intermediate foo.s
+        // beside the source and deletes it afterward - destroying a hand-written src/foo.s.
+        var dir = Directory.CreateTempSubdirectory();
+        try
+        {
+            var project = new TedideProject { Name = "Test", Target = Cc65Target.C64, SourceFiles = ["src/foo.c"] };
+            project.Save(Path.Combine(dir.FullName, "Test.tproj"));
+
+            var steps = Cc65Toolchain.BuildCompileSteps(project, "src/foo.c");
+
+            Assert.Equal(2, steps.Count);
+            var generated = Path.Combine("obj", "src", "foo.c.s");
+            Assert.Contains("-S", steps[0]);
+            Assert.Equal(generated, steps[0][steps[0].IndexOf("-o") + 1]);
+            Assert.Equal("src/foo.c", steps[0][^1]);
+
+            Assert.Contains("-c", steps[1]);
+            Assert.Equal(Path.Combine("obj", "src", "foo.c.o"), steps[1][steps[1].IndexOf("-o") + 1]);
+            Assert.Equal(generated, steps[1][^1]);
+        }
+        finally
+        {
+            dir.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public void CompileSteps_AssemblesAnAssemblyFileDirectly_InOneStep()
+    {
+        var dir = Directory.CreateTempSubdirectory();
+        try
+        {
+            var project = new TedideProject { Name = "Test", Target = Cc65Target.C64, SourceFiles = ["src/border.s"] };
+            project.Save(Path.Combine(dir.FullName, "Test.tproj"));
+
+            var steps = Cc65Toolchain.BuildCompileSteps(project, "src/border.s");
+
+            var step = Assert.Single(steps);
+            Assert.Contains("-c", step);
+            Assert.DoesNotContain("-S", step);
+            Assert.Equal(Path.Combine("obj", "src", "border.s.o"), step[step.IndexOf("-o") + 1]);
+            Assert.Equal("src/border.s", step[^1]);
+        }
+        finally
+        {
+            dir.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public void CompileSteps_GiveACAndAnAssemblyFileWithTheSameBaseName_DistinctOutputs()
+    {
+        // foo.c and foo.s used to both compile to foo.o/foo.lst, one silently overwriting the other.
+        var dir = Directory.CreateTempSubdirectory();
+        try
+        {
+            var project = new TedideProject { Name = "Test", Target = Cc65Target.C64, SourceFiles = ["src/foo.c", "src/foo.s"] };
+            project.Save(Path.Combine(dir.FullName, "Test.tproj"));
+
+            var cOutputs = Cc65Toolchain.BuildCompileSteps(project, "src/foo.c").SelectMany(OutputsOf).ToList();
+            var sOutputs = Cc65Toolchain.BuildCompileSteps(project, "src/foo.s").SelectMany(OutputsOf).ToList();
+
+            Assert.Empty(cOutputs.Intersect(sOutputs));
+            // And nothing is ever written back into src/, where a hand-written file could live.
+            Assert.All(cOutputs.Concat(sOutputs), path => Assert.StartsWith("obj", path));
+        }
+        finally
+        {
+            dir.Delete(recursive: true);
+        }
+
+        static IEnumerable<string> OutputsOf(List<string> step)
+        {
+            foreach (var flag in new[] { "-o", "-l" })
+            {
+                var index = step.IndexOf(flag);
+                if (index >= 0)
+                    yield return step[index + 1];
+            }
+        }
+    }
+
+    [Fact]
+    public void CompileSteps_OmitsOptimizationFlag_WhenLevelIsNone()
     {
         var project = new TedideProject
         {
@@ -58,13 +141,13 @@ public class Cc65ToolchainTests
             OptimizationLevel = Cc65OptimizationLevel.None,
         };
 
-        var args = Cc65Toolchain.BuildCompileArguments(project, "src/main.c");
+        var args = GenerateStep(project, "src/main.c");
 
         Assert.DoesNotContain(args, a => a.StartsWith("-O", StringComparison.Ordinal));
     }
 
     [Fact]
-    public void BuildCompileArguments_PlacesOptimizationFlagBeforeExtraArgumentsAndSourceFile()
+    public void CompileSteps_PlacesOptimizationFlagBeforeExtraArgumentsAndSourceFile()
     {
         var project = new TedideProject
         {
@@ -75,7 +158,7 @@ public class Cc65ToolchainTests
             OptimizationLevel = Cc65OptimizationLevel.Extended,
         };
 
-        var args = Cc65Toolchain.BuildCompileArguments(project, "src/main.c");
+        var args = GenerateStep(project, "src/main.c");
 
         var optimizationIndex = args.IndexOf("-Ox");
         var extraArgIndex = args.IndexOf("-I");
@@ -85,7 +168,7 @@ public class Cc65ToolchainTests
     }
 
     [Fact]
-    public void BuildCompileArguments_OmitsIncludePathFlags_WhenIncludePathsIsEmpty()
+    public void CompileSteps_OmitsIncludePathFlags_WhenIncludePathsIsEmpty()
     {
         var project = new TedideProject
         {
@@ -94,13 +177,13 @@ public class Cc65ToolchainTests
             SourceFiles = ["src/main.c"],
         };
 
-        var args = Cc65Toolchain.BuildCompileArguments(project, "src/main.c");
+        var args = GenerateStep(project, "src/main.c");
 
         Assert.DoesNotContain("-I", args);
     }
 
     [Fact]
-    public void BuildCompileArguments_AddsAnIncludeFlagPair_ForEachIncludePath_BeforeTheSourceFile()
+    public void CompileSteps_AddsAnIncludeFlagPair_ForEachIncludePath_BeforeTheSourceFile()
     {
         var project = new TedideProject
         {
@@ -110,7 +193,7 @@ public class Cc65ToolchainTests
             IncludePaths = ["include", "../shared/include"],
         };
 
-        var args = Cc65Toolchain.BuildCompileArguments(project, "src/main.c");
+        var args = GenerateStep(project, "src/main.c");
 
         var firstIncludeIndex = args.IndexOf("-I");
         Assert.True(firstIncludeIndex >= 0, $"Expected -I in arguments: {string.Join(" ", args)}");
@@ -122,7 +205,7 @@ public class Cc65ToolchainTests
     }
 
     [Fact]
-    public void BuildCompileArguments_OmitsDefineFlags_WhenPreprocessorDefinesIsEmpty()
+    public void CompileSteps_OmitsDefineFlags_WhenPreprocessorDefinesIsEmpty()
     {
         var project = new TedideProject
         {
@@ -131,13 +214,13 @@ public class Cc65ToolchainTests
             SourceFiles = ["src/main.c"],
         };
 
-        var args = Cc65Toolchain.BuildCompileArguments(project, "src/main.c");
+        var args = GenerateStep(project, "src/main.c");
 
         Assert.DoesNotContain("-D", args);
     }
 
     [Fact]
-    public void BuildCompileArguments_AddsADefineFlagPair_ForEachPreprocessorDefine_BeforeTheSourceFile()
+    public void CompileSteps_AddsADefineFlagPair_ForEachPreprocessorDefine_BeforeTheSourceFile()
     {
         var project = new TedideProject
         {
@@ -147,7 +230,7 @@ public class Cc65ToolchainTests
             PreprocessorDefines = ["DEBUG", "VERSION=3"],
         };
 
-        var args = Cc65Toolchain.BuildCompileArguments(project, "src/main.c");
+        var args = GenerateStep(project, "src/main.c");
 
         var firstDefineIndex = args.IndexOf("-D");
         Assert.True(firstDefineIndex >= 0, $"Expected -D in arguments: {string.Join(" ", args)}");
@@ -178,7 +261,7 @@ public class Cc65ToolchainTests
     }
 
     [Fact]
-    public void BuildCompileArguments_OmitsListingFlag_WhenGenerateAssemblyListingIsFalse()
+    public void CompileSteps_OmitsListingFlag_WhenGenerateAssemblyListingIsFalse()
     {
         var project = new TedideProject
         {
@@ -188,13 +271,13 @@ public class Cc65ToolchainTests
             GenerateAssemblyListing = false,
         };
 
-        var args = Cc65Toolchain.BuildCompileArguments(project, "src/main.c");
+        var args = Cc65Toolchain.BuildCompileSteps(project, "src/main.c").SelectMany(a => a).ToList();
 
         Assert.DoesNotContain("-l", args);
     }
 
     [Fact]
-    public void BuildCompileArguments_IncludesListingFlag_WithThatSourceFilesResolvedListingPath_WhenGenerateAssemblyListingIsTrue()
+    public void CompileSteps_IncludesListingFlag_OnTheAssembleStep_WithThatSourceFilesResolvedListingPath_WhenGenerateAssemblyListingIsTrue()
     {
         var project = new TedideProject
         {
@@ -204,15 +287,15 @@ public class Cc65ToolchainTests
             GenerateAssemblyListing = true,
         };
 
-        var args = Cc65Toolchain.BuildCompileArguments(project, "src/screen.c");
+        var args = AssembleStep(project, "src/screen.c");
 
         var listingFlagIndex = args.IndexOf("-l");
         Assert.True(listingFlagIndex >= 0, $"Expected -l in arguments: {string.Join(" ", args)}");
-        Assert.Equal(project.ResolvedListingFiles.Last(), args[listingFlagIndex + 1]);
+        Assert.Equal(Path.GetRelativePath(project.Directory, project.ResolvedListingFiles.Last()), args[listingFlagIndex + 1]);
     }
 
     [Fact]
-    public void BuildCompileArguments_OmitsSourceCommentFlag_WhenAddSourceAsCommentIsFalse()
+    public void CompileSteps_OmitsSourceCommentFlag_WhenAddSourceAsCommentIsFalse()
     {
         var project = new TedideProject
         {
@@ -222,13 +305,13 @@ public class Cc65ToolchainTests
             AddSourceAsComment = false,
         };
 
-        var args = Cc65Toolchain.BuildCompileArguments(project, "src/main.c");
+        var args = GenerateStep(project, "src/main.c");
 
         Assert.DoesNotContain("-T", args);
     }
 
     [Fact]
-    public void BuildCompileArguments_IncludesSourceCommentFlag_WhenAddSourceAsCommentIsTrue()
+    public void CompileSteps_IncludesSourceCommentFlag_WhenAddSourceAsCommentIsTrue()
     {
         var project = new TedideProject
         {
@@ -238,7 +321,7 @@ public class Cc65ToolchainTests
             AddSourceAsComment = true,
         };
 
-        var args = Cc65Toolchain.BuildCompileArguments(project, "src/main.c");
+        var args = GenerateStep(project, "src/main.c");
 
         Assert.Contains("-T", args);
     }
@@ -282,23 +365,23 @@ public class Cc65ToolchainTests
     }
 
     [Fact]
-    public void BuildCompileArguments_OmitsDebugFlag_WhenGenerateDebugInfoIsFalse()
+    public void CompileSteps_OmitsDebugFlag_WhenGenerateDebugInfoIsFalse()
     {
         var project = new TedideProject { Name = "Test", Target = Cc65Target.C64, SourceFiles = ["src/main.c"] };
 
-        var args = Cc65Toolchain.BuildCompileArguments(project, "src/main.c");
+        var args = Cc65Toolchain.BuildCompileSteps(project, "src/main.c").SelectMany(a => a).ToList();
 
         Assert.DoesNotContain("-g", args);
     }
 
     [Fact]
-    public void BuildCompileArguments_IncludesDebugFlag_WhenGenerateDebugInfoIsTrue()
+    public void CompileSteps_IncludesDebugFlag_OnBothSteps_WhenGenerateDebugInfoIsTrue()
     {
+        // Both halves need it: -S so cc65 emits C line info into the generated assembly, -c so
+        // ca65 carries that into the object file for ld65's .dbg output.
         var project = new TedideProject { Name = "Test", Target = Cc65Target.C64, SourceFiles = ["src/main.c"], GenerateDebugInfo = true };
 
-        var args = Cc65Toolchain.BuildCompileArguments(project, "src/main.c");
-
-        Assert.Contains("-g", args);
+        Assert.All(Cc65Toolchain.BuildCompileSteps(project, "src/main.c"), step => Assert.Contains("-g", step));
     }
 
     [Fact]
@@ -492,7 +575,7 @@ public class Cc65ToolchainTests
     }
 
     [Fact]
-    public void Clean_RemovesObjectFilesOutputBinaryAndEachSourceFilesListingFile()
+    public void Clean_RemovesTheWholeObjDirectory_AndTheOutputBinary()
     {
         var dir = Directory.CreateTempSubdirectory();
         try
@@ -501,25 +584,56 @@ public class Cc65ToolchainTests
             {
                 Name = "Test",
                 Target = Cc65Target.C64,
-                SourceFiles = ["main.c"],
+                SourceFiles = ["src/main.c"],
                 OutputFile = "bin/Test.prg",
                 GenerateAssemblyListing = true,
             };
             project.Save(Path.Combine(dir.FullName, "Test.tproj"));
 
-            var objectFile = Path.Combine(dir.FullName, "main.o");
-            var listingFile = Path.Combine(dir.FullName, "main.lst");
+            var objectFile = project.ResolvedObjectFileFor("src/main.c");
+            var listingFile = project.ResolvedListingFileFor("src/main.c");
+            var generatedAssembly = project.ResolvedGeneratedAssemblyFileFor("src/main.c");
+            Directory.CreateDirectory(Path.GetDirectoryName(objectFile)!);
             Directory.CreateDirectory(Path.GetDirectoryName(project.ResolvedOutputFile)!);
-            File.WriteAllText(objectFile, "");
-            File.WriteAllText(project.ResolvedOutputFile, "");
-            File.WriteAllText(listingFile, "");
+            foreach (var file in new[] { objectFile, listingFile, generatedAssembly, project.ResolvedOutputFile })
+                File.WriteAllText(file, "");
 
             var removed = new Cc65Toolchain().Clean(project);
 
-            Assert.Equal([objectFile, project.ResolvedOutputFile, listingFile], removed);
-            Assert.False(File.Exists(objectFile));
+            Assert.Equal(
+                new[] { objectFile, listingFile, generatedAssembly, project.ResolvedOutputFile }.Order(),
+                removed.Order());
+            Assert.False(Directory.Exists(project.ResolvedObjectDirectory));
             Assert.False(File.Exists(project.ResolvedOutputFile));
-            Assert.False(File.Exists(listingFile));
+        }
+        finally
+        {
+            dir.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Clean_AlsoRemovesObjectAndListingFilesLeftBesideSourcesByOlderBuilds_ButNeverAHandWrittenAssemblyFile()
+    {
+        var dir = Directory.CreateTempSubdirectory();
+        try
+        {
+            var project = new TedideProject { Name = "Test", Target = Cc65Target.C64, SourceFiles = ["src/foo.c", "src/foo.s"] };
+            project.Save(Path.Combine(dir.FullName, "Test.tproj"));
+
+            var src = Path.Combine(dir.FullName, "src");
+            Directory.CreateDirectory(src);
+            var legacyObject = Path.Combine(src, "foo.o");
+            var legacyListing = Path.Combine(src, "foo.lst");
+            var handWritten = Path.Combine(src, "foo.s");
+            File.WriteAllText(legacyObject, "");
+            File.WriteAllText(legacyListing, "");
+            File.WriteAllText(handWritten, "; hand-written");
+
+            var removed = new Cc65Toolchain().Clean(project);
+
+            Assert.Equal(new[] { legacyObject, legacyListing }.Order(), removed.Order());
+            Assert.True(File.Exists(handWritten));
         }
         finally
         {
@@ -574,7 +688,8 @@ public class Cc65ToolchainTests
             };
             project.Save(Path.Combine(dir.FullName, "Test.tproj"));
 
-            var mainListing = Path.Combine(dir.FullName, "main.lst");
+            var mainListing = project.ResolvedListingFileFor("main.c");
+            Directory.CreateDirectory(Path.GetDirectoryName(mainListing)!);
             File.WriteAllText(mainListing, "");
             // screen.lst deliberately left absent, as if screen.c was never (re)compiled.
 
@@ -713,6 +828,14 @@ public class Cc65ToolchainTests
             dir.Delete(recursive: true);
         }
     }
+
+    /// <summary>The compile-to-assembly step for a C source (the first of its two steps).</summary>
+    private static List<string> GenerateStep(TedideProject project, string sourceFile) =>
+        Cc65Toolchain.BuildCompileSteps(project, sourceFile)[0];
+
+    /// <summary>The assemble step - a C source's second step, or an assembly source's only one.</summary>
+    private static List<string> AssembleStep(TedideProject project, string sourceFile) =>
+        Cc65Toolchain.BuildCompileSteps(project, sourceFile)[^1];
 
     private static async Task<bool> HasExitedAsync(int pid, TimeSpan timeout)
     {

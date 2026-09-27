@@ -94,14 +94,57 @@ public sealed class TedideProject
         Path.Combine(Directory, OutputFile ?? (Name + Target.DefaultOutputExtension()));
 
     /// <summary>
-    /// Where cl65's -l assembler listings are written when <see cref="GenerateAssemblyListing"/>
-    /// is on - one per source file, each source file's own path with a .lst extension (e.g.
-    /// src/main.c -> src/main.lst), the same way its .o object file is placed. Each project source
-    /// is compiled in its own cl65 invocation specifically so this can be one listing per source
-    /// file rather than a single listing covering the whole project.
+    /// Where every per-source build output goes: "obj/" in the project's own directory, mirroring
+    /// each source file's relative path with an extra extension appended to the *full* file name
+    /// (src/main.c -> obj/src/main.c.o, src/border.s -> obj/src/border.s.o) rather than replacing
+    /// its extension. Both halves of that matter: cl65 writes the intermediate assembly for a C
+    /// file next to wherever that assembly is going, so building src/foo.c straight to src/foo.o
+    /// overwrote and then deleted a hand-written src/foo.s beside it (confirmed against a real
+    /// cl65 2.19); and keeping the source's own extension in the name stops foo.c and foo.s from
+    /// both compiling to the same foo.o/foo.lst. Tedide owns this directory outright - Clean
+    /// deletes it wholesale - so nothing hand-written belongs in it.
     /// </summary>
     [JsonIgnore]
-    public IEnumerable<string> ResolvedListingFiles => ResolvedSourceFiles.Select(f => Path.ChangeExtension(f, ".lst"));
+    public string ResolvedObjectDirectory => Path.Combine(Directory, "obj");
+
+    /// <summary>The object file <paramref name="sourceFile"/> (relative, as in <see cref="SourceFiles"/>)
+    /// compiles to - see <see cref="ResolvedObjectDirectory"/>.</summary>
+    public string ResolvedObjectFileFor(string sourceFile) => ResolvedIntermediateFileFor(sourceFile, ".o");
+
+    /// <summary>The assembler listing <paramref name="sourceFile"/> gets when <see cref="GenerateAssemblyListing"/>
+    /// is on - see <see cref="ResolvedObjectDirectory"/>.</summary>
+    public string ResolvedListingFileFor(string sourceFile) => ResolvedIntermediateFileFor(sourceFile, ".lst");
+
+    /// <summary>The assembly cc65 generates from <paramref name="sourceFile"/> on the way to its
+    /// object file - only meaningful for a C source (see <see cref="IsCSourceFile"/>); a
+    /// hand-written assembly source is assembled directly and has no generated counterpart.</summary>
+    public string ResolvedGeneratedAssemblyFileFor(string sourceFile) => ResolvedIntermediateFileFor(sourceFile, ".s");
+
+    /// <summary>Whether <paramref name="sourceFile"/> is C (compiled to assembly first, then
+    /// assembled) rather than assembly (assembled directly).</summary>
+    public static bool IsCSourceFile(string sourceFile) =>
+        string.Equals(Path.GetExtension(sourceFile), ".c", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Every source file's assembler listing path (see <see cref="ResolvedListingFileFor"/>),
+    /// in <see cref="SourceFiles"/> order. Each project source is compiled in its own cl65
+    /// invocation specifically so this can be one listing per source file rather than a single
+    /// listing covering the whole project.</summary>
+    [JsonIgnore]
+    public IEnumerable<string> ResolvedListingFiles => SourceFiles.Select(ResolvedListingFileFor);
+
+    private string ResolvedIntermediateFileFor(string sourceFile, string extension)
+    {
+        // Normally just "src/main.c", but a source outside the project directory ("../shared/x.c",
+        // or another drive entirely) must still land *inside* obj/ - ".." segments and a drive
+        // root are replaced rather than followed.
+        var relative = Path.GetRelativePath(Directory, Path.Combine(Directory, sourceFile));
+        if (Path.IsPathRooted(relative))
+            relative = Path.Combine("_root", relative[Path.GetPathRoot(relative)!.Length..]);
+        var segments = relative
+            .Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+            .Select(s => s == ".." ? "__" : s);
+        return Path.Combine([ResolvedObjectDirectory, .. segments]) + extension;
+    }
 
     /// <summary>Where ld65's -m linker map is written when <see cref="GenerateLinkerMap"/> is on -
     /// always "lnk.map" directly in the project's own directory, not per-source like the .lst

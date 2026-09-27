@@ -90,19 +90,60 @@ public class TedideProjectTests
     }
 
     [Fact]
-    public void ResolvedListingFiles_AreSourceFilesWithLstExtension()
+    public void ResolvedListingFiles_MirrorEachSourceFileUnderObj_WithLstAppended()
     {
         var dir = Directory.CreateTempSubdirectory();
         try
         {
             var path = Path.Combine(dir.FullName, "MyGame.tproj");
-            var project = new TedideProject { SourceFiles = ["main.c", Path.Combine("sub", "b.c")] };
+            var project = new TedideProject { SourceFiles = ["main.c", "sub/b.s"] };
             project.Save(path);
 
             var resolved = project.ResolvedListingFiles.ToList();
 
-            Assert.Equal(Path.Combine(dir.FullName, "main.lst"), resolved[0]);
-            Assert.Equal(Path.Combine(dir.FullName, "sub", "b.lst"), resolved[1]);
+            Assert.Equal(Path.Combine(dir.FullName, "obj", "main.c.lst"), resolved[0]);
+            Assert.Equal(Path.Combine(dir.FullName, "obj", "sub", "b.s.lst"), resolved[1]);
+        }
+        finally
+        {
+            dir.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public void IntermediateFiles_KeepTheSourceExtension_SoACAndAnAssemblyFileWithTheSameBaseNameDontCollide()
+    {
+        var dir = Directory.CreateTempSubdirectory();
+        try
+        {
+            var project = new TedideProject { SourceFiles = ["src/foo.c", "src/foo.s"] };
+            project.Save(Path.Combine(dir.FullName, "MyGame.tproj"));
+
+            Assert.Equal(Path.Combine(dir.FullName, "obj", "src", "foo.c.o"), project.ResolvedObjectFileFor("src/foo.c"));
+            Assert.Equal(Path.Combine(dir.FullName, "obj", "src", "foo.s.o"), project.ResolvedObjectFileFor("src/foo.s"));
+            Assert.Equal(Path.Combine(dir.FullName, "obj", "src", "foo.c.s"), project.ResolvedGeneratedAssemblyFileFor("src/foo.c"));
+        }
+        finally
+        {
+            dir.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public void IntermediateFiles_StayInsideObj_EvenForASourceOutsideTheProjectDirectory()
+    {
+        var dir = Directory.CreateTempSubdirectory();
+        try
+        {
+            var projectDir = Path.Combine(dir.FullName, "game");
+            Directory.CreateDirectory(projectDir);
+            var project = new TedideProject { SourceFiles = ["../shared/util.c"] };
+            project.Save(Path.Combine(projectDir, "MyGame.tproj"));
+
+            var objectFile = project.ResolvedObjectFileFor("../shared/util.c");
+
+            Assert.Equal(Path.Combine(projectDir, "obj", "__", "shared", "util.c.o"), objectFile);
+            Assert.StartsWith(project.ResolvedObjectDirectory + Path.DirectorySeparatorChar, Path.GetFullPath(objectFile));
         }
         finally
         {

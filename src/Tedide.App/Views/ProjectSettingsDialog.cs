@@ -293,7 +293,7 @@ public sealed class ProjectSettingsDialog : Dialog
         var listingHelpLabel = new Label
         {
             Text = "Writes an assembler listing (interleaved source and generated 6502\n" +
-                   "assembly) for each source file, next to that file, e.g. src/Foo.c -> src/Foo.lst.",
+                   "assembly) for each source file, under obj/, e.g. src/Foo.c -> obj/src/Foo.c.lst.",
             X = 0, Y = 2, Width = Dim.Fill(), Height = 2,
         };
 

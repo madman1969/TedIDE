@@ -36,9 +36,9 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
     }
 
     /// <summary>
-    /// Builds the given project: compiles each source file in its own cl65 invocation (so each
-    /// gets its own assembler listing - see <see cref="BuildCompileArguments"/>), then links the
-    /// resulting object files into the project's output binary. Stops after the compile stage
+    /// Builds the given project: compiles each source file into obj/ with its own cl65
+    /// invocation(s) (so each gets its own assembler listing - see <see cref="BuildCompileSteps"/>),
+    /// then links the resulting object files into the project's output binary. Stops after the compile stage
     /// (skipping the link) if any source file failed to compile, so a failed build doesn't try to
     /// link with missing or stale object files.
     /// </summary>
@@ -76,19 +76,28 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
         var lastExitCode = 0;
         foreach (var sourceFile in project.SourceFiles)
         {
-            var exitCode = await RunCl65Async(BuildCompileArguments(project, sourceFile), project.Directory, Capture, cancellationToken);
-            if (exitCode is null)
-            {
-                stopwatch.Stop();
-                return new BuildResult(false, -1, lines, Cc65DiagnosticParser.ParseAll(lines), stopwatch.Elapsed);
-            }
+            // cl65 won't create the obj/ subdirectory an -o/-l path points into.
+            Directory.CreateDirectory(Path.GetDirectoryName(project.ResolvedObjectFileFor(sourceFile))!);
 
-            if (exitCode.Value != 0)
+            foreach (var step in BuildCompileSteps(project, sourceFile))
             {
-                compileFailed = true;
-                lastExitCode = exitCode.Value;
+                var exitCode = await RunCl65Async(step, project.Directory, Capture, cancellationToken);
+                if (exitCode is null)
+                {
+                    stopwatch.Stop();
+                    return new BuildResult(false, -1, lines, Cc65DiagnosticParser.ParseAll(lines), stopwatch.Elapsed);
+                }
+
+                if (exitCode.Value != 0)
+                {
+                    // A C file that failed to compile has no generated assembly to assemble - skip
+                    // its remaining step rather than adding a second, cascading error to the output.
+                    compileFailed = true;
+                    lastExitCode = exitCode.Value;
+                    break;
+                }
             }
-            objectFiles.Add(Path.ChangeExtension(Path.Combine(project.Directory, sourceFile), ".o"));
+            objectFiles.Add(project.ResolvedObjectFileFor(sourceFile));
         }
 
         if (!compileFailed)
@@ -168,85 +177,92 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
     }
 
     /// <summary>
-    /// Deletes build artifacts without invoking cl65: the per-source .o object file cl65 leaves
-    /// alongside each source file, the final linked output binary, each source file's assembler
-    /// listing (if <see cref="TedideProject.GenerateAssemblyListing"/> is on), the ld65 linker map
-    /// (if <see cref="TedideProject.GenerateLinkerMap"/> is on), the ld65 label file (if
-    /// <see cref="TedideProject.ExportLabels"/> is on) and the debug info file (if
-    /// <see cref="TedideProject.GenerateDebugInfo"/> is on). Skips whatever doesn't exist (e.g. a
-    /// project that's never been built, or one that failed to compile some of its sources).
-    /// Returns the full paths actually deleted.
+    /// Deletes build artifacts without invoking cl65: the whole obj/ directory
+    /// (<see cref="TedideProject.ResolvedObjectDirectory"/> - every object file, assembler listing
+    /// and generated assembly), the final linked output binary, the ld65 linker map, label file and
+    /// debug info file, plus any .o/.lst left beside a source file by builds from before obj/
+    /// existed. Skips whatever doesn't exist (e.g. a project that's never been built, or one that
+    /// failed to compile some of its sources). Returns the full paths actually deleted.
     /// </summary>
     public IReadOnlyList<string> Clean(TedideProject project)
     {
         var removed = new List<string>();
 
-        foreach (var sourceFile in project.ResolvedSourceFiles)
+        void Remove(string path)
         {
-            var objectFile = Path.ChangeExtension(sourceFile, ".o");
-            if (File.Exists(objectFile))
-            {
-                File.Delete(objectFile);
-                removed.Add(objectFile);
-            }
+            if (!File.Exists(path))
+                return;
+            File.Delete(path);
+            removed.Add(path);
         }
 
-        if (File.Exists(project.ResolvedOutputFile))
+        if (Directory.Exists(project.ResolvedObjectDirectory))
         {
-            File.Delete(project.ResolvedOutputFile);
-            removed.Add(project.ResolvedOutputFile);
+            foreach (var file in Directory.EnumerateFiles(project.ResolvedObjectDirectory, "*", SearchOption.AllDirectories).ToList())
+                Remove(file);
+            Directory.Delete(project.ResolvedObjectDirectory, recursive: true);
         }
 
-        foreach (var listingFile in project.ResolvedListingFiles)
+        // Where older builds put each source's object file and listing - removed so upgrading a
+        // project doesn't leave stale copies behind. Never the source's .s counterpart: under the
+        // old layout cl65 only ever deleted that, and it may well be hand-written.
+        // GetFullPath normalizes a .tproj's "src/foo.c" separators, so reported paths match the OS form.
+        foreach (var sourceFile in project.ResolvedSourceFiles.Select(Path.GetFullPath))
         {
-            if (File.Exists(listingFile))
-            {
-                File.Delete(listingFile);
-                removed.Add(listingFile);
-            }
+            Remove(Path.ChangeExtension(sourceFile, ".o"));
+            Remove(Path.ChangeExtension(sourceFile, ".lst"));
         }
 
-        if (File.Exists(project.ResolvedMapFile))
-        {
-            File.Delete(project.ResolvedMapFile);
-            removed.Add(project.ResolvedMapFile);
-        }
-
-        if (File.Exists(project.ResolvedLabelsFile))
-        {
-            File.Delete(project.ResolvedLabelsFile);
-            removed.Add(project.ResolvedLabelsFile);
-        }
-
-        if (File.Exists(project.ResolvedDebugInfoFile))
-        {
-            File.Delete(project.ResolvedDebugInfoFile);
-            removed.Add(project.ResolvedDebugInfoFile);
-        }
-
+        Remove(project.ResolvedOutputFile);
+        Remove(project.ResolvedMapFile);
+        Remove(project.ResolvedLabelsFile);
+        Remove(project.ResolvedDebugInfoFile);
         return removed;
     }
 
     /// <summary>
-    /// The cl65 arguments to compile (and assemble, but not link - <c>-c</c>) a single source
-    /// file, including its own <c>-l</c> listing path if <see cref="TedideProject.GenerateAssemblyListing"/>
-    /// is on. Building a project compiles each of its source files with a separate call to this
-    /// (see <see cref="BuildAsync"/>) rather than listing every source file on one cl65 command
-    /// line, because cl65/ca65 only ever write to one <c>-l</c> target per invocation - a single
-    /// invocation covering every source file would have each file's listing silently overwrite
-    /// the last, leaving only the final source file's listing behind.
+    /// The cl65 invocations that turn one source file into its object file in obj/ (see
+    /// <see cref="TedideProject.ResolvedObjectDirectory"/> for why there, and under that name).
+    /// A C file takes two: compile to assembly with an explicit <c>-o</c> into obj/, then assemble
+    /// that - never a single <c>cl65 -c foo.c</c>, which writes its intermediate foo.s beside the
+    /// source and deletes it afterward, destroying any hand-written foo.s already there. An
+    /// assembly file is assembled directly in one step. Each source file gets its own invocations
+    /// rather than sharing one cl65 command line, because cl65/ca65 only ever write one <c>-l</c>
+    /// listing per invocation.
     /// </summary>
-    internal static List<string> BuildCompileArguments(TedideProject project, string sourceFile)
+    internal static List<List<string>> BuildCompileSteps(TedideProject project, string sourceFile)
+    {
+        var objectFile = RelativeToProject(project, project.ResolvedObjectFileFor(sourceFile));
+        var listingFile = project.GenerateAssemblyListing
+            ? RelativeToProject(project, project.ResolvedListingFileFor(sourceFile))
+            : null;
+
+        if (!TedideProject.IsCSourceFile(sourceFile))
+            return [BuildAssembleArguments(project, sourceFile, objectFile, listingFile)];
+
+        var generatedAssembly = RelativeToProject(project, project.ResolvedGeneratedAssemblyFileFor(sourceFile));
+        return
+        [
+            BuildGenerateAssemblyArguments(project, sourceFile, generatedAssembly),
+            BuildAssembleArguments(project, generatedAssembly, objectFile, listingFile),
+        ];
+    }
+
+    /// <summary>
+    /// The cl65 arguments to compile a C source file to assembly only (<c>-S</c>), written to
+    /// <paramref name="outputFile"/> - the first of a C file's two <see cref="BuildCompileSteps"/>.
+    /// Carries every compiler-level setting (optimization, <c>-T</c> source comments, include
+    /// paths, defines); the listing is produced by the assemble step that follows.
+    /// </summary>
+    internal static List<string> BuildGenerateAssemblyArguments(TedideProject project, string sourceFile, string outputFile)
     {
         var args = new List<string>
         {
             "-t", project.Target.ToCl65Id(),
-            "-c",
+            "-S",
         };
         if (project.OptimizationLevel.ToCl65Flag() is { } optimizationFlag)
             args.Add(optimizationFlag);
-        if (project.GenerateAssemblyListing)
-            args.AddRange(["-l", Path.ChangeExtension(Path.Combine(project.Directory, sourceFile), ".lst")]);
         if (project.AddSourceAsComment)
             args.Add("-T");
         if (project.GenerateDebugInfo)
@@ -263,9 +279,41 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
         // and PreprocessorDefines are placed before ExtraArguments too, so a hand-written -I/-D in
         // ExtraArguments can still layer on top if needed.
         args.AddRange(project.ExtraArguments);
+        args.AddRange(["-o", outputFile]);
         args.Add(sourceFile);
         return args;
     }
+
+    /// <summary>
+    /// The cl65 arguments to assemble (<c>-c</c>, no link) <paramref name="inputFile"/> - either a
+    /// hand-written assembly source, or the assembly <see cref="BuildGenerateAssemblyArguments"/>
+    /// generated from a C file - into <paramref name="objectFile"/>, with a <c>-l</c> listing if
+    /// <paramref name="listingFile"/> is given. ExtraArguments are passed here too, so an
+    /// assembler-level flag in them (e.g. <c>--asm-define</c>) still reaches hand-written sources;
+    /// cl65 ignores compiler-only flags when its input is already assembly.
+    /// </summary>
+    internal static List<string> BuildAssembleArguments(TedideProject project, string inputFile, string objectFile, string? listingFile)
+    {
+        var args = new List<string>
+        {
+            "-t", project.Target.ToCl65Id(),
+            "-c",
+        };
+        if (project.GenerateDebugInfo)
+            args.Add("-g");
+        if (listingFile is not null)
+            args.AddRange(["-l", listingFile]);
+        args.AddRange(project.ExtraArguments);
+        args.AddRange(["-o", objectFile]);
+        args.Add(inputFile);
+        return args;
+    }
+
+    /// <summary>obj/ paths are passed to cl65 relative to the project directory (its working
+    /// directory), not absolute - the generated assembly's path is recorded as-is in the .dbg
+    /// file's own file table, which should stay as portable as the source paths beside it.</summary>
+    private static string RelativeToProject(TedideProject project, string path) =>
+        Path.GetRelativePath(project.Directory, path);
 
     /// <summary>
     /// The cl65 arguments to link a project's already-compiled object files into its output

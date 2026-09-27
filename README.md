@@ -69,7 +69,7 @@ samples/
     HelloCBM.tsln
     HelloCBM.tproj     src/*.c plus one hand-written src/border.s, -I include for the headers
     src/               main.c, screen.c, animation.c, input.c, delay.c, border.s (ca65 assembly)
-                       (each gets its own .lst next to it if listing generation is on) - gitignored
+                       (object files and listings build into the project's obj/ folder - gitignored)
     include/           screen.h, animation.h, input.h, delay.h, border.h
     lib/               Empty - drop a prebuilt .lib archive here to link against it
     bin/               Build output (HelloCBM.prg) - gitignored
@@ -77,7 +77,7 @@ samples/
     HelloPlus4.tsln
     HelloPlus4.tproj   src/*.c, -I include for the headers - Target is Plus4, not cross-target
     src/               main.c, screen.c, palette.c, sound.c, speed.c, input.c, delay.c
-                       (each gets its own .lst next to it if listing generation is on) - gitignored
+                       (object files and listings build into the project's obj/ folder - gitignored)
     include/           screen.h, palette.h, sound.h, speed.h, input.h, delay.h
     lib/               Empty - drop a prebuilt .lib archive here to link against it
     bin/               Build output (HelloPlus4.prg) - gitignored
@@ -85,7 +85,7 @@ samples/
     C128_80.tsln
     C128_80.tproj      src/*.c, -I include for the headers - Target is C128, not cross-target
     src/               main.c, screen.c, ruler.c, columns.c, contrast.c, input.c
-                       (each gets its own .lst next to it if listing generation is on) - gitignored
+                       (object files and listings build into the project's obj/ folder - gitignored)
     include/           screen.h, ruler.h, columns.h, contrast.h, input.h
     lib/               Empty - drop a prebuilt .lib archive here to link against it
     bin/               Build output (C128_80.prg) - gitignored
@@ -121,7 +121,7 @@ samples/
     Nano128.tsln
     Nano128.tproj        src/*.c, -I include for the headers - Target is C128, not cross-target
     src/                 main.c, screen.c, buffer.c, fileio.c, input.c, editor.c, vblank.c
-                         (each gets its own .lst next to it if listing generation is on) - gitignored
+                         (object files and listings build into the project's obj/ folder - gitignored)
     include/             screen.h, buffer.h, fileio.h, input.h, editor.h, vblank.h
     lib/                 Empty - drop a prebuilt .lib archive here to link against it
     bin/                 Build output (Nano128.prg) - gitignored
@@ -243,7 +243,7 @@ etc. show up as proper subfolders, and headers/linker config files show up for b
 even though they're never compiled directly. Build-output folders (`bin/`, `obj/`, `.git/`, `.vs/`)
 are hidden from the tree, but a project that's actually been built gets its own **Generated Files**
 node listing whichever of these exist and are enabled (see "Project Settings dialog" below): each
-source file's own `.lst` (assembler listing), `lnk.map` (linker map), `{Name}.lbl` (VICE label
+source file's own `.lst` (assembler listing, under `obj/`), `lnk.map` (linker map), `{Name}.lbl` (VICE label
 file) and `{Name}.dbg` (debug info). Right-click (or Shift+F10) a folder/file node for **New
 File...**/**Rename File**/**Delete File** -
 not offered on the project root itself, only inside one of its subfolders. **New File...** defaults
@@ -454,7 +454,7 @@ an example, laid out the way GitHub's most common C project layout does (`src/`,
 | --- | --- |
 | `Target` | Any of the platforms `cl65 -t` supports (`C64`, `Apple2`, `Nes`, `Atari`, ...; see `Cc65Target` in `Tedide.Core`) - the Project Settings dialog's dropdown restricts this to the nine Commodore 8-bit machines cc65 targets (`Cc65TargetExtensions.CommodoreTargets`), since that's Tedide's focus, but any value `cl65` accepts works if set by hand. |
 | `OptimizationLevel` | One of cc65's optimizer presets (`None`, `Standard` = `-O`, `Inline` = `-Oi`, `Register` = `-Or`, `InlineKnownFunctions` = `-Os`, `Extended` = `-Ox`, or `Maximum` = `-Oirs`, combining the last three) - see `Cc65OptimizationLevel`. |
-| `GenerateAssemblyListing` / `AddSourceAsComment` | Control the assembler listing cl65 can emit for each source file (`-l` / `-T`), alongside that file (e.g. `src/main.c` -> `src/main.lst`) - see "Project Settings dialog" below. Both default to `true`. |
+| `GenerateAssemblyListing` / `AddSourceAsComment` | Control the assembler listing cl65 can emit for each source file (`-l` / `-T`), under the project's `obj/` folder (e.g. `src/main.c` -> `obj/src/main.c.lst`) - see "Project Settings dialog" below. Both default to `true`. |
 | `GenerateLinkerMap` | Whether `ld65` emits a linker map (`-m`) to `lnk.map`, next to the project file - see "Symbols" under "Running" above. Defaults to `false`. |
 | `ExportLabels` | Whether `ld65` emits a VICE-format label file (`-Ln`) to `{Name}.lbl`, next to the project file. Defaults to `false`. |
 | `GenerateDebugInfo` | Whether cc65/ca65 embed debug info (`-g`) and `ld65` consolidates it into `{Name}.dbg` (`--dbgfile`, forwarded through cl65 as `-Wl --dbgfile,path` - it has no top-level flag for this). Required for the debugger - see "Debugging" above. Defaults to `false`. |
@@ -479,13 +479,18 @@ single Save/Cancel footer:
   include paths, and preprocessor defines.
 - **Optimizer** - the `OptimizationLevel` preset, with inline help text explaining what each of
   cc65's `-O`/`-Oi`/`-Or`/`-Os`/`-Ox`/`-Oirs` flags does.
-- **Compiler** - two checkboxes: *Generate assembly listing file* (`-l`, written next to each
-  source file, e.g. `src/Foo.c` -> `src/Foo.lst`, and surfaced in the Solution Explorer's
+- **Compiler** - two checkboxes: *Generate assembly listing file* (`-l`, written under the project's
+  `obj/` folder, e.g. `src/Foo.c` -> `obj/src/Foo.c.lst`, and surfaced in the Solution Explorer's
   Generated Files node once at least one exists) and *Include C source as comments in generated
   assembly* (`-T`, most useful together with the listing - it interleaves each C line as a comment
   above the 6502 instructions it compiled to). Tedide builds each source file in its own `cl65`
   invocation specifically so this is one listing per source file, not one covering the whole
-  project - see "Running" above.
+  project. Every build output lands in `obj/`, mirroring the source tree with the
+  source's own extension kept (`foo.c` -> `obj/src/foo.c.o`, `foo.s` -> `obj/src/foo.s.o`): a C
+  file is compiled to assembly there first (`cl65 -S -o obj/...`) and then assembled, never with a
+  bare `cl65 -c src/foo.c` - that writes its intermediate `foo.s` beside the source and deletes it
+  afterward, silently destroying a hand-written `src/foo.s`. **Clean Project** deletes `obj/`
+  outright, plus any `.o`/`.lst` older builds left beside the sources.
 - **Linker** - *Generate linker map file* (`-m`), *Export labels* (`-Ln`), *Generate debug info*
   (`-g`/`--dbgfile` - needed for the debugger, see "Debugging" above), and a custom linker config
   file path (`-C`) - its own **Browse** button opens straight to CC65_HOME's `cfg/` folder, at the
