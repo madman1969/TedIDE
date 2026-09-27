@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Tedide.Core;
 using Terminal.Gui.App;
 using Terminal.Gui.Drawing;
 using Terminal.Gui.ViewBase;
@@ -160,9 +161,11 @@ public sealed class FindInFilesDialog : Dialog
                 string[] lines;
                 try
                 {
-                    lines = File.ReadAllLines(file);
+                    // SourceFileText, not File.ReadAllLines: a non-UTF-8 file's own characters then match
+                    // (and display) as themselves rather than as U+FFFD.
+                    lines = SourceFileText.Read(file).Text.Split('\n').Select(l => l.TrimEnd('\r')).ToArray();
                 }
-                catch (IOException)
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
                 {
                     // Skip files that can't be read (e.g. locked by another process) rather than
                     // aborting the whole search.

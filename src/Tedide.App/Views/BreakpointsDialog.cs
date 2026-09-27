@@ -112,7 +112,17 @@ public sealed class BreakpointsDialog : Dialog
 
     private void SaveAndRefresh()
     {
-        _breakpoints.Save(_savePath);
+        // Caught here, inside the dialog's own handler - an exception escaping a running dialog
+        // would take down the whole app. The in-memory change still stands (and is what the
+        // debugger uses); it'll be written the next time breakpoints are saved successfully.
+        try
+        {
+            _breakpoints.Save(_savePath);
+        }
+        catch (Exception ex) when (AppShell.IsFileError(ex))
+        {
+            TedideMessageBox.ErrorQuery("Could Not Save", $"Saving breakpoints failed:\n{ex.Message}", ["OK"]);
+        }
         Refresh();
     }
 }

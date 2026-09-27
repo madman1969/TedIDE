@@ -1,3 +1,5 @@
+using System.Text;
+using Tedide.Core;
 using Terminal.Gui.App;
 using Terminal.Gui.Editor;
 using Terminal.Gui.Editor.Document;
@@ -30,6 +32,9 @@ public sealed class EditorPane : View
     public Editor Editor { get; }
 
     public string? OpenPath { get; private set; }
+
+    /// <summary>The open file's on-disk encoding, so Save writes it back unchanged - see <see cref="SourceFileText"/>.</summary>
+    private Encoding _encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
 
     /// <summary>Raised when "Find in Files..." is chosen from the editor's right-click context
     /// menu, carrying the current selection (empty if there is none) to pre-populate the Find in
@@ -109,7 +114,14 @@ public sealed class EditorPane : View
         // A fresh TextDocument (rather than mutating the editor's existing one) is the pattern
         // ted's own SetDocument() uses to load a file - its undo stack starts clean, unlike
         // setting .Text on an existing document.
-        Editor.Document = new TextDocument(File.Exists(filePath) ? File.ReadAllText(filePath) : string.Empty);
+        // SourceFileText, not File.ReadAllText: keeps a non-UTF-8 file's bytes intact across a
+        // save (see that class). Read before touching any editor state, so a file that can't be
+        // read leaves whatever was open before still open.
+        var (text, encoding) = File.Exists(filePath)
+            ? SourceFileText.Read(filePath)
+            : (string.Empty, (Encoding)new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+        _encoding = encoding;
+        Editor.Document = new TextDocument(text);
         Editor.HighlightingDefinition = HighlightingManager.Instance.GetDefinitionByExtension(Path.GetExtension(filePath));
         Editor.CaretOffset = 0;
         Editor.ReadOnly = false;
@@ -137,14 +149,25 @@ public sealed class EditorPane : View
 
     public bool IsModified => OpenPath is not null && !Editor.Document!.UndoStack.IsOriginalFile;
 
-    public void Save()
+    /// <summary>
+    /// Writes the open file back in the encoding it was read in (see <see cref="SourceFileText"/>).
+    /// Returns a message for the user if that wasn't possible - the text gained a character the
+    /// original encoding can't hold, so it was saved as UTF-8 instead - otherwise null. Throws on a
+    /// file-system error (read-only file, locked, ...); callers guard that - see AppShell.Guard.
+    /// </summary>
+    public string? Save()
     {
         if (OpenPath is null)
-            return;
+            return null;
 
-        File.WriteAllText(OpenPath, Editor.Text);
+        var used = SourceFileText.Write(OpenPath, Editor.Text, _encoding);
+        var notice = used.CodePage != _encoding.CodePage
+            ? $"{Path.GetFileName(OpenPath)} contained characters {_encoding.WebName} can't represent, so it was saved as UTF-8."
+            : null;
+        _encoding = used;
         // The just-written text is now the on-disk baseline; without this, IsModified would keep
         // reporting true even immediately after a successful save.
         Editor.Document!.UndoStack.MarkAsOriginalFile();
+        return notice;
     }
 }

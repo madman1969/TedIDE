@@ -94,10 +94,13 @@ public sealed class Workspace
 
     public TedideSolution OpenSolution(string tslnPath)
     {
+        // Everything loaded before anything is replaced: a missing or corrupt .tproj throws here,
+        // and must leave the previously open solution intact rather than half-swapped.
         var solution = TedideSolution.Load(tslnPath);
+        var projects = solution.LoadProjects();
         Solution = solution;
         Projects.Clear();
-        Projects.AddRange(solution.LoadProjects());
+        Projects.AddRange(projects);
         Changed?.Invoke();
         return solution;
     }

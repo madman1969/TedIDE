@@ -52,7 +52,24 @@ public sealed class SymbolPanelView : View
     public void Refresh(TedideProject? project)
     {
         var rows = new List<SymbolRow>();
+        // Best-effort: these are generated files, but one from a newer ld65, a truncated write or a
+        // locked file must leave the panel empty (logged) rather than crash - this runs straight
+        // after every build, from a menu/key action where an exception would end the app.
+        try
+        {
+            AddRows(project, rows);
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            Serilog.Log.Warning(ex, "Could not read the linker map / label file for the Symbols panel");
+            rows.Clear();
+        }
 
+        SetRows(rows);
+    }
+
+    private static void AddRows(TedideProject? project, List<SymbolRow> rows)
+    {
         if (project is { GenerateLinkerMap: true } && File.Exists(project.ResolvedMapFile))
         {
             var map = LinkerMapFile.Parse(File.ReadAllText(project.ResolvedMapFile));
@@ -71,8 +88,6 @@ public sealed class SymbolPanelView : View
             foreach (var label in LabelsFile.Parse(File.ReadAllText(project.ResolvedLabelsFile)))
                 rows.Add(new SymbolRow("Label", label.Name, label.Address.ToString("X6"), "", project.ResolvedLabelsFile, label.LabelFileLineNumber));
         }
-
-        SetRows(rows);
     }
 
     private void SetRows(IReadOnlyList<SymbolRow> rows)

@@ -148,17 +148,30 @@ public sealed class ProjectSettingsDialog : Dialog
             project.GenerateDebugInfo = _generateDebugInfoField.Value == CheckState.Checked;
             project.LinkerConfigPath = string.IsNullOrWhiteSpace(_linkerConfigPathField.Text) ? null : _linkerConfigPathField.Text.Trim();
             project.EnableSuperCpu = _enableSuperCpuField.Value == CheckState.Checked;
-            project.Save();
 
-            // Not project state - this machine's toolchain install, not any one project - so it's
-            // persisted separately rather than onto the TedideProject above. AppShell reloads and
-            // applies it (CC65_HOME to this process's environment, ViceBinDirectory to its
-            // ViceEmulator instance) immediately after this dialog closes.
-            new ToolchainSettings
+            // Saved here, inside this button's handler, so a failure is reported and the dialog
+            // stays open for a retry or Cancel - an exception escaping a running dialog's handler
+            // would otherwise take down the whole app.
+            try
             {
-                Cc65Home = _cc65HomeField.Text.Trim() is { Length: > 0 } cc65Home ? cc65Home : null,
-                ViceBinDirectory = _viceBinDirectoryField.Text.Trim() is { Length: > 0 } viceBinDirectory ? viceBinDirectory : null,
-            }.Save();
+                project.Save();
+
+                // Not project state - this machine's toolchain install, not any one project - so
+                // it's persisted separately rather than onto the TedideProject above. AppShell
+                // reloads and applies it (CC65_HOME to this process's environment,
+                // ViceBinDirectory to its ViceEmulator instance) immediately after this dialog closes.
+                new ToolchainSettings
+                {
+                    Cc65Home = _cc65HomeField.Text.Trim() is { Length: > 0 } cc65Home ? cc65Home : null,
+                    ViceBinDirectory = _viceBinDirectoryField.Text.Trim() is { Length: > 0 } viceBinDirectory ? viceBinDirectory : null,
+                }.Save();
+            }
+            catch (Exception ex) when (AppShell.IsFileError(ex))
+            {
+                TedideMessageBox.ErrorQuery("Could Not Save", $"Saving the project settings failed:\n{ex.Message}", ["OK"]);
+                e.Handled = true;
+                return;
+            }
 
             Saved = true;
             Application.RequestStop(this);
