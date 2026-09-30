@@ -4,13 +4,48 @@ using Tedide.Core;
 
 namespace Tedide.Build;
 
+/// <summary>The external program one <see cref="BuildStep"/> runs.</summary>
+internal enum BuildTool
+{
+    Cl65,
+    Opt6502,
+}
+
+/// <summary>One external process invocation of a build - see <see cref="Cc65Toolchain.BuildCompileSteps"/>.</summary>
+internal sealed record BuildStep(BuildTool Tool, List<string> Arguments);
+
 /// <summary>
 /// Drives the cc65 toolchain (cl65) as an external process to build a <see cref="TedideProject"/>.
 /// Assumes cl65 (and its ca65/ld65/co65 companions) are available on PATH, unless overridden.
+/// Projects with <see cref="TedideProject.UseOpt6502"/> on also run opt6502 - see
+/// <see cref="Opt6502Path"/> for where it's looked for.
 /// </summary>
-public sealed class Cc65Toolchain(string cl65Path = "cl65")
+public sealed class Cc65Toolchain(string cl65Path = "cl65", string? opt6502Path = null)
 {
+    public const string Opt6502ExecutableName = "opt6502.exe";
+
     public string Cl65Path { get; } = cl65Path;
+
+    /// <summary>
+    /// The opt6502 executable configured in Tedide's toolchain settings, or null/blank for the
+    /// default - see <see cref="ResolveOpt6502Path"/>. Settable so a changed setting applies to
+    /// the running app without a restart, same as ViceEmulator.BinDirectory.
+    /// </summary>
+    public string? Opt6502Path { get; set; } = opt6502Path;
+
+    /// <summary>
+    /// Where opt6502 is actually run from: <paramref name="configuredPath"/> if one is set;
+    /// otherwise an opt6502.exe beside Tedide itself in <paramref name="baseDirectory"/> (where
+    /// Tedide.App's build copies tools/opt6502/bin/opt6502.exe when it has been built); otherwise
+    /// plain "opt6502", left to PATH.
+    /// </summary>
+    internal static string ResolveOpt6502Path(string? configuredPath, string baseDirectory)
+    {
+        if (!string.IsNullOrWhiteSpace(configuredPath))
+            return configuredPath.Trim();
+        var besideTedide = Path.Combine(baseDirectory, Opt6502ExecutableName);
+        return File.Exists(besideTedide) ? besideTedide : "opt6502";
+    }
 
     /// <summary>Runs `cl65 --version` to confirm the toolchain is reachable.</summary>
     public async Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
@@ -74,6 +109,9 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
         var objectFiles = new List<string>();
         var compileFailed = false;
         var lastExitCode = 0;
+        var opt6502Path = ResolveOpt6502Path(Opt6502Path, AppContext.BaseDirectory);
+        var opt6502Total = Opt6502Stats.Empty;
+        var opt6502Files = 0;
         foreach (var sourceFile in project.SourceFiles)
         {
             // cl65 won't create the obj/ subdirectory an -o/-l path points into.
@@ -81,7 +119,39 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
 
             foreach (var step in BuildCompileSteps(project, sourceFile))
             {
-                var exitCode = await RunCl65Async(step, project.Directory, Capture, cancellationToken);
+                int? exitCode;
+                if (step.Tool == BuildTool.Opt6502)
+                {
+                    // opt6502 -quiet prints only errors and its one stats line - the stats become a
+                    // readable per-file summary line (and count toward the build total below), and
+                    // its bare "Error: ..." lines get a tool prefix so Cc65DiagnosticParser reports them.
+                    void CaptureOpt6502(string? line)
+                    {
+                        if (line is null)
+                            return;
+                        if (Opt6502Stats.TryParse(line, out var stats))
+                        {
+                            opt6502Total = opt6502Total.Add(stats);
+                            opt6502Files++;
+                            Capture($"opt6502: {sourceFile}: {stats.Describe()}");
+                        }
+                        else
+                        {
+                            Capture(line.StartsWith("Error:", StringComparison.Ordinal) ? "opt6502: " + line : line);
+                        }
+                    }
+
+                    exitCode = await RunToolAsync(opt6502Path, step.Arguments, project.Directory, CaptureOpt6502,
+                        $"opt6502: Error: opt6502 is turned on for this project, but '{opt6502Path}' could not be run. Build it with " +
+                        @"tools\opt6502\build.cmd, or set its location on Project Settings' opt6502 tab.",
+                        cancellationToken);
+                }
+                else
+                {
+                    exitCode = await RunToolAsync(Cl65Path, step.Arguments, project.Directory, Capture,
+                        $"Could not launch '{Cl65Path}'. Is cc65 installed and on PATH?", cancellationToken);
+                }
+
                 if (exitCode is null)
                 {
                     stopwatch.Stop();
@@ -100,9 +170,13 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
             objectFiles.Add(project.ResolvedObjectFileFor(sourceFile));
         }
 
+        if (opt6502Files > 1)
+            Capture($"opt6502: total for {opt6502Files} C files: {opt6502Total.Describe()}");
+
         if (!compileFailed)
         {
-            var exitCode = await RunCl65Async(BuildLinkArguments(project, objectFiles), project.Directory, Capture, cancellationToken);
+            var exitCode = await RunToolAsync(Cl65Path, BuildLinkArguments(project, objectFiles), project.Directory, Capture,
+                $"Could not launch '{Cl65Path}'. Is cc65 installed and on PATH?", cancellationToken);
             if (exitCode is null)
             {
                 stopwatch.Stop();
@@ -118,18 +192,22 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
     }
 
     /// <summary>
-    /// Runs one cl65 invocation to completion, streaming its stdout/stderr lines to <paramref name="capture"/>
-    /// as they arrive. Returns its exit code, or null if the process couldn't even be started
-    /// (e.g. cl65 isn't on PATH) - distinct from a normal nonzero exit code, since the caller
-    /// should give up immediately rather than trying further invocations against a missing toolchain.
+    /// Runs one tool invocation (cl65 or opt6502) to completion, streaming its stdout/stderr lines
+    /// to <paramref name="capture"/> as they arrive. Returns its exit code, or null if the process
+    /// couldn't even be started (e.g. cl65 isn't on PATH) - distinct from a normal nonzero exit
+    /// code, since the caller should give up immediately rather than trying further invocations
+    /// against a missing tool. <paramref name="launchFailureHint"/> is shown after the OS's own
+    /// reason in that case.
     /// </summary>
-    private async Task<int?> RunCl65Async(
+    private static async Task<int?> RunToolAsync(
+        string executable,
         List<string> arguments,
         string workingDirectory,
         Action<string?> capture,
+        string launchFailureHint,
         CancellationToken cancellationToken)
     {
-        var startInfo = new ProcessStartInfo(Cl65Path)
+        var startInfo = new ProcessStartInfo(executable)
         {
             WorkingDirectory = workingDirectory,
             RedirectStandardOutput = true,
@@ -143,11 +221,11 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
         try
         {
             started = Process.Start(startInfo)
-                ?? throw new InvalidOperationException($"Failed to start '{Cl65Path}'.");
+                ?? throw new InvalidOperationException($"Failed to start '{executable}'.");
         }
         catch (Win32Exception ex)
         {
-            capture($"Could not launch '{Cl65Path}': {ex.Message}. Is cc65 installed and on PATH?");
+            capture($"{launchFailureHint} ({ex.Message})");
             return null;
         }
 
@@ -248,8 +326,13 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
     /// assembly file is assembled directly in one step. Each source file gets its own invocations
     /// rather than sharing one cl65 command line, because cl65/ca65 only ever write one <c>-l</c>
     /// listing per invocation.
+    /// With <see cref="TedideProject.UseOpt6502"/> on, a C file takes three: cc65's assembly goes
+    /// to obj/foo.c.cc65.s instead (<see cref="TedideProject.ResolvedUnoptimizedAssemblyFileFor"/>),
+    /// opt6502 writes its optimized version to the usual obj/foo.c.s, and that's what's assembled -
+    /// so the listing, the .dbg file and the debugger's generated-assembly view all see the code
+    /// that actually runs, at the same path as without opt6502.
     /// </summary>
-    internal static List<List<string>> BuildCompileSteps(TedideProject project, string sourceFile)
+    internal static List<BuildStep> BuildCompileSteps(TedideProject project, string sourceFile)
     {
         var objectFile = RelativeToProject(project, project.ResolvedObjectFileFor(sourceFile));
         var listingFile = project.GenerateAssemblyListing
@@ -257,15 +340,42 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
             : null;
 
         if (!TedideProject.IsCSourceFile(sourceFile))
-            return [BuildAssembleArguments(project, sourceFile, objectFile, listingFile)];
+            return [new(BuildTool.Cl65, BuildAssembleArguments(project, sourceFile, objectFile, listingFile))];
 
         var generatedAssembly = RelativeToProject(project, project.ResolvedGeneratedAssemblyFileFor(sourceFile));
+        if (!project.UseOpt6502)
+        {
+            return
+            [
+                new(BuildTool.Cl65, BuildGenerateAssemblyArguments(project, sourceFile, generatedAssembly)),
+                new(BuildTool.Cl65, BuildAssembleArguments(project, generatedAssembly, objectFile, listingFile)),
+            ];
+        }
+
+        var unoptimizedAssembly = RelativeToProject(project, project.ResolvedUnoptimizedAssemblyFileFor(sourceFile));
         return
         [
-            BuildGenerateAssemblyArguments(project, sourceFile, generatedAssembly),
-            BuildAssembleArguments(project, generatedAssembly, objectFile, listingFile),
+            new(BuildTool.Cl65, BuildGenerateAssemblyArguments(project, sourceFile, unoptimizedAssembly)),
+            new(BuildTool.Opt6502, BuildOpt6502Arguments(project, unoptimizedAssembly, generatedAssembly)),
+            new(BuildTool.Cl65, BuildAssembleArguments(project, generatedAssembly, objectFile, listingFile)),
         ];
     }
+
+    /// <summary>
+    /// The opt6502 arguments to optimize cc65's generated assembly <paramref name="inputFile"/>
+    /// into <paramref name="outputFile"/>: ca65 syntax, the project's CPU (see
+    /// <see cref="Cc65TargetExtensions.Opt6502Cpu"/> - "65816" for a SuperCPU project, which lets
+    /// opt6502 use STZ), and -quiet so its only output is errors plus the stats line BuildAsync
+    /// turns into the Output panel's metrics.
+    /// </summary>
+    internal static List<string> BuildOpt6502Arguments(TedideProject project, string inputFile, string outputFile) =>
+    [
+        "-quiet",
+        "-asm", "ca65",
+        "-cpu", project.Target.Opt6502Cpu(project.EnableSuperCpu),
+        inputFile,
+        outputFile,
+    ];
 
     /// <summary>
     /// The cl65 arguments to compile a C source file to assembly only (<c>-S</c>), written to
@@ -278,6 +388,8 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
         var args = new List<string>
         {
             "-t", project.Target.ToCl65Id(),
+            // Explicit rather than left to the target's default - see TedideProject.ResolvedCc65Cpu.
+            "--cpu", project.ResolvedCc65Cpu,
             "-S",
         };
         if (project.OptimizationLevel.ToCl65Flag() is { } optimizationFlag)
@@ -316,6 +428,9 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
         var args = new List<string>
         {
             "-t", project.Target.ToCl65Id(),
+            // ca65 takes the same --cpu, so a hand-written source in a SuperCPU project may use
+            // 65C02/65816 instructions too (a .setcpu inside the file still overrides it).
+            "--cpu", project.ResolvedCc65Cpu,
             "-c",
         };
         if (project.GenerateDebugInfo)

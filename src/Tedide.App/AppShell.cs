@@ -2321,6 +2321,8 @@ public sealed class AppShell : Window
         _vice.BinDirectory = string.IsNullOrWhiteSpace(settings.ViceBinDirectory)
             ? ViceEmulator.DefaultBinDirectory
             : settings.ViceBinDirectory;
+
+        _toolchain.Opt6502Path = settings.Opt6502Path;
     }
 
     /// <summary>

@@ -55,6 +55,18 @@ public sealed class TedideProject
     /// ignored for every other target. Defaults to off.</summary>
     public bool EnableSuperCpu { get; set; }
 
+    /// <summary>Whether each C file's cc65-generated assembly is run through opt6502 (Tedide's
+    /// patched fork, see tools/opt6502) before it's assembled - see Tedide.Build's
+    /// Cc65Toolchain.BuildCompileSteps. Defaults to off. Hand-written assembly sources are never
+    /// touched.</summary>
+    public bool UseOpt6502 { get; set; }
+
+    /// <summary>The CPU this project builds for: <see cref="Target"/>'s own processor, or the
+    /// SuperCPU's 65816 when <see cref="EnableSuperCpu"/> is on for a C64 - see
+    /// <see cref="Cc65TargetExtensions.Cc65Cpu"/>.</summary>
+    [JsonIgnore]
+    public string ResolvedCc65Cpu => Target.Cc65Cpu(EnableSuperCpu);
+
     /// <summary>Source file paths, relative to the project file's directory.</summary>
     public List<string> SourceFiles { get; set; } = [];
 
@@ -119,6 +131,12 @@ public sealed class TedideProject
     /// object file - only meaningful for a C source (see <see cref="IsCSourceFile"/>); a
     /// hand-written assembly source is assembled directly and has no generated counterpart.</summary>
     public string ResolvedGeneratedAssemblyFileFor(string sourceFile) => ResolvedIntermediateFileFor(sourceFile, ".s");
+
+    /// <summary>With <see cref="UseOpt6502"/> on, where cc65's own assembly for
+    /// <paramref name="sourceFile"/> goes (obj/src/main.c.cc65.s) - opt6502 then writes its
+    /// optimized version to <see cref="ResolvedGeneratedAssemblyFileFor"/>, so the file that's
+    /// assembled, listed and named in the .dbg file keeps the same path either way.</summary>
+    public string ResolvedUnoptimizedAssemblyFileFor(string sourceFile) => ResolvedIntermediateFileFor(sourceFile, ".cc65.s");
 
     /// <summary>Whether <paramref name="sourceFile"/> is C (compiled to assembly first, then
     /// assembled) rather than assembly (assembled directly).</summary>

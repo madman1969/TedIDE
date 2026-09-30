@@ -95,6 +95,52 @@ public static class Cc65TargetExtensions
     };
 
     /// <summary>
+    /// The CPU passed to cl65 as --cpu for this target: the processor the machine actually has,
+    /// matching cc65's own per-target default (checked against a real cc65 2.19 by the .setcpu
+    /// line it writes for each target), but passed explicitly so the build never depends on that
+    /// default. Every Commodore machine's CPU - PET/VIC-20 6502, C64 6510, C128 8502, C16/Plus4
+    /// 7501/8501, CBM-II 6509 - runs the plain NMOS 6502 instruction set, so they're all "6502".
+    /// <paramref name="superCpu"/> switches a C64 to "65816", the SuperCPU cartridge's processor
+    /// (cc65 then emits 65C02-level code such as STZ/BRA, which the 65816 runs; it never emits
+    /// native 65816 code). It's ignored for every other target, same as
+    /// <see cref="TedideProject.EnableSuperCpu"/> itself.
+    /// </summary>
+    public static string Cc65Cpu(this Cc65Target target, bool superCpu = false) => target switch
+    {
+        Cc65Target.C64 => superCpu ? "65816" : "6502",
+        Cc65Target.C128 => "6502",
+        Cc65Target.C16 => "6502",
+        Cc65Target.Plus4 => "6502",
+        Cc65Target.Vic20 => "6502",
+        Cc65Target.Pet => "6502",
+        Cc65Target.Apple2 => "6502",
+        Cc65Target.Apple2Enh => "65c02",
+        Cc65Target.Atari => "6502",
+        Cc65Target.Atari5200 => "6502",
+        Cc65Target.Nes => "6502",
+        Cc65Target.Atmos => "6502",
+        Cc65Target.Cbm510 => "6502",
+        Cc65Target.Cbm610 => "6502",
+        Cc65Target.Geos_Cbm => "6502",
+        Cc65Target.Lynx => "65sc02",
+        Cc65Target.None => "6502",
+        _ => throw new ArgumentOutOfRangeException(nameof(target), target, null),
+    };
+
+    /// <summary>
+    /// The CPU passed to opt6502 as -cpu for this target - see <see cref="Cc65Cpu"/>. opt6502 has
+    /// no 65SC02 setting, and its 65C02 rewrites (STZ) are valid on the 65SC02, 65C02 and 65816
+    /// alike, so anything with the CMOS instructions maps to its "65c02"/"65816" and the rest to
+    /// "6502".
+    /// </summary>
+    public static string Opt6502Cpu(this Cc65Target target, bool superCpu = false) => target.Cc65Cpu(superCpu) switch
+    {
+        "65816" => "65816",
+        "65c02" or "65sc02" => "65c02",
+        _ => "6502",
+    };
+
+    /// <summary>
     /// Parses a cl65 target identifier (e.g. "c64", "apple2enh") case-insensitively, as accepted
     /// after -t/--target - the inverse of <see cref="ToCl65Id"/>.
     /// </summary>

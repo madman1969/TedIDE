@@ -121,4 +121,52 @@ public class Cc65TargetTests
     {
         Assert.Contains(target, Cc65TargetExtensions.CommodoreTargets);
     }
+
+    [Theory]
+    [InlineData(Cc65Target.C64)]
+    [InlineData(Cc65Target.C128)]
+    [InlineData(Cc65Target.C16)]
+    [InlineData(Cc65Target.Plus4)]
+    [InlineData(Cc65Target.Vic20)]
+    [InlineData(Cc65Target.Pet)]
+    [InlineData(Cc65Target.Cbm510)]
+    [InlineData(Cc65Target.Cbm610)]
+    [InlineData(Cc65Target.Geos_Cbm)]
+    public void Cc65Cpu_IsThe6502_ForEveryCommodoreMachine(Cc65Target target)
+    {
+        Assert.Equal("6502", target.Cc65Cpu());
+        Assert.Equal("6502", target.Opt6502Cpu());
+    }
+
+    [Fact]
+    public void Cc65Cpu_IsThe65816_ForASuperCpuC64()
+    {
+        Assert.Equal("65816", Cc65Target.C64.Cc65Cpu(superCpu: true));
+        Assert.Equal("65816", Cc65Target.C64.Opt6502Cpu(superCpu: true));
+    }
+
+    [Theory]
+    [InlineData(Cc65Target.C128)]
+    [InlineData(Cc65Target.Vic20)]
+    [InlineData(Cc65Target.Pet)]
+    public void Cc65Cpu_IgnoresSuperCpu_OffTheC64(Cc65Target target)
+    {
+        Assert.Equal("6502", target.Cc65Cpu(superCpu: true));
+    }
+
+    [Theory]
+    [InlineData(Cc65Target.Apple2Enh, "65c02", "65c02")]
+    [InlineData(Cc65Target.Lynx, "65sc02", "65c02")]
+    [InlineData(Cc65Target.Nes, "6502", "6502")]
+    public void Cc65Cpu_MatchesCc65sOwnDefault_ForNonCommodoreTargets(Cc65Target target, string cc65Cpu, string opt6502Cpu)
+    {
+        Assert.Equal(cc65Cpu, target.Cc65Cpu());
+        Assert.Equal(opt6502Cpu, target.Opt6502Cpu());
+    }
+
+    [Fact]
+    public void Cc65Cpu_CoversEveryTarget()
+    {
+        Assert.All(Enum.GetValues<Cc65Target>(), target => Assert.False(string.IsNullOrEmpty(target.Cc65Cpu())));
+    }
 }

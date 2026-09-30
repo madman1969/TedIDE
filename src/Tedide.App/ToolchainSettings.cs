@@ -17,6 +17,10 @@ public sealed class ToolchainSettings
     public string? Cc65Home { get; set; }
     public string? ViceBinDirectory { get; set; }
 
+    /// <summary>The opt6502 executable to run for projects with opt6502 turned on, or null for
+    /// the default (beside Tedide, then PATH - see Tedide.Build.Cc65Toolchain.ResolveOpt6502Path).</summary>
+    public string? Opt6502Path { get; set; }
+
     private static readonly string FilePath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Tedide", "toolchain.json");
 

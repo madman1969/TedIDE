@@ -75,4 +75,22 @@ public class Cc65DiagnosticParserTests
         Assert.Equal(DiagnosticSeverity.Error, diagnostics[0].Severity);
         Assert.Equal(DiagnosticSeverity.Warning, diagnostics[1].Severity);
     }
+
+    [Fact]
+    public void TryParse_ReadsAnOpt6502Error()
+    {
+        var diagnostic = Cc65DiagnosticParser.TryParse("opt6502: Error: Cannot open obj/main.c.cc65.s");
+
+        Assert.NotNull(diagnostic);
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        Assert.Equal("Cannot open obj/main.c.cc65.s", diagnostic.Message);
+    }
+
+    [Theory]
+    [InlineData("opt6502: src/main.c: 6 optimizations (5 jump to next line, 1 STZ rewrite), ~17 bytes and ~19 cycles saved")]
+    [InlineData("opt6502: total for 2 C files: no optimizations found")]
+    public void TryParse_IgnoresOpt6502Metrics(string line)
+    {
+        Assert.Null(Cc65DiagnosticParser.TryParse(line));
+    }
 }

@@ -84,4 +84,13 @@ public class ProjectSettingsDialogTests
         Assert.Single(allowedTypes);
         Assert.True(allowedTypes[0].IsAllowed(@"C:\Somewhere\anything.cfg"));
     }
+
+    [Theory]
+    [InlineData(Cc65Target.C64, false, "CPU: 6502 (from target c64) - passed to cc65 as --cpu and to opt6502 as -cpu 6502")]
+    [InlineData(Cc65Target.C64, true, "CPU: 65816 (from SuperCPU) - passed to cc65 as --cpu and to opt6502 as -cpu 65816")]
+    [InlineData(Cc65Target.Vic20, true, "CPU: 6502 (from target vic20) - passed to cc65 as --cpu and to opt6502 as -cpu 6502")]
+    public void CpuDescription_NamesTheCpuAndWhereItCameFrom(Cc65Target target, bool superCpu, string expected)
+    {
+        Assert.Equal(expected, ProjectSettingsDialog.CpuDescription(target, superCpu));
+    }
 }

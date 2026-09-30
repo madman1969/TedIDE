@@ -40,6 +40,8 @@ Doc Viewer" below.
   configurable via **Project > Settings > VICE**, alongside `CC65_HOME` under its own **CC65** tab
   (both are per-machine toolchain settings, not project state, so they're saved once and apply to
   every project). Everything else, including Build Project and Clean Project, works fine without it.
+- (Optional) Visual Studio 2022+ with the C++ tools - only to build `opt6502.exe` (see the
+  **opt6502** tab under "Project Settings dialog") with `tools\opt6502\build.cmd`.
 
 ## Solution layout
 
@@ -66,6 +68,8 @@ tests/
 tools/
   Cc65DocsDbBuilder/   One-off converter: cc65's HTML manuals -> Docs.db (Markdown + FTS5 search index),
                        embedded in Tedide.DocViewer - see "Running the Doc Viewer" below
+  opt6502/             Tedide's patched fork of CTalkobt/opt6502 (GPL-3), an optional optimizer run on
+                       cc65's generated assembly - see its TEDIDE.md for what changed and why
 samples/
   HelloCBM/            A small multi-file sample solution/project, buildable for every Commodore cc65 target
     HelloCBM.tsln
@@ -517,11 +521,13 @@ an example, laid out the way GitHub's most common C project layout does (`src/`,
 | `GenerateLinkerMap` | Whether `ld65` emits a linker map (`-m`) to `lnk.map`, next to the project file - see "Symbols" under "Running" above. Defaults to `false`. |
 | `ExportLabels` | Whether `ld65` emits a VICE-format label file (`-Ln`) to `{Name}.lbl`, next to the project file. Defaults to `false`. |
 | `GenerateDebugInfo` | Whether cc65/ca65 embed debug info (`-g`) and `ld65` consolidates it into `{Name}.dbg` (`--dbgfile`, forwarded through cl65 as `-Wl --dbgfile,path` - it has no top-level flag for this). Required for the debugger - see "Debugging" above. Defaults to `false`. |
-| `EnableSuperCpu` | Whether Build > Run Project/Debug > Start Debugging launch this project in VICE's dedicated SuperCPU emulator (`xscpu64.exe`) instead of the plain C64 one (`x64sc.exe`) - see `ViceEmulator.ExecutableNameFor`. Only meaningful while `Target` is `C64` (the SuperCPU is a C64-specific accelerator cartridge); ignored for every other target. Defaults to `false`. |
+| `EnableSuperCpu` | Whether Build > Run Project/Debug > Start Debugging launch this project in VICE's dedicated SuperCPU emulator (`xscpu64.exe`) instead of the plain C64 one (`x64sc.exe`) - see `ViceEmulator.ExecutableNameFor` - and whether it's compiled and assembled for the SuperCPU's 65816 (`--cpu 65816`, so cc65 can use 65C02 instructions such as `STZ`/`BRA`) rather than the 6502. Only meaningful while `Target` is `C64` (the SuperCPU is a C64-specific accelerator cartridge); ignored for every other target. Defaults to `false`. |
+| `UseOpt6502` | Whether each C file's generated assembly is run through opt6502 before it's assembled - see the **opt6502** tab under "Project Settings dialog" below. Defaults to `false`. |
 | `OutputFile` | Defaults to `<Name><platform-default-extension>` (e.g. `.prg` for C64, `.nes` for NES) in the project's own directory if not set; Tedide creates the output directory automatically if it doesn't exist yet (`ld65` itself won't). |
 | `LinkerConfigPath` | A custom `ld65` linker config file (`-C`), relative to the project directory. `null`/blank uses cl65's built-in per-target default - a custom config typically *replaces* that default rather than layering on top of it. |
 | `IncludePaths` | Directories passed to `cl65` as `-I <dir>` (compile-time only), each relative to the project directory - the first-class alternative to putting `-I` in `ExtraArguments`. |
 | `PreprocessorDefines` | Preprocessor defines passed as `-D <value>` (compile-time only), each either `"NAME"` or `"NAME=VALUE"`. |
+| (CPU) | Not a field - every compile and assemble passes `--cpu` explicitly, from a hand-checked per-target table (`Cc65TargetExtensions.Cc65Cpu`): `6502` for every Commodore target (their 6502/6510/8502/7501/6509 all share the NMOS 6502 instruction set), or `65816` for a C64 with `EnableSuperCpu` on. |
 | `ExtraArguments` | Appended verbatim to the `cl65` command line, after the fields above - positional flags like a hand-written `-I`/`-D` here only affect source files listed after them on the command line, same as `IncludePaths`/`PreprocessorDefines`. |
 | `lib/` folder | Not a `.tproj` field at all - just a folder Tedide scans on every build (`TedideProject.ResolvedLibFiles`). Every `.lib` file found directly inside it is passed to `ld65` at link time, after the compiled object files, so linking against a prebuilt cc65 library archive is a matter of dropping it in `lib/`, nothing more. |
 | `{Name}.breakpoints.json` | Not a `.tproj` field either - a separate sidecar file for the project's debugger breakpoints (see "Debugging" above), kept out of `.tproj` since it's session/debugging state, not build configuration. Gitignored, like the session file below - it's per-user state. If it can't be read (e.g. hand-edited into invalid JSON), it's moved aside to `{Name}.breakpoints.json.corrupt` and the project opens with no breakpoints, with a note in Output. |
@@ -531,7 +537,7 @@ A `.tsln` file just lists the `.tproj` files that make up a solution.
 
 ## Project Settings dialog
 
-**Project > Settings...** opens one dialog covering everything above, as seven tabs sharing a
+**Project > Settings...** opens one dialog covering everything above, as eight tabs sharing a
 single Save/Cancel footer:
 
 - **Settings** - display name, target platform, output file override, extra `cl65` arguments,
@@ -579,9 +585,31 @@ single Save/Cancel footer:
   force-unchecked) unless the Settings tab's own Target is C64, since the SuperCPU is a C64-specific
   accelerator cartridge; kept in sync live if you change Target while this dialog is still open, not
   just from whatever it was when the dialog opened. While on, Build > Run Project and Debug > Start
-  Debugging launch VICE's dedicated `xscpu64.exe` instead of `x64sc.exe`.
+  Debugging launch VICE's dedicated `xscpu64.exe` instead of `x64sc.exe`, and the project is
+  compiled and assembled for the SuperCPU's 65816 (`--cpu 65816`) instead of the 6502 - so the
+  result needs a SuperCPU (or `xscpu64`) to run.
 
   ![The SuperCPU tab: an "Enable SuperCPU support" checkbox and an explanation that it's only available for the C64 target](docs/images/project-settings-supercpu.png)
+- **opt6502** - *Optimize generated assembly with opt6502* (`UseOpt6502`), a read-only line naming
+  the CPU the build uses (following Target and the SuperCPU tab live), and where `opt6502.exe` is.
+  When on, each C file is compiled to `obj/src/foo.c.cc65.s`, opt6502 writes its optimized version to
+  the usual `obj/src/foo.c.s`, and that's what's assembled - so the listing, the `.dbg` file and the
+  debugger all see the code that actually runs. Hand-written assembly is never touched. Each file's
+  result, and the build's total, appear in the Output panel:
+
+  ```text
+  opt6502: src/editor.c: 27 optimizations (4 repeated constant load, 23 jump to next line), ~77 bytes and ~77 cycles saved
+  opt6502: total for 7 C files: 44 optimizations (6 repeated constant load, 36 jump to next line, 2 unreachable instruction), ~126 bytes and ~126 cycles saved
+  ```
+
+  Byte and cycle counts are opt6502's estimates from each changed instruction's addressing mode.
+  For a SuperCPU project it also replaces `LDA #0` + `STA` with `STZ` where that's provably safe.
+  cc65's own `-O` already removes most of the same patterns, so expect the most from it with the
+  Optimizer tab set to None. The opt6502 used is Tedide's patched fork in `tools/opt6502` (upstream
+  couldn't assemble cc65 output and miscompiled several patterns - see its `TEDIDE.md`), built with
+  `tools\opt6502\build.cmd`; Tedide's build copies the result beside `Tedide.App.exe`, where it's
+  found automatically. The path field (per-machine, like CC65/VICE) overrides that, and PATH is the
+  last resort. If opt6502 can't be found, the build fails with an error saying how to get it.
 - **CC65** - the `CC65_HOME` environment variable (where cl65 finds target headers/libraries) -
   a per-machine toolchain setting, not project state, so it's saved once and applies to every
   project (see "Prerequisites" above).
@@ -592,8 +620,8 @@ single Save/Cancel footer:
 
   ![The VICE tab: the VICE bin directory (C:\GTK3VICE-3.9-win64\bin) with a Browse button and an explanation](docs/images/project-settings-vice.png)
 
-Saving writes every project-bound field (all tabs except CC65/VICE, which are per-machine settings
-saved separately) to the `.tproj` in one go. If the display name changed, the project's own folder
+Saving writes every project-bound field (all tabs except CC65/VICE and the opt6502 path, which are
+per-machine settings saved separately) to the `.tproj` in one go. If the display name changed, the project's own folder
 (and its `.tproj` file) is renamed to match - e.g. renaming "HelloGame" to "SuperGame" moves
 `.../HelloGame/` to `.../SuperGame/` and `HelloGame.tproj` to `SuperGame.tproj` within it,
 following the same "folder named after the project" convention File > New Project scaffolds.

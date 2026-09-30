@@ -234,4 +234,39 @@ public class TedideProjectTests
             dir.Delete(recursive: true);
         }
     }
+
+    [Fact]
+    public void UseOpt6502_DefaultsToOff_AndRoundTrips()
+    {
+        Assert.False(new TedideProject().UseOpt6502);
+
+        var path = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.tproj");
+        try
+        {
+            new TedideProject { Name = "Opt", UseOpt6502 = true }.Save(path);
+            Assert.True(TedideProject.Load(path).UseOpt6502);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void ResolvedCc65Cpu_FollowsTargetAndSuperCpu()
+    {
+        Assert.Equal("6502", new TedideProject { Target = Cc65Target.C64 }.ResolvedCc65Cpu);
+        Assert.Equal("65816", new TedideProject { Target = Cc65Target.C64, EnableSuperCpu = true }.ResolvedCc65Cpu);
+        Assert.Equal("6502", new TedideProject { Target = Cc65Target.Vic20, EnableSuperCpu = true }.ResolvedCc65Cpu);
+    }
+
+    [Fact]
+    public void ResolvedUnoptimizedAssemblyFileFor_SitsBesideTheGeneratedAssembly_InObj()
+    {
+        var project = new TedideProject { FilePath = Path.Combine(Path.GetTempPath(), "P", "P.tproj") };
+
+        Assert.Equal(
+            Path.Combine(Path.GetTempPath(), "P", "obj", "src", "main.c.cc65.s"),
+            project.ResolvedUnoptimizedAssemblyFileFor("src/main.c"));
+    }
 }

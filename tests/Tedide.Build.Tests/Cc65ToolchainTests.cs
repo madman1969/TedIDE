@@ -39,7 +39,7 @@ public class Cc65ToolchainTests
             SourceFiles = ["src/main.c", "src/screen.c"],
         };
 
-        var args = Cc65Toolchain.BuildCompileSteps(project, "src/main.c").SelectMany(a => a).ToList();
+        var args = Cc65Toolchain.BuildCompileSteps(project, "src/main.c").SelectMany(s => s.Arguments).ToList();
 
         Assert.Contains("src/main.c", args);
         Assert.DoesNotContain("src/screen.c", args);
@@ -56,7 +56,7 @@ public class Cc65ToolchainTests
             var project = new TedideProject { Name = "Test", Target = Cc65Target.C64, SourceFiles = ["src/foo.c"] };
             project.Save(Path.Combine(dir.FullName, "Test.tproj"));
 
-            var steps = Cc65Toolchain.BuildCompileSteps(project, "src/foo.c");
+            var steps = Cc65Toolchain.BuildCompileSteps(project, "src/foo.c").Select(s => s.Arguments).ToList();
 
             Assert.Equal(2, steps.Count);
             var generated = Path.Combine("obj", "src", "foo.c.s");
@@ -83,7 +83,7 @@ public class Cc65ToolchainTests
             var project = new TedideProject { Name = "Test", Target = Cc65Target.C64, SourceFiles = ["src/border.s"] };
             project.Save(Path.Combine(dir.FullName, "Test.tproj"));
 
-            var steps = Cc65Toolchain.BuildCompileSteps(project, "src/border.s");
+            var steps = Cc65Toolchain.BuildCompileSteps(project, "src/border.s").Select(s => s.Arguments).ToList();
 
             var step = Assert.Single(steps);
             Assert.Contains("-c", step);
@@ -107,8 +107,8 @@ public class Cc65ToolchainTests
             var project = new TedideProject { Name = "Test", Target = Cc65Target.C64, SourceFiles = ["src/foo.c", "src/foo.s"] };
             project.Save(Path.Combine(dir.FullName, "Test.tproj"));
 
-            var cOutputs = Cc65Toolchain.BuildCompileSteps(project, "src/foo.c").SelectMany(OutputsOf).ToList();
-            var sOutputs = Cc65Toolchain.BuildCompileSteps(project, "src/foo.s").SelectMany(OutputsOf).ToList();
+            var cOutputs = Cc65Toolchain.BuildCompileSteps(project, "src/foo.c").Select(s => s.Arguments).SelectMany(OutputsOf).ToList();
+            var sOutputs = Cc65Toolchain.BuildCompileSteps(project, "src/foo.s").Select(s => s.Arguments).SelectMany(OutputsOf).ToList();
 
             Assert.Empty(cOutputs.Intersect(sOutputs));
             // And nothing is ever written back into src/, where a hand-written file could live.
@@ -271,7 +271,7 @@ public class Cc65ToolchainTests
             GenerateAssemblyListing = false,
         };
 
-        var args = Cc65Toolchain.BuildCompileSteps(project, "src/main.c").SelectMany(a => a).ToList();
+        var args = Cc65Toolchain.BuildCompileSteps(project, "src/main.c").SelectMany(s => s.Arguments).ToList();
 
         Assert.DoesNotContain("-l", args);
     }
@@ -369,7 +369,7 @@ public class Cc65ToolchainTests
     {
         var project = new TedideProject { Name = "Test", Target = Cc65Target.C64, SourceFiles = ["src/main.c"] };
 
-        var args = Cc65Toolchain.BuildCompileSteps(project, "src/main.c").SelectMany(a => a).ToList();
+        var args = Cc65Toolchain.BuildCompileSteps(project, "src/main.c").SelectMany(s => s.Arguments).ToList();
 
         Assert.DoesNotContain("-g", args);
     }
@@ -381,7 +381,7 @@ public class Cc65ToolchainTests
         // ca65 carries that into the object file for ld65's .dbg output.
         var project = new TedideProject { Name = "Test", Target = Cc65Target.C64, SourceFiles = ["src/main.c"], GenerateDebugInfo = true };
 
-        Assert.All(Cc65Toolchain.BuildCompileSteps(project, "src/main.c"), step => Assert.Contains("-g", step));
+        Assert.All(Cc65Toolchain.BuildCompileSteps(project, "src/main.c"), step => Assert.Contains("-g", step.Arguments));
     }
 
     [Fact]
@@ -860,11 +860,11 @@ public class Cc65ToolchainTests
 
     /// <summary>The compile-to-assembly step for a C source (the first of its two steps).</summary>
     private static List<string> GenerateStep(TedideProject project, string sourceFile) =>
-        Cc65Toolchain.BuildCompileSteps(project, sourceFile)[0];
+        Cc65Toolchain.BuildCompileSteps(project, sourceFile)[0].Arguments;
 
     /// <summary>The assemble step - a C source's second step, or an assembly source's only one.</summary>
     private static List<string> AssembleStep(TedideProject project, string sourceFile) =>
-        Cc65Toolchain.BuildCompileSteps(project, sourceFile)[^1];
+        Cc65Toolchain.BuildCompileSteps(project, sourceFile)[^1].Arguments;
 
     private static async Task<bool> HasExitedAsync(int pid, TimeSpan timeout)
     {

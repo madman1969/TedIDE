@@ -27,6 +27,22 @@
     <InternalsVisibleTo Include="Tedide.App.Tests" />
   </ItemGroup>
 
+  <!-- opt6502.exe (Tedide's patched fork, GPL-3 - see tools/opt6502/TEDIDE.md) beside Tedide, which
+       is the first place Cc65Toolchain looks for it. Only when it has been built with
+       tools\opt6502\build.cmd - the binary isn't checked in, and a build without it is fine (opt6502
+       is opt-in per project). Kept as a separate file, never bundled into the single-file exe: it's
+       a separate GPL program that Tedide only starts as a process. The post-publish copy is the same
+       workaround as Tedide.DocViewer.csproj's CopyDocsDbToPublishDir, for the same reason. -->
+  <PropertyGroup>
+    <Opt6502Exe>$(MSBuildThisFileDirectory)..\..\tools\opt6502\bin\opt6502.exe</Opt6502Exe>
+  </PropertyGroup>
+  <ItemGroup Condition="Exists('$(Opt6502Exe)')">
+    <None Include="$(Opt6502Exe)" Link="opt6502.exe" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+  </ItemGroup>
+  <Target Name="CopyOpt6502ToPublishDir" AfterTargets="Publish" Condition="Exists('$(Opt6502Exe)')">
+    <Copy SourceFiles="$(Opt6502Exe)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="false" />
+  </Target>
+
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
