@@ -11,7 +11,7 @@ this directory and the binary built from it, not Tedide.
 
 ## Building
 
-```
+```text
 tools\opt6502\build.cmd
 ```
 
@@ -40,7 +40,7 @@ once that was fixed, several passes would have miscompiled cc65 code:
 | `ast/parser.c` | Label/opcode/operand cut off at 63/15/63 chars (damaged `.dbg file` lines) | No field limits; `MAX_LINE` is 4096, and a longer line is an error rather than being split |
 | `ast/parser.c` | A `;` inside a quoted string started a comment | Comment search skips quoted text |
 | every pass | Opcodes matched case-sensitively against `"LDA"` etc - cc65 writes lowercase, so almost nothing fired | Matched case-insensitively |
-| `optimizations/jumps.c` | Deleted a `JMP` whenever the next line was *any* label (e.g. a loop's back-jump) | Only when the next label is the JMP's own target |
+| `optimizations/jumps.c` | Deleted a `JMP` whenever the next line was *any* label (e.g. a loop's back-jump); the "branch chaining" its README listed didn't exist | Only when the next label is the JMP's own target; plus jump threading (below) |
 | `optimizations/regusage.c` | `TAX / TXA`: deleted **both**, losing X | Deletes only the `TXA` (and `TYA` of `TAY / TYA`) |
 | `optimizations/constant.c` | Kept assuming A's value across `JSR`; ignored N/Z changes in between; compared 63 chars | Only across instructions that change neither the register nor N/Z; also handles `LDX`/`LDY` |
 | `optimizations/deadcode.c` | Deleted directives after `JMP`/`RTS` (`.dbg`, `.byte` data) | Deletes only instructions; stops at any label or directive |
@@ -50,6 +50,7 @@ once that was fixed, several passes would have miscompiled cc65 code:
 | `main.c` | Always exited 0, even if the output couldn't be written; accepted any `-cpu` value | Exits 1 on either |
 
 **Additions:**
+
 - `analysis/nodeinfo.c`: the rules every pass shares (what's removable, and what reads or
   overwrites A and N/Z). Unknown mnemonics and ca65 macros such as `jeq` count as reading
   everything and as ending straight-line code.
@@ -72,10 +73,25 @@ once that was fixed, several passes would have miscompiled cc65 code:
     every cc65 `-O` level (3.7% on top of `-Oirs`), for about 200-300 bytes more code.
   - `-size` never does this. Upstream's default mode is `-speed`, so Tedide always passes one or
     the other explicitly.
+- Jump threading, in `optimizations/jumps.c`, runs in both modes:
+  - `JMP L1` whose landing instruction is `JMP L2` (or `BRA L2`) becomes `JMP L2`, following
+    chains.
+  - A `JMP` that lands on `RTS` becomes `RTS`.
+  - Labels are looked up only inside the JMP's own `.proc`, since cc65 reuses `L0001` in every
+    function. Chains that cycle, and landings inside `#NOOPT`, are left alone.
+  - Only `JMP` is rewritten, never a conditional branch or `jeq`-style macro, so no instruction
+    ever grows and no other branch can be pushed out of range.
+  - A jump to the very next line is still removed outright. Unreachable code is now cleared just
+    before this pass as well as last, so a `JMP` over dead code is seen as a jump to the next
+    line.
+  - Results: 49 jumps threaded on the samples built without cc65 optimization, none on `-Oirs`.
+    There, cc65 has already threaded every `JMP`. The remaining cases are conditional branches to
+    a function epilogue (`bcs L0003` landing on `jmp incsp2`), which a 6502 can't shorten, having
+    no conditional return or long branch.
 - `-quiet`: prints only errors and one final line, which Tedide parses for the Output panel:
 
   ```text
-  opt6502-stats: optimizations=6 removed=6 rewritten=1 bytes=17 cycles=17 reload=0 constant=0 transfer=0 jump=5 unreachable=0 stz=1 inline=0
+  opt6502-stats: optimizations=6 removed=6 rewritten=1 bytes=17 cycles=17 reload=0 constant=0 transfer=0 jump=5 unreachable=0 stz=1 inline=0 thread=0
   ```
 
   `bytes`/`cycles` are estimates from each changed instruction's addressing mode. `bytes` is

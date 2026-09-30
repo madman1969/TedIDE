@@ -147,11 +147,6 @@ static bool is_jump_or_branch(const AstNode *node) {
     return false;
 }
 
-/* cc65 wraps each function in .proc / .endproc, and reuses label names (L0001...) in each one. */
-static bool is_proc_boundary(const AstNode *node, const char *directive) {
-    return node->label ? strcasecmp(node->label, directive) == 0 : op_is(node, directive);
-}
-
 /*
  * Sets in_loop on every node inside a loop: from a label to the last JMP/branch back to it,
  * within the same function.

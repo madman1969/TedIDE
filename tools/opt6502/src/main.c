@@ -235,12 +235,12 @@ int main(int argc, char *argv[]) {
     // One machine-readable line, always printed, for IDE integration (Tedide parses it): every
     // field is key=value, so new ones can be appended without breaking existing readers.
     printf("opt6502-stats: optimizations=%d removed=%d rewritten=%d bytes=%d cycles=%d "
-           "reload=%d constant=%d transfer=%d jump=%d unreachable=%d stz=%d inline=%d\n",
+           "reload=%d constant=%d transfer=%d jump=%d unreachable=%d stz=%d inline=%d thread=%d\n",
            prog->optimizations, prog->instructions_removed, prog->instructions_rewritten,
            prog->bytes_saved, prog->cycles_saved,
            prog->stats[OPT_KIND_RELOAD], prog->stats[OPT_KIND_CONSTANT], prog->stats[OPT_KIND_TRANSFER],
            prog->stats[OPT_KIND_JUMP], prog->stats[OPT_KIND_UNREACHABLE], prog->stats[OPT_KIND_STZ],
-           prog->stats[OPT_KIND_INLINE]);
+           prog->stats[OPT_KIND_INLINE], prog->stats[OPT_KIND_THREAD]);
 
     free_program_ast(prog);
     return 0;

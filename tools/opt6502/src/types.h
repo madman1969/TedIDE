@@ -167,6 +167,7 @@ typedef enum {
     OPT_KIND_UNREACHABLE,  /**< Unlabelled code after JMP/RTS/RTI removed */
     OPT_KIND_STZ,          /**< 65C02: LDA #0 / STA -> STZ */
     OPT_KIND_INLINE,       /**< -speed: runtime helper call in a loop replaced by its body */
+    OPT_KIND_THREAD,       /**< JMP retargeted past a JMP it landed on, or turned into the RTS it landed on */
     OPT_KIND_COUNT
 } OptKind;
 

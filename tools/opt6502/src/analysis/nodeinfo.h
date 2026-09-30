@@ -69,4 +69,23 @@ void remove_instruction(Program *prog, AstNode *node, OptKind kind);
 /** Counts an in-place rewrite of kind that saved the given bytes and cycles. */
 void record_rewrite(Program *prog, OptKind kind, int bytes_saved, int cycles_saved);
 
+/**
+ * True if node is the given .proc/.endproc directive. cc65 wraps each function in .proc /
+ * .endproc and reuses label names (L0001...) in every one, so label lookups stay inside one.
+ */
+bool is_proc_boundary(const AstNode *node, const char *directive);
+
+/**
+ * The node carrying label in the same .proc as from (or in the whole file outside any .proc),
+ * or NULL if there's none - e.g. an imported symbol such as a runtime helper.
+ */
+AstNode *find_label(Program *prog, const AstNode *from, const char *label);
+
+/**
+ * The first instruction executed on reaching label_node: label_node itself if it has an opcode,
+ * otherwise the next live line after it, looking through blank, comment and .dbg lines and
+ * further label-only lines. NULL if that's a directive or the end of the .proc.
+ */
+AstNode *instruction_at(AstNode *label_node);
+
 #endif // NODEINFO_H

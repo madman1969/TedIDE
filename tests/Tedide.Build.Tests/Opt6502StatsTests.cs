@@ -88,6 +88,14 @@ public class Opt6502StatsTests
     }
 
     [Fact]
+    public void Describe_NamesThreadedJumps()
+    {
+        Opt6502Stats.TryParse("opt6502-stats: optimizations=5 removed=1 rewritten=4 bytes=5 cycles=15 jump=1 thread=4", out var stats);
+
+        Assert.Equal("5 optimizations (1 jump to next line, 4 jump threaded), ~5 bytes and ~15 cycles saved", stats.Describe());
+    }
+
+    [Fact]
     public void Describe_SaysSo_WhenNothingWasFound()
     {
         Assert.Equal("no optimizations found", Opt6502Stats.Empty.Describe());

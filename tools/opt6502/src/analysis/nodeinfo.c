@@ -186,3 +186,31 @@ void record_rewrite(Program *prog, OptKind kind, int bytes_saved, int cycles_sav
     prog->bytes_saved += bytes_saved;
     prog->cycles_saved += cycles_saved;
 }
+
+bool is_proc_boundary(const AstNode *node, const char *directive) {
+    return node->label ? strcasecmp(node->label, directive) == 0 : op_is(node, directive);
+}
+
+AstNode *find_label(Program *prog, const AstNode *from, const char *label) {
+    AstNode *proc_start = prog->root;
+    for (AstNode *node = prog->root; node && node != from; node = node->next) {
+        if (is_proc_boundary(node, ".proc")) proc_start = node;
+        if (is_proc_boundary(node, ".endproc")) proc_start = node->next;
+    }
+    for (AstNode *node = proc_start; node; node = node->next) {
+        if (node != proc_start && is_proc_boundary(node, ".proc")) break;
+        if (node->label && strcmp(node->label, label) == 0) return node;
+        if (is_proc_boundary(node, ".endproc")) break;
+    }
+    return NULL;
+}
+
+AstNode *instruction_at(AstNode *label_node) {
+    for (AstNode *node = label_node; node; node = node->next) {
+        if (node->is_dead || is_transparent(node)) continue;
+        if (is_directive(node)) return NULL;
+        if (node->opcode && node->opcode[0] != '\0') return node;
+        // A label-only line: execution falls through to whatever follows.
+    }
+    return NULL;
+}

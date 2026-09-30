@@ -60,7 +60,9 @@ void optimize_program_ast(Program *prog) {
         optimize_65c02_instructions_ast(prog);
         optimize_45gs02_instructions_ast(prog);
 
-        // Control flow
+        // Control flow. Tedide: unreachable code is cleared first too, so a JMP over it is seen as
+        // a jump to the next line (removed) rather than threaded.
+        optimize_dead_code_ast(prog);
         optimize_jumps_ast(prog);
 
         // Must be last

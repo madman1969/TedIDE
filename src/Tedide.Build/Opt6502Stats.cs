@@ -33,6 +33,7 @@ public sealed record Opt6502Stats(
         ("unreachable", "unreachable instruction"),
         ("stz", "STZ rewrite"),
         ("inline", "runtime call inlined"),
+        ("thread", "jump threaded"),
     ];
 
     private static readonly HashSet<string> TotalKeys = ["optimizations", "removed", "rewritten", "bytes", "cycles"];
