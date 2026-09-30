@@ -253,6 +253,24 @@ public class TedideProjectTests
     }
 
     [Fact]
+    public void Opt6502Mode_DefaultsToSize_AndRoundTrips()
+    {
+        Assert.Equal(Opt6502Mode.Size, new TedideProject().Opt6502Mode);
+
+        var path = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.tproj");
+        try
+        {
+            new TedideProject { Name = "Opt", Opt6502Mode = Opt6502Mode.Speed }.Save(path);
+            Assert.Contains("\"Opt6502Mode\": \"Speed\"", File.ReadAllText(path));
+            Assert.Equal(Opt6502Mode.Speed, TedideProject.Load(path).Opt6502Mode);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
     public void ResolvedCc65Cpu_FollowsTargetAndSuperCpu()
     {
         Assert.Equal("6502", new TedideProject { Target = Cc65Target.C64 }.ResolvedCc65Cpu);

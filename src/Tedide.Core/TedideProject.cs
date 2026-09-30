@@ -61,6 +61,10 @@ public sealed class TedideProject
     /// touched.</summary>
     public bool UseOpt6502 { get; set; }
 
+    /// <summary>Whether opt6502 favours size or speed - see <see cref="Core.Opt6502Mode"/>. Defaults
+    /// to <see cref="Opt6502Mode.Size"/>, which never makes code bigger.</summary>
+    public Opt6502Mode Opt6502Mode { get; set; } = Opt6502Mode.Size;
+
     /// <summary>The CPU this project builds for: <see cref="Target"/>'s own processor, or the
     /// SuperCPU's 65816 when <see cref="EnableSuperCpu"/> is on for a C64 - see
     /// <see cref="Cc65TargetExtensions.Cc65Cpu"/>.</summary>

@@ -363,14 +363,16 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65", string? opt6502Path 
 
     /// <summary>
     /// The opt6502 arguments to optimize cc65's generated assembly <paramref name="inputFile"/>
-    /// into <paramref name="outputFile"/>: ca65 syntax, the project's CPU (see
-    /// <see cref="Cc65TargetExtensions.Opt6502Cpu"/> - "65816" for a SuperCPU project, which lets
-    /// opt6502 use STZ), and -quiet so its only output is errors plus the stats line BuildAsync
-    /// turns into the Output panel's metrics.
+    /// into <paramref name="outputFile"/>: the project's <see cref="TedideProject.Opt6502Mode"/>
+    /// (always passed explicitly - opt6502's own default is -speed, which adds code), ca65 syntax,
+    /// the project's CPU (see <see cref="Cc65TargetExtensions.Opt6502Cpu"/> - "65816" for a
+    /// SuperCPU project, which lets opt6502 use STZ), and -quiet so its only output is errors plus
+    /// the stats line BuildAsync turns into the Output panel's metrics.
     /// </summary>
     internal static List<string> BuildOpt6502Arguments(TedideProject project, string inputFile, string outputFile) =>
     [
         "-quiet",
+        project.Opt6502Mode == Opt6502Mode.Speed ? "-speed" : "-size",
         "-asm", "ca65",
         "-cpu", project.Target.Opt6502Cpu(project.EnableSuperCpu),
         inputFile,

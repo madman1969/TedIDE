@@ -80,6 +80,14 @@ public class Opt6502StatsTests
     }
 
     [Fact]
+    public void Describe_SaysBytesAdded_WhenInliningGrewTheCode()
+    {
+        Opt6502Stats.TryParse("opt6502-stats: optimizations=11 removed=11 rewritten=1 bytes=-190 cycles=126 inline=11", out var stats);
+
+        Assert.Equal("11 optimizations (11 runtime call inlined), ~190 bytes added, ~126 cycles saved", stats.Describe());
+    }
+
+    [Fact]
     public void Describe_SaysSo_WhenNothingWasFound()
     {
         Assert.Equal("no optimizations found", Opt6502Stats.Empty.Describe());

@@ -32,6 +32,7 @@ public sealed record Opt6502Stats(
         ("jump", "jump to next line"),
         ("unreachable", "unreachable instruction"),
         ("stz", "STZ rewrite"),
+        ("inline", "runtime call inlined"),
     ];
 
     private static readonly HashSet<string> TotalKeys = ["optimizations", "removed", "rewritten", "bytes", "cycles"];
@@ -71,7 +72,10 @@ public sealed record Opt6502Stats(
 
     /// <summary>
     /// One human-readable summary, e.g. "6 optimizations (5 jump to next line, 1 STZ rewrite),
-    /// ~17 bytes and ~17 cycles saved", or "no optimizations found".
+    /// ~17 bytes and ~17 cycles saved", or "no optimizations found". -speed's runtime inlining
+    /// trades size for speed, so <see cref="Bytes"/> can be negative - then it reads "~190 bytes
+    /// added, ~126 cycles saved". Cycles are per run through each changed line, so for inlining
+    /// they're saved again on every pass round the loop.
     /// </summary>
     public string Describe()
     {
@@ -84,6 +88,7 @@ public sealed record Opt6502Stats(
             .Select(k => $"{ByKind[k.Key]} {k.Description}")
             .Concat(ByKind.Where(kv => kv.Value > 0 && !known.Contains(kv.Key)).Select(kv => $"{kv.Value} {kv.Key}"));
         var noun = Optimizations == 1 ? "optimization" : "optimizations";
-        return $"{Optimizations} {noun} ({string.Join(", ", parts)}), ~{Bytes} bytes and ~{Cycles} cycles saved";
+        var size = Bytes >= 0 ? $"~{Bytes} bytes and ~{Cycles} cycles saved" : $"~{-Bytes} bytes added, ~{Cycles} cycles saved";
+        return $"{Optimizations} {noun} ({string.Join(", ", parts)}), {size}";
     }
 }

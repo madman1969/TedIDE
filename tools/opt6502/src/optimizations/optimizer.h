@@ -99,5 +99,6 @@ void optimize_45gs02_instructions_ast(Program *prog);
  * @param prog Program to optimize
  */
 void optimize_inline_subroutines_ast(Program *prog);
+void optimize_inline_runtime_ast(Program *prog);
 
 #endif // OPTIMIZER_H

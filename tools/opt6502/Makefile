@@ -30,6 +30,7 @@ SOURCES = src/main.c \
           src/optimizations/cpu65c02.c \
           src/optimizations/cpu45gs02.c \
           src/optimizations/inline.c \
+          src/optimizations/inline_runtime.c \
           src/output/output.c \
           src/program/program.c
 OBJECTS = $(SOURCES:.c=.o)

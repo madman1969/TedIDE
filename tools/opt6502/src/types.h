@@ -135,6 +135,8 @@ typedef struct AstNode {
     bool no_optimize;           /**< Optimization disabled for this line */
     bool is_local_label;        /**< Label is local scope */
     bool is_branch_target;      /**< Label can be jumped/branched to */
+    bool in_loop;               /**< Between a label and a jump/branch back to it (Tedide, inline_runtime.c) */
+    bool is_inlined;            /**< Inserted by inline_runtime.c rather than read from the source (Tedide) */
     int optimization_count;     /**< Number of optimizations applied */
     RegisterState reg_state;    /**< Register state at this node */
 } AstNode;
@@ -164,6 +166,7 @@ typedef enum {
     OPT_KIND_JUMP,         /**< JMP to the very next line removed */
     OPT_KIND_UNREACHABLE,  /**< Unlabelled code after JMP/RTS/RTI removed */
     OPT_KIND_STZ,          /**< 65C02: LDA #0 / STA -> STZ */
+    OPT_KIND_INLINE,       /**< -speed: runtime helper call in a loop replaced by its body */
     OPT_KIND_COUNT
 } OptKind;
 

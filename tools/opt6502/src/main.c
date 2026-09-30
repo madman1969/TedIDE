@@ -96,8 +96,9 @@ int main(int argc, char *argv[]) {
 
     if (!input_file || argc < 3) {
         printf("Usage: %s [-speed|-size] [-asm <type>] [-cpu <type>] [-trace <level>] input.asm [output.asm]\n", argv[0]);
-        printf("  -speed: Optimize for execution speed\n");
-        printf("  -size:  Optimize for code size\n");
+        printf("  -speed: Optimize for execution speed (default; with ca65 cc65 2.19 output, also\n");
+        printf("          inlines runtime helper calls inside loops - bigger but faster code)\n");
+        printf("  -size:  Optimize for code size (never adds code)\n");
         printf("  -asm:   Assembler type (default: generic)\n");
         printf("  -cpu:   Target CPU (6502, 65c02, 65816, 45gs02)\n");
         printf("  -trace: Generate optimization trace comments in output (level 1 = basic, level 2 = expanded)\n");
@@ -234,11 +235,12 @@ int main(int argc, char *argv[]) {
     // One machine-readable line, always printed, for IDE integration (Tedide parses it): every
     // field is key=value, so new ones can be appended without breaking existing readers.
     printf("opt6502-stats: optimizations=%d removed=%d rewritten=%d bytes=%d cycles=%d "
-           "reload=%d constant=%d transfer=%d jump=%d unreachable=%d stz=%d\n",
+           "reload=%d constant=%d transfer=%d jump=%d unreachable=%d stz=%d inline=%d\n",
            prog->optimizations, prog->instructions_removed, prog->instructions_rewritten,
            prog->bytes_saved, prog->cycles_saved,
            prog->stats[OPT_KIND_RELOAD], prog->stats[OPT_KIND_CONSTANT], prog->stats[OPT_KIND_TRANSFER],
-           prog->stats[OPT_KIND_JUMP], prog->stats[OPT_KIND_UNREACHABLE], prog->stats[OPT_KIND_STZ]);
+           prog->stats[OPT_KIND_JUMP], prog->stats[OPT_KIND_UNREACHABLE], prog->stats[OPT_KIND_STZ],
+           prog->stats[OPT_KIND_INLINE]);
 
     free_program_ast(prog);
     return 0;

@@ -49,6 +49,7 @@ public sealed class ProjectSettingsDialog : Dialog
     private readonly TextField _viceBinDirectoryField;
     private readonly CheckBox _enableSuperCpuField;
     private readonly CheckBox _useOpt6502Field;
+    private readonly CheckBox _favourSpeedField;
     private readonly TextField _opt6502PathField;
 
     /// <summary>True if the user chose Save (and the project was updated and saved to disk).</summary>
@@ -81,7 +82,7 @@ public sealed class ProjectSettingsDialog : Dialog
         var compilerTab = BuildCompilerTab(project, out _generateListingField, out _addSourceAsCommentField);
         var linkerTab = BuildLinkerTab(project, _targetField, out _generateLinkerMapField, out _exportLabelsField, out _generateDebugInfoField, out _linkerConfigPathField);
         var superCpuTab = BuildSuperCpuTab(project, out _enableSuperCpuField);
-        var opt6502Tab = BuildOpt6502Tab(project, out _useOpt6502Field, out var cpuLabel, out _opt6502PathField);
+        var opt6502Tab = BuildOpt6502Tab(project, out _useOpt6502Field, out _favourSpeedField, out var cpuLabel, out _opt6502PathField);
         var cc65Tab = BuildCc65Tab(out _cc65HomeField);
         var viceTab = BuildViceTab(out _viceBinDirectoryField);
         tabs.Add(settingsTab);
@@ -167,6 +168,7 @@ public sealed class ProjectSettingsDialog : Dialog
             project.LinkerConfigPath = string.IsNullOrWhiteSpace(_linkerConfigPathField.Text) ? null : _linkerConfigPathField.Text.Trim();
             project.EnableSuperCpu = _enableSuperCpuField.Value == CheckState.Checked;
             project.UseOpt6502 = _useOpt6502Field.Value == CheckState.Checked;
+            project.Opt6502Mode = _favourSpeedField.Value == CheckState.Checked ? Opt6502Mode.Speed : Opt6502Mode.Size;
 
             // Saved here, inside this button's handler, so a failure is reported and the dialog
             // stays open for a retry or Cancel - an exception escaping a running dialog's handler
@@ -542,13 +544,15 @@ public sealed class ProjectSettingsDialog : Dialog
     }
 
     /// <summary>
-    /// Builds the "opt6502" tab: the <see cref="TedideProject.UseOpt6502"/> toggle, the CPU this
-    /// project builds for (read-only - it follows Target and the SuperCPU tab, see
-    /// <see cref="CpuDescription"/>; the constructor keeps it live), and where opt6502.exe is.
-    /// That path is this machine's install, not project state, so like the CC65/VICE tabs it's
-    /// saved to <see cref="ToolchainSettings"/> rather than the project.
+    /// Builds the "opt6502" tab: the <see cref="TedideProject.UseOpt6502"/> toggle, the
+    /// <see cref="TedideProject.Opt6502Mode"/> speed/size choice, the CPU this project builds for
+    /// (read-only - it follows Target and the SuperCPU tab, see <see cref="CpuDescription"/>; the
+    /// constructor keeps it live), and where opt6502.exe is. That path is this machine's install,
+    /// not project state, so like the CC65/VICE tabs it's saved to <see cref="ToolchainSettings"/>
+    /// rather than the project.
     /// </summary>
-    private static View BuildOpt6502Tab(TedideProject project, out CheckBox useOpt6502Field, out Label cpuLabel, out TextField opt6502PathField)
+    private static View BuildOpt6502Tab(
+        TedideProject project, out CheckBox useOpt6502Field, out CheckBox favourSpeedField, out Label cpuLabel, out TextField opt6502PathField)
     {
         // "p" rather than "o" - "_Optimizer" already has O.
         var tab = new View { Title = " o_pt6502 ", Width = Dim.Fill(), Height = Dim.Fill() };
@@ -566,35 +570,50 @@ public sealed class ProjectSettingsDialog : Dialog
         {
             Text = "Runs opt6502 on each C file's cc65-generated assembly before it's assembled;\n" +
                    "hand-written assembly files are left alone. Each file's savings, and the build's\n" +
-                   "total, are shown in the Output panel. cc65's own -O already removes most of the\n" +
-                   "same patterns, so expect the most from it with Optimizer set to None.",
+                   "total, are shown in the Output panel. cc65's own -O already removes most of what\n" +
+                   "size mode looks for, so on its own it helps most with Optimizer set to None.",
             X = 0, Y = 2, Width = Dim.Fill(1), Height = 4,
+        };
+
+        favourSpeedField = new CheckBox
+        {
+            Text = "Favour speed: inline cc65 runtime calls inside loops (adds code)",
+            X = 0, Y = 7,
+            Value = project.Opt6502Mode == Opt6502Mode.Speed ? CheckState.Checked : CheckState.UnChecked,
+        };
+
+        var speedHelpLabel = new Label
+        {
+            Text = "Replaces calls to cc65's stack helpers (pushax, ldaxysp, incsp2...) inside loops\n" +
+                   "with their own code - 4-7% faster on stack-heavy loops in testing, even with -Oirs,\n" +
+                   "for a few hundred bytes. Off: opt6502 only ever makes code smaller.",
+            X = 0, Y = 9, Width = Dim.Fill(1), Height = 3,
         };
 
         cpuLabel = new Label
         {
             Text = CpuDescription(project.Target, project.EnableSuperCpu),
-            X = 0, Y = 7, Width = Dim.Fill(1),
+            X = 0, Y = 13, Width = Dim.Fill(1),
         };
 
-        var pathLabel = new Label { Text = "opt6502 executable (blank = opt6502.exe beside Tedide, then PATH):", X = 0, Y = 9 };
+        var pathLabel = new Label { Text = "opt6502 executable (blank = opt6502.exe beside Tedide, then PATH):", X = 0, Y = 15 };
         opt6502PathField = new TextField
         {
-            X = 0, Y = 11, Width = Dim.Fill(12),
+            X = 0, Y = 17, Width = Dim.Fill(12),
             Text = ToolchainSettings.Load().Opt6502Path ?? string.Empty,
         };
         var browseButton = FileBrowseButton.Create(
-            opt6502PathField, y: 11, "Select opt6502 Executable",
+            opt6502PathField, y: 17, "Select opt6502 Executable",
             allowedTypes: () => [new AllowedType("Programs", ".exe")]);
 
         var pathHelpLabel = new Label
         {
             Text = "Build it with tools\\opt6502\\build.cmd (needs the Visual Studio C++ tools). Saved to\n" +
                    "Tedide's settings for this machine, not the project - same as the VICE tab.",
-            X = 0, Y = 13, Width = Dim.Fill(1), Height = 2,
+            X = 0, Y = 19, Width = Dim.Fill(1), Height = 2,
         };
 
-        tab.Add(useOpt6502Field, helpLabel, cpuLabel, pathLabel, opt6502PathField, browseButton, pathHelpLabel);
+        tab.Add(useOpt6502Field, helpLabel, favourSpeedField, speedHelpLabel, cpuLabel, pathLabel, opt6502PathField, browseButton, pathHelpLabel);
         return tab;
     }
 

@@ -523,6 +523,7 @@ an example, laid out the way GitHub's most common C project layout does (`src/`,
 | `GenerateDebugInfo` | Whether cc65/ca65 embed debug info (`-g`) and `ld65` consolidates it into `{Name}.dbg` (`--dbgfile`, forwarded through cl65 as `-Wl --dbgfile,path` - it has no top-level flag for this). Required for the debugger - see "Debugging" above. Defaults to `false`. |
 | `EnableSuperCpu` | Whether Build > Run Project/Debug > Start Debugging launch this project in VICE's dedicated SuperCPU emulator (`xscpu64.exe`) instead of the plain C64 one (`x64sc.exe`) - see `ViceEmulator.ExecutableNameFor` - and whether it's compiled and assembled for the SuperCPU's 65816 (`--cpu 65816`, so cc65 can use 65C02 instructions such as `STZ`/`BRA`) rather than the 6502. Only meaningful while `Target` is `C64` (the SuperCPU is a C64-specific accelerator cartridge); ignored for every other target. Defaults to `false`. |
 | `UseOpt6502` | Whether each C file's generated assembly is run through opt6502 before it's assembled - see the **opt6502** tab under "Project Settings dialog" below. Defaults to `false`. |
+| `Opt6502Mode` | `Size` (the default: opt6502 only removes code) or `Speed` (also inlines cc65 runtime calls inside loops) - passed to opt6502 as `-size`/`-speed`. |
 | `OutputFile` | Defaults to `<Name><platform-default-extension>` (e.g. `.prg` for C64, `.nes` for NES) in the project's own directory if not set; Tedide creates the output directory automatically if it doesn't exist yet (`ld65` itself won't). |
 | `LinkerConfigPath` | A custom `ld65` linker config file (`-C`), relative to the project directory. `null`/blank uses cl65's built-in per-target default - a custom config typically *replaces* that default rather than layering on top of it. |
 | `IncludePaths` | Directories passed to `cl65` as `-I <dir>` (compile-time only), each relative to the project directory - the first-class alternative to putting `-I` in `ExtraArguments`. |
@@ -604,8 +605,18 @@ single Save/Cancel footer:
 
   Byte and cycle counts are opt6502's estimates from each changed instruction's addressing mode.
   For a SuperCPU project it also replaces `LDA #0` + `STA` with `STZ` where that's provably safe.
-  cc65's own `-O` already removes most of the same patterns, so expect the most from it with the
-  Optimizer tab set to None. The opt6502 used is Tedide's patched fork in `tools/opt6502` (upstream
+  cc65's own `-O` already removes most of the same patterns, so on its own it helps most with the
+  Optimizer tab set to None.
+
+  *Favour speed* (`Opt6502Mode: Speed`) also replaces calls to cc65's runtime stack helpers
+  (`pushax`, `ldaxysp`, `incsp2`, ...) inside loops with the helpers' own code. That saves 9-12
+  cycles per call on every pass round the loop, for a few hundred bytes more code. cc65 always
+  calls these helpers, so this still pays off on top of `-Oirs`: 3.7-7% fewer cycles on a
+  stack-heavy test program, checked for identical results in cc65's simulator (see opt6502's
+  `TEDIDE.md`). The Output panel then reports bytes *added* alongside cycles saved. Off (the
+  default), opt6502 only ever makes code smaller.
+
+  The opt6502 used is Tedide's patched fork in `tools/opt6502` (upstream
   couldn't assemble cc65 output and miscompiled several patterns - see its `TEDIDE.md`), built with
   `tools\opt6502\build.cmd`; Tedide's build copies the result beside `Tedide.App.exe`, where it's
   found automatically. The path field (per-machine, like CC65/VICE) overrides that, and PATH is the

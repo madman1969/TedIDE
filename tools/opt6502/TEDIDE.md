@@ -19,8 +19,14 @@ This needs Visual Studio 2022 or later with the C++ tools, and writes `tools\opt
 On Linux/macOS, `make` works as upstream intended. Tedide's build copies the exe next to
 `Tedide.App.exe` when it exists, and Tedide looks for it there before trying PATH.
 
-Tests: `OPT6502=bin/opt6502.exe bash run_tests.sh` (Git Bash). It runs upstream's golden files plus
-`tests/cc65_6502` and `tests/cc65_65816`, which cover real cc65 output.
+Tests (Git Bash):
+
+- `OPT6502=bin/opt6502.exe bash run_tests.sh` runs upstream's golden files plus
+  `tests/cc65_6502` and `tests/cc65_65816`, which cover real cc65 output.
+- `OPT6502=bin/opt6502.exe bash run_sim65_tests.sh` needs cc65 on PATH. It compiles
+  `tests/sim65/*.c` for cc65's simulator, then runs the program unoptimized, with `-size` and with
+  `-speed`, and fails unless all three give the same output and exit code. Run it after any change
+  to `inline_runtime.c`.
 
 ## What was wrong upstream, and what changed
 
@@ -47,21 +53,45 @@ once that was fixed, several passes would have miscompiled cc65 code:
 - `analysis/nodeinfo.c`: the rules every pass shares (what's removable, and what reads or
   overwrites A and N/Z). Unknown mnemonics and ca65 macros such as `jeq` count as reading
   everything and as ending straight-line code.
+- `optimizations/inline_runtime.c`: **`-speed` now does something.** It replaces calls to cc65's
+  runtime stack helpers (`pushax`, `pusha`, `pusha0`, `push0`, `decsp2`, `decsp4`, `incsp1`,
+  `incsp2`, `ldaxysp`, `ldax0sp`, `staxysp`, `stax0sp`, `pushwysp`, `pushw0sp`) *inside loops*
+  with the helpers' own code, saving the 12-cycle `JSR`/`RTS` (9 where an `RTS` in the middle
+  became a `JMP`) on every pass round the loop.
+  - A loop is the code from a label to the last jump or branch back to it in the same `.proc`.
+  - The bodies are copied from cc65's `libsrc/runtime` at git `b75f872` (the 2.19 build Tedide
+    was tested with). Every path leaves A, X, Y, flags and memory exactly as the real helper does.
+    `popax` is left out because its 6502 and 65C02 library builds leave Y different.
+  - It only runs on ca65 input that says it came from cc65 2.19 (`.fopt compiler,"cc65 v 2.19`),
+    imports `sp` (later cc65 renamed it `c_sp`), and has `.macpack longbranch`. Otherwise it
+    silently does nothing.
+  - Inlining makes loops longer, so any short branch whose span now contains inlined code, and
+    whose worst-case distance could exceed ±127 bytes, becomes cc65's longbranch macro (`bne` ->
+    `jne`), or a `jmp` for `bra`.
+  - Measured with `run_sim65_tests.sh`: 3.7-7% fewer cycles on its stack-heavy loop test, at
+    every cc65 `-O` level (3.7% on top of `-Oirs`), for about 200-300 bytes more code.
+  - `-size` never does this. Upstream's default mode is `-speed`, so Tedide always passes one or
+    the other explicitly.
 - `-quiet`: prints only errors and one final line, which Tedide parses for the Output panel:
 
-  ```
-  opt6502-stats: optimizations=6 removed=6 rewritten=1 bytes=17 cycles=17 reload=0 constant=0 transfer=0 jump=5 unreachable=0 stz=1
+  ```text
+  opt6502-stats: optimizations=6 removed=6 rewritten=1 bytes=17 cycles=17 reload=0 constant=0 transfer=0 jump=5 unreachable=0 stz=1 inline=0
   ```
 
-  `bytes`/`cycles` are estimates from each changed instruction's addressing mode. Zero-page is
-  taken from literals below `$100` and `.importzp` names. Cycles count one execution and ignore
-  page-crossing penalties.
+  `bytes`/`cycles` are estimates from each changed instruction's addressing mode. `bytes` is
+  negative when inlining added code. Zero-page is taken from literals below `$100` and
+  `.importzp` names. Cycles count one execution of each changed line (for inlining, one call) and
+  ignore page-crossing penalties.
 
 The 65816 and 45GS02 passes weren't reviewed. Tedide only ever passes `-cpu 6502`, or `65816` for
 SuperCPU projects, and `65816` enables just the 65C02 pass above.
 
 ## Expected gains
 
-On the Tedide samples, most wins come from cc65 output built **without** optimization (a `jmp` to
-the next line, repeated `ldx #$00`). With cc65's own `-O`/`-Oirs`, cc65 has already removed
-nearly all of these, and opt6502 finds little beyond the SuperCPU `STZ` rewrite.
+In `-size` mode, most wins come from cc65 output built **without** optimization (a `jmp` to the
+next line, repeated `ldx #$00`). With cc65's own `-O`/`-Oirs`, cc65 has already removed nearly all
+of these.
+
+`-speed` is the mode that still pays off on top of `-Oirs`, because cc65 always calls its runtime
+helpers rather than inlining them. The gain depends on how much of the program's time goes into
+loops that pass arguments on the C stack.

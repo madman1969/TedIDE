@@ -87,7 +87,22 @@ public class Opt6502IntegrationTests
 
         var args = Cc65Toolchain.BuildOpt6502Arguments(project, "in.s", "out.s");
 
-        Assert.Equal(["-quiet", "-asm", "ca65", "-cpu", expectedCpu, "in.s", "out.s"], args);
+        Assert.Equal(["-quiet", "-size", "-asm", "ca65", "-cpu", expectedCpu, "in.s", "out.s"], args);
+    }
+
+    [Theory]
+    [InlineData(Opt6502Mode.Size, "-size")]
+    [InlineData(Opt6502Mode.Speed, "-speed")]
+    public void Opt6502Arguments_AlwaysPassTheModeExplicitly(Opt6502Mode mode, string expectedFlag)
+    {
+        // opt6502's own default is -speed, which adds code - a project that hasn't asked for
+        // speed must never get it by omission.
+        var project = new TedideProject { Name = "Test", Opt6502Mode = mode };
+
+        var args = Cc65Toolchain.BuildOpt6502Arguments(project, "in.s", "out.s");
+
+        Assert.Contains(expectedFlag, args);
+        Assert.DoesNotContain(mode == Opt6502Mode.Speed ? "-size" : "-speed", args);
     }
 
     [Fact]

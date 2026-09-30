@@ -40,6 +40,8 @@ AstNode* create_ast_node(NodeType type, int line_num) {
     node->no_optimize = false;
     node->is_local_label = false;
     node->is_branch_target = false;
+    node->in_loop = false;
+    node->is_inlined = false;
     node->optimization_count = 0;
 
     // Initialize register state

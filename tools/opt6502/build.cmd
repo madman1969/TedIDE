@@ -16,6 +16,6 @@ cl /nologo /O2 /W3 /std:c11 /D_CRT_SECURE_NO_WARNINGS /D_CRT_NONSTDC_NO_WARNINGS
   src\main.c src\types.c src\ast\ast.c src\ast\parser.c src\analysis\analysis.c src\analysis\registers.c ^
   src\analysis\nodeinfo.c src\optimizations\optimizer.c src\optimizations\peephole.c src\optimizations\deadcode.c ^
   src\optimizations\jumps.c src\optimizations\loadstore.c src\optimizations\regusage.c src\optimizations\constant.c ^
-  src\optimizations\cpu65c02.c src\optimizations\cpu45gs02.c src\optimizations\inline.c src\output\output.c ^
+  src\optimizations\cpu65c02.c src\optimizations\cpu45gs02.c src\optimizations\inline.c src\optimizations\inline_runtime.c src\output\output.c ^
   src\program\program.c
 exit /b %ERRORLEVEL%

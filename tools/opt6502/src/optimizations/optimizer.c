@@ -41,6 +41,9 @@ void optimize_program_ast(Program *prog) {
     analyze_call_flow_ast(prog);
     optimize_inline_subroutines_ast(prog);
 
+    // Tedide: -speed inlines cc65 runtime calls in loops first, so the passes below can tidy up
+    optimize_inline_runtime_ast(prog);
+
     // Multiple passes until no more optimizations found
     do {
         prev_opts = prog->optimizations;
