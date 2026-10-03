@@ -314,8 +314,7 @@ Project...**, which also sends the project's folder to the Recycle Bin after ask
 whose folder also holds the solution file or another project can't be deleted, since its folder
 would take them too. Add New Project starts beside the existing projects, never inside one.
 
-- **The startup project**, shown in bold, is the one F5 builds, F6 runs and Start Debugging
-  debugs; its breakpoints and symbols are the ones shown. It's saved in the `.tsln`. Without one,
+- **The startup project**, shown in bold, is the one Ctrl+F5 runs and F5 debugs; its breakpoints and symbols are the ones shown. It's saved in the `.tsln`. Without one,
   it's the first application project.
 - **Library projects.** A project's output type is Application or Library. A library's object
   files are archived by `ar65` into a `.lib` instead of being linked.
@@ -351,7 +350,9 @@ or outside a repository, none of this appears.
 
 Fetch, pull and push aren't offered; use git itself for those.
 
-Press **F5** (or **Build > Build Project**) to invoke `cl65` - once per source file (`-c`, compile
+Press **Ctrl+B** (or **Build > Build Solution**) to build every project, libraries first, or
+**Build > Build Project** for just the startup project. Visual Studio's Ctrl+Shift+B works too:
+Windows Terminal delivers it as Ctrl+B. A build invokes `cl65` - once per source file (`-c`, compile
 and assemble but don't link) so each gets its own assembler listing, then once more to link the
 resulting object files into the output binary; output from every invocation streams live into the
 **Output** tab as one build, and its success/failure (with an error count) is reported when it
@@ -361,10 +362,10 @@ line/message columns); activating a row jumps straight to that line, the file op
 already. A source file that fails to compile doesn't stop the rest from being compiled too - only
 the link step is skipped, so a single build surfaces every file's errors at once. **Build > Cancel
 Build** stops a running build, killing `cl65` and every compiler/assembler process it started (only
-one build runs at a time - pressing F5 again mid-build says so rather than starting a second). **Build > Clean
+one build runs at a time - pressing Ctrl+B again mid-build says so rather than starting a second). **Build > Clean
 Project** deletes the project's build artifacts (each source file's object file and assembler
 listing, linker map, label file, debug info file, and the linked output binary) without
-rebuilding. **F6** (or **Build > Run Project**) builds first, then launches the built output in
+rebuilding. **Ctrl+F5** (or **Debug > Start Without Debugging**, as in Visual Studio) builds first, then launches the built output in
 the VICE emulator matching the project's target, auto-starting it. For a VIC-20 project, this also
 passes xvic's own `-memory` flag matching whichever linker config is actually in effect - cc65's
 default `vic20.cfg` (or no custom config at all) launches an unexpanded VIC-20 (`-memory none`),
@@ -459,7 +460,7 @@ new tab in the same window; elsewhere it gets a console window of its own. Tedid
 (the layout the publish tasks produce), then in the repository's own Doc Viewer build output. Set
 `TEDIDE_DOCVIEWER` to the exe's full path to use one somewhere else.
 
-Press **Ctrl+W** (or **File > Close File**) to close the file being shown. If it has unsaved
+Press **Ctrl+W** or Visual Studio's **Ctrl+F4** (or **File > Close File**) to close the file being shown. If it has unsaved
 changes you're prompted to save, discard, or cancel first (see "Editing" below).
 
 ## Debugging
@@ -479,14 +480,15 @@ line, not just launching the emulator and watching it run.
    background) the moment it's set, not just while a debug session is stopped there. Breakpoints
    persist per-project in `{Name}.breakpoints.json`, next to the `.tproj` file (deliberately not
    part of the `.tproj` itself - see `BreakpointsFile` - toggling one shouldn't dirty the project's
-   own build settings). **Debug > Breakpoints...** lists/toggles/deletes them all in one dialog -
+   own build settings). **Ctrl+F9** (or **Debug > Enable/Disable Breakpoint**) turns the caret
+   line's breakpoint off without deleting it, or back on. **Debug > Breakpoints...** lists/toggles/deletes them all in one dialog -
    selecting a row jumps the editor straight to that breakpoint's file and line, same as the Error
    List/Symbols tabs.
 
    ![The editor with breakpoints set on lines 24 and 26 of main.c, each line highlighted red](docs/images/debugging-breakpoint-lines.png)
 
    ![The Breakpoints dialog listing both breakpoints - enabled, file and line - with Toggle Enabled, Delete and Close buttons](docs/images/debugging-breakpoints-dialog.png)
-3. **Debug > Start Debugging** (Shift+F5) builds, launches VICE with `-binarymonitor`, connects,
+3. **Debug > Start Debugging** (F5) builds, launches VICE with `-binarymonitor`, connects,
    opens (and centers the editor on) the source line containing `main()`, resolves every enabled
    breakpoint's source line to an address via the `.dbg` file, sets them, and starts running. The
    **Debug** tab is switched to automatically so its debugger windows are visible right away.
@@ -497,20 +499,25 @@ line, not just launching the emulator and watching it run.
    the title bar), the Debug tab's windows refresh, and the editor jumps to and
    vertically centers the current line (highlighted via a `Terminal.Gui.Editor` line transformer,
    not the gutter - see step 2; the same centering happens for every other stop below, not just the
-   first). **Continue** (Ctrl+F5) resumes; **Step Over** (F10) and **Step Into** (F7 - Windows Terminal keeps F11 for full screen) advance by *source line*, not raw 6502
+   first). **Continue** (F5 again) resumes; **Step Over** (F10) and **Step Into** (F7 - Windows Terminal keeps F11 for full screen) advance by *source line*, not raw 6502
    instruction - it single-steps repeatedly until the resolved location changes to a *different* C
    line (skipping over addresses that only resolve to cl65's own generated assembly, e.g. a
    function's prologue, so it doesn't stop one instruction early), so one Step press is one C
    statement, not one machine instruction. Step Into only stops in code that's part of the project:
    a call into cc65's own runtime library (e.g. `printf`, or the helpers the compiler calls for
    things like pushing arguments) is run straight through to its return, since there's no source
-   to show for it. **Stop Debugging** disconnects (leaving VICE itself running) and makes the editor
+   to show for it. **Stop Debugging** (Shift+F5) disconnects (leaving VICE itself running) and makes the editor
    editable again.
 
    ![Tedide stopped in a debug session inside CBMInfo's detect_video_system: video.c open with the current line highlighted, and the Debug tab showing the status, breakpoints, two watches, the recent stops, the function's local variables and the 6502 registers](docs/images/debugging-session.png)
 4. The **Debug** tab is laid out like Visual Studio's two default groups of debugger windows:
    **Locals | Watch** on the left, **Call Stack | Breakpoints | Registers** on the right, each a
    small set of tabs so every window gets the pane's full height.
+   **Debug > Windows** opens each one with Visual Studio's keys: Ctrl+Alt+V Locals, Ctrl+Alt+W
+   Watch, Ctrl+Alt+C Call Stack, Ctrl+Alt+B Breakpoints, Ctrl+Alt+G Registers, Ctrl+Alt+M Memory
+   and Ctrl+Alt+D Disassembly (VS's two-key chords, like Ctrl+Alt+V, L, need only the first key).
+   **View** has Ctrl+Alt+L Solution Explorer. (Not VS's Ctrl+Alt+O for Output: on a UK keyboard
+   that's AltGr+O, which types "ó".)
    - **Registers** shows the 6502 status register (`FL`) decoded into its individual flags
      (`N V - B D I Z C`, set flags shown as their letter and clear ones as `.`, alongside the raw
      hex byte).

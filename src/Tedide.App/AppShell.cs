@@ -1295,41 +1295,46 @@ public sealed class AppShell : Window
             new MenuItem("_Save", "", () => SaveActive(), Key.S.WithCtrl),
             // No key: Ctrl+Shift+S arrives as Ctrl+S in Windows Terminal (see FindInFilesKey).
             new MenuItem("Save A_ll", "", () => SaveAll(), Key.Empty),
+            // Ctrl+W as in VS Code; Visual Studio's own Ctrl+F4 works too (OnKeyDown).
             new MenuItem("_Close File", "", CloseActiveFile, Key.W.WithCtrl) { BindKeyToApplication = true },
             new MenuItem("Close A_ll Files", "", CloseAllFiles, Key.Empty),
             // The keys are labels here - the editor and OnKeyDown handle them (see EditorPane).
             new MenuItem("_Next File", "", () => _editorPane.CycleDocument(1), Key.PageDown.WithCtrl),
             new MenuItem("Pre_vious File", "", () => _editorPane.CycleDocument(-1), Key.PageUp.WithCtrl),
             new Line(),
+            // The key is a label: OnKeyDown handles it, not a status-bar Shortcut, which left no
+            // room for the rest (and BindKeyToApplication didn't fire for it - confirmed live).
             new MenuItem("_Quit", "", Quit, Key.Q.WithCtrl),
         });
 
         var buildMenu = new MenuBarItem("_Build", new List<MenuItem>
         {
-            new("_Build Project", "", () => _ = BuildActiveProjectAsync(), Key.F5),
-            new("Build _Solution", "", () => _ = BuildSolutionAsync(), Key.Empty),
+            new("Build _Solution", "", () => _ = BuildSolutionAsync(), BuildSolutionKey),
+            new("_Build Project", "", () => _ = BuildActiveProjectAsync(), Key.Empty),
             new("C_ancel Build", "", CancelBuild, Key.Empty),
             new("_Clean Project", "", CleanActiveProject, Key.Empty),
             new("Clea_n Solution", "", CleanSolution, Key.Empty),
-            new("_Run Project", "", () => _ = RunActiveProjectAsync(), Key.F6),
         });
 
-        // F5/F6 above are already Build/Run - Start Debugging/Continue/Step use keys of their own.
-        // The keys shown here are only labels: F10/F7 fire via their status-bar Shortcuts and
-        // Shift+F5/Ctrl+F5 via OnKeyDown, because BindKeyToApplication never fires for this menu's
-        // items (confirmed live - see OnKeyDown). Adding it back would risk double-firing if it
-        // ever starts working.
+        // Visual Studio's keys, except Step Into (below). The keys shown here are only labels:
+        // F5/Ctrl+F5/F10/F7/F9 fire via their status-bar Shortcuts and the rest via OnKeyDown,
+        // because BindKeyToApplication never fires for this menu's items (confirmed live - see
+        // OnKeyDown). Adding it back would risk double-firing if it ever starts working.
         var debugMenu = new MenuBarItem("_Debug", new List<View>
         {
-            new MenuItem("_Start Debugging", "", () => _ = StartDebuggingAsync(), Key.F5.WithShift),
-            new MenuItem("_Continue", "", () => _ = ContinueDebuggingAsync(), Key.F5.WithCtrl),
+            new MenuItem("_Windows", "", new Menu(BuildDebugWindowsMenuItems())),
+            new Line(),
+            new MenuItem("_Start Debugging", "", () => _ = StartDebuggingAsync(), Key.F5),
+            new MenuItem("Start _Without Debugging", "", () => _ = RunActiveProjectAsync(), Key.F5.WithCtrl),
+            new MenuItem("_Continue", "", () => _ = ContinueDebuggingAsync(), Key.F5),
             new MenuItem("Step _Over", "", () => _ = StepDebuggingAsync(stepInto: false), Key.F10),
             // F7, not Visual Studio's F11 - Windows Terminal claims F11 for its own full-screen
             // toggle before the app ever sees it. F7/F8 is also the Turbo Pascal/Borland pairing.
             new MenuItem("Step _Into", "", () => _ = StepDebuggingAsync(stepInto: true), Key.F7),
-            new MenuItem("Sto_p Debugging", "", () => _ = StopDebuggingAsync(), Key.Empty),
+            new MenuItem("Sto_p Debugging", "", () => _ = StopDebuggingAsync(), Key.F5.WithShift),
             new Line(),
             new MenuItem("_Toggle Breakpoint", "", ToggleBreakpointAtCursor, Key.F9),
+            new MenuItem("_Enable/Disable Breakpoint", "", EnableBreakpointAtCursor, Key.F9.WithCtrl),
             new MenuItem("Breakpoint Co_ndition...", "", EditBreakpointConditionAtCursor, Key.Empty),
             new MenuItem("_Breakpoints...", "", ShowBreakpointsDialog, Key.Empty),
             new Line(),
@@ -1370,6 +1375,12 @@ public sealed class AppShell : Window
         editMenuItems.AddAt(4, new MenuItem("Re_name Symbol...", "", RenameSymbol, RenameSymbolKey));
         editMenuItems.AddAt(5, new MenuItem("Navigate _Backward", "", NavigateBackward, NavigateBackwardKey));
         editMenuItems.AddAt(6, new MenuItem("Navigate For_ward", "", NavigateForward, NavigateForwardKey));
+        var viewMenuItems = menuBar.ViewMenu.PopoverMenu!.Root!;
+        viewMenuItems.AddAt(0, new MenuItem("_Solution Explorer", "", ShowSolutionExplorer, SolutionExplorerKey));
+        viewMenuItems.AddAt(1, new MenuItem("_Output", "", ShowOutputTab, Key.Empty));
+        viewMenuItems.AddAt(2, new MenuItem("_Error List", "", () => ShowPane(_errorListView), Key.Empty));
+        viewMenuItems.AddAt(3, new MenuItem("_Git Changes", "", () => ShowPane(_gitView), Key.Empty));
+        viewMenuItems.AddAt(4, new Line());
         menuBar.Menus = [fileMenu, menuBar.EditMenu, menuBar.ViewMenu, buildMenu, debugMenu, projectMenu, themeMenu, helpMenu];
         menuBar.X = 0;
         menuBar.Y = 0;
@@ -1400,6 +1411,34 @@ public sealed class AppShell : Window
     /// <summary>F1, as in Visual Studio - see <see cref="ShowContextHelp"/>.</summary>
     private static readonly Key ContextHelpKey = Key.F1;
 
+    /// <summary>Build Solution: Visual Studio's Ctrl+Shift+B arrives as Ctrl+B in Windows Terminal
+    /// (see <see cref="FindInFilesKey"/>), so Ctrl+B it is - and pressing Ctrl+Shift+B still works.</summary>
+    private static readonly Key BuildSolutionKey = Key.B.WithCtrl;
+
+    /// <summary>Visual Studio's keys for its tool windows. Where VS uses a two-key chord (Locals is
+    /// Ctrl+Alt+V, L; Watch is Ctrl+Alt+W, 1; Memory is Ctrl+Alt+M, 1) the first key alone opens it.
+    /// Not VS's Ctrl+Alt+O for Output: Ctrl+Alt is AltGr, and on a UK keyboard AltGr+O types "ó"
+    /// (confirmed live) - the same goes for the other vowels, which none of these use.</summary>
+    private static readonly Key SolutionExplorerKey = Key.L.WithCtrl.WithAlt;
+    private static readonly Key CallStackKey = Key.C.WithCtrl.WithAlt;
+    private static readonly Key BreakpointsWindowKey = Key.B.WithCtrl.WithAlt;
+    private static readonly Key RegistersKey = Key.G.WithCtrl.WithAlt;
+    private static readonly Key LocalsKey = Key.V.WithCtrl.WithAlt;
+    private static readonly Key WatchKey = Key.W.WithCtrl.WithAlt;
+    private static readonly Key MemoryKey = Key.M.WithCtrl.WithAlt;
+    private static readonly Key DisassemblyKey = Key.D.WithCtrl.WithAlt;
+
+    private List<MenuItem> BuildDebugWindowsMenuItems() =>
+    [
+        new("_Locals", "", () => ShowDebugWindow(DebugWindow.Locals), LocalsKey),
+        new("_Watch", "", () => ShowDebugWindow(DebugWindow.Watch), WatchKey),
+        new("_Call Stack", "", () => ShowDebugWindow(DebugWindow.CallStack), CallStackKey),
+        new("_Breakpoints", "", () => ShowDebugWindow(DebugWindow.Breakpoints), BreakpointsWindowKey),
+        new("_Registers", "", () => ShowDebugWindow(DebugWindow.Registers), RegistersKey),
+        new("_Memory", "", () => ShowPane(_memoryView), MemoryKey),
+        new("_Disassembly", "", () => ShowPane(_disassemblyView), DisassemblyKey),
+    ];
+
     /// <summary>
     /// App-wide keys that have no status-bar Shortcut to carry them. A key reaches this only after
     /// the focused view declines it, and never while a dialog is open (a dialog is its own
@@ -1413,9 +1452,29 @@ public sealed class AppShell : Window
     {
         Action? action = null;
         if (key == Key.F5.WithShift)
-            action = () => _ = StartDebuggingAsync();
-        else if (key == Key.F5.WithCtrl)
-            action = () => _ = ContinueDebuggingAsync();
+            action = () => _ = StopDebuggingAsync();
+        else if (key == Key.F9.WithCtrl)
+            action = EnableBreakpointAtCursor;
+        else if (key == Key.F4.WithCtrl)
+            action = CloseActiveFile;
+        else if (key == Key.Q.WithCtrl)
+            action = Quit;
+        else if (key == SolutionExplorerKey)
+            action = ShowSolutionExplorer;
+        else if (key == LocalsKey)
+            action = () => ShowDebugWindow(DebugWindow.Locals);
+        else if (key == WatchKey)
+            action = () => ShowDebugWindow(DebugWindow.Watch);
+        else if (key == CallStackKey)
+            action = () => ShowDebugWindow(DebugWindow.CallStack);
+        else if (key == BreakpointsWindowKey)
+            action = () => ShowDebugWindow(DebugWindow.Breakpoints);
+        else if (key == RegistersKey)
+            action = () => ShowDebugWindow(DebugWindow.Registers);
+        else if (key == MemoryKey)
+            action = () => ShowPane(_memoryView);
+        else if (key == DisassemblyKey)
+            action = () => ShowPane(_disassemblyView);
         else if (key == FindInFilesKey)
             action = () => ShowFindInFiles();
         else if (key == GoToDefinitionKey)
@@ -1458,12 +1517,14 @@ public sealed class AppShell : Window
         // both active would let this dropdown silently overwrite our custom Schemes. Hide it; the
         // Theme menu above is our one theme switcher.
         statusBar.ThemeDropDown.Visible = false;
-        statusBar.Add(new Shortcut(Key.F5, "Build", () => _ = BuildActiveProjectAsync()));
+        // Visual Studio's keys: F5 starts debugging, or continues once stopped; Ctrl+F5 runs
+        // without the debugger; Ctrl+B (VS's Ctrl+Shift+B - see BuildSolutionKey) builds.
+        statusBar.Add(new Shortcut(Key.F5, "Debug", () => _ = StartOrContinueDebuggingAsync()));
+        statusBar.Add(new Shortcut(Key.F5.WithCtrl, "Run", () => _ = RunActiveProjectAsync()));
+        statusBar.Add(new Shortcut(BuildSolutionKey, "Build", () => _ = BuildSolutionAsync()));
         // A plain MenuItem's Key only acts as a hotkey while its menu is already open - a Shortcut
-        // is what actually makes a key global, the same reason Build's F5 above needs one too. F6
-        // Run and Ctrl+S Save had the same gap (menu-only, never worked while the editor had focus)
-        // until it was reported and fixed here alongside F9/Ctrl+G.
-        statusBar.Add(new Shortcut(Key.F6, "Run", () => _ = RunActiveProjectAsync()));
+        // is what actually makes a key global. Ctrl+S Save had that gap (menu-only, never worked
+        // while the editor had focus) until it was reported and fixed here alongside F9/Ctrl+G.
         statusBar.Add(new Shortcut(Key.F9, "Breakpoint", ToggleBreakpointAtCursor));
         // These status-bar Shortcuts are what make F10/F7 work at all: the Debug menu's own items
         // show the keys but don't bind them, because BindKeyToApplication never fires for that
@@ -1471,8 +1532,7 @@ public sealed class AppShell : Window
         statusBar.Add(new Shortcut(Key.F10, "Step", () => _ = StepDebuggingAsync(stepInto: false)));
         statusBar.Add(new Shortcut(Key.F7, "Into", () => _ = StepDebuggingAsync(stepInto: true)));
         statusBar.Add(new Shortcut(Key.S.WithCtrl, "Save", () => SaveActive()));
-        statusBar.Add(new Shortcut(Key.G.WithCtrl, "Go To Line", ShowGoToLine));
-        statusBar.Add(new Shortcut(Key.Q.WithCtrl, "Quit", Quit));
+        statusBar.Add(new Shortcut(Key.G.WithCtrl, "Go To", ShowGoToLine));
         statusBar.X = 0;
         statusBar.Y = Pos.AnchorEnd(1);
         statusBar.Width = Dim.Fill();
@@ -2580,6 +2640,35 @@ public sealed class AppShell : Window
     }
 
     /// <summary>
+    /// Debug > Enable/Disable Breakpoint (Ctrl+F9, as in Visual Studio): turns the caret line's
+    /// breakpoint off without losing it (or its condition), or back on. Nothing when the line
+    /// has no breakpoint.
+    /// </summary>
+    private void EnableBreakpointAtCursor() => Guard("Saving breakpoints", EnableBreakpointAtCursorCore);
+
+    private void EnableBreakpointAtCursorCore()
+    {
+        var project = _workspace.ActiveProject;
+        if (project is null || _editorPane.OpenPath is not { } openPath || _editorPane.Editor.Document is null)
+            return;
+
+        var line = _editorPane.CaretPosition.Line;
+        // Forward slashes, matching the .dbg file - see ToggleBreakpointAtCursorCore.
+        var relativePath = Path.GetRelativePath(project.Directory, openPath).Replace('\\', '/');
+        var index = _breakpoints.Breakpoints.FindIndex(b =>
+            b.Line == line && string.Equals(b.SourceFile, relativePath, StringComparison.OrdinalIgnoreCase));
+        if (index < 0)
+            return;
+
+        var breakpoint = _breakpoints.Breakpoints[index] with { Enabled = !_breakpoints.Breakpoints[index].Enabled };
+        _breakpoints.Breakpoints[index] = breakpoint;
+        AppendOutputLine($"Breakpoint {(breakpoint.Enabled ? "enabled" : "disabled")}: {relativePath}:{line}");
+        _breakpoints.Save(project.ResolvedBreakpointsFile);
+        RefreshBreakpointHighlights();
+        _ = SyncCheckpointsWithViceAsync();
+    }
+
+    /// <summary>
     /// Debug > Breakpoint Condition...: sets or clears the condition (VICE monitor syntax) of the
     /// breakpoint on the caret's line, creating the breakpoint first if there isn't one - so a
     /// conditional breakpoint takes one step, not F9 and then this.
@@ -3385,6 +3474,13 @@ public sealed class AppShell : Window
         });
     }
 
+    /// <summary>F5, as in Visual Studio: Start Debugging, or Continue when stopped at a breakpoint
+    /// (nothing while it's running).</summary>
+    private Task StartOrContinueDebuggingAsync() =>
+        !_isDebugging ? StartDebuggingAsync()
+        : _isStopped ? ContinueDebuggingAsync()
+        : Task.CompletedTask;
+
     private async Task ContinueDebuggingAsync()
     {
         if (_debugClient is null || !_isDebugging)
@@ -3757,7 +3853,7 @@ public sealed class AppShell : Window
         || (ex is ArgumentException && ex is not ArgumentNullException and not ArgumentOutOfRangeException);
 
     /// <summary>
-    /// Build > Build Project (F5): builds the startup project, after any libraries it references.
+    /// Build > Build Project: builds the startup project, after any libraries it references.
     /// Returns null (having already reported why) if none is loaded, another build is still
     /// running, or the build was cancelled via <see cref="CancelBuild"/> - callers (Run, Start
     /// Debugging) treat that the same as a failed build and stop there.
@@ -3790,7 +3886,7 @@ public sealed class AppShell : Window
 
         // Building what's on disk after a failed save would silently build stale source - and
         // before this check, the save's exception simply vanished into this un-awaited task, so
-        // F5 on a read-only file did nothing at all with no explanation.
+        // Building from a read-only file did nothing at all with no explanation.
         if (!SaveAll())
             return null;
         _outputView.Clear();
@@ -4261,6 +4357,23 @@ public sealed class AppShell : Window
     }
 
     internal static string DebugTitle(string? status) => status is null ? AppTitle : $"{AppTitle} - {status}";
+
+    /// <summary>Brings the bottom-pane tab holding <paramref name="content"/> to the front and focuses it.</summary>
+    private void ShowPane(View content)
+    {
+        if (content.SuperView is { } tab)
+            _outputTabs.Value = tab;
+        content.SetFocus();
+    }
+
+    /// <summary>Debug > Windows: the Debug tab, with <paramref name="window"/> in front and focused.</summary>
+    private void ShowDebugWindow(DebugWindow window)
+    {
+        _outputTabs.Value = _debugTab;
+        _debugPanel.ShowWindow(window);
+    }
+
+    private void ShowSolutionExplorer() => _solutionExplorer.SetFocus();
 
     private void ShowDebugTab()
     {

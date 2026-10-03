@@ -26,6 +26,16 @@ public sealed record CallFrame(string Function, string Location, string? FilePat
     public override string ToString() => $"{Function}  {Location}";
 }
 
+/// <summary>The debugger windows inside the Debug tab, for <see cref="DebugPanelView.ShowWindow"/>.</summary>
+public enum DebugWindow
+{
+    Locals,
+    Watch,
+    CallStack,
+    Breakpoints,
+    Registers,
+}
+
 /// <summary>
 /// The "Debug" tab, laid out like Visual Studio's two default debugger window groups: Locals and
 /// Watch on the left, Call Stack, Breakpoints and Registers on the right, each group a small set
@@ -85,6 +95,21 @@ public sealed class DebugPanelView : View
         SetCallStack([]);
         SetBreakpoints([]);
         SetRegisters(null);
+    }
+
+    /// <summary>Brings one window to the front of its group and focuses it - Debug > Windows.</summary>
+    public void ShowWindow(DebugWindow window)
+    {
+        var (group, index, view) = window switch
+        {
+            DebugWindow.Locals => (_leftGroup, 0, (View)_localsTable),
+            DebugWindow.Watch => (_leftGroup, 1, _watchList),
+            DebugWindow.CallStack => (_rightGroup, 0, _callStackTable),
+            DebugWindow.Breakpoints => (_rightGroup, 1, _breakpointList),
+            _ => (_rightGroup, 2, _registersTable),
+        };
+        group.Select(index);
+        view.SetFocus();
     }
 
     private static TableView Table() => new()
