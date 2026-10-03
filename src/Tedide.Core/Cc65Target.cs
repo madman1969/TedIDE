@@ -128,6 +128,35 @@ public static class Cc65TargetExtensions
     };
 
     /// <summary>
+    /// The macros cc65 predefines for this target, from cc65 2.19's own documentation ("Predefined
+    /// macros" in cc65.html). Code navigation evaluates <c>#if defined(...)</c> with these, so that a
+    /// C64 project's COLOR_BLACK leads to c64.h - the header cbm.h actually includes for it - and
+    /// not to the twenty other targets' headers that define it too. Note the c16 macro is defined
+    /// for the Plus/4 as well, and the apple2 one for the enhanced Apple //e.
+    /// </summary>
+    public static IReadOnlyList<string> PredefinedMacros(this Cc65Target target) => target switch
+    {
+        Cc65Target.C64 => ["__CC65__", "__CBM__", "__C64__"],
+        Cc65Target.C128 => ["__CC65__", "__CBM__", "__C128__"],
+        Cc65Target.C16 => ["__CC65__", "__CBM__", "__C16__"],
+        Cc65Target.Plus4 => ["__CC65__", "__CBM__", "__C16__", "__PLUS4__"],
+        Cc65Target.Vic20 => ["__CC65__", "__CBM__", "__VIC20__"],
+        Cc65Target.Pet => ["__CC65__", "__CBM__", "__PET__"],
+        Cc65Target.Cbm510 => ["__CC65__", "__CBM__", "__CBM510__"],
+        Cc65Target.Cbm610 => ["__CC65__", "__CBM__", "__CBM610__"],
+        Cc65Target.Apple2 => ["__CC65__", "__APPLE2__"],
+        Cc65Target.Apple2Enh => ["__CC65__", "__APPLE2__", "__APPLE2ENH__"],
+        Cc65Target.Atari => ["__CC65__", "__ATARI__"],
+        Cc65Target.Atari5200 => ["__CC65__", "__ATARI5200__"],
+        Cc65Target.Nes => ["__CC65__", "__NES__"],
+        Cc65Target.Atmos => ["__CC65__", "__ATMOS__"],
+        Cc65Target.Geos_Cbm => ["__CC65__", "__GEOS__", "__GEOS_CBM__"],
+        Cc65Target.Lynx => ["__CC65__", "__LYNX__"],
+        Cc65Target.None => ["__CC65__"],
+        _ => throw new ArgumentOutOfRangeException(nameof(target), target, null),
+    };
+
+    /// <summary>
     /// The CPU passed to opt6502 as -cpu for this target - see <see cref="Cc65Cpu"/>. opt6502 has
     /// no 65SC02 setting, and its 65C02 rewrites (STZ) are valid on the 65SC02, 65C02 and 65816
     /// alike, so anything with the CMOS instructions maps to its "65c02"/"65816" and the rest to

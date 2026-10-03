@@ -7,6 +7,7 @@ using Tedide.App.Views;
 using Tedide.Build;
 using Tedide.Core;
 using Tedide.Core.Debugging;
+using Tedide.Core.Navigation;
 using Tedide.Debug;
 using Terminal.Gui.App;
 using Terminal.Gui.Editor;
@@ -52,6 +53,7 @@ public sealed class AppShell : Window
     private readonly OutputView _outputView = new();
     private readonly ErrorListView _errorListView = new();
     private readonly SymbolPanelView _symbolPanel = new();
+    private readonly ReferencesView _referencesView = new();
     private readonly DebugPanelView _debugPanel = new();
     private readonly CurrentDebugLineTransformer _debugLineTransformer = new();
     private readonly BreakpointLineTransformer _breakpointLineTransformer = new();
@@ -77,6 +79,7 @@ public sealed class AppShell : Window
     private Tabs _outputTabs = null!;
     private View _outputTab = null!;
     private View _debugTab = null!;
+    private View _referencesTab = null!;
     private readonly EditorMenuBar _menuBar;
     private readonly EditorStatusBar _statusBar;
 
@@ -151,6 +154,8 @@ public sealed class AppShell : Window
             CanFocus = true,
         };
         _editorPane.FindInFilesRequested += ShowFindInFiles;
+        _editorPane.GoToDefinitionRequested += GoToDefinition;
+        _editorPane.FindReferencesRequested += FindAllReferences;
         _editorFrame.Add(_editorPane);
         // explorerFrame's Width (above) reads _editorFrame.Frame.Width live, but within a single
         // layout pass explorerFrame is resolved before _editorFrame is - so it reads _editorFrame's
@@ -216,6 +221,12 @@ public sealed class AppShell : Window
         _symbolPanel.LineActivated += OpenSymbol;
         symbolsTab.Add(_symbolPanel);
 
+        _referencesTab = new View { Title = " _References ", Width = Dim.Fill(), Height = Dim.Fill() };
+        _referencesView.Width = Dim.Fill();
+        _referencesView.Height = Dim.Fill();
+        _referencesView.ReferenceActivated += reference => NavigateTo(reference.FilePath, reference.Line, reference.Column, reference.Length);
+        _referencesTab.Add(_referencesView);
+
         _debugTab = new View { Title = " _Debug ", Width = Dim.Fill(), Height = Dim.Fill() };
         _debugPanel.Width = Dim.Fill();
         _debugPanel.Height = Dim.Fill();
@@ -224,6 +235,7 @@ public sealed class AppShell : Window
         _outputTabs.Add(_outputTab);
         _outputTabs.Add(errorListTab);
         _outputTabs.Add(symbolsTab);
+        _outputTabs.Add(_referencesTab);
         _outputTabs.Add(_debugTab);
 
         // Breakpoint highlighting registered before the current-debug-line one, so the latter's
@@ -398,6 +410,8 @@ public sealed class AppShell : Window
         var editMenuItems = menuBar.EditMenu.PopoverMenu!.Root!;
         editMenuItems.AddAt(0, new MenuItem("_Find in Files...", "", () => ShowFindInFiles(), FindInFilesKey));
         editMenuItems.AddAt(1, new MenuItem("_Go To Line...", "", ShowGoToLine, Key.G.WithCtrl));
+        editMenuItems.AddAt(2, new MenuItem("Go To _Definition", "", GoToDefinition, GoToDefinitionKey));
+        editMenuItems.AddAt(3, new MenuItem("Find All _References", "", FindAllReferences, FindReferencesKey));
         menuBar.Menus = [fileMenu, menuBar.EditMenu, menuBar.ViewMenu, buildMenu, debugMenu, projectMenu, themeMenu, helpMenu];
         menuBar.X = 0;
         menuBar.Y = 0;
@@ -412,6 +426,10 @@ public sealed class AppShell : Window
     /// confirmed live. Alt+Shift+F arrives intact.
     /// </summary>
     private static readonly Key FindInFilesKey = Key.F.WithAlt.WithShift;
+
+    /// <summary>Visual Studio's own keys for Go To Definition and Find All References.</summary>
+    private static readonly Key GoToDefinitionKey = Key.F12;
+    private static readonly Key FindReferencesKey = Key.F12.WithShift;
 
     /// <summary>
     /// App-wide keys that have no status-bar Shortcut to carry them. A key reaches this only after
@@ -431,6 +449,10 @@ public sealed class AppShell : Window
             action = () => _ = ContinueDebuggingAsync();
         else if (key == FindInFilesKey)
             action = () => ShowFindInFiles();
+        else if (key == GoToDefinitionKey)
+            action = GoToDefinition;
+        else if (key == FindReferencesKey)
+            action = FindAllReferences;
 
         if (action is null)
             return base.OnKeyDown(key);
@@ -982,23 +1004,162 @@ public sealed class AppShell : Window
     /// Opens a Find in Files match's file (unless it's already the open file) and moves the
     /// caret to the start of the matched line/column, scrolling it into view.
     /// </summary>
-    private void OpenMatch(FindInFilesDialog.Match match)
+    private void OpenMatch(FindInFilesDialog.Match match) => NavigateTo(match.FilePath, match.LineNumber, match.ColumnNumber);
+
+    /// <summary>
+    /// Opens <paramref name="filePath"/> (unless it's already the open file - prompting to save the
+    /// current one first, same as <see cref="OpenFile"/>) and moves the caret to the 1-based line and
+    /// column, scrolling it into view. Shared by Find in Files, Go To Definition and the References tab.
+    /// </summary>
+    /// <param name="highlightLength">When non-zero, that many characters from the column are
+    /// selected, so the symbol a reference or definition points at stands out - the same
+    /// SelectRange highlighting <see cref="OpenDiagnostic"/> gives a whole line.</param>
+    private void NavigateTo(string filePath, int lineNumber, int columnNumber, int highlightLength = 0)
     {
-        if (!string.Equals(_editorPane.OpenPath, match.FilePath, StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(_editorPane.OpenPath, filePath, StringComparison.OrdinalIgnoreCase))
         {
-            OpenFile(match.FilePath);
-            if (!string.Equals(_editorPane.OpenPath, match.FilePath, StringComparison.OrdinalIgnoreCase))
+            OpenFile(filePath);
+            if (!string.Equals(_editorPane.OpenPath, filePath, StringComparison.OrdinalIgnoreCase))
                 return; // User cancelled replacing the currently open (modified) file.
         }
 
         var document = _editorPane.Editor.Document;
-        if (document is null || match.LineNumber < 1 || match.LineNumber > document.LineCount)
+        if (document is null || lineNumber < 1 || lineNumber > document.LineCount)
             return;
 
-        var line = document.GetLineByNumber(match.LineNumber);
-        var column = Math.Clamp(match.ColumnNumber - 1, 0, line.Length);
-        _editorPane.Editor.CaretOffset = line.Offset + column;
+        var line = document.GetLineByNumber(lineNumber);
+        var column = Math.Clamp(columnNumber - 1, 0, line.Length);
+        // Clamped to the line, in case the file has changed since the references were found.
+        var length = Math.Min(highlightLength, line.Length - column);
+        if (length > 0)
+            _editorPane.Editor.SelectRange(line.Offset + column, length);
+        else
+            _editorPane.Editor.CaretOffset = line.Offset + column;
         _editorPane.Editor.SetFocus();
+    }
+
+    /// <summary>
+    /// A <see cref="CodeNavigator"/> over every loaded project's sources, reading the open file's
+    /// unsaved text from the editor so positions match the screen. cc65's own headers are searched
+    /// too, for a definition the project doesn't have, and the active project's target macros and
+    /// -D defines decide which <c>#if</c> branches count.
+    /// </summary>
+    private CodeNavigator CreateNavigator()
+    {
+        var files = _workspace.Projects
+            .Where(p => Directory.Exists(p.Directory))
+            .SelectMany(p => SolutionExplorerTree.EnumerateFiles(p.Directory))
+            .Where(f => SourceTokenizer.LanguageOf(f) != SourceLanguage.Other)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var includeDirectories = _workspace.Projects
+            .SelectMany(p => p.IncludePaths.Select(i => Path.GetFullPath(Path.Combine(p.Directory, i))))
+            .ToList();
+        var openPath = _editorPane.OpenPath;
+        var openText = _editorPane.Editor.Text;
+        IEnumerable<string> macros = _workspace.ActiveProject is { } project
+            ? project.Target.PredefinedMacros().Concat(project.PreprocessorDefines.Select(d => d.Split('=', 2)[0].Trim()))
+            : [];
+
+        return new CodeNavigator(
+            files,
+            path => string.Equals(path, openPath, StringComparison.OrdinalIgnoreCase) ? openText : CodeNavigator.ReadFromDisk(path),
+            includeDirectories,
+            CodeNavigator.Cc65LibraryDirectories(Environment.GetEnvironmentVariable("CC65_HOME"), Environment.GetEnvironmentVariable("PATH")),
+            macros);
+    }
+
+    /// <summary>A path relative to the loaded project containing it, or as-is if it's outside them
+    /// all (e.g. one of cc65's own headers).</summary>
+    private string DisplayPath(string path)
+    {
+        foreach (var project in _workspace.Projects)
+        {
+            var relative = Path.GetRelativePath(project.Directory, path);
+            if (!relative.StartsWith("..", StringComparison.Ordinal) && !Path.IsPathRooted(relative))
+                return relative;
+        }
+        return path;
+    }
+
+    /// <summary>
+    /// Edit > Go To Definition (F12): jumps to where the symbol at the caret is defined - straight
+    /// there when there's one candidate, via <see cref="DefinitionPickerDialog"/> when there are
+    /// several. On a definition already, it goes to the declaration (e.g. the header's prototype),
+    /// and on an #include line it opens that file.
+    /// </summary>
+    private void GoToDefinition() => Guard("Going to the definition", GoToDefinitionCore);
+
+    private void GoToDefinitionCore()
+    {
+        if (_editorPane.OpenPath is not { } path)
+            return;
+
+        var (line, column) = _editorPane.CaretPosition;
+        var result = CreateNavigator().GoToDefinition(path, line, column);
+        if (result.Definitions.Count == 0)
+        {
+            ReportNavigation(result.Message ?? "No definition found.");
+            return;
+        }
+
+        var target = result.Definitions[0];
+        if (result.Definitions.Count > 1)
+        {
+            var dialog = new DefinitionPickerDialog(result.Symbol ?? string.Empty, result.Definitions, SourceLineOf, DisplayPath);
+            Application.Run(dialog);
+            if (dialog.SelectedDefinition is not { } chosen)
+                return;
+            target = chosen;
+        }
+        else if (result.Message is { } note)
+        {
+            ReportNavigation(note);
+        }
+
+        NavigateTo(target.FilePath, target.Line, target.Column, target.Kind == SymbolKind.File ? 0 : target.Name.Length);
+    }
+
+    /// <summary>The source line a definition sits on, for <see cref="DefinitionPickerDialog"/>'s list.</summary>
+    private static string SourceLineOf(SymbolDefinition definition)
+    {
+        var lines = (CodeNavigator.ReadFromDisk(definition.FilePath) ?? string.Empty).Split('\n');
+        return definition.Line - 1 < lines.Length ? lines[definition.Line - 1].TrimEnd('\r') : string.Empty;
+    }
+
+    /// <summary>
+    /// Edit > Find All References (Shift+F12): lists every use of the symbol at the caret across the
+    /// loaded projects in the References tab - C and assembly alike, skipping comments, strings and
+    /// same-named locals - with its definition rows highlighted.
+    /// </summary>
+    private void FindAllReferences() => Guard("Finding references", FindAllReferencesCore);
+
+    private void FindAllReferencesCore()
+    {
+        if (_editorPane.OpenPath is not { } path)
+            return;
+
+        var (line, column) = _editorPane.CaretPosition;
+        var result = CreateNavigator().FindReferences(path, line, column);
+        if (result.Symbol is null)
+        {
+            ReportNavigation(result.Message ?? "No symbol at the cursor.");
+            return;
+        }
+
+        _referencesView.SetReferences(result.References, DisplayPath);
+        var fileCount = result.References.Select(r => r.FilePath).Distinct(StringComparer.OrdinalIgnoreCase).Count();
+        AppendOutputLine($"Find All References: '{result.Symbol}' - {result.References.Count} reference(s) in {fileCount} file(s).");
+        _outputTabs.Value = _referencesTab;
+        _referencesView.SetFocus();
+    }
+
+    /// <summary>Go To Definition/Find All References feedback ("No symbol at the cursor.", ...),
+    /// written to the Output tab, which is brought forward so the message isn't missed.</summary>
+    private void ReportNavigation(string message)
+    {
+        AppendOutputLine(message);
+        _outputTabs.Value = _outputTab;
     }
 
     /// <summary>

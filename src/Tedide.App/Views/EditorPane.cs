@@ -42,6 +42,23 @@ public sealed class EditorPane : View
     /// feeds is single-line, and a multi-line selection is rarely a meaningful search term anyway.</summary>
     public event Action<string>? FindInFilesRequested;
 
+    /// <summary>Raised by the context menu's Go To Definition, for the symbol at the caret.</summary>
+    public event Action? GoToDefinitionRequested;
+
+    /// <summary>Raised by the context menu's Find All References, for the symbol at the caret.</summary>
+    public event Action? FindReferencesRequested;
+
+    /// <summary>The caret's 1-based line and column, in characters - the same coordinates
+    /// <see cref="Tedide.Core.Navigation.CodeNavigator"/> works in.</summary>
+    public (int Line, int Column) CaretPosition
+    {
+        get
+        {
+            var line = Editor.Document!.GetLineByOffset(Editor.CaretOffset);
+            return (line.LineNumber, Editor.CaretOffset - line.Offset + 1);
+        }
+    }
+
     public EditorPane()
     {
         Width = Dim.Fill();
@@ -91,6 +108,11 @@ public sealed class EditorPane : View
         // Command.Replace the Edit menu uses (rather than constructing FindReplaceDialog here too)
         // keeps exactly one place responsible for how that dialog gets shown.
         var contextMenuItems = Editor.ContextMenu!.Root!;
+        contextMenuItems.Add(new Line());
+        // Both act on the symbol at the caret. The keys are shown as help text only: AppShell's
+        // OnKeyDown handles F12/Shift+F12, since this menu only exists while it's open.
+        contextMenuItems.Add(new MenuItem("Go To Definition", "F12", () => GoToDefinitionRequested?.Invoke()));
+        contextMenuItems.Add(new MenuItem("Find All References", "Shift+F12", () => FindReferencesRequested?.Invoke()));
         contextMenuItems.Add(new Line());
         contextMenuItems.Add(new MenuItem("Find...", "", () => Editor.InvokeCommand(Command.Find)));
         contextMenuItems.Add(new MenuItem("Replace...", "", () => Editor.InvokeCommand(Command.Replace)));

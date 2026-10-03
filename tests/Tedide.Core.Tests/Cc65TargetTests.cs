@@ -145,6 +145,33 @@ public class Cc65TargetTests
         Assert.Equal("65816", Cc65Target.C64.Opt6502Cpu(superCpu: true));
     }
 
+    [Fact]
+    public void PredefinedMacros_AreDefinedForEveryTarget_AndAlwaysIncludeCc65()
+    {
+        Assert.All(Enum.GetValues<Cc65Target>(), target => Assert.Contains("__CC65__", target.PredefinedMacros()));
+        Assert.All(Cc65TargetExtensions.CommodoreTargets.Where(t => t != Cc65Target.Geos_Cbm),
+            target => Assert.Contains("__CBM__", target.PredefinedMacros()));
+    }
+
+    [Theory]
+    [InlineData(Cc65Target.C64, "__C64__")]
+    [InlineData(Cc65Target.Vic20, "__VIC20__")]
+    [InlineData(Cc65Target.Plus4, "__PLUS4__")]
+    [InlineData(Cc65Target.Pet, "__PET__")]
+    public void PredefinedMacros_NameTheTarget(Cc65Target target, string macro)
+    {
+        Assert.Contains(macro, target.PredefinedMacros());
+    }
+
+    [Fact]
+    public void PredefinedMacros_FollowCc65sDocumentedOverlaps()
+    {
+        // cc65.html: __C16__ is defined for -t plus4 too, and __APPLE2__ for -t apple2enh.
+        Assert.Contains("__C16__", Cc65Target.Plus4.PredefinedMacros());
+        Assert.DoesNotContain("__PLUS4__", Cc65Target.C16.PredefinedMacros());
+        Assert.Contains("__APPLE2__", Cc65Target.Apple2Enh.PredefinedMacros());
+    }
+
     [Theory]
     [InlineData(Cc65Target.C128)]
     [InlineData(Cc65Target.Vic20)]
