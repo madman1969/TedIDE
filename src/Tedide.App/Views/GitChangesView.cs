@@ -11,8 +11,9 @@ namespace Tedide.App.Views;
 /// <summary>
 /// The Git tab: the solution repository's branch, a commit message with Commit (what's staged) and
 /// Commit All (everything, new files included, as Visual Studio's does), and two lists - Changes
-/// and Staged. In a list, Space stages or unstages the selected file, Enter opens it, and Delete
-/// (Changes only) discards its changes. Every control is a direct child of this view: Tab only
+/// and Staged. In a list, Space stages or unstages the selected file, Enter opens it, D compares it
+/// with the last commit (see <see cref="CompareDialog"/>), and Delete (Changes only) discards its
+/// changes. Every control is a direct child of this view: Tab only
 /// moves between peers of the same SuperView, so a list nested in a frame couldn't be reached.
 /// It only shows and asks - AppShell runs git (see <see cref="GitRepository"/>).
 /// </summary>
@@ -31,6 +32,9 @@ public sealed class GitChangesView : View
     public event Action<IReadOnlyList<GitFileStatus>>? UnstageRequested;
     public event Action<GitFileStatus>? DiscardRequested;
     public event Action<string>? OpenRequested;
+
+    /// <summary>D on a file: compare it with the last commit.</summary>
+    public event Action<GitFileStatus>? CompareRequested;
 
     /// <summary>The message, and whether to stage everything first (Commit All).</summary>
     public event Action<string, bool>? CommitRequested;
@@ -88,6 +92,10 @@ public sealed class GitChangesView : View
 
     private void Wire(ListView list, Func<List<GitFileStatus>> items, bool staged)
     {
+        // No type-to-search: ListView's OnKeyDown runs it before the KeyDown event below, so it
+        // swallowed D whenever a row matched (confirmed in a test). It's no use here anyway - every
+        // row starts with its status letter.
+        list.KeystrokeNavigator = null;
         list.KeyDown += (_, key) =>
         {
             if (list.SelectedItem is not { } index || index < 0 || index >= items().Count)
@@ -99,6 +107,11 @@ public sealed class GitChangesView : View
                     UnstageRequested?.Invoke([file]);
                 else
                     StageRequested?.Invoke([file]);
+                key.Handled = true;
+            }
+            else if (key == Key.D)
+            {
+                CompareRequested?.Invoke(file);
                 key.Handled = true;
             }
             else if (key == Key.Delete && !staged)
@@ -143,8 +156,8 @@ public sealed class GitChangesView : View
         foreach (var action in _actions)
             action.Enabled = status is not null;
 
-        Fill(_changesList, changeRows, $"Changes ({changeRows.Count}) - Space: stage, Enter: open, Del: discard");
-        Fill(_stagedList, stagedRows, $"Staged ({stagedRows.Count}) - Space: unstage, Enter: open");
+        Fill(_changesList, changeRows, $"Changes ({changeRows.Count}) - Space: stage, Enter: open, D: compare, Del: discard");
+        Fill(_stagedList, stagedRows, $"Staged ({stagedRows.Count}) - Space: unstage, Enter: open, D: compare");
     }
 
     private static void Fill(ListView list, List<string> rows, string title)

@@ -35,8 +35,8 @@ Doc Viewer" below.
 - **Source-level debugging** - over VICE's binary monitor: breakpoints (with conditions), stepping
   by C line, registers, watches, locals, a call stack, and Memory and Disassembly tabs.
 - **Symbols** - a filterable browser for the linker map and label file.
-- **Git** - status markers in the Solution Explorer, the branch and the caret line's blame, and a
-  Git tab to stage, unstage, discard and commit.
+- **Git** - status markers in the Solution Explorer, the branch and the caret line's blame, a
+  Git tab to stage, unstage, discard and commit, and Compare with Last Commit for any file.
 - **Help** - F1 context help opens the bundled **Doc Viewer** at the word under the caret: the cc65
   manuals, The C Book, C64-Wiki, Wikipedia and the VICE manual, with full-text search and bookmarks.
 - **Themes** - nine true-colour themes, shared with the Doc Viewer, including Borland Turbo C,
@@ -84,7 +84,7 @@ src/
                        optional optimizer for cc65's generated assembly - see its README.md
   Tedide.Debug/        A client for VICE's binary monitor protocol (breakpoints, registers, memory, stepping)
                        - what Tedide.App's Debug menu talks to once VICE is launched with -binarymonitor
-  Tedide.Git/          Runs the git command line and parses its output (status, blame, stage, commit) -
+  Tedide.Git/          Runs the git command line and parses its output (status, blame, diff, stage, commit) -
                        what the Solution Explorer's markers and the Git tab use
   Tedide.Theming/      The nine color themes/scheme switching shared by Tedide.App and Tedide.DocViewer
   Tedide.App/          The Terminal.Gui TUI shell (menu bar, solution explorer, editor, output/error

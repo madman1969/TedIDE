@@ -191,6 +191,7 @@ public sealed class AppShell : Window
         _editorPane.GoToDefinitionRequested += GoToDefinition;
         _editorPane.FindReferencesRequested += FindAllReferences;
         _editorPane.RenameSymbolRequested += RenameSymbol;
+        _editorPane.CompareWithHeadRequested += CompareActiveWithHead;
         _editorPane.ActiveDocumentChanged += OnActiveDocumentChanged;
         _editorPane.CloseRequested += path => CloseFile(path);
         _editorFrame.Add(_editorPane);
@@ -305,6 +306,7 @@ public sealed class AppShell : Window
         _gitView.UnstageRequested += UnstageFiles;
         _gitView.DiscardRequested += DiscardFile;
         _gitView.OpenRequested += OpenFile;
+        _gitView.CompareRequested += file => _ = CompareWithHeadAsync(file.Path, file.OriginalPath);
         _gitView.CommitRequested += Commit;
         _gitView.RefreshRequested += () => _git.RequestRefresh();
         _gitTab.Add(_gitView);
@@ -497,6 +499,71 @@ public sealed class AppShell : Window
         {
             _gitView.ClearMessage();
             AppendOutputLine($"Committed {head}");
+        });
+    }
+
+    /// <summary>Editor right-click > Compare with Last Commit, for the file shown.</summary>
+    private void CompareActiveWithHead()
+    {
+        if (_editorPane.OpenPath is { } path)
+            _ = CompareWithHeadAsync(path);
+    }
+
+    /// <summary>
+    /// Git phase 3: shows what changed in <paramref name="path"/> since the last commit, in a
+    /// <see cref="CompareDialog"/> - an open file's unsaved edits included, a renamed file compared
+    /// with where it was. Going to a line from there opens the file at it.
+    /// </summary>
+    private async Task CompareWithHeadAsync(string path, string? headPath = null)
+    {
+        var name = Path.GetFileName(path);
+        if (_git.RepositoryFor(path) is not { } repository)
+        {
+            TedideMessageBox.ErrorQuery("Compare with Last Commit", $"{name} isn't in a git repository.", ["OK"]);
+            return;
+        }
+        // Read here, on the UI thread - the document belongs to it.
+        headPath ??= _git.Files.GetValueOrDefault(path)?.OriginalPath;
+        var unsaved = _editorPane.IsModifiedFile(path);
+        string? text;
+        try
+        {
+            text = _editorPane.TextOf(path) ?? (File.Exists(path) ? await File.ReadAllTextAsync(path) : null);
+        }
+        catch (Exception ex) when (IsFileError(ex))
+        {
+            OnUiThread(() => TedideMessageBox.ErrorQuery("Compare with Last Commit", RenameSymbolDialog.Wrap(ex.Message), ["OK"]));
+            return;
+        }
+
+        GitDiff diff;
+        try
+        {
+            diff = await repository.DiffWithHeadAsync(path, text, headPath);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Log.Warning(ex, "Comparing {Path} with HEAD failed", path);
+            OnUiThread(() => TedideMessageBox.ErrorQuery("Compare with Last Commit", RenameSymbolDialog.Wrap(ex.Message), ["OK"]));
+            return;
+        }
+
+        OnUiThread(() =>
+        {
+            if (diff.IsBinary || diff.Hunks.Count == 0)
+            {
+                TedideMessageBox.Query("Compare with Last Commit",
+                    diff.IsBinary ? $"{name} is a binary file, and has changed." : $"{name} hasn't changed since the last commit.", ["OK"]);
+                return;
+            }
+            var dialog = new CompareDialog(DisplayPath(path), diff, unsaved);
+            Application.Run(dialog);
+            if (dialog.GoToLine is not { } line || !File.Exists(path) && !_editorPane.IsOpen(path))
+                return;
+            if (!_editorPane.IsShown(path))
+                OpenFile(path);
+            if (_editorPane.IsShown(path))
+                NavigateTo(path, Math.Min(line, _editorPane.Editor.Document!.LineCount), 1);
         });
     }
 

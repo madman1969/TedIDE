@@ -115,4 +115,28 @@ public sealed class GitRepositoryTests : IDisposable
         Assert.False(result.Succeeded);
         Assert.NotEmpty(result.Message);
     }
+
+    [Fact]
+    public async Task DiffWithHeadAsync_ComparesTheEditorsTextWithTheLastCommit()
+    {
+        var repo = await InitAsync();
+        var main = Write("src/main.c", "one\ntwo\nthree\n");
+        await repo.CommitAsync("Add main", stageAll: true);
+
+        // Unchanged, even with the editor's CRLF line endings.
+        Assert.Empty((await repo.DiffWithHeadAsync(main, "one\r\ntwo\r\nthree\r\n")).Hunks);
+
+        var diff = await repo.DiffWithHeadAsync(main, "one\nTWO\nthree\nfour\n");
+        var hunk = Assert.Single(diff.Hunks);
+        Assert.Equal((2, 1), (diff.Added, diff.Removed));
+        Assert.Contains(new DiffLine(DiffLineKind.Removed, "two", 2, null), hunk.Lines);
+        Assert.Contains(new DiffLine(DiffLineKind.Added, "four", null, 4), hunk.Lines);
+
+        // A deleted file is all removed; a new one all added.
+        var gone = await repo.DiffWithHeadAsync(main, null);
+        Assert.Equal((0, 3), (gone.Added, gone.Removed));
+        var added = await repo.DiffWithHeadAsync(Write("new.c", "x\n"), "x\ny\n");
+        Assert.Equal((2, 0), (added.Added, added.Removed));
+        Assert.Null(await repo.ReadHeadAsync(Path.Combine(_dir, "new.c")));
+    }
 }

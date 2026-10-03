@@ -2,7 +2,7 @@ namespace Tedide.Git;
 
 /// <summary>
 /// A git working tree, by its root folder, and the handful of operations Tedide offers on it:
-/// status, blame for one line, stage, unstage, discard and commit. Every method runs git in the
+/// status, blame for one line, a file's diff against HEAD, stage, unstage, discard and commit. Every method runs git in the
 /// background and returns its result; nothing here touches the UI.
 /// </summary>
 public sealed class GitRepository
@@ -42,6 +42,53 @@ public sealed class GitRepository
             currentText, cancellationToken);
         return result.Succeeded ? GitBlameLine.Parse(result.Output) : null;
     }
+
+    /// <summary>
+    /// <paramref name="file"/>'s committed contents (HEAD), or null when HEAD doesn't have it - a
+    /// new file, or a repository with no commits yet. <paramref name="headPath"/> is where it was
+    /// in HEAD, for a file renamed since.
+    /// </summary>
+    public async Task<string?> ReadHeadAsync(string file, string? headPath = null, CancellationToken cancellationToken = default)
+    {
+        var result = await GitRunner.RunAsync(Root, ["show", $"HEAD:{Relative(headPath ?? file)}"], cancellationToken: cancellationToken);
+        return result.Succeeded ? result.Output : null;
+    }
+
+    /// <summary>
+    /// What changed in <paramref name="file"/> since the last commit: HEAD's contents against
+    /// <paramref name="currentText"/> - the editor's text, unsaved edits included (null for a file
+    /// that's been deleted). Line endings are ignored, so a CRLF checkout of an LF commit only shows
+    /// real edits. Both sides go through git's own diff (<c>--no-index</c> on two temporary files),
+    /// so it reads exactly as <c>git diff</c> would.
+    /// </summary>
+    public async Task<GitDiff> DiffWithHeadAsync(string file, string? currentText, string? headPath = null,
+        int contextLines = 3, CancellationToken cancellationToken = default)
+    {
+        var head = await ReadHeadAsync(file, headPath, cancellationToken) ?? "";
+        var folder = Directory.CreateTempSubdirectory("tedide-diff-").FullName;
+        try
+        {
+            var name = Path.GetFileName(file);
+            var oldFile = Path.Combine(folder, "HEAD-" + name);
+            var newFile = Path.Combine(folder, name);
+            await File.WriteAllTextAsync(oldFile, Normalize(head), cancellationToken);
+            await File.WriteAllTextAsync(newFile, Normalize(currentText ?? ""), cancellationToken);
+            // Exit code 1 just means "they differ".
+            var result = await GitRunner.RunAsync(folder,
+                ["diff", "--no-index", "--no-color", "--no-ext-diff", $"-U{contextLines}", "--", oldFile, newFile],
+                cancellationToken: cancellationToken);
+            return result.ExitCode is 0 or 1
+                ? GitDiff.Parse(result.Output)
+                : throw new IOException(result.Message);
+        }
+        finally
+        {
+            try { Directory.Delete(folder, recursive: true); }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+        }
+    }
+
+    private static string Normalize(string text) => text.Replace("\r\n", "\n");
 
     /// <summary>Stages each file's changes - additions and deletions included.</summary>
     public Task<GitResult> StageAsync(IEnumerable<string> files, CancellationToken cancellationToken = default) =>

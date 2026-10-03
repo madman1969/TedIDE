@@ -101,4 +101,58 @@ public class GitParsingTests
     {
         Assert.Equal(expected, GitBlameLine.Ago(TimeSpan.FromMinutes(minutes)));
     }
+
+    [Fact]
+    public void Diff_NumbersEachSideAndSkipsTheFileHeader()
+    {
+        var output = string.Join('\n',
+            "diff --git a/HEAD-main.c b/main.c",
+            "index 1111111..2222222 100644",
+            "--- a/HEAD-main.c",
+            "+++ b/main.c",
+            "@@ -2,3 +2,4 @@ void main(void)",
+            " {",
+            "-    x = 0;",
+            "+    x = 1;",
+            "+    --y;",
+            " }",
+            "\\ No newline at end of file",
+            "@@ -20 +21,0 @@",
+            "-gone",
+            "");
+
+        var diff = GitDiff.Parse(output);
+
+        Assert.False(diff.IsBinary);
+        Assert.Equal(2, diff.Hunks.Count);
+        Assert.Equal(2, diff.Added);
+        Assert.Equal(2, diff.Removed);
+
+        var first = diff.Hunks[0];
+        Assert.Equal("void main(void)", first.Section);
+        Assert.Equal("@@ -2,3 +2,4 @@ void main(void)", first.Header);
+        Assert.Equal(
+            [
+                new DiffLine(DiffLineKind.Context, "{", 2, 2),
+                new DiffLine(DiffLineKind.Removed, "    x = 0;", 3, null),
+                new DiffLine(DiffLineKind.Added, "    x = 1;", null, 3),
+                new DiffLine(DiffLineKind.Added, "    --y;", null, 4),
+                new DiffLine(DiffLineKind.Context, "}", 4, 5),
+            ],
+            first.Lines);
+
+        // A count left out means 1.
+        var second = diff.Hunks[1];
+        Assert.Equal((20, 1, 21, 0), (second.OldStart, second.OldCount, second.NewStart, second.NewCount));
+        Assert.Equal(new DiffLine(DiffLineKind.Removed, "gone", 20, null), Assert.Single(second.Lines));
+    }
+
+    [Fact]
+    public void Diff_OfIdenticalOrBinaryFilesHasNoHunks()
+    {
+        Assert.Empty(GitDiff.Parse("").Hunks);
+        var binary = GitDiff.Parse("diff --git a/x b/x\nBinary files a/x and b/x differ\n");
+        Assert.True(binary.IsBinary);
+        Assert.Empty(binary.Hunks);
+    }
 }
