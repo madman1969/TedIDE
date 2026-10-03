@@ -15,6 +15,7 @@ namespace Tedide.App.Views;
 /// with the last commit (see <see cref="CompareDialog"/>), B blames it (see <see cref="BlameDialog"/>),
 /// and Delete (Changes only) discards its changes. Every control is a direct child of this view: Tab only
 /// moves between peers of the same SuperView, so a list nested in a frame couldn't be reached.
+/// Fetch, Pull and Push sync the branch with its remote; Cancel stops one that's running.
 /// It only shows and asks - AppShell runs git (see <see cref="GitRepository"/>).
 /// </summary>
 public sealed class GitChangesView : View
@@ -24,6 +25,11 @@ public sealed class GitChangesView : View
     private readonly ListView _changesList;
     private readonly ListView _stagedList;
     private readonly List<View> _actions = [];
+    private readonly List<View> _syncButtons = [];
+    private readonly Button _refreshButton;
+    private readonly Button _cancelButton;
+    private string _branchText = "";
+    private string? _activity;
     private List<GitFileStatus> _changes = [];
     private List<GitFileStatus> _staged = [];
     private string _shown = "";
@@ -44,6 +50,13 @@ public sealed class GitChangesView : View
 
     public event Action? RefreshRequested;
 
+    public event Action? FetchRequested;
+    public event Action? PullRequested;
+    public event Action? PushRequested;
+
+    /// <summary>Cancel, while a fetch, pull or push is running.</summary>
+    public event Action? CancelRequested;
+
     public GitChangesView()
     {
         CanFocus = true;
@@ -58,7 +71,13 @@ public sealed class GitChangesView : View
         var commitAllButton = Button("Commit All", Pos.Right(commitButton) + 2, 9, () => Commit(stageAll: true));
         var stageAllButton = Button("Stage All", 0, 11, () => StageRequested?.Invoke(_changes));
         var unstageAllButton = Button("Unstage All", Pos.Right(stageAllButton) + 2, 11, () => UnstageRequested?.Invoke(_staged));
-        var refreshButton = Button("Refresh", 0, 13, () => RefreshRequested?.Invoke());
+        var fetchButton = Button("Fetch", 0, 13, () => FetchRequested?.Invoke());
+        var pullButton = Button("Pull", Pos.Right(fetchButton) + 2, 13, () => PullRequested?.Invoke());
+        var pushButton = Button("Push", Pos.Right(pullButton) + 2, 13, () => PushRequested?.Invoke());
+        _refreshButton = Button("Refresh", Pos.Right(pushButton) + 2, 13, () => RefreshRequested?.Invoke());
+        // Takes Refresh's place while a fetch, pull or push runs - see SetActivity.
+        _cancelButton = Button("Cancel", Pos.Right(pushButton) + 2, 13, () => CancelRequested?.Invoke());
+        _cancelButton.Visible = false;
         commitButton.SchemeName = "Accent";
 
         _changesList = new ListView
@@ -76,8 +95,10 @@ public sealed class GitChangesView : View
         Wire(_changesList, () => _changes, staged: false);
         Wire(_stagedList, () => _staged, staged: true);
 
-        _actions.AddRange([_messageField, commitButton, commitAllButton, stageAllButton, unstageAllButton]);
-        Add([_branchLabel, messageLabel, _messageField, commitButton, commitAllButton, stageAllButton, unstageAllButton, refreshButton, _changesList, _stagedList]);
+        _actions.AddRange([_messageField, commitButton, commitAllButton, stageAllButton, unstageAllButton, fetchButton, pullButton, pushButton]);
+        _syncButtons.AddRange([fetchButton, pullButton, pushButton]);
+        Add([_branchLabel, messageLabel, _messageField, commitButton, commitAllButton, stageAllButton, unstageAllButton,
+            fetchButton, pullButton, pushButton, _refreshButton, _cancelButton, _changesList, _stagedList]);
         SetStatus(null, null);
     }
 
@@ -158,14 +179,40 @@ public sealed class GitChangesView : View
         _changes = changes;
         _staged = staged;
 
-        _branchLabel.Text = repository is null || status is null
+        _branchText = repository is null || status is null
             ? "Not in a git repository."
             : $"Branch: {status.Describe()}  ({Path.GetFileName(repository.Root)})";
-        foreach (var action in _actions)
-            action.Enabled = status is not null;
+        _hasRepository = status is not null;
+        UpdateState();
 
         Fill(_changesList, changeRows, $"Changes ({changeRows.Count}) - Space: stage, Enter: open, D: compare, B: blame, Del: discard");
         Fill(_stagedList, stagedRows, $"Staged ({stagedRows.Count}) - Space: unstage, Enter: open, D: compare, B: blame");
+    }
+
+    private bool _hasRepository;
+
+    /// <summary>
+    /// "Pushing..." while a fetch, pull or push runs, or null when none is: the branch line says
+    /// so, Fetch/Pull/Push are disabled (one at a time), and Cancel takes Refresh's place.
+    /// </summary>
+    public void SetActivity(string? activity)
+    {
+        _activity = activity;
+        UpdateState();
+    }
+
+    private void UpdateState()
+    {
+        _branchLabel.Text = _activity is null ? _branchText : $"{_branchText}  -  {_activity}";
+        foreach (var action in _actions)
+            action.Enabled = _hasRepository;
+        foreach (var button in _syncButtons)
+            button.Enabled = _hasRepository && _activity is null;
+        var focusCancel = _activity is not null && _syncButtons.Any(b => b.HasFocus);
+        _cancelButton.Visible = _activity is not null;
+        _refreshButton.Visible = _activity is null;
+        if (focusCancel)
+            _cancelButton.SetFocus();
     }
 
     private static void Fill(ListView list, List<string> rows, string title)

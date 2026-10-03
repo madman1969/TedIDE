@@ -45,6 +45,9 @@ public sealed class AppShell : Window
     private int _blameGeneration;
     private CancellationTokenSource? _blameCancellation;
 
+    /// <summary>Set while a fetch, pull or push runs - one at a time; the Git tab's Cancel cancels it.</summary>
+    private CancellationTokenSource? _syncCancellation;
+
     /// <summary>Git's change bars in the editor's gutter - see <see cref="RequestLineMarkers"/>.</summary>
     private readonly GitLineMarkers _gitLineMarkers;
     private int _lineMarkersGeneration;
@@ -323,6 +326,10 @@ public sealed class AppShell : Window
         _gitView.BlameRequested += file => _ = ShowBlameAsync(file.Path);
         _gitView.CommitRequested += Commit;
         _gitView.RefreshRequested += () => _git.RequestRefresh();
+        _gitView.FetchRequested += FetchFromRemote;
+        _gitView.PullRequested += PullFromRemote;
+        _gitView.PushRequested += () => _ = PushToRemoteAsync();
+        _gitView.CancelRequested += () => _syncCancellation?.Cancel();
         _gitTab.Add(_gitView);
         _outputTabs.Add(_gitTab);
 
@@ -583,6 +590,129 @@ public sealed class AppShell : Window
         {
             _gitView.ClearMessage();
             AppendOutputLine($"Committed {head}");
+        });
+    }
+
+    /// <summary>
+    /// Git phase 6: runs a fetch, pull or push on the solution's repository in the background -
+    /// one at a time, cancellable from the Git tab, with no time limit (signing in through Git
+    /// Credential Manager's window or the browser can take a while). git's own report goes to
+    /// Output; a failure is also shown, common ones put plainly (see <see cref="GitResult.Explanation"/>).
+    /// <paramref name="after"/> runs on the UI thread when it worked.
+    /// </summary>
+    private async Task SyncAsync(string activity, string title, Func<GitRepository, CancellationToken, Task<GitResult>> operation,
+        Action? after = null)
+    {
+        if (_syncCancellation is not null || _git.Primary is not { } repository)
+            return;
+        var cancellation = new CancellationTokenSource();
+        _syncCancellation = cancellation;
+        _gitView.SetActivity($"{activity}...");
+        AppendOutputLine($"git: {activity} {Path.GetFileName(repository.Root)}...");
+
+        GitResult? result;
+        try
+        {
+            result = await operation(repository, cancellation.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            result = null;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            result = new GitResult(1, "", ex.Message);
+        }
+
+        OnUiThread(() =>
+        {
+            _syncCancellation = null;
+            _gitView.SetActivity(null);
+            if (result is null)
+                AppendOutputLine($"git: {title} cancelled.");
+            else
+            {
+                foreach (var line in $"{result.Output}\n{result.Error}".Split('\n'))
+                {
+                    if (line.Trim().Length > 0)
+                        AppendOutputLine($"  {line.TrimEnd('\r')}");
+                }
+                AppendOutputLine(result.Succeeded ? $"git: {title} done." : $"git: {title} failed.");
+                if (result.Succeeded)
+                    after?.Invoke();
+                else
+                    TedideMessageBox.ErrorQuery($"{title} Failed", RenameSymbolDialog.Wrap(result.Explanation), ["OK"]);
+            }
+            _git.RequestRefresh();
+        });
+    }
+
+    /// <summary>Git tab > Fetch: learns what's new on the remote; changes no files.</summary>
+    private void FetchFromRemote() => _ = SyncAsync("Fetching", "Fetch", (repository, token) => repository.FetchAsync(token));
+
+    /// <summary>
+    /// Git tab > Pull. Saves open files with unsaved edits first, as Commit does, so git sees
+    /// what's on screen; afterwards, open files the pull changed are reloaded (and ones it deleted
+    /// closed). A conflict stops the pull - the files show "!" in the Git tab.
+    /// </summary>
+    private void PullFromRemote()
+    {
+        if (_syncCancellation is not null || !SaveOpenFiles())
+            return;
+        _ = SyncAsync("Pulling", "Pull", (repository, token) => repository.PullAsync(token), ReloadFilesChangedOnDisk);
+    }
+
+    /// <summary>After a pull: open files without unsaved edits follow what's now on disk.</summary>
+    private void ReloadFilesChangedOnDisk()
+    {
+        foreach (var path in _editorPane.OpenPaths)
+        {
+            if (_editorPane.IsModifiedFile(path))
+                continue;
+            if (!File.Exists(path))
+                _editorPane.Close(path);
+            else
+                Guard($"Reloading {Path.GetFileName(path)}", () =>
+                {
+                    if (SourceFileText.Read(path).Text != _editorPane.TextOf(path))
+                        _editorPane.Reload(path);
+                });
+        }
+    }
+
+    /// <summary>
+    /// Git tab > Push. A branch already on a remote is pushed to it; one that isn't is published -
+    /// to origin, else the only remote - after asking. Never forced: a rejection says to pull first.
+    /// </summary>
+    private async Task PushToRemoteAsync()
+    {
+        if (_syncCancellation is not null || _git.Primary is not { } repository || _git.PrimaryStatus is not { } status)
+            return;
+        if (status.Branch is not { } branch)
+        {
+            TedideMessageBox.ErrorQuery("Push", "HEAD isn't on a branch (it's detached), so there's nothing to push. Check out a branch first.", ["OK"]);
+            return;
+        }
+        if (status.Upstream is not null)
+        {
+            _ = SyncAsync("Pushing", "Push", (r, token) => r.PushAsync(cancellationToken: token));
+            return;
+        }
+
+        var remotes = await repository.GetRemotesAsync();
+        OnUiThread(() =>
+        {
+            var remote = remotes.Contains("origin") ? "origin" : remotes.Count == 1 ? remotes[0] : null;
+            if (remote is null)
+            {
+                TedideMessageBox.ErrorQuery("Push", RenameSymbolDialog.Wrap(remotes.Count == 0
+                    ? "This repository has no remote to push to. Add one with git remote add origin <url> first."
+                    : $"{branch} isn't on a remote yet, and there's no origin to publish it to (remotes: {string.Join(", ", remotes)})."), ["OK"]);
+                return;
+            }
+            var question = $"{branch} isn't on {remote} yet. Publish it there, and push to it from now on?";
+            if (TedideMessageBox.Query("Publish Branch", RenameSymbolDialog.Wrap(question), ["Publish", "Cancel"]) == 0)
+                _ = SyncAsync("Pushing", "Push", (r, token) => r.PushAsync(remote, branch, token));
         });
     }
 

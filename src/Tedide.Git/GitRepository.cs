@@ -142,6 +142,43 @@ public sealed class GitRepository
         return await GitRunner.RunAsync(Root, ["commit", "-F", "-"], message, cancellationToken);
     }
 
+    /// <summary>The repository's remotes, by name ("origin").</summary>
+    public async Task<IReadOnlyList<string>> GetRemotesAsync(CancellationToken cancellationToken = default)
+    {
+        var result = await GitRunner.RunAsync(Root, ["remote"], cancellationToken: cancellationToken);
+        return result.Succeeded
+            ? result.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            : [];
+    }
+
+    /// <summary>Downloads what's new on the current branch's remote (origin if it has none), and
+    /// forgets remote branches deleted there. Changes nothing in the working tree.</summary>
+    public Task<GitResult> FetchAsync(CancellationToken cancellationToken = default) =>
+        GitRunner.RunAsync(Root, ["fetch", "--prune"], cancellationToken: cancellationToken);
+
+    /// <summary>
+    /// Fetches and integrates the current branch's upstream. The user's own pull.rebase/pull.ff
+    /// settings decide how; with neither set, divergent branches are merged, as Visual Studio does
+    /// (git otherwise refuses and asks which). A merge commit takes git's default message rather
+    /// than opening an editor, which nobody would see.
+    /// </summary>
+    public async Task<GitResult> PullAsync(CancellationToken cancellationToken = default)
+    {
+        var configured = await GitRunner.RunAsync(Root, ["config", "--get-regexp", @"^pull\.(rebase|ff)$"], cancellationToken: cancellationToken);
+        var hasPreference = configured.Succeeded && configured.Output.Trim().Length > 0;
+        return await GitRunner.RunAsync(Root, hasPreference ? ["pull", "--no-edit"] : ["pull", "--no-edit", "--no-rebase"],
+            cancellationToken: cancellationToken);
+    }
+
+    /// <summary>
+    /// Pushes the current branch to its upstream - or, with <paramref name="publishTo"/>, to that
+    /// remote under the same name, making it the upstream (a branch's first push). Never forces.
+    /// </summary>
+    public Task<GitResult> PushAsync(string? publishTo = null, string? branch = null, CancellationToken cancellationToken = default) =>
+        GitRunner.RunAsync(Root,
+            publishTo is null ? ["push"] : ["push", "--set-upstream", publishTo, branch ?? "HEAD"],
+            cancellationToken: cancellationToken);
+
     /// <summary>The short hash and subject of HEAD - "a1b2c3d Add tabs" - for reporting a commit.</summary>
     public async Task<string?> DescribeHeadAsync(CancellationToken cancellationToken = default)
     {

@@ -11,6 +11,34 @@ public sealed record GitResult(int ExitCode, string Output, string Error)
 
     /// <summary>git's own explanation of a failure - its error output, else its normal output.</summary>
     public string Message => (Error.Length > 0 ? Error : Output).Trim();
+
+    /// <summary>
+    /// <see cref="Message"/>, with the failures fetch, pull and push commonly hit put plainly first:
+    /// a cancelled or impossible sign-in, a push the remote rejected, a missing SSH key. git's own
+    /// words follow, so nothing is lost.
+    /// </summary>
+    public string Explanation
+    {
+        get
+        {
+            var message = Message;
+            string? plain =
+                message.Contains("User cancelled", StringComparison.OrdinalIgnoreCase)
+                    ? "Sign-in was cancelled."
+                : message.Contains("user interactivity has been disabled", StringComparison.OrdinalIgnoreCase)
+                    ? "Git Credential Manager isn't allowed to show its sign-in window: GCM_INTERACTIVE (or credential.interactive) is set to never where Tedide was started."
+                : message.Contains("could not read Username", StringComparison.OrdinalIgnoreCase)
+                  || message.Contains("Authentication failed", StringComparison.OrdinalIgnoreCase)
+                    ? "git needs a login for this remote and couldn't get one. Check Git Credential Manager is installed (it comes with Git for Windows), or sign in once with git from a terminal."
+                : message.Contains("Permission denied (publickey)", StringComparison.Ordinal)
+                    ? "The remote refused your SSH key. If the key has a passphrase, load it into ssh-agent first - Tedide can't ask for it."
+                : message.Contains("[rejected]", StringComparison.Ordinal)
+                  && (message.Contains("fetch first", StringComparison.Ordinal) || message.Contains("non-fast-forward", StringComparison.Ordinal))
+                    ? "The remote has commits you don't have yet. Pull first, then push again."
+                : null;
+            return plain is null ? message : $"{plain}\n\n{message}";
+        }
+    }
 }
 
 /// <summary>

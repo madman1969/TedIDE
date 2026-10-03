@@ -36,8 +36,8 @@ Doc Viewer" below.
   by C line, registers, watches, locals, a call stack, and Memory and Disassembly tabs.
 - **Symbols** - a filterable browser for the linker map and label file.
 - **Git** - status markers in the Solution Explorer, the branch and the caret line's blame, a full
-  Blame view, a Git tab to stage, unstage, discard and commit, Compare with Last Commit for any file, and
-  change bars in the editor's gutter (added, modified, removed) that follow unsaved edits.
+  Blame view, change bars in the editor's gutter that follow unsaved edits, Compare with Last
+  Commit for any file, and a Git tab to stage, unstage, discard, commit, fetch, pull and push.
 - **Help** - F1 context help opens the bundled **Doc Viewer** at the word under the caret: the cc65
   manuals, The C Book, C64-Wiki, Wikipedia and the VICE manual, with full-text search and bookmarks.
 - **Themes** - nine true-colour themes, shared with the Doc Viewer, including Borland Turbo C,
@@ -85,7 +85,7 @@ src/
                        optional optimizer for cc65's generated assembly - see its README.md
   Tedide.Debug/        A client for VICE's binary monitor protocol (breakpoints, registers, memory, stepping)
                        - what Tedide.App's Debug menu talks to once VICE is launched with -binarymonitor
-  Tedide.Git/          Runs the git command line and parses its output (status, blame, diff, stage, commit) -
+  Tedide.Git/          Runs the git command line and parses its output (status, blame, diff, stage, commit, fetch/pull/push) -
                        what the Solution Explorer's markers and the Git tab use
   Tedide.Theming/      The nine color themes/scheme switching shared by Tedide.App and Tedide.DocViewer
   Tedide.App/          The Terminal.Gui TUI shell (menu bar, solution explorer, editor, output/error
