@@ -1,5 +1,30 @@
 namespace Tedide.Core.Tests;
 
+public class SessionStateFileOpenFilesTests
+{
+    [Fact]
+    public void OpenFiles_RoundTrip_AndAreNullInAFileFromBeforeTabs()
+    {
+        var dir = Directory.CreateTempSubdirectory();
+        try
+        {
+            var path = Path.Combine(dir.FullName, "Game.session.json");
+            new SessionStateFile { LastOpenFile = "src/b.c", OpenFiles = ["src/a.c", "src/b.c"] }.Save(path);
+
+            var loaded = SessionStateFile.Load(path);
+            Assert.Equal("src/b.c", loaded.LastOpenFile);
+            Assert.Equal(["src/a.c", "src/b.c"], loaded.OpenFiles);
+
+            File.WriteAllText(path, """{ "LastOpenFile": "src/main.c" }""");
+            Assert.Null(SessionStateFile.Load(path).OpenFiles);
+        }
+        finally
+        {
+            dir.Delete(recursive: true);
+        }
+    }
+}
+
 public class SessionStateFileTests
 {
     [Fact]

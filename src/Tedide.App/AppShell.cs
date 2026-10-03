@@ -11,6 +11,7 @@ using Tedide.Core.Navigation;
 using Tedide.Debug;
 using Terminal.Gui.App;
 using Terminal.Gui.Editor;
+using Terminal.Gui.Editor.Document;
 using Terminal.Gui.Input;
 using Terminal.Gui.ViewBase;
 using Terminal.Gui.Views;
@@ -163,6 +164,8 @@ public sealed class AppShell : Window
         _editorPane.GoToDefinitionRequested += GoToDefinition;
         _editorPane.FindReferencesRequested += FindAllReferences;
         _editorPane.RenameSymbolRequested += RenameSymbol;
+        _editorPane.ActiveDocumentChanged += OnActiveDocumentChanged;
+        _editorPane.CloseRequested += path => CloseFile(path);
         _editorFrame.Add(_editorPane);
         // explorerFrame's Width (above) reads _editorFrame.Frame.Width live, but within a single
         // layout pass explorerFrame is resolved before _editorFrame is - so it reads _editorFrame's
@@ -375,10 +378,16 @@ public sealed class AppShell : Window
             _recentProjectsMenuItem,
             new MenuItem("Close _Project", "", CloseSolution, Key.Empty),
             new Line(),
-            new MenuItem("_Save", "", () => SaveAll(), Key.S.WithCtrl),
+            new MenuItem("_Save", "", () => SaveActive(), Key.S.WithCtrl),
+            // No key: Ctrl+Shift+S arrives as Ctrl+S in Windows Terminal (see FindInFilesKey).
+            new MenuItem("Save A_ll", "", () => SaveAll(), Key.Empty),
             new MenuItem("_Close File", "", CloseActiveFile, Key.W.WithCtrl) { BindKeyToApplication = true },
+            new MenuItem("Close A_ll Files", "", CloseAllFiles, Key.Empty),
+            // The keys are labels here - the editor and OnKeyDown handle them (see EditorPane).
+            new MenuItem("_Next File", "", () => _editorPane.CycleDocument(1), Key.PageDown.WithCtrl),
+            new MenuItem("Pre_vious File", "", () => _editorPane.CycleDocument(-1), Key.PageUp.WithCtrl),
             new Line(),
-            new MenuItem("_Quit", "", () => Application.RequestStop(this), Key.Q.WithCtrl),
+            new MenuItem("_Quit", "", Quit, Key.Q.WithCtrl),
         });
 
         var buildMenu = new MenuBarItem("_Build", new List<MenuItem>
@@ -488,6 +497,10 @@ public sealed class AppShell : Window
             action = FindAllReferences;
         else if (key == RenameSymbolKey)
             action = RenameSymbol;
+        else if (key == Key.PageDown.WithCtrl)
+            action = () => _editorPane.CycleDocument(1);
+        else if (key == Key.PageUp.WithCtrl)
+            action = () => _editorPane.CycleDocument(-1);
 
         if (action is null)
             return base.OnKeyDown(key);
@@ -524,9 +537,9 @@ public sealed class AppShell : Window
         // menu's items (see OnKeyDown for the confirmed cause).
         statusBar.Add(new Shortcut(Key.F10, "Step", () => _ = StepDebuggingAsync(stepInto: false)));
         statusBar.Add(new Shortcut(Key.F7, "Into", () => _ = StepDebuggingAsync(stepInto: true)));
-        statusBar.Add(new Shortcut(Key.S.WithCtrl, "Save", () => SaveAll()));
+        statusBar.Add(new Shortcut(Key.S.WithCtrl, "Save", () => SaveActive()));
         statusBar.Add(new Shortcut(Key.G.WithCtrl, "Go To Line", ShowGoToLine));
-        statusBar.Add(new Shortcut(Key.Q.WithCtrl, "Quit", () => Application.RequestStop(this)));
+        statusBar.Add(new Shortcut(Key.Q.WithCtrl, "Quit", Quit));
         statusBar.X = 0;
         statusBar.Y = Pos.AnchorEnd(1);
         statusBar.Width = Dim.Fill();
@@ -541,7 +554,10 @@ public sealed class AppShell : Window
         Application.Run(dialog);
         if (dialog.Target is { } target && !string.IsNullOrWhiteSpace(dialog.ProjectName))
         {
+            if (!ConfirmCloseFiles(_editorPane.OpenPaths))
+                return;
             SaveLastOpenFileForActiveProject();
+            _editorPane.CloseAll();
             _workspace.NewProject(dialog.Directory, dialog.ProjectName, target);
             _solutionExplorer.Rebuild(_workspace);
             _symbolPanel.Refresh(_workspace.ActiveProject);
@@ -583,22 +599,24 @@ public sealed class AppShell : Window
             return;
         }
 
-        if (path.EndsWith(TedideSolution.FileExtension, StringComparison.OrdinalIgnoreCase))
-        {
-            SaveLastOpenFileForActiveProject();
-            _workspace.OpenSolution(path);
-        }
-        else if (path.EndsWith(TedideProject.FileExtension, StringComparison.OrdinalIgnoreCase))
-        {
-            SaveLastOpenFileForActiveProject();
-            _workspace.OpenProject(path);
-        }
-        else
+        var isSolution = path.EndsWith(TedideSolution.FileExtension, StringComparison.OrdinalIgnoreCase);
+        if (!isSolution && !path.EndsWith(TedideProject.FileExtension, StringComparison.OrdinalIgnoreCase))
         {
             TedideMessageBox.ErrorQuery("Unsupported file",
                 $"Expected a {TedideProject.FileExtension} or {TedideSolution.FileExtension} file.", ["OK"]);
             return;
         }
+
+        // The current project's tabs close with it - settle their unsaved changes first.
+        if (!ConfirmCloseFiles(_editorPane.OpenPaths))
+            return;
+        SaveLastOpenFileForActiveProject();
+        _editorPane.CloseAll();
+
+        if (isSolution)
+            _workspace.OpenSolution(path);
+        else
+            _workspace.OpenProject(path);
 
         _solutionExplorer.Rebuild(_workspace);
         _symbolPanel.Refresh(_workspace.ActiveProject);
@@ -820,11 +838,9 @@ public sealed class AppShell : Window
     }
 
     /// <summary>
-    /// Renames a file in place (same folder) after confirming a new name with the user. If the
-    /// file being renamed is the one currently open in the editor, prompts to save unsaved
-    /// changes first (same as <see cref="OpenFile"/> replacing it) - discarding, rather than
-    /// losing them, since the on-disk (not the in-memory) content is what actually gets renamed -
-    /// then reopens it from its new path afterward. Updates every project's SourceFiles that
+    /// Renames a file in place (same folder) after confirming a new name with the user. If it's
+    /// open in a tab, the tab follows it to the new name, keeping any unsaved edits - they're
+    /// in memory, and get saved to the new name like any other. Updates every project's SourceFiles that
     /// referenced the old path: removed if the new name's extension isn't one cl65 compiles,
     /// added under the new path if it is (covering a rename that changes the extension, e.g.
     /// .c -> .h, not just the base name), same as <see cref="NewFile"/>/<see cref="DeleteFile"/>'s
@@ -849,14 +865,9 @@ public sealed class AppShell : Window
             return;
         }
 
-        // Only ask about unsaved changes once the user has actually committed to a real,
-        // non-colliding rename above - not before, or a Cancel out of either step here would
-        // have already saved/discarded their in-progress edits for nothing.
-        var isOpen = string.Equals(_editorPane.OpenPath, path, StringComparison.OrdinalIgnoreCase);
-        if (isOpen && !ConfirmReplaceCurrentFile())
-            return;
-
         File.Move(path, newPath);
+        // An open tab follows the file to its new name, unsaved edits and all.
+        _editorPane.Rename(path, newPath);
 
         foreach (var project in _workspace.Projects)
         {
@@ -873,16 +884,6 @@ public sealed class AppShell : Window
         MoveBreakpoints(path, newPath);
 
         _solutionExplorer.Rebuild(_workspace);
-        if (isOpen)
-        {
-            // Not OpenFile(newPath) - it would re-run ConfirmReplaceCurrentFile, prompting a
-            // second time about the (already-handled, now nonexistent) old path if the user chose
-            // Discard above rather than Save.
-            _editorPane.Open(newPath);
-            _editorFrame.Title = newFileName;
-            UpdateLanguageIndicator();
-            RefreshBreakpointHighlights();
-        }
     }
 
     /// <summary>
@@ -898,13 +899,8 @@ public sealed class AppShell : Window
         if (choice != 0)
             return;
 
-        if (string.Equals(_editorPane.OpenPath, path, StringComparison.OrdinalIgnoreCase))
-        {
-            _editorPane.Close();
-            _editorFrame.Title = NoFileOpenTitle;
-            UpdateLanguageIndicator();
-            RefreshBreakpointHighlights();
-        }
+        // Its tab goes too, unsaved edits included - the file is being deleted either way.
+        _editorPane.Close(path);
 
         File.Delete(path);
 
@@ -961,29 +957,39 @@ public sealed class AppShell : Window
         Path.GetRelativePath(project.Directory, path).Replace('\\', '/');
 
     /// <summary>
-    /// Opens the given file in the (single) editor pane, replacing whatever's currently open -
-    /// prompting to save first if it has unsaved changes. Does nothing if it's already open.
+    /// Shows the given file in the editor: its tab if it's already open, otherwise a new tab.
+    /// Everything that follows the shown file (title, highlighting, breakpoints) is refreshed by
+    /// <see cref="OnActiveDocumentChanged"/>.
     /// </summary>
-    private void OpenFile(string path) => Guard("Opening the file", () => OpenFileCore(path));
+    private void OpenFile(string path) => Guard("Opening the file", () => _editorPane.Open(path));
 
-    private void OpenFileCore(string path)
+    /// <summary>
+    /// Brings everything tied to "the file in the editor" up to date after a tab switch, open,
+    /// close or rename: the frame title, the status bar's language, the breakpoint highlights,
+    /// and the current-debug-line highlight, which only belongs on the file execution stopped in.
+    /// </summary>
+    private void OnActiveDocumentChanged()
     {
-        if (_editorPane.OpenPath is not null &&
-            string.Equals(_editorPane.OpenPath, path, StringComparison.OrdinalIgnoreCase))
-            return;
-
-        if (!ConfirmReplaceCurrentFile())
-            return;
-
-        _editorPane.Open(path);
-        _editorFrame.Title = Path.GetFileName(path);
+        _editorFrame.Title = _editorPane.OpenPath is { } path ? Path.GetFileName(path) : NoFileOpenTitle;
         UpdateLanguageIndicator();
         RefreshBreakpointHighlights();
-        // EditorPane.Open always makes the freshly-opened file editable - reassert read-only if
-        // a debug session is in progress (e.g. a breakpoint in a different file, or the user
-        // browsing via Solution Explorer while paused), same as StartDebuggingAsync sets initially.
-        if (_isDebugging)
-            _editorPane.Editor.ReadOnly = true;
+        _debugLineTransformer.CurrentLineNumber = _debugLine is { } stop
+            && string.Equals(stop.FilePath, _editorPane.OpenPath, StringComparison.OrdinalIgnoreCase)
+                ? stop.Line
+                : null;
+        _editorPane.Editor.SetNeedsDraw();
+    }
+
+    /// <summary>Where execution is stopped, while it is - so the current-line highlight goes with
+    /// that file's tab, not whichever tab is shown. See <see cref="SetDebugLine"/>.</summary>
+    private (string FilePath, int Line)? _debugLine;
+
+    /// <summary>Records (or clears) where execution stopped and highlights that line if its file
+    /// is the one shown.</summary>
+    private void SetDebugLine((string FilePath, int Line)? location)
+    {
+        _debugLine = location;
+        OnActiveDocumentChanged();
     }
 
     /// <summary>Opens the Help > About dialog. Read-only - see <see cref="AboutDialog"/>.</summary>
@@ -994,8 +1000,8 @@ public sealed class AppShell : Window
 
     /// <summary>
     /// Opens the Find in Files dialog, searching every loaded project's directory tree. If the
-    /// user activates a result, opens its file (prompting to save the currently open one first,
-    /// same as <see cref="OpenFile"/>) and moves the caret to the matched line.
+    /// user activates a result, opens its file in a tab (or switches to it) and moves the caret to
+    /// the matched line.
     /// </summary>
     /// <param name="initialSearchText">Pre-populates (and immediately searches for) this text -
     /// e.g. the editor's current selection, via <see cref="EditorPane.FindInFilesRequested"/>.
@@ -1090,15 +1096,15 @@ public sealed class AppShell : Window
         var includeDirectories = _workspace.Projects
             .SelectMany(p => p.IncludePaths.Select(i => Path.GetFullPath(Path.Combine(p.Directory, i))))
             .ToList();
-        var openPath = _editorPane.OpenPath;
-        var openText = _editorPane.Editor.Text;
+        // Every open tab's current text, unsaved edits included, so positions match the editor.
+        var openTexts = _editorPane.OpenPaths.ToDictionary(p => p, p => _editorPane.TextOf(p)!, StringComparer.OrdinalIgnoreCase);
         IEnumerable<string> macros = _workspace.ActiveProject is { } project
             ? project.Target.PredefinedMacros().Concat(project.PreprocessorDefines.Select(d => d.Split('=', 2)[0].Trim()))
             : [];
 
         return new CodeNavigator(
             files,
-            path => string.Equals(path, openPath, StringComparison.OrdinalIgnoreCase) ? openText : CodeNavigator.ReadFromDisk(path),
+            path => openTexts.TryGetValue(path, out var text) ? text : CodeNavigator.ReadFromDisk(path),
             includeDirectories,
             CodeNavigator.Cc65LibraryDirectories(Environment.GetEnvironmentVariable("CC65_HOME"), Environment.GetEnvironmentVariable("PATH")),
             macros);
@@ -1191,10 +1197,10 @@ public sealed class AppShell : Window
 
     /// <summary>
     /// Edit > Rename Symbol (F2): renames the symbol at the caret everywhere Find All References
-    /// finds it, after <see cref="RenameSymbolDialog"/> has checked the new name. The open file is
-    /// changed in the editor as one undoable step and left unsaved; every other file is rewritten on
-    /// disk in its own encoding, all of them worked out before any is written, so a file that's
-    /// changed underneath stops the rename before anything is touched.
+    /// finds it, after <see cref="RenameSymbolDialog"/> has checked the new name. Each file open in
+    /// a tab is changed in the editor as one undoable step and left unsaved; every other file is
+    /// rewritten on disk in its own encoding. Everything is worked out and checked before anything
+    /// is changed, so a file that's changed underneath stops the rename before anything is touched.
     /// </summary>
     private void RenameSymbol() => Guard("Renaming the symbol", RenameSymbolCore);
 
@@ -1218,45 +1224,55 @@ public sealed class AppShell : Window
         if (dialog.Plan is not { } plan)
             return;
 
-        var otherFiles = plan.Edits
-            .Where(e => !string.Equals(e.FilePath, path, StringComparison.OrdinalIgnoreCase))
-            .GroupBy(e => e.FilePath, StringComparer.OrdinalIgnoreCase)
+        var byFile = plan.Edits.GroupBy(e => e.FilePath, StringComparer.OrdinalIgnoreCase).ToList();
+        var openFiles = byFile.Where(g => _editorPane.IsOpen(g.Key)).ToList();
+        // Files that aren't open are worked out in full before any is written.
+        var closedFiles = byFile
+            .Where(g => !_editorPane.IsOpen(g.Key))
             .Select(group =>
             {
                 var (text, encoding) = SourceFileText.Read(group.Key);
                 return (Path: group.Key, Text: RenamePlan.Apply(text, group), Encoding: encoding);
             })
             .ToList();
-        var openFileEdits = plan.Edits.Where(e => string.Equals(e.FilePath, path, StringComparison.OrdinalIgnoreCase)).ToList();
+        // Likewise every open file is checked before any is changed.
+        var located = openFiles.Select(g => (Path: g.Key, Edits: LocateEdits(_editorPane.DocumentOf(g.Key)!, g.Key, g.ToList()))).ToList();
 
-        foreach (var file in otherFiles)
+        foreach (var file in closedFiles)
             SourceFileText.Write(file.Path, file.Text, file.Encoding);
-
-        if (openFileEdits.Count > 0)
-            ApplyEditsToOpenFile(openFileEdits);
+        foreach (var (openPath, edits) in located)
+            ApplyEditsToOpenFile(openPath, edits);
 
         // Every listed position may have moved.
         _referencesView.SetReferences([], DisplayPath);
         var newName = plan.Edits.FirstOrDefault(e => e.FilePath == path)?.NewText ?? plan.Edits[0].NewText;
         AppendOutputLine($"Renamed '{symbol}' to '{newName}': {plan.Edits.Count} change(s) in {plan.FileCount} file(s)"
-            + (openFileEdits.Count > 0 ? $" - {Path.GetFileName(path)} is unsaved." : "."));
+            + (located.Count > 0 ? $" - {located.Count} open file(s) changed in the editor and not yet saved." : "."));
     }
 
-    /// <summary>Applies a rename's edits to the editor's document as a single undo step, checking each
-    /// spot still holds the old name (it's the same text the plan was made from, so it should).</summary>
-    private void ApplyEditsToOpenFile(IReadOnlyList<TextEdit> edits)
+    /// <summary>A rename's edits for one open file as document offsets, last first, after checking
+    /// each spot still holds the old name (it's the same text the plan was made from, so it should).</summary>
+    private static List<(TextEdit Edit, int Offset)> LocateEdits(TextDocument document, string path, IReadOnlyList<TextEdit> edits)
     {
-        var editor = _editorPane.Editor;
-        var document = editor.Document!;
-        var caret = editor.CaretOffset;
         var located = edits
             .Select(e => (Edit: e, Offset: document.GetLineByNumber(e.Line).Offset + e.Column - 1))
             .OrderByDescending(x => x.Offset)
             .ToList();
         if (located.Any(x => document.GetText(x.Offset, x.Edit.OldText.Length) != x.Edit.OldText))
-            throw new InvalidDataException($"{Path.GetFileName(_editorPane.OpenPath)} changed while the rename was being worked out.");
+            throw new InvalidDataException($"{Path.GetFileName(path)} changed while the rename was being worked out.");
+        return located;
+    }
 
-        editor.ClearSelection();
+    /// <summary>Applies a rename's located edits to an open file's document as a single undo step,
+    /// keeping the caret on the same code when it's the file being shown.</summary>
+    private void ApplyEditsToOpenFile(string path, List<(TextEdit Edit, int Offset)> located)
+    {
+        var document = _editorPane.DocumentOf(path)!;
+        var isShown = string.Equals(path, _editorPane.OpenPath, StringComparison.OrdinalIgnoreCase);
+        var editor = _editorPane.Editor;
+        var caret = isShown ? editor.CaretOffset : 0;
+        if (isShown)
+            editor.ClearSelection();
         document.UndoStack.StartUndoGroup();
         try
         {
@@ -1275,8 +1291,11 @@ public sealed class AppShell : Window
         {
             document.UndoStack.EndUndoGroup();
         }
-        editor.CaretOffset = Math.Clamp(caret, 0, document.TextLength);
-        editor.SetFocus();
+        if (isShown)
+        {
+            editor.CaretOffset = Math.Clamp(caret, 0, document.TextLength);
+            editor.SetFocus();
+        }
     }
 
     /// <summary>Go To Definition/Find All References feedback ("No symbol at the cursor.", ...),
@@ -1420,14 +1439,20 @@ public sealed class AppShell : Window
         _sessionState.LastOpenFile = _editorPane.OpenPath is { } openPath
             ? Path.GetRelativePath(project.Directory, openPath)
             : null;
+        // Only this project's own files - a tab from elsewhere (a cc65 header opened by Go To
+        // Definition, say) is left out rather than stored as a "..\..\" path.
+        _sessionState.OpenFiles = _editorPane.OpenPaths
+            .Where(p => IsSameOrInsideDirectory(p, project.Directory))
+            .Select(p => Path.GetRelativePath(project.Directory, p))
+            .ToList();
         _sessionState.Save(project.ResolvedSessionFile);
     }
 
     /// <summary>Reloads <see cref="_sessionState"/> from the active project's session sidecar file
-    /// (see <see cref="TedideProject.ResolvedSessionFile"/>) and reopens whichever file it recorded
-    /// (via the same <see cref="OpenFile"/> used elsewhere, so an unsaved current file still prompts
-    /// before being replaced) - or closes the editor if nothing was recorded, or the recorded file
-    /// no longer exists on disk. Called alongside <see cref="LoadBreakpointsForActiveProject"/> at
+    /// (see <see cref="TedideProject.ResolvedSessionFile"/>), closes whatever tabs are open, and
+    /// reopens the tabs it recorded (any that still exist on disk), finishing on the one that was
+    /// showing. Callers settle unsaved changes in the old tabs first (<see cref="ConfirmCloseFiles"/>).
+    /// Called alongside <see cref="LoadBreakpointsForActiveProject"/> at
     /// every point the active project itself changes (open/new/close) - deliberately not also at
     /// Project Settings save, since that keeps the same project active and already has its own
     /// reopen-after-rename handling (see <see cref="RenameProjectFolder"/>).</summary>
@@ -1440,21 +1465,31 @@ public sealed class AppShell : Window
         if (problem is not null)
             AppendOutputLine(problem);
 
-        var fullPath = _workspace.ActiveProject is { } activeProject && _sessionState.LastOpenFile is { } relativePath
-            ? Path.Combine(activeProject.Directory, relativePath)
-            : null;
+        // Whatever was open belonged to the previous project, and callers have already settled
+        // its unsaved changes (see ConfirmCloseFiles).
+        _editorPane.CloseAll();
+        if (_workspace.ActiveProject is not { } activeProject)
+            return;
 
-        if (fullPath is not null && File.Exists(fullPath))
-            OpenFile(fullPath);
-        else
-            CloseActiveFile();
+        // A session saved before tabs existed has only LastOpenFile.
+        var relativePaths = _sessionState.OpenFiles ?? (_sessionState.LastOpenFile is { } single ? [single] : []);
+        foreach (var relativePath in relativePaths)
+        {
+            var fullPath = Path.Combine(activeProject.Directory, relativePath);
+            if (File.Exists(fullPath))
+                OpenFile(fullPath);
+        }
+
+        // Finish on the tab that was showing.
+        if (_sessionState.LastOpenFile is { } last && Path.Combine(activeProject.Directory, last) is var lastPath && _editorPane.IsOpen(lastPath))
+            _editorPane.Open(lastPath);
     }
 
     /// <summary>
     /// Recomputes <see cref="_breakpointLineTransformer"/>'s highlighted line set from
-    /// <see cref="_breakpoints"/>, scoped to whichever file is currently open (a breakpoint in any
-    /// other file is irrelevant since only one file is ever open at once - see EditorPane's class
-    /// summary), and refreshes the Debug tab's breakpoints strip (unscoped - every breakpoint in
+    /// <see cref="_breakpoints"/>, scoped to the file being shown (the editor shows one tab at a
+    /// time, and this runs again on every tab switch - see <see cref="OnActiveDocumentChanged"/>),
+    /// and refreshes the Debug tab's breakpoints strip (unscoped - every breakpoint in
     /// the project, not just the open file). Called whenever either the open file or the
     /// breakpoint set itself changes.
     /// </summary>
@@ -2062,13 +2097,11 @@ public sealed class AppShell : Window
         }
 
         _isDebugging = true;
-        // Read-only for the whole session - editing source while the compiled binary it no longer
-        // matches is running would be misleading, and this also guarantees the unsaved-changes
-        // prompt in ConfirmReplaceCurrentFile (via OpenFile) can never fire/get cancelled while a
-        // breakpoint/step tries to jump to a different file, since no further edits are possible
-        // once this is set (the BuildActiveProjectAsync call above already saved everything).
+        // Read-only for the whole session, in every tab - editing source while the compiled binary
+        // it no longer matches is running would be misleading (BuildActiveProjectAsync above has
+        // already saved everything).
         // Invoked: this continuation is past several awaits, so it isn't on the UI thread.
-        Application.Invoke(() => _editorPane.Editor.ReadOnly = true);
+        Application.Invoke(() => _editorPane.ReadOnly = true);
 
         // Show the C source containing main() as the session comes up, before anything actually
         // runs - the same _main label every C program has, resolved back to its source location
@@ -2132,7 +2165,7 @@ public sealed class AppShell : Window
                 return;
 
             _isStopped = false;
-            _debugLineTransformer.CurrentLineNumber = null;
+            SetDebugLine(null);
             _debugPanel.SetStatus("Running...");
             _editorPane.Editor.SetNeedsDraw();
         });
@@ -2308,7 +2341,7 @@ public sealed class AppShell : Window
             return;
 
         _isStopped = false;
-        _debugLineTransformer.CurrentLineNumber = null;
+        SetDebugLine(null);
         _debugPanel.SetStatus("Running...");
         _editorPane.Editor.SetNeedsDraw();
         await _debugClient.ContinueAsync();
@@ -2344,12 +2377,12 @@ public sealed class AppShell : Window
             var resolvedPath = Path.Combine(project.Directory, resolved.FilePath);
             OpenSymbol((resolvedPath, resolved.Line));
             CenterEditorOnLine(resolvedPath, resolved.Line);
-            _debugLineTransformer.CurrentLineNumber = resolved.Line;
+            SetDebugLine((resolvedPath, resolved.Line));
             status = FunctionAwareStoppedAt(pc, $"{resolved.FilePath}:{resolved.Line}") + statusSuffix;
         }
         else
         {
-            _debugLineTransformer.CurrentLineNumber = null;
+            SetDebugLine(null);
             status = (pc is { } pcv ? $"Stopped at ${pcv:X4}" : "Stopped.") + statusSuffix;
         }
         _debugPanel.SetStatus(status);
@@ -2509,7 +2542,7 @@ public sealed class AppShell : Window
         // above don't guarantee this continuation is still there.
         Application.Invoke(() =>
         {
-            _debugLineTransformer.CurrentLineNumber = null;
+            SetDebugLine(null);
             _debugPanel.SetStatus("Not debugging.");
             _debugPanel.SetRegisters(null);
             _debugPanel.SetWatches([]);
@@ -2519,23 +2552,40 @@ public sealed class AppShell : Window
             _disassemblyView.Show([], "Start debugging to see the code around the PC.");
             _memoryView.Show(0, [], [], "Start debugging, then enter a symbol or $address.");
             _memorySnapshot = null;
-            // Only if a file is actually open - EditorPane itself keeps ReadOnly true with nothing
-            // open (see its constructor), and this shouldn't override that.
-            if (_editorPane.OpenPath is not null)
-                _editorPane.Editor.ReadOnly = false;
+            // EditorPane keeps the editor read-only anyway while no file is open.
+            _editorPane.ReadOnly = false;
             _editorPane.Editor.SetNeedsDraw();
         });
     }
 
+    /// <summary>File > Close File (Ctrl+W): closes the tab being shown, asking about unsaved changes first.</summary>
     private void CloseActiveFile()
     {
-        if (_editorPane.OpenPath is null || !ConfirmReplaceCurrentFile())
-            return;
+        if (_editorPane.OpenPath is { } path)
+            CloseFile(path);
+    }
 
-        _editorPane.Close();
-        _editorFrame.Title = NoFileOpenTitle;
-        UpdateLanguageIndicator();
-        RefreshBreakpointHighlights();
+    /// <summary>Closes one tab, asking about its unsaved changes first. False if the user cancelled.</summary>
+    private bool CloseFile(string path)
+    {
+        if (!ConfirmCloseFiles([path]))
+            return false;
+        _editorPane.Close(path);
+        return true;
+    }
+
+    /// <summary>File > Close All Files: closes every tab, asking about unsaved changes once for all of them.</summary>
+    private void CloseAllFiles()
+    {
+        if (ConfirmCloseFiles(_editorPane.OpenPaths))
+            _editorPane.CloseAll();
+    }
+
+    /// <summary>File > Quit (Ctrl+Q): asks about any unsaved changes, then exits.</summary>
+    private void Quit()
+    {
+        if (ConfirmCloseFiles(_editorPane.OpenPaths))
+            Application.RequestStop(this);
     }
 
     /// <summary>
@@ -2549,14 +2599,11 @@ public sealed class AppShell : Window
         if (_workspace.Projects.Count == 0)
             return;
 
-        if (!ConfirmReplaceCurrentFile())
+        if (!ConfirmCloseFiles(_editorPane.OpenPaths))
             return;
 
         SaveLastOpenFileForActiveProject();
-
-        _editorPane.Close();
-        _editorFrame.Title = NoFileOpenTitle;
-        UpdateLanguageIndicator();
+        _editorPane.CloseAll();
 
         _workspace.Close();
         _solutionExplorer.Rebuild(_workspace);
@@ -2588,42 +2635,46 @@ public sealed class AppShell : Window
     }
 
     /// <summary>
-    /// If the currently open file has unsaved changes, asks the user whether to save, discard, or
-    /// cancel. Returns true if it's fine to proceed with replacing/closing it (nothing was open,
-    /// it wasn't modified, or the user chose Save/Discard), false if the user cancelled.
+    /// Before closing the given open files: if any have unsaved changes, asks once whether to save
+    /// them, discard them, or cancel - naming the file when there's one, listing them when there
+    /// are several. True if it's fine to go ahead (nothing modified, or Save/Discard chosen and any
+    /// save worked), false if the user cancelled or a save failed.
     /// </summary>
-    private bool ConfirmReplaceCurrentFile()
+    private bool ConfirmCloseFiles(IReadOnlyCollection<string> paths)
     {
-        if (_editorPane.OpenPath is not { } currentPath || !_editorPane.IsModified)
+        var modified = paths.Where(_editorPane.IsModifiedFile).ToList();
+        if (modified.Count == 0)
             return true;
 
-        var choice = TedideMessageBox.Query("Unsaved Changes",
-            $"Save changes to {Path.GetFileName(currentPath)}?", ["Save", "Discard", "Cancel"]);
-        switch (choice)
+        var message = modified.Count == 1
+            ? $"Save changes to {Path.GetFileName(modified[0])}?"
+            : $"Save changes to these {modified.Count} files?\n\n{string.Join('\n', modified.Take(8).Select(Path.GetFileName))}"
+              + (modified.Count > 8 ? $"\n...and {modified.Count - 8} more" : "");
+        var choice = TedideMessageBox.Query("Unsaved Changes", message, [modified.Count == 1 ? "Save" : "Save All", "Discard", "Cancel"]);
+        return choice switch
         {
-            case null or 2: // Esc or Cancel
-                return false;
-            case 0: // Save
-                // A failed save must not go on to replace (and so lose) the unsaved buffer.
-                if (!SaveOpenFile())
-                    return false;
-                break;
-        }
-
-        return true;
+            0 => modified.All(SaveFile), // a failed save must not go on to lose the buffer
+            1 => true,
+            _ => false, // Cancel, or Esc
+        };
     }
 
-    /// <summary>Saves the open file (see <see cref="EditorPane.Save"/>), reporting any encoding
-    /// change in Output. False, having already told the user why, if it couldn't be written.</summary>
-    private bool SaveOpenFile() => Guard("Saving the file", () =>
+    /// <summary>Saves one open file (see <see cref="EditorPane.Save(string)"/>), reporting any
+    /// encoding change in Output. False, having already told the user why, if it couldn't be written.</summary>
+    private bool SaveFile(string path) => Guard($"Saving {Path.GetFileName(path)}", () =>
     {
-        if (_editorPane.Save() is { } notice)
+        if (_editorPane.Save(path) is { } notice)
             AppendOutputLine(notice);
     });
 
-    /// <summary>Saves the open file and every loaded project/solution file. False, having already
-    /// told the user why, if anything couldn't be written.</summary>
-    private bool SaveAll() => SaveOpenFile() && Guard("Saving the project", _workspace.SaveAll);
+    /// <summary>File > Save (Ctrl+S): the file being shown, plus the loaded project/solution files.</summary>
+    private bool SaveActive() =>
+        (_editorPane.OpenPath is not { } path || SaveFile(path)) && Guard("Saving the project", _workspace.SaveAll);
+
+    /// <summary>File > Save All, and every build: each modified open file plus the project/solution
+    /// files. False, having already told the user why, if anything couldn't be written.</summary>
+    private bool SaveAll() =>
+        _editorPane.ModifiedPaths.All(SaveFile) && Guard("Saving the project", _workspace.SaveAll);
 
     /// <summary>
     /// Runs <paramref name="body"/>, turning a file-system or file-format failure into an error
@@ -2868,35 +2919,25 @@ public sealed class AppShell : Window
     /// </summary>
     private void RenameProject(TedideProject project, string oldName, string oldFilePath, string oldDirectory)
     {
-        // The open file's path is just a string and won't follow a folder move - settle unsaved
-        // changes while the old path is still valid, and remember where it sits in the project.
-        string? relativeOpenPath = null;
-        var canMoveFolder = true;
-        if (_editorPane.OpenPath is { } openPath &&
-            openPath.StartsWith(oldDirectory + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
-        {
-            if (ConfirmReplaceCurrentFile())
-                relativeOpenPath = Path.GetRelativePath(oldDirectory, openPath);
-            else
-                canMoveFolder = false;
-        }
+        // Open tabs hold paths, which won't follow a folder move by themselves - remember where
+        // each one inside the project sits, and point it at the new folder afterwards. Their
+        // buffers (unsaved edits included) stay as they are.
+        var openInProject = _editorPane.OpenPaths
+            .Where(p => p.StartsWith(oldDirectory + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+            .Select(p => (OldPath: p, Relative: Path.GetRelativePath(oldDirectory, p)))
+            .ToList();
 
         var oldRecentPath = _workspace.Solution?.FilePath ?? oldFilePath;
-        var result = ProjectRename.Apply(project, _workspace.Solution, oldName, oldFilePath, canMoveFolder);
+        var result = ProjectRename.Apply(project, _workspace.Solution, oldName, oldFilePath, renameFolder: true);
 
         _recentProjects.Remove(oldRecentPath);
         RememberRecentProject(result.NewSolutionFile ?? result.NewProjectFile);
 
-        if (relativeOpenPath is not null)
+        foreach (var (oldPath, relative) in openInProject)
         {
-            var newOpenPath = Path.Combine(project.Directory, relativeOpenPath);
-            if (!string.Equals(newOpenPath, _editorPane.OpenPath, StringComparison.OrdinalIgnoreCase))
-            {
-                _editorPane.Open(newOpenPath);
-                _editorFrame.Title = Path.GetFileName(newOpenPath);
-                UpdateLanguageIndicator();
-                RefreshBreakpointHighlights();
-            }
+            var newPath = Path.Combine(project.Directory, relative);
+            if (!string.Equals(newPath, oldPath, StringComparison.OrdinalIgnoreCase))
+                _editorPane.Rename(oldPath, newPath);
         }
 
         if (result.FolderNotRenamedReason is { } reason)

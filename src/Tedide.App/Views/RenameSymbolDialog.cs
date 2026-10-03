@@ -45,8 +45,8 @@ public sealed class RenameSymbolDialog : Dialog
         var summary = new Label
         {
             Text = $"{referenceCount} reference(s) in {fileCount} file(s) will change; comments and strings won't.\n"
-                + "Other files are saved straight away.\n"
-                + "The open file stays unsaved, so Undo reverts the change there.",
+                + "Files open in tabs change in the editor, unsaved - Undo reverts each one.\n"
+                + "Files that aren't open are saved straight away.",
             X = 0,
             Y = 4,
             Width = Dim.Fill(),

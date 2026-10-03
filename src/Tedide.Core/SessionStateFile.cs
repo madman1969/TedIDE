@@ -15,6 +15,11 @@ public sealed class SessionStateFile
     /// nothing was open.</summary>
     public string? LastOpenFile { get; set; }
 
+    /// <summary>Every file open in the editor's tabs when this was last saved, in tab order and
+    /// relative to the project directory; <see cref="LastOpenFile"/> is the one that was showing.
+    /// Null in a file written before tabs existed, which only recorded <see cref="LastOpenFile"/>.</summary>
+    public List<string>? OpenFiles { get; set; }
+
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
     /// <summary>Loads session state from <paramref name="path"/>, or an empty one if the file doesn't exist yet (a project that's never been closed/switched away from has none).</summary>
