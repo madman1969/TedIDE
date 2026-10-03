@@ -440,6 +440,37 @@ line, not just launching the emulator and watching it run.
    say) aren't shown - cc65 leaves them out of its debug info.
 
    ![The Debug tab: status, breakpoints and watches lines ($d020 = $FE, $d012 = $EB), the recent stops history, the Locals table (max_raster : unsigned = 229, i : unsigned int = 1) and the register table](docs/images/debugging-debug-tab.png)
+6. A **call stack** sits beside the recent stops, innermost first, for example
+   `border_flash  src/border.s:46` ← `animation_step  src/animation.c:51` ← `main  src/main.c:23`.
+   Press Enter on a frame to open its source line.
+   - cc65 keeps no frame records, so Tedide rebuilds the stack from the 6502's hardware stack. Any
+     pushed address that points just past a `JSR` in the program's code counts as a return address.
+   - Frames inside cc65's runtime show the nearest label instead (`pushax+3`).
+   - This is the same heuristic a machine-code monitor's backtrace uses, so data that happens to
+     look like a return address can occasionally add a frame.
+7. **Conditional breakpoints:** **Debug > Breakpoint Condition...** sets a condition on the breakpoint
+   at the caret, creating the breakpoint if needed. The **Condition...** button in the Breakpoints
+   dialog does the same for the selected one.
+   - VICE evaluates the condition, so it uses VICE's monitor syntax, e.g. `A == $05`, `X != $00`, or
+     `@cpu:$d020 == $0e` for memory. Those were checked against VICE 3.9.
+   - If VICE rejects a condition when the session starts, the Output panel says so and that
+     breakpoint is left off for the session, rather than stopping every time.
+   - Conditions are saved with the breakpoints.
+8. The **Memory** tab shows 256 bytes as hex and text from an address you type: a symbol, `$hex` or
+   decimal, the same as Add Watch.
+   - **-$100** and **+$100** page through memory.
+   - It refreshes at every stop, with bytes that changed since the previous stop highlighted.
+   - Reads are side-effect-free peeks, so viewing I/O registers can't disturb the program.
+9. The **Disassembly** tab shows the 6502 code around the PC at every stop, with the current
+   instruction marked.
+   - Each row shows the address, bytes, instruction and cycle count (`*` = +1 on a page crossing,
+     `**` = branch timing), plus a note: the label at that address, the label its operand refers to
+     (`jsr $0C0F  -> pusha`), and the source line where a new one starts.
+   - It decodes for the project's CPU, including the 65C02 instructions for a SuperCPU project.
+   - Enter on a row opens its source line.
+
+   VICE's monitor only exposes the raster position (`LIN`/`CYC`), not a running cycle count, so these
+   per-instruction counts are as close to cycle profiling as Tedide can get from it.
 
 The binary monitor's own protocol details (header layout, command bytes, how a checkpoint hit is
 reported, which register names VICE reports for the 6502) were confirmed against a real VICE 3.9
@@ -571,7 +602,7 @@ A `.tsln` file just lists the `.tproj` files that make up a solution.
 
 ## Project Settings dialog
 
-**Project > Settings...** opens one dialog covering everything above, as eight tabs sharing a
+**Project > Settings...** opens one dialog covering everything above, as nine tabs sharing a
 single Save/Cancel footer:
 
 - **Settings** - display name, target platform, output file override, extra `cl65` arguments,
@@ -656,6 +687,21 @@ single Save/Cancel footer:
   [CTalkobt/opt6502](https://github.com/CTalkobt/opt6502), whose release couldn't assemble cc65
   output and miscompiled several patterns; Tedide's version is an MIT reimplementation, checked
   byte-for-byte against that fork before it was removed.
+- **Build Events** - commands to run before compiling (`PreBuildCommands`) and after a successful
+  link (`PostBuildCommands`), one per line.
+  - Each runs through `cmd.exe` in the project folder. Its output goes to the Output panel after a
+    `prebuild>`/`postbuild>` echo of the command.
+  - A failing command fails the build and shows in the Error List. A failing pre-build command stops
+    the build before anything is compiled.
+  - Visual Studio-style macros are expanded first: `$(ProjectDir)`, `$(ProjectName)`,
+    `$(OutputFile)`, `$(OutputDir)`, `$(OutputName)` and `$(Target)`.
+
+  For example, to put the program on a `.d64` disk image with VICE's `c1541` after every build:
+
+  ```text
+  c1541 -format "game,01" d64 game.d64 -write "$(OutputFile)" game
+  ```
+
 - **CC65** - the `CC65_HOME` environment variable (where cl65 finds target headers/libraries) -
   a per-machine toolchain setting, not project state, so it's saved once and applies to every
   project (see "Prerequisites" above).
@@ -797,8 +843,8 @@ The theme covers more than the window chrome:
 In place and tested:
 
 - **Projects** - the project/solution model; File > New Project scaffolding with the samples'
-  `src`/`include`/`lib`/`bin` layout; a Recent Projects and Solutions list; the seven-tab Project
-  Settings dialog; and a Solution Explorer folder tree with a Generated Files node and New File,
+  `src`/`include`/`lib`/`bin` layout; a Recent Projects and Solutions list; the nine-tab Project
+  Settings dialog, including pre- and post-build commands; and a Solution Explorer folder tree with a Generated Files node and New File,
   Add Existing Item, Rename and Delete.
 - **Editing** - a single-document editor with syntax highlighting for C, 6502/ca65 assembly,
   assembler listings, linker maps, VICE label files and linker configs, all colored by the active
@@ -809,17 +855,18 @@ In place and tested:
   Run in the VICE emulator matching the target, with the right memory configuration for the VIC-20,
   C16 and Plus/4.
 - **Debugging** - source-level debugging against VICE's binary monitor protocol: breakpoints with
-  persistent in-editor highlighting and a Breakpoints dialog; stepping by source line (Step Into
-  runs straight through cc65's runtime library); registers with decoded status flags; the
-  enclosing function name; memory watches; a Locals table of the stopped function's parameters
-  and local variables with their types and values; a stop history; and a read-only editor with
-  the current line auto-centered while a session is active.
+  persistent in-editor highlighting, conditions and a Breakpoints dialog; stepping by source line
+  (Step Into runs straight through cc65's runtime library); registers with decoded status flags;
+  the enclosing function name; memory watches; a Locals table of the stopped function's
+  parameters and local variables with their types and values; a call stack; a stop history;
+  Memory and Disassembly tabs; and a read-only editor with the current line auto-centered while a
+  session is active.
 - **Tedide.DocViewer** - the cc65 manuals and The C Book in a category tree, with full-text
   search, bookmarks, Find on Page, Back/Forward history and syntax-highlighted code blocks.
 - **Themes** - nine runtime-switchable themes shared by both apps, covering syntax highlighting,
   adjusted for readability, and drawn in true color inside Windows Terminal.
 - **Everything else** - file-based logging for crash diagnosis, standalone-executable publish tasks
-  for both apps, and about 710 unit tests across five test projects (`dotnet test Tedide.slnx`).
+  for both apps, and about 770 unit tests across five test projects (`dotnet test Tedide.slnx`).
 
 Not yet implemented: true multi-project solution builds (a loaded solution's *first* project is
 always the one Build/Clean/Run/Debug act on), and a visual editor for `.cfg` linker configs

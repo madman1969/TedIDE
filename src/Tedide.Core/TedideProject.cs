@@ -96,6 +96,16 @@ public sealed class TedideProject
     /// <summary>Extra arguments appended verbatim to the cl65 command line.</summary>
     public List<string> ExtraArguments { get; set; } = [];
 
+    /// <summary>Shell commands run, in order, in the project's directory before anything is
+    /// compiled; the build stops if one fails. <see cref="BuildEvents.Expand"/> substitutes
+    /// $(OutputFile) and friends first.</summary>
+    public List<string> PreBuildCommands { get; set; } = [];
+
+    /// <summary>Shell commands run, in order, in the project's directory after a successful link -
+    /// e.g. c1541 to put the program on a .d64 disk image. A failing one fails the build. See
+    /// <see cref="BuildEvents.Expand"/> for the macros they can use.</summary>
+    public List<string> PostBuildCommands { get; set; } = [];
+
     /// <summary>Path this project was loaded from / will be saved to. Not serialized.</summary>
     [JsonIgnore]
     public string? FilePath { get; set; }

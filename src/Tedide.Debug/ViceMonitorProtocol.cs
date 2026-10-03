@@ -11,6 +11,7 @@ internal enum ViceMonitorCommand : byte
     CheckpointDelete = 0x13,
     CheckpointList = 0x14,
     CheckpointToggle = 0x15,
+    ConditionSet = 0x22,
     RegistersGet = 0x31,
     RegistersSet = 0x32,
     AdvanceInstructions = 0x71,
@@ -166,6 +167,21 @@ internal static class ViceMonitorProtocol
         Memspace: body[22]);
 
     // ---- Checkpoint delete (0x13) request: "CN CN CN CN" ----
+    // ---- Condition set (0x22) request: "CN(4) EL(1) EX(EL)" - the condition in the text monitor's
+    // own syntax, e.g. "A == $05". VICE answers error 0x8f for one it can't parse (checked live
+    // against VICE 3.9: "A == $05" and "@cpu:$d020 == $0e" accepted; ".A == $05" and "&&" rejected).
+    public static byte[] EncodeConditionSetBody(uint checkpointNumber, string condition)
+    {
+        var text = System.Text.Encoding.ASCII.GetBytes(condition);
+        if (text.Length > byte.MaxValue)
+            throw new ArgumentException("A VICE checkpoint condition can be at most 255 characters.", nameof(condition));
+        var body = new byte[5 + text.Length];
+        WriteUInt32LE(body, 0, checkpointNumber);
+        body[4] = (byte)text.Length;
+        text.CopyTo(body, 5);
+        return body;
+    }
+
     public static byte[] EncodeCheckpointDeleteBody(uint checkpointNumber)
     {
         var body = new byte[4];

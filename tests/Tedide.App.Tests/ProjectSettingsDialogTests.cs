@@ -17,6 +17,14 @@ public class ProjectSettingsDialogTests
         Assert.Equal(Path.Combine(@"C:\CC65", "cfg", expectedFileName), path);
     }
 
+    [Fact]
+    public void CommandLines_KeepsOneCommandPerNonBlankLine()
+    {
+        Assert.Equal(["echo a", "c1541 -write \"x y.prg\" z"],
+            ProjectSettingsDialog.CommandLines("  echo a  \r\n\r\n   \nc1541 -write \"x y.prg\" z\n"));
+        Assert.Empty(ProjectSettingsDialog.CommandLines(string.Empty));
+    }
+
     [Theory]
     [InlineData(null)]
     [InlineData("")]

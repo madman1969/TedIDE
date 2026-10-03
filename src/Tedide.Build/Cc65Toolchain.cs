@@ -43,6 +43,9 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
+                // Kept off Tedide's own console - see RunToolAsync.
+                CreateNoWindow = true,
+                RedirectStandardInput = true,
             };
             using var process = Process.Start(startInfo);
             if (process is null)
@@ -88,6 +91,15 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
             onOutputLine?.Invoke(line);
         }
 
+        BuildResult Finish(bool succeeded, int exitCode)
+        {
+            stopwatch.Stop();
+            return new BuildResult(succeeded, exitCode, lines, Cc65DiagnosticParser.ParseAll(lines), stopwatch.Elapsed);
+        }
+
+        if (await RunBuildEventsAsync(project, "prebuild", project.PreBuildCommands, Capture, cancellationToken) is { } preBuildFailure)
+            return Finish(false, preBuildFailure);
+
         // Every source file is compiled even after an earlier one fails, so a single build shows
         // every file's errors at once rather than stopping at the first - only the link step
         // (which would just cascade unrelated "undefined symbol" errors from the missing object
@@ -127,8 +139,7 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
 
                 if (exitCode is null)
                 {
-                    stopwatch.Stop();
-                    return new BuildResult(false, -1, lines, Cc65DiagnosticParser.ParseAll(lines), stopwatch.Elapsed);
+                    return Finish(false, -1);
                 }
 
                 if (exitCode.Value != 0)
@@ -152,16 +163,58 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
                 $"Could not launch '{Cl65Path}'. Is cc65 installed and on PATH?", cancellationToken);
             if (exitCode is null)
             {
-                stopwatch.Stop();
-                return new BuildResult(false, -1, lines, Cc65DiagnosticParser.ParseAll(lines), stopwatch.Elapsed);
+                return Finish(false, -1);
             }
             lastExitCode = exitCode.Value;
         }
 
-        stopwatch.Stop();
-        var diagnostics = Cc65DiagnosticParser.ParseAll(lines);
-        var succeeded = !compileFailed && lastExitCode == 0 && diagnostics.All(d => d.Severity != DiagnosticSeverity.Error);
-        return new BuildResult(succeeded, lastExitCode, lines, diagnostics, stopwatch.Elapsed);
+        var linked = !compileFailed && lastExitCode == 0 && Cc65DiagnosticParser.ParseAll(lines).All(d => d.Severity != DiagnosticSeverity.Error);
+        if (linked && await RunBuildEventsAsync(project, "postbuild", project.PostBuildCommands, Capture, cancellationToken) is { } postBuildFailure)
+            return Finish(false, postBuildFailure);
+
+        return Finish(linked, lastExitCode);
+    }
+
+    /// <summary>
+    /// Runs a project's pre- or post-build commands in order, each through the shell in the
+    /// project directory with its macros expanded (see <see cref="BuildEvents.Expand"/>), echoing
+    /// each command before its output. Stops at the first failure, reporting it as a
+    /// "<paramref name="kind"/>: Error:" line - which the Error List picks up - and returning its
+    /// exit code (-1 if the shell couldn't be started); returns null when every command succeeded.
+    /// </summary>
+    private static async Task<int?> RunBuildEventsAsync(
+        TedideProject project, string kind, IReadOnlyList<string> commands, Action<string?> capture, CancellationToken cancellationToken)
+    {
+        foreach (var command in commands.Where(c => !string.IsNullOrWhiteSpace(c)))
+        {
+            var expanded = BuildEvents.Expand(project, command.Trim());
+            capture($"{kind}> {expanded}");
+            var exitCode = await RunToolAsync(ShellStartInfo(expanded), project.Directory, capture,
+                $"{kind}: Error: Could not start the shell to run '{expanded}'", cancellationToken);
+            if (exitCode is not 0)
+            {
+                if (exitCode is not null)
+                    capture($"{kind}: Error: '{expanded}' failed with exit code {exitCode}.");
+                return exitCode ?? -1;
+            }
+        }
+        return null;
+    }
+
+    /// <summary>How to run one build-event command line: through cmd.exe on Windows, so built-ins
+    /// (copy, del, if exist ...) and redirection work as they would typed at a prompt, and through
+    /// /bin/sh elsewhere.</summary>
+    internal static ProcessStartInfo ShellStartInfo(string command)
+    {
+        if (OperatingSystem.IsWindows())
+            // /s with the whole command in one pair of quotes: cmd strips just those outer quotes and
+            // runs the rest exactly as written, inner quotes included. ArgumentList would re-quote it.
+            return new ProcessStartInfo("cmd.exe") { Arguments = $"/d /s /c \"{command}\"" };
+
+        var startInfo = new ProcessStartInfo("/bin/sh");
+        startInfo.ArgumentList.Add("-c");
+        startInfo.ArgumentList.Add(command);
+        return startInfo;
     }
 
     /// <summary>
@@ -196,7 +249,7 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
     /// against a missing tool. <paramref name="launchFailureHint"/> is shown after the OS's own
     /// reason in that case.
     /// </summary>
-    private static async Task<int?> RunToolAsync(
+    private static Task<int?> RunToolAsync(
         string executable,
         List<string> arguments,
         string workingDirectory,
@@ -204,21 +257,38 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
         string launchFailureHint,
         CancellationToken cancellationToken)
     {
-        var startInfo = new ProcessStartInfo(executable)
-        {
-            WorkingDirectory = workingDirectory,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-        };
+        var startInfo = new ProcessStartInfo(executable);
         foreach (var arg in arguments)
             startInfo.ArgumentList.Add(arg);
+        return RunToolAsync(startInfo, workingDirectory, capture, launchFailureHint, cancellationToken);
+    }
+
+    /// <summary>The same as the overload above, for a process whose command line is already set up
+    /// - see <see cref="ShellStartInfo"/>.</summary>
+    private static async Task<int?> RunToolAsync(
+        ProcessStartInfo startInfo,
+        string workingDirectory,
+        Action<string?> capture,
+        string launchFailureHint,
+        CancellationToken cancellationToken)
+    {
+        startInfo.WorkingDirectory = workingDirectory;
+        startInfo.RedirectStandardOutput = true;
+        startInfo.RedirectStandardError = true;
+        startInfo.UseShellExecute = false;
+        // A console child shares Tedide's own console unless told otherwise, and cmd.exe resets
+        // that console's input mode as it runs - measured: 0x0298 (VT input, mouse) became 0x028F
+        // (line input + echo, no mouse), after which every click in the editor arrived as a raw
+        // escape sequence and was typed into the file. A console of its own (hidden) and no
+        // access to Tedide's stdin keep any tool from touching it.
+        startInfo.CreateNoWindow = true;
+        startInfo.RedirectStandardInput = true;
 
         Process? started;
         try
         {
             started = Process.Start(startInfo)
-                ?? throw new InvalidOperationException($"Failed to start '{executable}'.");
+                ?? throw new InvalidOperationException($"Failed to start '{startInfo.FileName}'.");
         }
         catch (Win32Exception ex)
         {
@@ -227,6 +297,9 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
         }
 
         using var process = started;
+        // Nothing is ever typed to a tool: closing its input straight away means one that waits
+        // for a keypress (a "pause" in a build event) ends instead of hanging the build.
+        process.StandardInput.Close();
         process.OutputDataReceived += (_, e) => capture(e.Data);
         process.ErrorDataReceived += (_, e) => capture(e.Data);
         process.BeginOutputReadLine();

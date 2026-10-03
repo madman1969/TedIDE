@@ -4,8 +4,16 @@ using System.Text.Json.Serialization;
 namespace Tedide.Core;
 
 /// <summary>One breakpoint, by source file (relative to the project directory, matching
-/// <see cref="TedideProject.SourceFiles"/>'s own convention) and 1-based line number.</summary>
-public sealed record BreakpointEntry(string SourceFile, int Line, bool Enabled = true);
+/// <see cref="TedideProject.SourceFiles"/>'s own convention) and 1-based line number.
+/// <see cref="Condition"/>, when set, is a VICE monitor condition (e.g. <c>A == $05</c>, or
+/// <c>@cpu:$d020 == $0e</c> for memory) that must hold for the breakpoint to stop.</summary>
+public sealed record BreakpointEntry(string SourceFile, int Line, bool Enabled = true, string? Condition = null)
+{
+    public bool HasCondition => !string.IsNullOrWhiteSpace(Condition);
+
+    /// <summary>"file:line", plus " if condition" for a conditional breakpoint.</summary>
+    public string Describe() => HasCondition ? $"{SourceFile}:{Line} if {Condition}" : $"{SourceFile}:{Line}";
+}
 
 /// <summary>
 /// The on-disk model for a project's breakpoints ({Name}.breakpoints.json - see

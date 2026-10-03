@@ -49,6 +49,8 @@ public sealed class ProjectSettingsDialog : Dialog
     private readonly CheckBox _enableSuperCpuField;
     private readonly CheckBox _useOpt6502Field;
     private readonly CheckBox _favourSpeedField;
+    private readonly TextView _preBuildField;
+    private readonly TextView _postBuildField;
 
     /// <summary>True if the user chose Save (and the project was updated and saved to disk).</summary>
     public bool Saved { get; private set; }
@@ -81,6 +83,7 @@ public sealed class ProjectSettingsDialog : Dialog
         var linkerTab = BuildLinkerTab(project, _targetField, out _generateLinkerMapField, out _exportLabelsField, out _generateDebugInfoField, out _linkerConfigPathField);
         var superCpuTab = BuildSuperCpuTab(project, out _enableSuperCpuField);
         var opt6502Tab = BuildOpt6502Tab(project, out _useOpt6502Field, out _favourSpeedField, out var cpuLabel);
+        var buildEventsTab = BuildBuildEventsTab(project, out _preBuildField, out _postBuildField);
         var cc65Tab = BuildCc65Tab(out _cc65HomeField);
         var viceTab = BuildViceTab(out _viceBinDirectoryField);
         tabs.Add(settingsTab);
@@ -89,6 +92,7 @@ public sealed class ProjectSettingsDialog : Dialog
         tabs.Add(linkerTab);
         tabs.Add(superCpuTab);
         tabs.Add(opt6502Tab);
+        tabs.Add(buildEventsTab);
         tabs.Add(cc65Tab);
         tabs.Add(viceTab);
 
@@ -167,6 +171,8 @@ public sealed class ProjectSettingsDialog : Dialog
             project.EnableSuperCpu = _enableSuperCpuField.Value == CheckState.Checked;
             project.UseOpt6502 = _useOpt6502Field.Value == CheckState.Checked;
             project.Opt6502Mode = _favourSpeedField.Value == CheckState.Checked ? Opt6502Mode.Speed : Opt6502Mode.Size;
+            project.PreBuildCommands = CommandLines(_preBuildField.Text);
+            project.PostBuildCommands = CommandLines(_postBuildField.Text);
 
             // Saved here, inside this button's handler, so a failure is reported and the dialog
             // stays open for a retry or Cancel - an exception escaping a running dialog's handler
@@ -595,6 +601,54 @@ public sealed class ProjectSettingsDialog : Dialog
         tab.Add(useOpt6502Field, helpLabel, favourSpeedField, speedHelpLabel, cpuLabel);
         return tab;
     }
+
+    /// <summary>
+    /// Builds the "Build Events" tab: <see cref="TedideProject.PreBuildCommands"/> and
+    /// <see cref="TedideProject.PostBuildCommands"/>, one command per line, with the macros they can
+    /// use listed underneath (from <see cref="BuildEvents.Macros"/>, so the list can't drift).
+    /// </summary>
+    private static View BuildBuildEventsTab(TedideProject project, out TextView preBuildField, out TextView postBuildField)
+    {
+        var tab = new View { Title = " _Build Events ", Width = Dim.Fill(), Height = Dim.Fill() };
+        // See BuildSettingsTab's comment on this same line - every tab needs its own Padding.
+        tab.Padding.Thickness = new Thickness(2, 1, 2, 1);
+
+        static TextView CommandField(int y, IEnumerable<string> commands) => new()
+        {
+            X = 0, Y = y, Width = Dim.Fill(1), Height = 5,
+            Text = string.Join('\n', commands),
+            // Tab moves on to the next field rather than typing a tab into a command.
+            TabKeyAddsTab = false,
+            BorderStyle = LineStyle.Single,
+        };
+
+        var preLabel = new Label { Text = "Pre-build commands - run before compiling; the build stops if one fails:", X = 0, Y = 0 };
+        preBuildField = CommandField(2, project.PreBuildCommands);
+        var postLabel = new Label { Text = "Post-build commands - run after a successful link; a failure fails the build:", X = 0, Y = 9 };
+        postBuildField = CommandField(11, project.PostBuildCommands);
+
+        // The six macros as a two-column table, three rows deep.
+        var macros = BuildEvents.Macros;
+        var macroRows = Enumerable.Range(0, 3).Select(i =>
+            $"  {macros[i].Macro,-15}{macros[i].Meaning,-24}{macros[i + 3].Macro,-15}{macros[i + 3].Meaning}");
+        var helpLabel = new Label
+        {
+            Text = "One command per line, run by cmd.exe in the project folder; output goes to the Output panel.\n"
+                + "Macros:\n"
+                + string.Join('\n', macroRows) + "\n\n"
+                + "e.g.  c1541 -format \"game,01\" d64 game.d64 -write \"$(OutputFile)\" game",
+            X = 0, Y = 18, Width = Dim.Fill(1), Height = 7,
+            // The text shows "$(OutputFile)" and friends literally - no "_" hotkey parsing wanted.
+            HotKeySpecifier = new System.Text.Rune(0xFFFF),
+        };
+
+        tab.Add(preLabel, preBuildField, postLabel, postBuildField, helpLabel);
+        return tab;
+    }
+
+    /// <summary>A build-events box's text as one command per non-blank line.</summary>
+    internal static List<string> CommandLines(string text) =>
+        text.Split('\n').Select(l => l.TrimEnd('\r').Trim()).Where(l => l.Length > 0).ToList();
 
     /// <summary>
     /// The opt6502 tab's line naming the CPU a project with <paramref name="target"/> and

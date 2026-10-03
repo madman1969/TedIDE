@@ -23,15 +23,38 @@ public class BreakpointsFileTests
                 [
                     new BreakpointEntry("src/main.c", 19, true),
                     new BreakpointEntry("src/screen.c", 42, false),
+                    new BreakpointEntry("src/loop.c", 7, true, "A == $05"),
                 ],
             };
 
             file.Save(path);
             var loaded = BreakpointsFile.Load(path);
 
-            Assert.Equal(2, loaded.Breakpoints.Count);
+            Assert.Equal(3, loaded.Breakpoints.Count);
             Assert.Equal(new BreakpointEntry("src/main.c", 19, true), loaded.Breakpoints[0]);
             Assert.Equal(new BreakpointEntry("src/screen.c", 42, false), loaded.Breakpoints[1]);
+            Assert.Equal(new BreakpointEntry("src/loop.c", 7, true, "A == $05"), loaded.Breakpoints[2]);
+        }
+        finally
+        {
+            dir.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Load_ReadsAFileWrittenBeforeConditionsExisted()
+    {
+        var dir = Directory.CreateTempSubdirectory();
+        try
+        {
+            var path = Path.Combine(dir.FullName, "Old.breakpoints.json");
+            File.WriteAllText(path, """{ "Breakpoints": [ { "SourceFile": "src/main.c", "Line": 3, "Enabled": true } ] }""");
+
+            var breakpoint = Assert.Single(BreakpointsFile.Load(path).Breakpoints);
+
+            Assert.False(breakpoint.HasCondition);
+            Assert.Equal("src/main.c:3", breakpoint.Describe());
+            Assert.Equal("src/main.c:3 if X > $10", (breakpoint with { Condition = "X > $10" }).Describe());
         }
         finally
         {

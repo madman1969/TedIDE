@@ -208,4 +208,18 @@ public class ViceMonitorProtocolTests
 
         Assert.Equal((ushort)0x0840, ViceMonitorProtocol.DecodeProgramCounterBody(body));
     }
+
+    [Fact]
+    public void EncodeConditionSetBody_IsTheNumberThenTheLengthPrefixedCondition()
+    {
+        var body = ViceMonitorProtocol.EncodeConditionSetBody(0x00000102, "A == $05");
+
+        Assert.Equal(new byte[] { 0x02, 0x01, 0x00, 0x00, 8, (byte)'A', (byte)' ', (byte)'=', (byte)'=', (byte)' ', (byte)'$', (byte)'0', (byte)'5' }, body);
+    }
+
+    [Fact]
+    public void EncodeConditionSetBody_RejectsAConditionTooLongForItsLengthByte()
+    {
+        Assert.Throws<ArgumentException>(() => ViceMonitorProtocol.EncodeConditionSetBody(1, new string('A', 256)));
+    }
 }

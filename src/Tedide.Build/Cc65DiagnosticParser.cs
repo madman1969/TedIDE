@@ -23,7 +23,7 @@ public static partial class Cc65DiagnosticParser
         RegexOptions.IgnoreCase)]
     private static partial Regex DiagnosticRegex();
 
-    [GeneratedRegex(@"^(?<tool>cl65|cc65|ca65|ld65|co65|ar65|sp65|opt6502):\s*(?<severity>Error|Warning|Note)\s*:\s*(?:(?<file>(?:[A-Za-z]:)?[^():]+):(?<line>\d+):\s*)?(?<message>.*)$",
+    [GeneratedRegex(@"^(?<tool>cl65|cc65|ca65|ld65|co65|ar65|sp65|opt6502|prebuild|postbuild):\s*(?<severity>Error|Warning|Note)\s*:\s*(?:(?<file>(?:[A-Za-z]:)?[^():]+):(?<line>\d+):\s*)?(?<message>.*)$",
         RegexOptions.IgnoreCase)]
     private static partial Regex ToolMessageRegex();
 

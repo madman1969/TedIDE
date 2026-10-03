@@ -36,7 +36,7 @@ public sealed class BreakpointsDialog : Dialog
         _savePath = savePath;
 
         Title = "Breakpoints";
-        Width = 70;
+        Width = 84;
         Height = 20;
         Padding.Thickness = new Thickness(2, 1, 2, 1);
         Arrangement &= ~ViewArrangement.Resizable;
@@ -62,7 +62,10 @@ public sealed class BreakpointsDialog : Dialog
         var toggleButton = new Button { Text = "_Toggle Enabled", X = 0, Y = Pos.AnchorEnd(1), Width = 18 };
         toggleButton.Accepting += (_, e) => { ToggleSelected(); e.Handled = true; };
 
-        var deleteButton = new Button { Text = "_Delete", X = Pos.Right(toggleButton) + 1, Y = Pos.AnchorEnd(1), Width = 12 };
+        var conditionButton = new Button { Text = "Co_ndition...", X = Pos.Right(toggleButton) + 1, Y = Pos.AnchorEnd(1), Width = 16 };
+        conditionButton.Accepting += (_, e) => { EditSelectedCondition(); e.Handled = true; };
+
+        var deleteButton = new Button { Text = "_Delete", X = Pos.Right(conditionButton) + 1, Y = Pos.AnchorEnd(1), Width = 12 };
         deleteButton.Accepting += (_, e) => { DeleteSelected(); e.Handled = true; };
 
         var closeButton = new Button { Text = "_Close", IsDefault = true, SchemeName = "Accent", X = Pos.AnchorEnd(12), Y = Pos.AnchorEnd(1), Width = 12 };
@@ -72,7 +75,7 @@ public sealed class BreakpointsDialog : Dialog
             e.Handled = true;
         };
 
-        Add([_table, toggleButton, deleteButton, closeButton]);
+        Add([_table, toggleButton, conditionButton, deleteButton, closeButton]);
     }
 
     private void Refresh()
@@ -81,9 +84,26 @@ public sealed class BreakpointsDialog : Dialog
         table.Columns.Add("Enabled");
         table.Columns.Add("File");
         table.Columns.Add("Line", typeof(int));
+        table.Columns.Add("Condition");
         foreach (var breakpoint in _breakpoints.Breakpoints)
-            table.Rows.Add(breakpoint.Enabled ? "Yes" : "No", breakpoint.SourceFile, breakpoint.Line);
+            table.Rows.Add(breakpoint.Enabled ? "Yes" : "No", breakpoint.SourceFile, breakpoint.Line, breakpoint.HasCondition ? breakpoint.Condition : "(always)");
         _table.Table = new DataTableSource(table);
+    }
+
+    private void EditSelectedCondition()
+    {
+        if (SelectedIndex() is not { } index)
+            return;
+
+        var current = _breakpoints.Breakpoints[index];
+        var dialog = new BreakpointConditionDialog($"{current.SourceFile}:{current.Line}", current.Condition);
+        Application.Run(dialog);
+        if (dialog.Condition is not { } condition)
+            return;
+
+        _breakpoints.Breakpoints[index] = current with { Condition = condition.Length == 0 ? null : condition };
+        SaveAndRefresh();
+        _table.SetFocus();
     }
 
     private void ToggleSelected()

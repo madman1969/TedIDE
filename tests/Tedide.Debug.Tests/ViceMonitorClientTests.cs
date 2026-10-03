@@ -76,6 +76,42 @@ public class ViceMonitorClientTests
     }
 
     [Fact]
+    public async Task SetConditionAsync_SendsCommand0x22_WithTheCheckpointNumberAndCondition()
+    {
+        using var server = new FakeViceMonitorServer();
+        await server.StartAsync();
+        byte[]? received = null;
+        server.OnRequest((requestId, command, body) =>
+        {
+            Assert.Equal(ViceMonitorCommand.ConditionSet, command);
+            received = body;
+            return ViceMonitorProtocol.EncodeResponse(requestId, (byte)command, errorCode: 0, body: []);
+        });
+
+        await using var client = new ViceMonitorClient();
+        await client.ConnectAsync("127.0.0.1", server.Port);
+
+        await client.SetConditionAsync(7, "A == $05");
+
+        Assert.Equal(ViceMonitorProtocol.EncodeConditionSetBody(7, "A == $05"), received);
+    }
+
+    [Fact]
+    public async Task SetConditionAsync_Throws_WhenViceRejectsTheCondition()
+    {
+        using var server = new FakeViceMonitorServer();
+        await server.StartAsync();
+        // 0x8f: what a live VICE 3.9 answers for a condition it can't parse.
+        server.OnRequest((requestId, command, _) => ViceMonitorProtocol.EncodeResponse(requestId, (byte)command, errorCode: 0x8f, body: []));
+
+        await using var client = new ViceMonitorClient();
+        await client.ConnectAsync("127.0.0.1", server.Port);
+
+        var ex = await Assert.ThrowsAsync<ViceMonitorException>(() => client.SetConditionAsync(1, "garbage(("));
+        Assert.Equal(0x8f, ex.ErrorCode);
+    }
+
+    [Fact]
     public async Task SetCheckpointAsync_ThrowsViceMonitorException_WhenTheServerRepliesWithAnErrorCode()
     {
         // VICE's error replies carry an empty body - decoding one as a checkpoint info reply used

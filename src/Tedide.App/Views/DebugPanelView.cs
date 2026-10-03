@@ -18,6 +18,13 @@ public sealed record WatchEntry(string Label, ushort Address, int Size);
 /// in, with its declared type (or "?" when the source didn't say) and formatted value.</summary>
 public sealed record LocalRow(string Name, string Type, string Value);
 
+/// <summary>One call stack frame: its text ("main  main.c:24") and, when it has one, the source
+/// location to open - an absolute path - for activating it.</summary>
+public sealed record CallFrame(string Text, string? FilePath, int Line)
+{
+    public override string ToString() => Text;
+}
+
 /// <summary>
 /// The "Debug" tab: a status line (not debugging / connecting / running / stopped-at-file:line,
 /// now including the enclosing function name when it's resolvable), a compact breakpoints strip
@@ -34,22 +41,45 @@ public sealed class DebugPanelView : View
     private readonly Label _breakpointsLabel;
     private readonly Label _watchesLabel;
     private readonly ListView _historyList;
+    private readonly ListView _callStackList;
     private readonly TableView _localsTable;
     private readonly TableView _registersTable;
     private readonly ObservableCollection<string> _history = [];
+    private ObservableCollection<CallFrame> _callStack = [];
 
     private const int MaxHistoryEntries = 20;
+
+    /// <summary>Raised when the user activates a call stack frame that has a source location.</summary>
+    public event Action<CallFrame>? FrameActivated;
 
     public DebugPanelView()
     {
         // HotKeySpecifier disabled: a Label reads "_" as a hotkey marker by default, which turned
         // "Stopped in animation_step" into "animationstep" - function names are full of underscores.
-        _statusLabel = new Label { X = 0, Y = 0, Width = Dim.Fill(), Text = "Not debugging.", HotKeySpecifier = new System.Text.Rune(0xFFFF) };
-        _breakpointsLabel = new Label { X = 0, Y = 1, Width = Dim.Fill(), Text = "Breakpoints: none" };
+        var noHotKey = new System.Text.Rune(0xFFFF);
+        _statusLabel = new Label { X = 0, Y = 0, Width = Dim.Fill(), Text = "Not debugging.", HotKeySpecifier = noHotKey };
+        _breakpointsLabel = new Label { X = 0, Y = 1, Width = Dim.Fill(), Text = "Breakpoints: none", HotKeySpecifier = noHotKey };
         _watchesLabel = new Label { X = 0, Y = 2, Width = Dim.Fill(), Text = "Watches: none" };
+
+        // The call stack (left) and recent stops (right) share one band under their own headings.
+        var callStackLabel = new Label { X = 0, Y = 3, Text = "Call stack (Enter to open):" };
+        _callStackList = new ListView
+        {
+            X = 0, Y = 4, Width = Dim.Percent(50), Height = 5,
+            ViewportSettings = ViewportSettingsFlags.HasScrollBars,
+        };
+        _callStackList.SetSource(_callStack);
+        _callStackList.Accepting += (_, e) =>
+        {
+            if (_callStackList.SelectedItem is { } index && index >= 0 && index < _callStack.Count && _callStack[index].FilePath is not null)
+                FrameActivated?.Invoke(_callStack[index]);
+            e.Handled = true;
+        };
+
+        var historyLabel = new Label { X = Pos.Right(_callStackList) + 1, Y = 3, Text = "Recent stops:" };
         _historyList = new ListView
         {
-            X = 0, Y = 3, Width = Dim.Fill(), Height = 6,
+            X = Pos.Right(_callStackList) + 1, Y = 4, Width = Dim.Fill(), Height = 5,
             ViewportSettings = ViewportSettingsFlags.HasScrollBars,
         };
         _historyList.SetSource(_history);
@@ -65,9 +95,16 @@ public sealed class DebugPanelView : View
             FullRowSelect = true,
             ViewportSettings = ViewportSettingsFlags.HasScrollBars,
         };
-        Add(_statusLabel, _breakpointsLabel, _watchesLabel, _historyList, _localsTable, _registersTable);
+        Add(_statusLabel, _breakpointsLabel, _watchesLabel, callStackLabel, _callStackList, historyLabel, _historyList, _localsTable, _registersTable);
         SetLocals([]);
         SetRegisters(null);
+    }
+
+    /// <summary>Replaces the call stack, innermost frame first; an empty list clears it.</summary>
+    public void SetCallStack(IReadOnlyList<CallFrame> frames)
+    {
+        _callStack = new ObservableCollection<CallFrame>(frames);
+        _callStackList.SetSource(_callStack);
     }
 
     /// <summary>Replaces the Locals table - the stopped function's parameters and locals, refreshed
@@ -98,9 +135,7 @@ public sealed class DebugPanelView : View
             return;
         }
 
-        var entries = breakpoints.Select(b => b.Enabled
-            ? $"{b.SourceFile}:{b.Line}"
-            : $"{b.SourceFile}:{b.Line} (disabled)");
+        var entries = breakpoints.Select(b => b.Enabled ? b.Describe() : $"{b.Describe()} (disabled)");
         _breakpointsLabel.Text = $"Breakpoints: {string.Join(", ", entries)}";
     }
 

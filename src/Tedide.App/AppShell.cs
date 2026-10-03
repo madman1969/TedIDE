@@ -54,6 +54,12 @@ public sealed class AppShell : Window
     private readonly ErrorListView _errorListView = new();
     private readonly SymbolPanelView _symbolPanel = new();
     private readonly ReferencesView _referencesView = new();
+    private readonly MemoryView _memoryView = new();
+    private readonly DisassemblyView _disassemblyView = new();
+    /// <summary>Where the Memory tab reads from, once the user has entered an address, and what it
+    /// read there at the last stop - so the next stop can highlight what changed.</summary>
+    private ushort? _memoryAddress;
+    private byte[]? _memorySnapshot;
     private readonly DebugPanelView _debugPanel = new();
     private readonly CurrentDebugLineTransformer _debugLineTransformer = new();
     private readonly BreakpointLineTransformer _breakpointLineTransformer = new();
@@ -239,6 +245,27 @@ public sealed class AppShell : Window
         _outputTabs.Add(_referencesTab);
         _outputTabs.Add(_debugTab);
 
+        var memoryTab = new View { Title = " _Memory ", Width = Dim.Fill(), Height = Dim.Fill() };
+        _memoryView.Width = Dim.Fill();
+        _memoryView.Height = Dim.Fill();
+        _memoryView.AddressRequested += ShowMemoryAt;
+        _memoryView.PageRequested += delta =>
+        {
+            if (_memoryAddress is { } address)
+                ShowMemoryAt($"${Math.Clamp(address + delta, 0, 0x10000 - MemoryView.ByteCount):X4}");
+        };
+        memoryTab.Add(_memoryView);
+        _outputTabs.Add(memoryTab);
+
+        var disassemblyTab = new View { Title = " Dis_assembly ", Width = Dim.Fill(), Height = Dim.Fill() };
+        _disassemblyView.Width = Dim.Fill();
+        _disassemblyView.Height = Dim.Fill();
+        _disassemblyView.SourceRequested += OpenSourceForAddress;
+        disassemblyTab.Add(_disassemblyView);
+        _outputTabs.Add(disassemblyTab);
+
+        _debugPanel.FrameActivated += frame => OpenSymbol((frame.FilePath!, frame.Line));
+
         // Breakpoint highlighting registered before the current-debug-line one, so the latter's
         // Accent color wins on a line that's both a breakpoint and the paused line - see
         // BreakpointLineTransformer's own doc comment for why order matters here.
@@ -378,6 +405,7 @@ public sealed class AppShell : Window
             new MenuItem("Sto_p Debugging", "", () => _ = StopDebuggingAsync(), Key.Empty),
             new Line(),
             new MenuItem("_Toggle Breakpoint", "", ToggleBreakpointAtCursor, Key.F9),
+            new MenuItem("Breakpoint Co_ndition...", "", EditBreakpointConditionAtCursor, Key.Empty),
             new MenuItem("_Breakpoints...", "", ShowBreakpointsDialog, Key.Empty),
             new Line(),
             new MenuItem("Add _Watch...", "", ShowAddWatchDialog, Key.Empty),
@@ -1483,6 +1511,43 @@ public sealed class AppShell : Window
         _ = SyncCheckpointsWithViceAsync();
     }
 
+    /// <summary>
+    /// Debug > Breakpoint Condition...: sets or clears the condition (VICE monitor syntax) of the
+    /// breakpoint on the caret's line, creating the breakpoint first if there isn't one - so a
+    /// conditional breakpoint takes one step, not F9 and then this.
+    /// </summary>
+    private void EditBreakpointConditionAtCursor() => Guard("Saving breakpoints", EditBreakpointConditionAtCursorCore);
+
+    private void EditBreakpointConditionAtCursorCore()
+    {
+        var project = _workspace.ActiveProject;
+        if (project is null || _editorPane.OpenPath is not { } openPath || _editorPane.Editor.Document is null)
+            return;
+
+        var line = _editorPane.CaretPosition.Line;
+        // Forward slashes, matching the .dbg file - see ToggleBreakpointAtCursorCore.
+        var relativePath = Path.GetRelativePath(project.Directory, openPath).Replace('\\', '/');
+        var index = _breakpoints.Breakpoints.FindIndex(b =>
+            b.Line == line && string.Equals(b.SourceFile, relativePath, StringComparison.OrdinalIgnoreCase));
+        var current = index >= 0 ? _breakpoints.Breakpoints[index] : new BreakpointEntry(relativePath, line);
+
+        var dialog = new BreakpointConditionDialog($"{relativePath}:{line}", current.Condition);
+        Application.Run(dialog);
+        if (dialog.Condition is not { } condition)
+            return;
+
+        var updated = current with { Condition = condition.Length == 0 ? null : condition, Enabled = true };
+        if (index >= 0)
+            _breakpoints.Breakpoints[index] = updated;
+        else
+            _breakpoints.Breakpoints.Add(updated);
+        AppendOutputLine($"Breakpoint set: {updated.Describe()}");
+
+        _breakpoints.Save(project.ResolvedBreakpointsFile);
+        RefreshBreakpointHighlights();
+        _ = SyncCheckpointsWithViceAsync();
+    }
+
     private void ShowBreakpointsDialog()
     {
         var project = _workspace.ActiveProject;
@@ -1706,6 +1771,192 @@ public sealed class AppShell : Window
         Application.Invoke(() => _debugPanel.SetWatches(watchLines));
     }
 
+    /// <summary>What the Memory and Disassembly tabs and the call stack show for one stop - read
+    /// from VICE off the UI thread, then shown by <see cref="ShowDebugViews"/> on it.</summary>
+    private sealed record DebugViews(
+        IReadOnlyList<CallFrame> CallStack,
+        IReadOnlyList<DisassemblyRow> Disassembly,
+        string DisassemblyStatus,
+        ushort? MemoryAddress,
+        byte[] Memory,
+        HashSet<int> MemoryChanged);
+
+    /// <summary>Reads everything <see cref="DebugViews"/> holds for the current stop. Never throws:
+    /// like the locals, these are extras, not worth failing a stop over.</summary>
+    private async Task<DebugViews> ReadDebugViewsAsync(ViceMonitorClient debugClient, RegisterSnapshot registers)
+    {
+        IReadOnlyList<CallFrame> callStack = [];
+        IReadOnlyList<DisassemblyRow> disassembly = [];
+        var disassemblyStatus = "No PC to show.";
+        try
+        {
+            callStack = await ReadCallStackAsync(debugClient, registers);
+        }
+        catch (Exception ex)
+        {
+            Log.Debug(ex, "Could not read the call stack");
+        }
+        try
+        {
+            if (registers["PC"] is { } pc)
+                (disassembly, disassemblyStatus) = await ReadDisassemblyAsync(debugClient, pc);
+        }
+        catch (Exception ex)
+        {
+            Log.Debug(ex, "Could not disassemble");
+            disassemblyStatus = $"Could not read memory around the PC: {ex.Message}";
+        }
+
+        var memoryAddress = _memoryAddress;
+        byte[] memory = [];
+        HashSet<int> changed = [];
+        if (memoryAddress is { } address)
+        {
+            try
+            {
+                memory = await debugClient.GetMemoryAsync(address, (ushort)Math.Min(0xFFFF, address + MemoryView.ByteCount - 1));
+                if (_memorySnapshot is { } previous && previous.Length == memory.Length)
+                    changed = MemoryDump.ChangedOffsets(previous, memory);
+                _memorySnapshot = memory;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug(ex, "Could not read memory at ${Address:X4}", address);
+            }
+        }
+        return new DebugViews(callStack, disassembly, disassemblyStatus, memoryAddress, memory, changed);
+    }
+
+    /// <summary>Shows a stop's <see cref="DebugViews"/>. Must run on the UI thread.</summary>
+    private void ShowDebugViews(DebugViews views)
+    {
+        _debugPanel.SetCallStack(views.CallStack);
+        _disassemblyView.Show(views.Disassembly, views.DisassemblyStatus);
+        if (views.MemoryAddress is { } address && views.Memory.Length > 0)
+        {
+            var changedText = views.MemoryChanged.Count == 0 ? "" : $" - {views.MemoryChanged.Count} byte(s) changed since the last stop";
+            _memoryView.Show(address, views.Memory, views.MemoryChanged, $"As of this stop{changedText}.");
+        }
+    }
+
+    /// <summary>
+    /// The call stack for a stop, innermost first: where the PC is, then each call site found on
+    /// the hardware stack by <see cref="CallStackWalker"/>. Only return addresses into the
+    /// program's own read-only segments are considered, and each one's JSR is confirmed by reading
+    /// the opcode - one small read per candidate, so a stack full of data doesn't mean 255 reads.
+    /// </summary>
+    private async Task<IReadOnlyList<CallFrame>> ReadCallStackAsync(ViceMonitorClient debugClient, RegisterSnapshot registers)
+    {
+        if (_dbgFile is not { } dbgFile || _workspace.ActiveProject is not { } project
+            || registers["PC"] is not { } pc || registers["SP"] is not { } sp)
+            return [];
+
+        var stack = await debugClient.GetMemoryAsync(0x0100, 0x01FF);
+        var isJsr = new Dictionary<ushort, bool>();
+        foreach (var site in CallStackWalker.CandidateCallSites(stack, (byte)sp).Where(a => dbgFile.IsInReadOnlySegment(a)).Distinct())
+            isJsr[site] = (await debugClient.GetMemoryAsync(site, site))[0] == CallStackWalker.JsrOpcode;
+
+        var frames = new List<CallFrame> { DescribeFrame(dbgFile, project, pc) };
+        frames.AddRange(CallStackWalker.Walk(stack, (byte)sp, site => isJsr.GetValueOrDefault(site)).Select(site => DescribeFrame(dbgFile, project, site)));
+        return frames;
+    }
+
+    /// <summary>A call stack line for <paramref name="address"/>: the function (or, in cc65's
+    /// runtime, the nearest label) and the project source line, if it has one.</summary>
+    private static CallFrame DescribeFrame(DbgFile dbgFile, TedideProject project, ushort address)
+    {
+        var name = dbgFile.FindEnclosingFunctionName(address) ?? dbgFile.FindNearestLabel(address) ?? "?";
+        return dbgFile.FindProjectSourceLocationForAddress(address, project.Directory) is { } location
+            ? new CallFrame($"{name}  {location.FilePath}:{location.Line}", Path.Combine(project.Directory, location.FilePath), location.Line)
+            : new CallFrame($"{name}  (${address:X4})", null, 0);
+    }
+
+    /// <summary>How many bytes before and after the PC the Disassembly tab reads.</summary>
+    private const int DisassemblyBytesBefore = 48, DisassemblyBytesAfter = 96;
+
+    /// <summary>
+    /// The instructions around <paramref name="pc"/>, decoded for the project's CPU, each noted
+    /// with the label at its address, the label its operand refers to, and the source line where
+    /// a new one starts.
+    /// </summary>
+    private async Task<(IReadOnlyList<DisassemblyRow> Rows, string Status)> ReadDisassemblyAsync(ViceMonitorClient debugClient, ushort pc)
+    {
+        var start = (ushort)Math.Max(0, pc - DisassemblyBytesBefore);
+        var end = (ushort)Math.Min(0xFFFF, pc + DisassemblyBytesAfter);
+        var bytes = await debugClient.GetMemoryAsync(start, end);
+        var cpu = _workspace.ActiveProject?.ResolvedCc65Cpu ?? "6502";
+        var cmos = Disassembler6502.IsCmos(cpu);
+        var from = Disassembler6502.FindStartBefore(bytes, pc - start, DisassemblyBytesBefore, cmos);
+
+        var dbgFile = _dbgFile;
+        var project = _workspace.ActiveProject;
+        (string FilePath, int Line)? lastLocation = null;
+        var rows = new List<DisassemblyRow>();
+        foreach (var instruction in Disassembler6502.Disassemble(bytes, start, from, maxCount: 48, cmos))
+        {
+            var notes = new List<string>();
+            if (dbgFile?.FindLabelAt(instruction.Address) is { } label)
+                notes.Add($"{label}:");
+            if (instruction.Target is { } target && instruction.Mnemonic != "bra" && dbgFile?.FindLabelAt(target) is { } targetLabel)
+                notes.Add($"-> {targetLabel}");
+            if (dbgFile is not null && project is not null
+                && dbgFile.FindProjectSourceLocationForAddress(instruction.Address, project.Directory) is { } location
+                && location != lastLocation)
+            {
+                notes.Add($"{location.FilePath}:{location.Line}");
+                lastLocation = location;
+            }
+            rows.Add(new DisassemblyRow(instruction, instruction.Address == pc, string.Join("  ", notes)));
+        }
+        return (rows, $"PC ${pc:X4} - {cpu} instructions; cycles: * +1 on a page crossing, ** branch +1 taken, +1 more crossing a page.");
+    }
+
+    /// <summary>
+    /// Memory tab: resolves an address the way Add Watch does (symbol, $hex or decimal) and shows
+    /// the memory there - read now if execution is stopped, otherwise at the next stop.
+    /// </summary>
+    private void ShowMemoryAt(string expression)
+    {
+        if (!TryResolveWatchAddress(expression, out var address, out var error))
+        {
+            _memoryView.SetStatus(error);
+            return;
+        }
+
+        _memoryAddress = address;
+        _memorySnapshot = null;
+        if (_debugClient is not { } debugClient || !_isDebugging || !_isStopped)
+        {
+            _memoryView.SetStatus($"${address:X4} will be shown when execution next stops.");
+            return;
+        }
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var bytes = await debugClient.GetMemoryAsync(address, (ushort)Math.Min(0xFFFF, address + MemoryView.ByteCount - 1));
+                _memorySnapshot = bytes;
+                OnUiThread(() => _memoryView.Show(address, bytes, [], "As of this stop."));
+            }
+            catch (Exception ex)
+            {
+                OnUiThread(() => _memoryView.SetStatus($"Could not read memory: {ex.Message}"));
+            }
+        });
+    }
+
+    /// <summary>Opens the project source line an address belongs to - for a Disassembly row.</summary>
+    private void OpenSourceForAddress(ushort address)
+    {
+        if (_dbgFile is not { } dbgFile || _workspace.ActiveProject is not { } project)
+            return;
+        if (dbgFile.FindProjectSourceLocationForAddress(address, project.Directory) is { } location)
+            OpenSymbol((Path.Combine(project.Directory, location.FilePath), location.Line));
+        else
+            AppendOutputLine($"${address:X4} has no source line in this project.");
+    }
+
     /// <summary>
     /// Builds the active project (if needed), launches it in VICE with the binary monitor enabled,
     /// connects <see cref="_debugClient"/>, sets every enabled breakpoint (resolved to an address
@@ -1904,6 +2155,23 @@ public sealed class AppShell : Window
             {
                 var info = await debugClient.SetCheckpointAsync((ushort)addr);
                 _checkpointNumbers[breakpoint] = info.Number;
+                if (breakpoint.HasCondition)
+                {
+                    try
+                    {
+                        await debugClient.SetConditionAsync(info.Number, breakpoint.Condition!.Trim());
+                    }
+                    catch (Exception ex) when (ex is ViceMonitorException or ArgumentException)
+                    {
+                        // An unconditional stop where a conditional one was asked for would be a
+                        // surprise mid-run - so the breakpoint sits this session out instead.
+                        await debugClient.DeleteCheckpointAsync(info.Number);
+                        _checkpointNumbers.Remove(breakpoint);
+                        Application.Invoke(() => AppendOutputLine(
+                            $"VICE rejected the condition \"{breakpoint.Condition}\" on {breakpoint.SourceFile}:{breakpoint.Line}, so that breakpoint is off for this session. "
+                            + "Use VICE monitor syntax, e.g. A == $05 or @cpu:$d020 == $0e."));
+                    }
+                }
             }
             else
             {
@@ -2007,6 +2275,7 @@ public sealed class AppShell : Window
                 // Editor/TextDocument state after an await (see the nested-Invoke comment below).
                 var watchLines = await FormatWatchesAsync(_debugClient);
                 var locals = await ReadLocalsAsync(_debugClient, registers);
+                var views = await ReadDebugViewsAsync(_debugClient, registers);
 
                 // Everything below touches Editor/TextDocument state, which enforces single-thread
                 // ownership (TextDocument.VerifyAccess). Application.Invoke only guarantees the UI
@@ -2021,6 +2290,7 @@ public sealed class AppShell : Window
                 Application.Invoke(() =>
                 {
                     ShowStoppedAt(registers, watchLines, locals, registers["PC"], $" (checkpoint #{args.Checkpoint.Number})");
+                    ShowDebugViews(views);
                     Log.Debug("CheckpointHit done: status is now {Status}", _debugPanel.StatusText);
                 });
             }
@@ -2159,11 +2429,16 @@ public sealed class AppShell : Window
             var registers = await debugClient.GetRegistersAsync();
             var watchLines = await FormatWatchesAsync(debugClient);
             var locals = await ReadLocalsAsync(debugClient, registers);
+            var views = await ReadDebugViewsAsync(debugClient, registers);
             // Re-marshal onto the UI thread before touching Editor/TextDocument state - the awaits
             // above leave this continuation on whatever thread completed them (Terminal.Gui
             // installs no SynchronizationContext to bring it back).
-            Application.Invoke(() => ShowStoppedAt(registers, watchLines, locals, registers["PC"],
-                reachedNewLine ? "" : $" (step limit of {MaxStepInstructions} instructions reached)"));
+            Application.Invoke(() =>
+            {
+                ShowStoppedAt(registers, watchLines, locals, registers["PC"],
+                    reachedNewLine ? "" : $" (step limit of {MaxStepInstructions} instructions reached)");
+                ShowDebugViews(views);
+            });
         }
         catch (Exception ex)
         {
@@ -2239,7 +2514,11 @@ public sealed class AppShell : Window
             _debugPanel.SetRegisters(null);
             _debugPanel.SetWatches([]);
             _debugPanel.SetLocals([]);
+            _debugPanel.SetCallStack([]);
             _debugPanel.ClearHistory();
+            _disassemblyView.Show([], "Start debugging to see the code around the PC.");
+            _memoryView.Show(0, [], [], "Start debugging, then enter a symbol or $address.");
+            _memorySnapshot = null;
             // Only if a file is actually open - EditorPane itself keeps ReadOnly true with nothing
             // open (see its constructor), and this shouldn't override that.
             if (_editorPane.OpenPath is not null)

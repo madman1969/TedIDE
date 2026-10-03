@@ -82,6 +82,15 @@ public sealed class ViceMonitorClient : IAsyncDisposable
         return ViceMonitorProtocol.DecodeCheckpointInfoBody(responseBody);
     }
 
+    /// <summary>Makes an existing checkpoint conditional: it only stops when <paramref name="condition"/>
+    /// (VICE monitor syntax, e.g. <c>A == $05</c>) holds. Throws <see cref="ViceMonitorException"/>
+    /// if VICE can't parse the condition.</summary>
+    public async Task SetConditionAsync(uint checkpointNumber, string condition, CancellationToken cancellationToken = default)
+    {
+        var body = ViceMonitorProtocol.EncodeConditionSetBody(checkpointNumber, condition);
+        await SendAsync(ViceMonitorCommand.ConditionSet, body, cancellationToken);
+    }
+
     public async Task DeleteCheckpointAsync(uint checkpointNumber, CancellationToken cancellationToken = default)
     {
         var body = ViceMonitorProtocol.EncodeCheckpointDeleteBody(checkpointNumber);

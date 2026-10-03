@@ -99,6 +99,7 @@ public sealed class DbgFile
             .GroupBy(x => x.spanId)
             .ToDictionary(g => g.Key, g => g.Select(x => x.l).ToList());
         _linesByFileAndLine = lines.ToLookup(l => (l.File, l.Line));
+        _labelsByAddress = new Lazy<List<(long Address, string Name)>>(BuildLabelIndex);
     }
 
     private readonly Dictionary<int, DbgFileEntry> _filesById;
@@ -309,6 +310,53 @@ public sealed class DbgFile
 
         return null;
     }
+
+    /// <summary>Whether <paramref name="address"/> falls inside one of the program's read-only
+    /// segments (CODE, RODATA, STARTUP, ONCE, ...) - where code lives. The call stack walker only
+    /// accepts return addresses into these.</summary>
+    public bool IsInReadOnlySegment(long address) =>
+        Segments.Any(s => s.Type == "ro" && s.Size > 0 && address >= s.Start && address < s.Start + s.Size);
+
+    /// <summary>
+    /// The label at or nearest before <paramref name="address"/> (within <paramref name="maxDistance"/>
+    /// bytes), as "name" or "name+offset" - e.g. "pushax+3" for a stop inside cc65's runtime, which
+    /// has labels but no line records or scopes. cc65's own L0001-style local labels are skipped in
+    /// favour of a real name. Null if there's no label close enough.
+    /// </summary>
+    public string? FindNearestLabel(long address, int maxDistance = 256)
+    {
+        var labels = _labelsByAddress.Value;
+        var index = labels.FindLastIndex(l => l.Address <= address);
+        if (index < 0 || address - labels[index].Address > maxDistance)
+            return null;
+        var best = labels[index];
+        var offset = address - best.Address;
+        return offset == 0 ? best.Name : $"{best.Name}+{offset}";
+    }
+
+    /// <summary>The name of a label exactly at <paramref name="address"/>, if there is one - for
+    /// annotating a disassembled operand such as <c>jsr $0A3C</c> with "pushax".</summary>
+    public string? FindLabelAt(long address)
+    {
+        var labels = _labelsByAddress.Value;
+        var index = labels.FindLastIndex(l => l.Address <= address);
+        return index >= 0 && labels[index].Address == address ? labels[index].Name : null;
+    }
+
+    private readonly Lazy<List<(long Address, string Name)>> _labelsByAddress;
+
+    private List<(long Address, string Name)> BuildLabelIndex() =>
+        Symbols
+            .Where(s => s.Type == "lab" && s.Value is not null && !IsCompilerLocalLabel(s.Name))
+            // Several names at one address: prefer a C-level one ("_main") over an alias.
+            .GroupBy(s => s.Value!.Value)
+            .Select(g => (Address: g.Key, Name: g.OrderBy(s => s.Name.StartsWith('_') ? 0 : 1).ThenBy(s => s.Name, StringComparer.Ordinal).First().Name))
+            .OrderBy(l => l.Address)
+            .ToList();
+
+    /// <summary>cc65's generated local labels: "L" followed by four hex digits.</summary>
+    private static bool IsCompilerLocalLabel(string name) =>
+        name.Length == 5 && name[0] == 'L' && name[1..].All(char.IsAsciiHexDigit);
 
     /// <summary>
     /// Assembly source, including ca65's macro (.mac) and include (.inc) files: cc65's own runtime
