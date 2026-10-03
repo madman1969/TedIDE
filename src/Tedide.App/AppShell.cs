@@ -1012,7 +1012,7 @@ public sealed class AppShell : Window
         UpdateLanguageIndicator();
         RefreshBreakpointHighlights();
         _debugLineTransformer.CurrentLineNumber = _debugLine is { } stop
-            && string.Equals(stop.FilePath, _editorPane.OpenPath, StringComparison.OrdinalIgnoreCase)
+            && _editorPane.IsShown(stop.FilePath)
                 ? stop.Line
                 : null;
         _editorPane.Editor.SetNeedsDraw();
@@ -1098,10 +1098,10 @@ public sealed class AppShell : Window
     {
         if (recordJump)
             RecordJump();
-        if (!string.Equals(_editorPane.OpenPath, filePath, StringComparison.OrdinalIgnoreCase))
+        if (!_editorPane.IsShown(filePath))
         {
             OpenFile(filePath);
-            if (!string.Equals(_editorPane.OpenPath, filePath, StringComparison.OrdinalIgnoreCase))
+            if (!_editorPane.IsShown(filePath))
                 return; // User cancelled replacing the currently open (modified) file.
         }
 
@@ -1395,7 +1395,7 @@ public sealed class AppShell : Window
     private void ApplyEditsToOpenFile(string path, List<(TextEdit Edit, int Offset)> located)
     {
         var document = _editorPane.DocumentOf(path)!;
-        var isShown = string.Equals(path, _editorPane.OpenPath, StringComparison.OrdinalIgnoreCase);
+        var isShown = _editorPane.IsShown(path);
         var editor = _editorPane.Editor;
         var caret = isShown ? editor.CaretOffset : 0;
         if (isShown)
@@ -1452,10 +1452,10 @@ public sealed class AppShell : Window
             return;
 
         RecordJump();
-        if (!string.Equals(_editorPane.OpenPath, filePath, StringComparison.OrdinalIgnoreCase))
+        if (!_editorPane.IsShown(filePath))
         {
             OpenFile(filePath);
-            if (!string.Equals(_editorPane.OpenPath, filePath, StringComparison.OrdinalIgnoreCase))
+            if (!_editorPane.IsShown(filePath))
                 return; // User cancelled replacing the currently open (modified) file.
         }
 
@@ -1481,10 +1481,10 @@ public sealed class AppShell : Window
         if (!File.Exists(entry.FilePath))
             return;
 
-        if (!string.Equals(_editorPane.OpenPath, entry.FilePath, StringComparison.OrdinalIgnoreCase))
+        if (!_editorPane.IsShown(entry.FilePath))
         {
             OpenFile(entry.FilePath);
-            if (!string.Equals(_editorPane.OpenPath, entry.FilePath, StringComparison.OrdinalIgnoreCase))
+            if (!_editorPane.IsShown(entry.FilePath))
                 return; // User cancelled replacing the currently open (modified) file.
         }
 
@@ -1518,7 +1518,7 @@ public sealed class AppShell : Window
     /// centering would jump whatever file *is* still open to this unrelated line number instead.</param>
     private void CenterEditorOnLine(string filePath, int lineNumber)
     {
-        if (!string.Equals(_editorPane.OpenPath, filePath, StringComparison.OrdinalIgnoreCase))
+        if (!_editorPane.IsShown(filePath))
             return;
 
         var editor = _editorPane.Editor;
@@ -2031,7 +2031,7 @@ public sealed class AppShell : Window
     {
         var name = dbgFile.FindEnclosingFunctionName(address) ?? dbgFile.FindNearestLabel(address) ?? "?";
         return dbgFile.FindProjectSourceLocationForAddress(address, project.Directory) is { } location
-            ? new CallFrame($"{name}  {location.FilePath}:{location.Line}", Path.Combine(project.Directory, location.FilePath), location.Line)
+            ? new CallFrame($"{name}  {DebugPath(project, location.FilePath)}:{location.Line}", Path.Combine(project.Directory, location.FilePath), location.Line)
             : new CallFrame($"{name}  (${address:X4})", null, 0);
     }
 
@@ -2067,7 +2067,7 @@ public sealed class AppShell : Window
                 && dbgFile.FindProjectSourceLocationForAddress(instruction.Address, project.Directory) is { } location
                 && location != lastLocation)
             {
-                notes.Add($"{location.FilePath}:{location.Line}");
+                notes.Add($"{DebugPath(project, location.FilePath)}:{location.Line}");
                 lastLocation = location;
             }
             rows.Add(new DisassemblyRow(instruction, instruction.Address == pc, string.Join("  ", notes)));
@@ -2207,9 +2207,11 @@ public sealed class AppShell : Window
             {
                 await client.ConnectAsync();
                 _debugClient = client;
+                Log.Debug("Debug start: connected to VICE on attempt {Attempt}", attempt + 1);
             }
             catch (Exception ex) when (ex is SocketException or IOException)
             {
+                Log.Debug("Debug start: connect attempt {Attempt} failed: {Reason}", attempt + 1, ex.Message);
                 await client.DisposeAsync();
                 await Task.Delay(250);
             }
@@ -2243,9 +2245,12 @@ public sealed class AppShell : Window
         // and nothing guarantees this continuation resumed on the UI thread. A real crash, caught
         // via Windows Event Log after this exact code path took the whole process down with
         // "Call from invalid thread" during the next draw.
-        if (_dbgFile.Symbols.FirstOrDefault(s => s.Name == "_main" && s.Type == "lab") is { Value: { } mainAddress }
+        var mainSymbol = _dbgFile.Symbols.FirstOrDefault(s => s.Name == "_main" && s.Type == "lab");
+        Log.Debug("Debug start: _main at {Address}", mainSymbol?.Value);
+        if (mainSymbol is { Value: { } mainAddress }
             && _dbgFile.FindSourceLocationForAddress(mainAddress) is { } mainLocation)
         {
+            Log.Debug("Debug start: main() is at {File}:{Line}", mainLocation.FilePath, mainLocation.Line);
             Application.Invoke(() =>
             {
                 var mainPath = Path.Combine(project.Directory, mainLocation.FilePath);
@@ -2257,6 +2262,7 @@ public sealed class AppShell : Window
         await _checkpointLock.WaitAsync();
         try
         {
+            Log.Debug("Debug start: setting checkpoints");
             await SetAllEnabledCheckpointsAsync(_dbgFile, _debugClient);
         }
         finally
@@ -2264,6 +2270,7 @@ public sealed class AppShell : Window
             _checkpointLock.Release();
         }
 
+        Log.Debug("Debug start: checkpoints set, continuing");
         Application.Invoke(() => _debugPanel.SetStatus("Running..."));
         await _debugClient.ContinueAsync();
     }
@@ -2406,6 +2413,15 @@ public sealed class AppShell : Window
     /// enclosing function name (via <see cref="_dbgFile"/>) when it resolves - e.g. code with no
     /// debug info at all (cc65's own runtime library) has no scope info, so this falls back to
     /// just "Stopped at {where}".</summary>
+    /// <summary>
+    /// A source path from the debug info, for display: as it is when relative (the startup project's
+    /// own files), else relative to the startup project - a library project's sources are compiled by
+    /// full path (see Cc65Toolchain.BuildCompileSteps), which made every stop in one a whole line of
+    /// C:\Users\... . "../Gfx/src/gfx.c" matches how the breakpoint list writes it.
+    /// </summary>
+    private static string DebugPath(TedideProject project, string path) =>
+        Path.IsPathRooted(path) ? Path.GetRelativePath(project.Directory, path).Replace('\\', '/') : path;
+
     private string FunctionAwareStoppedAt(ushort? pc, string where)
     {
         var function = pc is { } pcValue ? _dbgFile?.FindEnclosingFunctionName(pcValue) : null;
@@ -2509,7 +2525,7 @@ public sealed class AppShell : Window
             OpenSymbol((resolvedPath, resolved.Line));
             CenterEditorOnLine(resolvedPath, resolved.Line);
             SetDebugLine((resolvedPath, resolved.Line));
-            status = FunctionAwareStoppedAt(pc, $"{resolved.FilePath}:{resolved.Line}") + statusSuffix;
+            status = FunctionAwareStoppedAt(pc, $"{DebugPath(project, resolved.FilePath)}:{resolved.Line}") + statusSuffix;
         }
         else
         {

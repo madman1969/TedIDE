@@ -63,7 +63,7 @@ public sealed class ViceEmulator(string binDirectory = ViceEmulator.DefaultBinDi
     /// things like ROM/cartridge load errors here. Omit to run without redirecting output at all.
     /// </param>
     /// <param name="enableBinaryMonitor">
-    /// When true, also passes "-binarymonitor" (VICE then listens on its default 127.0.0.1:6502)
+    /// When true, also passes "-binarymonitor" and its address, <see cref="BinaryMonitorAddress"/>,
     /// so a debugging session (Tedide.Debug's ViceMonitorClient) can connect to this instance.
     /// Defaults to false so a plain Build &gt; Run Project launch is unaffected.
     /// </param>
@@ -110,12 +110,22 @@ public sealed class ViceEmulator(string binDirectory = ViceEmulator.DefaultBinDi
         return process;
     }
 
+    /// <summary>Where a debugging session's VICE listens - ViceMonitorClient.ConnectAsync's default.</summary>
+    public const string BinaryMonitorAddress = "127.0.0.1:6502";
+
     /// <summary>The VICE command-line arguments for launching <paramref name="project"/>'s built output - a pure function, split out from <see cref="Launch"/> so it's directly unit-testable without spawning a process.</summary>
     internal static List<string> BuildArguments(TedideProject project, bool enableBinaryMonitor)
     {
         var args = new List<string> { "-autostart", project.ResolvedOutputFile };
         if (enableBinaryMonitor)
+        {
+            // The address too, not just the switch: VICE saves BinaryMonitorServerAddress in its
+            // vice.ini, and one set to 127.0.0.1:6510 there made every debug session sit on
+            // "Connecting to VICE..." while VICE listened on the wrong port (confirmed live).
             args.Add("-binarymonitor");
+            args.Add("-binarymonitoraddress");
+            args.Add(BinaryMonitorAddress);
+        }
 
         // VICE remembers whichever RAM configuration was last set (in its own persisted settings),
         // which has nothing to do with this project - passing the matching flag explicitly every

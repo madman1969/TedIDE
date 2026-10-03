@@ -38,6 +38,22 @@ public sealed class EditorPaneTests : IDisposable
     }
 
     [Fact]
+    public void Open_TreatsDifferentSpellingsOfOnePathAsTheSameFile()
+    {
+        var pane = new EditorPane();
+        var main = File(Path.Combine("Game", "src", "main.c"), "int main(void) { return 0; }\n");
+
+        pane.Open(main);
+        // As the debugger hands them over: a "/" from the debug info, or a "..".
+        pane.Open(Path.Combine(_dir.FullName, "Game") + "\\src/main.c");
+        pane.Open(Path.Combine(_dir.FullName, "Gfx", "..", "Game", "src", "main.c"));
+
+        Assert.Equal([main], pane.OpenPaths);
+        Assert.True(pane.IsShown(Path.Combine(_dir.FullName, "Game") + "\\src/main.c"));
+        Assert.False(pane.IsShown(Path.Combine(_dir.FullName, "Game", "src", "other.c")));
+    }
+
+    [Fact]
     public void EachFile_KeepsItsOwnEditsUndoHistoryAndCaret()
     {
         var pane = new EditorPane();

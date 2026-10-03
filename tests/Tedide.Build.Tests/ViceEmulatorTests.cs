@@ -86,6 +86,9 @@ public class ViceEmulatorTests
         var args = ViceEmulator.BuildArguments(project, enableBinaryMonitor: true);
 
         Assert.Contains("-binarymonitor", args);
+        // Explicit, so an address saved in VICE's own settings can't move the port.
+        var address = args.IndexOf("-binarymonitoraddress");
+        Assert.Equal("127.0.0.1:6502", args[address + 1]);
     }
 
     [Fact]

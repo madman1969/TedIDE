@@ -175,7 +175,21 @@ public sealed class EditorPane : View
     }
 
     private OpenDocument? Find(string path) =>
-        _documents.FirstOrDefault(d => string.Equals(d.Path, path, StringComparison.OrdinalIgnoreCase));
+        _documents.FirstOrDefault(d => SamePath(d.Path, path));
+
+    /// <summary>
+    /// Whether two paths name the same file, however they're spelled: the debugger hands over
+    /// "Game\src/main.c" and "Game\..\Gfx\src\gfx.c" for files already open as "Game\src\main.c"
+    /// and "Gfx\src\gfx.c", and comparing them as text opened each a second time (confirmed live).
+    /// </summary>
+    public static bool SamePath(string? a, string? b) =>
+        a is not null && b is not null
+        && string.Equals(Normalize(a), Normalize(b), StringComparison.OrdinalIgnoreCase);
+
+    private static string Normalize(string path) => System.IO.Path.GetFullPath(path);
+
+    /// <summary>Whether <paramref name="path"/> is the file shown in the editor.</summary>
+    public bool IsShown(string? path) => SamePath(_active?.Path, path);
 
     public bool IsOpen(string path) => Find(path) is not null;
 
@@ -186,6 +200,7 @@ public sealed class EditorPane : View
     /// </summary>
     public void Open(string filePath)
     {
+        filePath = Normalize(filePath);
         if (Find(filePath) is { } existing)
         {
             Activate(existing);
@@ -311,7 +326,7 @@ public sealed class EditorPane : View
     {
         if (Find(oldPath) is not { } document)
             return;
-        document.Path = newPath;
+        document.Path = Normalize(newPath);
         RefreshTabs();
         if (document == _active)
         {
