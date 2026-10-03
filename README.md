@@ -274,7 +274,10 @@ to resize both panes.
 A solution can hold any number of projects. Right-click the solution, the root of the Solution
 Explorer, for **Add New Project...**, **Add Existing Project...**, **Build Solution** and **Clean
 Solution**. Right-click a project for **Set as Startup Project**, **Build**, **Clean**,
-**Settings...** and **Remove from Solution**, which leaves its files on disk.
+**Settings...**, **Remove from Solution**, which leaves its files on disk, and **Delete
+Project...**, which also sends the project's folder to the Recycle Bin after asking. A project
+whose folder also holds the solution file or another project can't be deleted, since its folder
+would take them too. Add New Project starts beside the existing projects, never inside one.
 
 - **The startup project**, shown in bold, is the one F5 builds, F6 runs and Start Debugging
   debugs; its breakpoints and symbols are the ones shown. It's saved in the `.tsln`. Without one,
@@ -625,7 +628,7 @@ an example, laid out the way GitHub's most common C project layout does (`src/`,
 | `ExportLabels` | Whether `ld65` emits a VICE-format label file (`-Ln`) to `{Name}.lbl`, next to the project file. Defaults to `false`. |
 | `GenerateDebugInfo` | Whether cc65/ca65 embed debug info (`-g`) and `ld65` consolidates it into `{Name}.dbg` (`--dbgfile`, forwarded through cl65 as `-Wl --dbgfile,path` - it has no top-level flag for this). Required for the debugger - see "Debugging" above. Defaults to `false`. |
 | `EnableSuperCpu` | Whether Build > Run Project/Debug > Start Debugging launch this project in VICE's dedicated SuperCPU emulator (`xscpu64.exe`) instead of the plain C64 one (`x64sc.exe`) - see `ViceEmulator.ExecutableNameFor` - and whether it's compiled and assembled for the SuperCPU's 65816 (`--cpu 65816`, so cc65 can use 65C02 instructions such as `STZ`/`BRA`) rather than the 6502. Only meaningful while `Target` is `C64` (the SuperCPU is a C64-specific accelerator cartridge); ignored for every other target. Defaults to `false`. |
-| `UseOpt6502` | Whether each C file's generated assembly is run through opt6502 before it's assembled - see the **opt6502** tab under "Project Settings dialog" below. Defaults to `false`. |
+| `UseOpt6502` | Whether each C file's generated assembly is run through opt6502 before it's assembled - see **opt6502** under "Project Settings dialog" below. Defaults to `false`. |
 | `Opt6502Mode` | `Size` (the default: opt6502 only removes code) or `Speed` (also inlines cc65 runtime calls inside loops) - passed to opt6502 as `-size`/`-speed`. |
 | `OutputFile` | Defaults to `<Name><platform-default-extension>` (e.g. `.prg` for C64, `.nes` for NES) in the project's own directory if not set; Tedide creates the output directory automatically if it doesn't exist yet (`ld65` itself won't). |
 | `LinkerConfigPath` | A custom `ld65` linker config file (`-C`), relative to the project directory. `null`/blank uses cl65's built-in per-target default - a custom config typically *replaces* that default rather than layering on top of it. |
@@ -645,15 +648,16 @@ A `.tsln` file lists the `.tproj` files that make up a solution (`ProjectPaths`,
 ## Project Settings dialog
 
 **Project > Settings...** opens one dialog covering everything above for the startup project (the
-Solution Explorer's project **Settings...** opens it for any project), as ten tabs sharing a
+Solution Explorer's project **Settings...** opens it for any project), as nine tabs sharing a
 single Save/Cancel footer:
 
 - **Settings** - display name, target platform, output file override, extra `cl65` arguments,
   include paths, and preprocessor defines.
 
   ![The Settings tab for CBMInfo: name, c64 target, bin/CBMInfo.prg output file, extra cl65 arguments, the include path and preprocessor defines, and a count of the project's source files](docs/images/project-settings-settings.png)
-- **Optimizer** - the `OptimizationLevel` preset, with inline help text explaining what each of
-  cc65's `-O`/`-Oi`/`-Or`/`-Os`/`-Ox`/`-Oirs` flags does.
+- **Optimizer** - both optimization passes a C file goes through: first the `OptimizationLevel`
+  preset, with a short guide to each of cc65's `-O`/`-Oi`/`-Or`/`-Os`/`-Ox`/`-Oirs` flags, then the
+  assembly optimizer below it - see **opt6502** further down.
 
   ![The Optimizer tab with -Oirs (maximum optimization) selected and a line of help for each optimization flag](docs/images/project-settings-optimizer.png)
 - **Compiler** - two checkboxes: *Generate assembly listing file* (`-l`, written under the project's
@@ -698,7 +702,7 @@ single Save/Cancel footer:
   result needs a SuperCPU (or `xscpu64`) to run.
 
   ![The SuperCPU tab: an "Enable SuperCPU support" checkbox and an explanation that it's only available for the C64 target](docs/images/project-settings-supercpu.png)
-- **opt6502** - *Optimize generated assembly with opt6502* (`UseOpt6502`), *Favour speed*
+- **opt6502** (the lower half of the Optimizer tab) - *Optimize generated assembly with opt6502* (`UseOpt6502`), *Favour speed*
   (`Opt6502Mode`), and a read-only line naming the CPU the build uses (following Target and the
   SuperCPU tab live). The optimizer is built into Tedide, so there's nothing to install.
   When on, each C file is compiled to `obj/src/foo.c.cc65.s`, opt6502 writes its optimized version to

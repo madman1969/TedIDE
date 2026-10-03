@@ -102,6 +102,23 @@ public sealed class Workspace
         return project;
     }
 
+    /// <summary>
+    /// Where Add New Project puts a new project's folder by default: beside the solution file - or,
+    /// when the solution file sits in a project's own folder (every sample's does: HelloCBM.tsln
+    /// beside HelloCBM.tproj), beside that project, so the new one is its sibling rather than
+    /// nested inside it.
+    /// </summary>
+    public string DefaultNewProjectParent()
+    {
+        if (Solution is not { } solution)
+            return System.Environment.CurrentDirectory;
+        var owner = Projects
+            .Where(p => IsInside(solution.Directory, p.Directory))
+            .OrderBy(p => p.Directory.Length)
+            .FirstOrDefault();
+        return owner is not null && Path.GetDirectoryName(owner.Directory) is { } parent ? parent : solution.Directory;
+    }
+
     /// <summary>Solution Explorer > Add Existing Project: adds a .tproj from disk to the open solution, which is saved.</summary>
     public TedideProject AddExistingProject(string projectFile)
     {

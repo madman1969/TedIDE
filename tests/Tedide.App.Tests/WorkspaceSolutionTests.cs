@@ -84,6 +84,40 @@ public class WorkspaceSolutionTests : IDisposable
         Assert.Null(workspace.ProjectFor(Path.Combine(_directory, "elsewhere.c")));
     }
 
+    [Fact]
+    public void ANewProject_DefaultsToBesideTheProjectWhoseFolderHoldsTheSolution()
+    {
+        // Like every sample: Game.tsln sits in Game's own folder.
+        var workspace = new Workspace();
+        workspace.NewProject(Path.Combine(_directory, "Game"), "Game", Cc65Target.C64);
+        Assert.Equal(_directory, workspace.DefaultNewProjectParent());
+
+        // A solution file in a folder of its own keeps new projects beside it.
+        var solution = new TedideSolution { Name = "Suite" };
+        solution.Save(Path.Combine(_directory, "Suite.tsln"));
+        solution.AddProject(TedideProject.Load(Path.Combine(_directory, "Game", "Game.tproj")));
+        solution.Save();
+        var suite = new Workspace();
+        suite.OpenSolution(solution.FilePath!);
+        Assert.Equal(_directory, suite.DefaultNewProjectParent());
+    }
+
+    [Fact]
+    public void AProjectInsideAnothersFolder_IsShownOnlyAsItsOwnProject()
+    {
+        var workspace = new Workspace();
+        var game = workspace.NewProject(Path.Combine(_directory, "Game"), "Game", Cc65Target.C64);
+        workspace.AddNewProject(Path.Combine(game.Directory, "Gfx"), "Gfx", Cc65Target.C64, ProjectOutputType.Library);
+        var explorer = new Views.SolutionExplorerTree();
+
+        explorer.Rebuild(workspace);
+
+        var projects = Assert.Single(explorer.Objects!).Children.ToList();
+        Assert.Equal(2, projects.Count);
+        Assert.DoesNotContain(projects[0].Children, n => n.Text == "Gfx");
+        Assert.DoesNotContain(Views.SolutionExplorerTree.EnumerateFiles(game.Directory), f => f.Contains(Path.Combine("Gfx", "src")));
+    }
+
     [Theory]
     [InlineData("Gfx", "gfx")]
     [InlineData("My-Lib 2", "my_lib_2")]

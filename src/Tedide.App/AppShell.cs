@@ -143,6 +143,7 @@ public sealed class AppShell : Window
         _solutionExplorer.CleanProjectRequested += project => CleanProjects([project]);
         _solutionExplorer.ProjectSettingsRequested += ShowProjectSettings;
         _solutionExplorer.RemoveProjectRequested += RemoveProject;
+        _solutionExplorer.DeleteProjectRequested += DeleteProject;
         explorerFrame.Add(_solutionExplorer);
 
         _editorFrame = new FrameView
@@ -3065,7 +3066,7 @@ public sealed class AppShell : Window
     {
         if (_workspace.Solution is not { } solution)
             return;
-        var dialog = new NewProjectDialog(solution.Directory, "Add New Project");
+        var dialog = new NewProjectDialog(_workspace.DefaultNewProjectParent(), "Add New Project");
         Application.Run(dialog);
         if (dialog.Target is not { } target || string.IsNullOrWhiteSpace(dialog.ProjectName))
             return;
@@ -3118,6 +3119,50 @@ public sealed class AppShell : Window
         if (wasStartup)
             OnStartupProjectChanged();
         AppendOutputLine($"Removed {project.Name} from the solution.");
+    });
+
+    /// <summary>
+    /// Solution Explorer > Delete Project: removes the project from the solution (as Remove from
+    /// Solution does) and sends its whole folder to the Recycle Bin, after confirming. Refused when
+    /// the folder also holds the solution file or another project - see <see cref="ProjectDeletion"/>.
+    /// Its tabs close without asking about unsaved changes, since the files are going anyway.
+    /// </summary>
+    private void DeleteProject(TedideProject project) => Guard("Deleting the project", () =>
+    {
+        if (ProjectDeletion.WhyNot(_workspace, project) is { } reason)
+        {
+            TedideMessageBox.ErrorQuery("Can't Delete Project", reason, ["OK"]);
+            return;
+        }
+
+        var choice = TedideMessageBox.Query("Delete Project",
+            $"Delete {project.Name} and everything in its folder?\n\n{project.Directory}\n\n"
+            + "The folder goes to the Recycle Bin. Other projects stop referencing it.", ["Delete", "Cancel"]);
+        if (choice != 0)
+            return;
+
+        var wasStartup = project == _workspace.ActiveProject;
+        if (wasStartup)
+            SaveLastOpenFileForActiveProject();
+        foreach (var path in _editorPane.OpenPaths.Where(p => IsSameOrInsideDirectory(p, project.Directory)).ToList())
+            _editorPane.Close(path);
+
+        // The folder first: if Windows can't recycle it (a file in use), the solution is untouched.
+        ProjectDeletion.RecycleDirectory(project.Directory);
+        _workspace.RemoveProject(project);
+
+        // The startup project's breakpoints in the deleted files go with them.
+        if (!wasStartup && _workspace.ActiveProject is { } startup
+            && _breakpoints.Breakpoints.RemoveAll(b => IsSameOrInsideDirectory(Path.GetFullPath(Path.Combine(startup.Directory, b.SourceFile)), project.Directory)) > 0)
+        {
+            _breakpoints.Save(startup.ResolvedBreakpointsFile);
+            RefreshBreakpointHighlights();
+        }
+
+        _solutionExplorer.Rebuild(_workspace);
+        if (wasStartup)
+            OnStartupProjectChanged();
+        AppendOutputLine($"Deleted {project.Name}: {project.Directory} is in the Recycle Bin.");
     });
 
     /// <summary>Solution Explorer > Set as Startup Project: the project Run, Start Debugging and

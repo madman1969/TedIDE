@@ -1,7 +1,7 @@
 # Tedide's assembly optimizer (opt6502)
 
 This optimizer runs on the assembly cc65 generates for each C file, between `cl65 -S` and the
-assemble step, when a project turns it on (Project Settings > opt6502 tab). `Cc65Toolchain` runs it
+assemble step, when a project turns it on (Project Settings > Optimizer tab). `Cc65Toolchain` runs it
 in-process. It only reads ca65 source.
 
 Its rule: every change must be one the instruction rules in `Instructions.cs` prove leaves the

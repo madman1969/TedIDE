@@ -23,8 +23,8 @@ namespace Tedide.App.Views;
 /// filesystem/project-file changes.
 ///
 /// A loaded solution is the root node, offering Add New/Existing Project and Build/Clean Solution.
-/// Each project node offers Set as Startup Project, Build, Clean, Settings and Remove from
-/// Solution; the startup project is drawn in bold, as in Visual Studio.
+/// Each project node offers Set as Startup Project, Build, Clean, Settings, Remove from Solution
+/// and Delete Project; the startup project is drawn in bold, as in Visual Studio.
 /// </summary>
 public sealed class SolutionExplorerTree : TreeView
 {
@@ -66,6 +66,7 @@ public sealed class SolutionExplorerTree : TreeView
     public event Action<TedideProject>? CleanProjectRequested;
     public event Action<TedideProject>? ProjectSettingsRequested;
     public event Action<TedideProject>? RemoveProjectRequested;
+    public event Action<TedideProject>? DeleteProjectRequested;
 
     /// <summary>The startup project, drawn in bold - see <see cref="Rebuild"/>.</summary>
     private TedideProject? _startupProject;
@@ -147,33 +148,34 @@ public sealed class SolutionExplorerTree : TreeView
         switch (node.Tag)
         {
             case TedideSolution:
-                items.Add(new MenuItem("Add New Project...", "", () => AddNewProjectRequested?.Invoke()));
-                items.Add(new MenuItem("Add Existing Project...", "", () => AddExistingProjectRequested?.Invoke()));
+                items.Add(Item("Add New Project...", () => AddNewProjectRequested?.Invoke()));
+                items.Add(Item("Add Existing Project...", () => AddExistingProjectRequested?.Invoke()));
                 items.Add(new Line());
-                items.Add(new MenuItem("Build Solution", "", () => BuildSolutionRequested?.Invoke()));
-                items.Add(new MenuItem("Clean Solution", "", () => CleanSolutionRequested?.Invoke()));
+                items.Add(Item("Build Solution", () => BuildSolutionRequested?.Invoke()));
+                items.Add(Item("Clean Solution", () => CleanSolutionRequested?.Invoke()));
                 break;
             case TedideProject project:
                 if (project != _startupProject)
-                    items.Add(new MenuItem("Set as Startup Project", "", () => SetStartupProjectRequested?.Invoke(project)));
-                items.Add(new MenuItem("Build", "", () => BuildProjectRequested?.Invoke(project)));
-                items.Add(new MenuItem("Clean", "", () => CleanProjectRequested?.Invoke(project)));
-                items.Add(new MenuItem("Settings...", "", () => ProjectSettingsRequested?.Invoke(project)));
+                    items.Add(Item("Set as Startup Project", () => SetStartupProjectRequested?.Invoke(project)));
+                items.Add(Item("Build", () => BuildProjectRequested?.Invoke(project)));
+                items.Add(Item("Clean", () => CleanProjectRequested?.Invoke(project)));
+                items.Add(Item("Settings...", () => ProjectSettingsRequested?.Invoke(project)));
                 if (_hasSolution)
                 {
                     items.Add(new Line());
-                    items.Add(new MenuItem("Remove from Solution", "", () => RemoveProjectRequested?.Invoke(project)));
+                    items.Add(Item("Remove from Solution", () => RemoveProjectRequested?.Invoke(project)));
+                    items.Add(Item("Delete Project...", () => DeleteProjectRequested?.Invoke(project)));
                 }
                 break;
             case string path when Directory.Exists(path):
-                items.Add(new MenuItem("New File...", "", () => NewFileRequested?.Invoke(path)));
-                items.Add(new MenuItem("Add Existing Item...", "", () => AddExistingItemRequested?.Invoke(path)));
+                items.Add(Item("New File...", () => NewFileRequested?.Invoke(path)));
+                items.Add(Item("Add Existing Item...", () => AddExistingItemRequested?.Invoke(path)));
                 break;
             case string path when File.Exists(path):
-                items.Add(new MenuItem("New File...", "", () => NewFileRequested?.Invoke(Path.GetDirectoryName(path)!)));
-                items.Add(new MenuItem("Add Existing Item...", "", () => AddExistingItemRequested?.Invoke(Path.GetDirectoryName(path)!)));
-                items.Add(new MenuItem("Rename File", "", () => RenameFileRequested?.Invoke(path)));
-                items.Add(new MenuItem("Delete File", "", () => DeleteFileRequested?.Invoke(path)));
+                items.Add(Item("New File...", () => NewFileRequested?.Invoke(Path.GetDirectoryName(path)!)));
+                items.Add(Item("Add Existing Item...", () => AddExistingItemRequested?.Invoke(Path.GetDirectoryName(path)!)));
+                items.Add(Item("Rename File", () => RenameFileRequested?.Invoke(path)));
+                items.Add(Item("Delete File", () => DeleteFileRequested?.Invoke(path)));
                 break;
         }
 
@@ -184,6 +186,20 @@ public sealed class SolutionExplorerTree : TreeView
         _contextMenu.MakeVisible(screenPosition);
         return true;
     }
+
+    /// <summary>
+    /// A context-menu item whose action runs on the next main-loop pass, once the menu has finished
+    /// handling the choice - including passing it to the tree as an activation, which the
+    /// <see cref="_contextMenuOpen"/> guard then still catches. Run straight away, an action that
+    /// opened a dialog (Delete Project's confirmation) let the guard lapse inside the dialog's own
+    /// loop, and the tree collapsed afterwards (confirmed live).
+    /// </summary>
+    private static MenuItem Item(string text, Action action) =>
+        new(text, "", () => Application.AddTimeout(TimeSpan.Zero, () =>
+        {
+            action();
+            return false;
+        }));
 
     /// <summary>A folder, or the "Generated Files" group - drawn with <see cref="FolderScheme"/>.</summary>
     internal sealed class FolderNode : TreeNode;
@@ -253,8 +269,7 @@ public sealed class SolutionExplorerTree : TreeView
     /// </summary>
     public static IEnumerable<string> EnumerateFiles(string directory)
     {
-        var subdirectories = Directory.EnumerateDirectories(directory)
-            .Where(d => !IgnoredDirectoryNames.Contains(Path.GetFileName(d), StringComparer.OrdinalIgnoreCase));
+        var subdirectories = Directory.EnumerateDirectories(directory).Where(IsBrowsableSubdirectory);
 
         foreach (var subdirectory in subdirectories)
             foreach (var file in EnumerateFiles(subdirectory))
@@ -307,10 +322,20 @@ public sealed class SolutionExplorerTree : TreeView
         projectNode.Children.Add(generatedNode);
     }
 
+    /// <summary>
+    /// Whether a project's subfolder is shown as part of it: not bin/obj/.git/.vs, and not a folder
+    /// holding a .tproj of its own - that's another project, shown (if it's in the solution) as its
+    /// own node rather than as a folder of this one. A project created inside another's folder
+    /// appeared twice, once nested under it.
+    /// </summary>
+    private static bool IsBrowsableSubdirectory(string directory) =>
+        !IgnoredDirectoryNames.Contains(Path.GetFileName(directory), StringComparer.OrdinalIgnoreCase)
+        && !Directory.EnumerateFiles(directory, "*" + TedideProject.FileExtension).Any();
+
     private static void AddDirectoryContents(TreeNode parent, string directory)
     {
         var subdirectories = Directory.EnumerateDirectories(directory)
-            .Where(d => !IgnoredDirectoryNames.Contains(Path.GetFileName(d), StringComparer.OrdinalIgnoreCase))
+            .Where(IsBrowsableSubdirectory)
             .OrderBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase);
 
         foreach (var subdirectory in subdirectories)
