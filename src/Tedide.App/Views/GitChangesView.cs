@@ -16,7 +16,8 @@ namespace Tedide.App.Views;
 /// and Delete (Changes only) discards its changes. Every control is a direct child of this view: Tab only
 /// moves between peers of the same SuperView, so a list nested in a frame couldn't be reached.
 /// Fetch, Pull and Push sync the branch with its remote; Cancel stops one that's running.
-/// Branches (beside the branch name) opens <see cref="BranchesDialog"/>, History
+/// Amend last commit makes the commit buttons replace the last commit; Stashes... opens
+/// <see cref="StashesDialog"/>. Branches (beside the branch name) opens <see cref="BranchesDialog"/>, History
 /// <see cref="HistoryDialog"/>. While a merge, rebase, cherry-pick or revert is stopped on
 /// conflicts, Enter on a conflicted file opens <see cref="ConflictDialog"/> and the commit buttons
 /// become Continue and Abort.
@@ -37,6 +38,7 @@ public sealed class GitChangesView : View
     private readonly Button _commitButton;
     private readonly Button _commitAllButton;
     private GitOperation _operation;
+    private readonly CheckBox _amendBox;
     private List<GitFileStatus> _changes = [];
     private List<GitFileStatus> _staged = [];
     private string _shown = "";
@@ -52,8 +54,16 @@ public sealed class GitChangesView : View
     /// <summary>B on a file: show who last changed each of its lines.</summary>
     public event Action<GitFileStatus>? BlameRequested;
 
-    /// <summary>The message, and whether to stage everything first (Commit All).</summary>
-    public event Action<string, bool>? CommitRequested;
+    /// <summary>The message, whether to stage everything first (Commit All), and whether to amend
+    /// the last commit instead of making a new one.</summary>
+    public event Action<string, bool, bool>? CommitRequested;
+
+    /// <summary>Amend last commit ticked (true) or cleared - so the host can load or drop the last
+    /// commit's message.</summary>
+    public event Action<bool>? AmendToggled;
+
+    /// <summary>The Stashes button: put changes away, or bring them back.</summary>
+    public event Action? StashesRequested;
 
     public event Action? RefreshRequested;
 
@@ -91,6 +101,8 @@ public sealed class GitChangesView : View
         var historyButton = Button("History", Pos.Right(branchesButton) + 2, 0, () => HistoryRequested?.Invoke());
         _branchLabel = new Label { X = Pos.Right(historyButton) + 2, Y = 0, Width = Dim.Percent(leftWidth) - 27, HotKeySpecifier = noHotKey };
         var messageLabel = new Label { Text = "Commit message:", X = 0, Y = 2 };
+        _amendBox = new CheckBox { Text = "Amend last commit", X = Pos.Right(messageLabel) + 4, Y = 2, HotKeySpecifier = noHotKey };
+        _amendBox.ValueChanged += (_, _) => AmendToggled?.Invoke(IsAmending);
         _messageField = new TextView { X = 0, Y = 3, Width = Dim.Percent(leftWidth), Height = 5, BorderStyle = LineStyle.Single };
 
         // While a merge, rebase, cherry-pick or revert is stopped these become Continue and Abort -
@@ -99,6 +111,7 @@ public sealed class GitChangesView : View
         var commitAllButton = _commitAllButton = Button("Commit All", Pos.Right(commitButton) + 2, 9, () => Commit(stageAll: true));
         var stageAllButton = Button("Stage All", 0, 11, () => StageRequested?.Invoke(_changes));
         var unstageAllButton = Button("Unstage All", Pos.Right(stageAllButton) + 2, 11, () => UnstageRequested?.Invoke(_staged));
+        var stashesButton = Button("Stashes...", Pos.Right(unstageAllButton) + 2, 11, () => StashesRequested?.Invoke());
         var fetchButton = Button("Fetch", 0, 13, () => FetchRequested?.Invoke());
         var pullButton = Button("Pull", Pos.Right(fetchButton) + 2, 13, () => PullRequested?.Invoke());
         var pushButton = Button("Push", Pos.Right(pullButton) + 2, 13, () => PushRequested?.Invoke());
@@ -123,10 +136,10 @@ public sealed class GitChangesView : View
         Wire(_changesList, () => _changes, staged: false);
         Wire(_stagedList, () => _staged, staged: true);
 
-        _actions.AddRange([branchesButton, historyButton, _messageField, commitButton, commitAllButton, stageAllButton, unstageAllButton, fetchButton, pullButton, pushButton]);
+        _actions.AddRange([branchesButton, historyButton, _messageField, commitButton, commitAllButton, stageAllButton, unstageAllButton, stashesButton, fetchButton, pullButton, pushButton]);
         // Switching branches mid-pull would be trouble - one git operation on the branch at a time.
-        _syncButtons.AddRange([branchesButton, fetchButton, pullButton, pushButton]);
-        Add([branchesButton, historyButton, _branchLabel, messageLabel, _messageField, commitButton, commitAllButton, stageAllButton, unstageAllButton,
+        _syncButtons.AddRange([branchesButton, stashesButton, fetchButton, pullButton, pushButton]);
+        Add([branchesButton, historyButton, _branchLabel, messageLabel, _amendBox, _messageField, commitButton, commitAllButton, stageAllButton, unstageAllButton, stashesButton,
             fetchButton, pullButton, pushButton, _refreshButton, _cancelButton, _changesList, _stagedList]);
         SetStatus(null, null);
     }
@@ -200,14 +213,27 @@ public sealed class GitChangesView : View
     private void Commit(bool stageAll)
     {
         if (_operation == GitOperation.None)
-            CommitRequested?.Invoke(_messageField.Text, stageAll);
+            CommitRequested?.Invoke(_messageField.Text, stageAll, IsAmending);
         else if (stageAll)
             AbortRequested?.Invoke(_operation);
         else
             ContinueRequested?.Invoke(_operation, _messageField.Text);
     }
 
-    public void ClearMessage() => _messageField.Text = "";
+    /// <summary>After a commit: an empty message, and Amend cleared.</summary>
+    public void ClearMessage()
+    {
+        _messageField.Text = "";
+        _amendBox.Value = CheckState.UnChecked;
+    }
+
+    public bool IsAmending => _amendBox.Value == CheckState.Checked;
+
+    public string Message
+    {
+        get => _messageField.Text;
+        set => _messageField.Text = value;
+    }
 
     /// <summary>Shows <paramref name="status"/>, or "not in a repository" when it's null. Lists are
     /// only reloaded when something changed, so a periodic refresh doesn't move the selection.</summary>
@@ -263,6 +289,10 @@ public sealed class GitChangesView : View
         _branchLabel.Text = _activity is null ? _branchText : $"{_branchText}  -  {_activity}";
         var name = _operation.Describe() is { Length: > 0 } operation ? char.ToUpperInvariant(operation[0]) + operation[1..] : "";
         _commitButton.Text = _operation == GitOperation.None ? "Commit Staged" : $"Continue {name}";
+        // Amending mid-merge or mid-rebase would rewrite the wrong commit.
+        _amendBox.Enabled = _hasRepository && _operation == GitOperation.None;
+        if (_operation != GitOperation.None)
+            _amendBox.Value = CheckState.UnChecked;
         _commitAllButton.Text = _operation == GitOperation.None ? "Commit All" : $"Abort {name}";
         foreach (var action in _actions)
             action.Enabled = _hasRepository;

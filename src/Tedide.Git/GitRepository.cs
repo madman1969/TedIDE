@@ -218,10 +218,14 @@ public sealed class GitRepository
             : await GitRunner.RunAsync(Root, ["restore", "--", .. tracked], cancellationToken: cancellationToken);
     }
 
-    /// <summary>Commits what's staged, with <paramref name="message"/> (passed on standard input, so
-    /// any text is safe). With <paramref name="stageAll"/>, every change - new files included - is
-    /// staged first, as Visual Studio's Commit All does.</summary>
-    public async Task<GitResult> CommitAsync(string message, bool stageAll, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Commits what's staged, with <paramref name="message"/> (passed on standard input, so any
+    /// text is safe). With <paramref name="stageAll"/>, every change - new files included - is
+    /// staged first, as Visual Studio's Commit All does. With <paramref name="amend"/>, the last
+    /// commit is replaced instead - by one with what's staged added and <paramref name="message"/>,
+    /// or its own message when that's empty.
+    /// </summary>
+    public async Task<GitResult> CommitAsync(string message, bool stageAll, bool amend = false, CancellationToken cancellationToken = default)
     {
         if (stageAll)
         {
@@ -229,8 +233,46 @@ public sealed class GitRepository
             if (!staged.Succeeded)
                 return staged;
         }
-        return await GitRunner.RunAsync(Root, ["commit", "-F", "-"], message, cancellationToken);
+        if (amend && string.IsNullOrWhiteSpace(message))
+            return await GitRunner.RunAsync(Root, ["commit", "--amend", "--no-edit"], cancellationToken: cancellationToken);
+        return await GitRunner.RunAsync(Root, amend ? ["commit", "--amend", "-F", "-"] : ["commit", "-F", "-"], message, cancellationToken);
     }
+
+    /// <summary>HEAD's full commit message - for editing it when amending. Null before the first commit.</summary>
+    public async Task<string?> GetLastCommitMessageAsync(CancellationToken cancellationToken = default)
+    {
+        var result = await GitRunner.RunAsync(Root, ["log", "-1", "--format=%B"], cancellationToken: cancellationToken);
+        return result.Succeeded ? result.Output.TrimEnd() : null;
+    }
+
+    /// <summary>
+    /// Puts every uncommitted change - staged, unstaged and new files - away in a new stash, with
+    /// <paramref name="message"/> if given, leaving the working tree clean. git reports "No local
+    /// changes to save" (and succeeds) when there's nothing.
+    /// </summary>
+    public Task<GitResult> StashAsync(string? message = null, CancellationToken cancellationToken = default) =>
+        GitRunner.RunAsync(Root,
+            string.IsNullOrWhiteSpace(message) ? ["stash", "push", "--include-untracked"] : ["stash", "push", "--include-untracked", "-m", message.Trim()],
+            cancellationToken: cancellationToken);
+
+    /// <summary>The stashes, newest first.</summary>
+    public async Task<IReadOnlyList<GitStash>> GetStashesAsync(CancellationToken cancellationToken = default)
+    {
+        var result = await GitRunner.RunAsync(Root, ["stash", "list", "--format=%gd%x1f%gs%x1f%ct"], cancellationToken: cancellationToken);
+        return result.Succeeded ? GitStash.Parse(result.Output) : [];
+    }
+
+    /// <summary>
+    /// Puts <paramref name="stash"/>'s changes back - and, with <paramref name="drop"/> (pop),
+    /// removes the stash once they're in. Changes that clash with the working tree stop as
+    /// conflicts, and the stash is kept.
+    /// </summary>
+    public Task<GitResult> UnstashAsync(GitStash stash, bool drop, CancellationToken cancellationToken = default) =>
+        GitRunner.RunAsync(Root, ["stash", drop ? "pop" : "apply", stash.Name], cancellationToken: cancellationToken);
+
+    /// <summary>Deletes <paramref name="stash"/> without applying it. Can't be undone.</summary>
+    public Task<GitResult> DropStashAsync(GitStash stash, CancellationToken cancellationToken = default) =>
+        GitRunner.RunAsync(Root, ["stash", "drop", stash.Name], cancellationToken: cancellationToken);
 
     /// <summary>
     /// The local branches, then the remote ones nothing local tracks yet - each remote's

@@ -41,7 +41,9 @@ public sealed record GitResult(int ExitCode, string Output, string Error)
                     ? "git stopped on conflicts - the files marked ! in the Git tab. Press Enter on each to resolve it, then Continue; or Abort to put everything back as it was."
                 : message.Contains("would be overwritten by checkout", StringComparison.Ordinal)
                   || message.Contains("before you switch branches", StringComparison.Ordinal)
-                    ? "Your uncommitted changes clash with that branch's version of the same files. Commit or discard them first, then switch."
+                    ? "Your uncommitted changes clash with that branch's version of the same files. Commit or stash them (Stashes... in the Git tab) first, then switch."
+                : message.Contains("would be overwritten by merge", StringComparison.Ordinal)
+                    ? "Your uncommitted changes clash with what's coming in. Commit or stash them (Stashes... in the Git tab) first, then try again."
                 : message.Contains("is not fully merged", StringComparison.Ordinal)
                     ? "That branch has commits that aren't merged anywhere else, so deleting it would lose them. Tedide only deletes merged branches; use git branch -D in a terminal if you really mean to."
                 : message.Contains("is not a valid branch name", StringComparison.Ordinal)

@@ -352,6 +352,101 @@ public sealed class GitRemoteTests : IDisposable
     }
 
     [Fact]
+    public async Task Amend_ReplacesTheLastCommit_KeepingOrChangingItsMessage()
+    {
+        var repository = await SetUpAsync();                  // "First"
+        Write(Mine, "main.c", "one\ntwo\nthree\nfour\n");
+        await repository.CommitAsync("Second, with a tpyo\n\nAnd a body.", stageAll: true);
+        Assert.Equal("Second, with a tpyo\n\nAnd a body.", await repository.GetLastCommitMessageAsync());
+
+        // A new message, nothing else staged.
+        Assert.True((await repository.CommitAsync("Second", stageAll: false, amend: true)).Succeeded);
+        var log = await repository.GetLogAsync();
+        Assert.Equal(["Second", "First"], log.Select(c => c.Subject));
+
+        // An empty message keeps it; what's staged joins the commit.
+        Write(Mine, "forgotten.c", "x\n");
+        Assert.True((await repository.CommitAsync("", stageAll: true, amend: true)).Succeeded);
+        log = await repository.GetLogAsync();
+        Assert.Equal(["Second", "First"], log.Select(c => c.Subject));
+        Assert.Contains(new GitCommitFile('A', "forgotten.c"), log[0].Files);
+        Assert.Empty((await repository.GetStatusAsync())!.Files);
+    }
+
+    [Fact]
+    public async Task Stash_PutsEverythingAway_AndApplyPopDropBringItBackOrNot()
+    {
+        var repository = await SetUpAsync();
+        var main = Path.Combine(Mine, "main.c");
+        Write(Mine, "main.c", "edited\n");
+        Write(Mine, "new.c", "new\n");
+
+        Assert.True((await repository.StashAsync("Work in progress")).Succeeded);
+        Assert.Empty((await repository.GetStatusAsync())!.Files);
+        Assert.Equal("one\ntwo\nthree\n", File.ReadAllText(main));
+        Assert.False(File.Exists(Path.Combine(Mine, "new.c")));
+        var stash = Assert.Single(await repository.GetStashesAsync());
+        Assert.Equal("stash@{0}", stash.Name);
+        Assert.Equal("On main: Work in progress", stash.Description);
+
+        // Nothing left to stash: git says so and succeeds.
+        Assert.Contains("No local changes to save", (await repository.StashAsync()).Message);
+
+        // Apply keeps the stash; pop removes it.
+        Assert.True((await repository.UnstashAsync(stash, drop: false)).Succeeded);
+        Assert.Equal("edited\n", File.ReadAllText(main));
+        Assert.Single(await repository.GetStashesAsync());
+        await Git(Mine, "checkout", "--", "main.c");
+        File.Delete(Path.Combine(Mine, "new.c"));
+        Assert.True((await repository.UnstashAsync(stash, drop: true)).Succeeded);
+        Assert.Equal("edited\n", File.ReadAllText(main));
+        Assert.True(File.Exists(Path.Combine(Mine, "new.c")));
+        Assert.Empty(await repository.GetStashesAsync());
+
+        // Drop throws one away.
+        await repository.StashAsync();
+        Assert.True((await repository.DropStashAsync(Assert.Single(await repository.GetStashesAsync()))).Succeeded);
+        Assert.Empty(await repository.GetStashesAsync());
+        Assert.Equal("one\ntwo\nthree\n", File.ReadAllText(main));
+    }
+
+    [Fact]
+    public async Task Pop_ThatClashes_StopsOnAConflict_AndKeepsTheStash()
+    {
+        var repository = await SetUpAsync();
+        Write(Mine, "main.c", "one\nSTASHED\nthree\n");
+        await repository.StashAsync();
+        Write(Mine, "main.c", "one\nCOMMITTED\nthree\n");
+        await repository.CommitAsync("Meanwhile", stageAll: true);
+
+        var popped = await repository.UnstashAsync(Assert.Single(await repository.GetStashesAsync()), drop: true);
+
+        Assert.False(popped.Succeeded);
+        Assert.True(Assert.Single((await repository.GetStatusAsync())!.Files).IsConflicted);
+        Assert.Single(await repository.GetStashesAsync());
+    }
+
+    [Fact]
+    public void Stash_ParseReadsNameDescriptionAndTime()
+    {
+        // \u001f, not \x1f: \x takes up to four hex digits, so "\x1f1759..." is one wrong character.
+        var stashes = GitStash.Parse("stash@{0}\u001fOn main: tidy\u001f1759500000\nstash@{1}\u001fWIP on main: abc1234 First\u001f1759400000\n");
+        Assert.Equal(
+            [
+                new GitStash("stash@{0}", "On main: tidy", DateTimeOffset.FromUnixTimeSeconds(1759500000)),
+                new GitStash("stash@{1}", "WIP on main: abc1234 First", DateTimeOffset.FromUnixTimeSeconds(1759400000)),
+            ],
+            stashes);
+    }
+
+    [Fact]
+    public void Explanation_SuggestsStashingWhenChangesBlockAPull()
+    {
+        var error = "error: Your local changes to the following files would be overwritten by merge:\n\tmain.c";
+        Assert.StartsWith("Your uncommitted changes clash with what's coming in. Commit or stash them", new GitResult(1, "", error).Explanation);
+    }
+
+    [Fact]
     public void Branch_ParseSkipsSymbolicRefs()
     {
         var output = string.Join('\n',

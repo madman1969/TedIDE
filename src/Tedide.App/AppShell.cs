@@ -333,6 +333,8 @@ public sealed class AppShell : Window
         _gitView.RefreshRequested += () => _git.RequestRefresh();
         _gitView.FetchRequested += FetchFromRemote;
         _gitView.BranchesRequested += () => _ = ShowBranchesAsync();
+        _gitView.AmendToggled += amending => _ = LoadAmendMessageAsync(amending);
+        _gitView.StashesRequested += () => _ = ShowStashesAsync();
         _gitView.HistoryRequested += () => _ = ShowHistoryAsync(null);
         _gitView.FileHistoryRequested += file => _ = ShowHistoryAsync(file.Path);
         _gitView.ConflictRequested += ResolveConflict;
@@ -584,9 +586,22 @@ public sealed class AppShell : Window
 
     /// <summary>Git tab > Commit Staged / Commit All. Saves open files first (see <see cref="SaveOpenFiles"/>),
     /// then reports the new commit in Output.</summary>
-    private void Commit(string message, bool stageAll)
+    private void Commit(string message, bool stageAll, bool amend)
     {
-        if (string.IsNullOrWhiteSpace(message))
+        if (amend)
+        {
+            if (_git.PrimaryStatus is { HasCommits: false })
+            {
+                TedideMessageBox.ErrorQuery("Amend", "There's no commit yet to amend.", ["OK"]);
+                return;
+            }
+            // The last commit is already on the remote when the branch isn't ahead of it.
+            if (_git.PrimaryStatus is { Upstream: { } upstream, Ahead: 0 } && TedideMessageBox.Query("Amend Pushed Commit",
+                    RenameSymbolDialog.Wrap($"The last commit is already pushed to {upstream}. Amending replaces it, so the next push will be rejected - " +
+                        "it would need a force push, which Tedide never does. Amend anyway?"), ["Amend", "Cancel"]) != 0)
+                return;
+        }
+        else if (string.IsNullOrWhiteSpace(message))
         {
             TedideMessageBox.ErrorQuery("Commit", "Write a commit message first.", ["OK"]);
             return;
@@ -594,16 +609,98 @@ public sealed class AppShell : Window
         if (!SaveOpenFiles())
             return;
         string? head = null;
-        _ = RunGitAsync("Commit", async repository =>
+        _ = RunGitAsync(amend ? "Amend" : "Commit", async repository =>
         {
-            var result = await repository.CommitAsync(message.Trim(), stageAll);
+            var result = await repository.CommitAsync(message.Trim(), stageAll, amend);
             if (result.Succeeded)
                 head = await repository.DescribeHeadAsync();
             return result;
         }, () =>
         {
             _gitView.ClearMessage();
-            AppendOutputLine($"Committed {head}");
+            AppendOutputLine($"{(amend ? "Amended" : "Committed")} {head}");
+        });
+    }
+
+    /// <summary>The message Amend last commit loaded into the commit box, to recognise it unedited.</summary>
+    private string? _amendMessage;
+
+    /// <summary>
+    /// Amend last commit ticked: an empty commit box gets the last commit's message to edit.
+    /// Cleared: that message goes again, unless it's been edited.
+    /// </summary>
+    private async Task LoadAmendMessageAsync(bool amending)
+    {
+        if (!amending)
+        {
+            if (_amendMessage is not null && _gitView.Message == _amendMessage)
+                _gitView.Message = "";
+            _amendMessage = null;
+            return;
+        }
+        if (_gitView.Message.Trim().Length > 0 || _git.Primary is not { } repository)
+            return;
+        var message = await repository.GetLastCommitMessageAsync();
+        OnUiThread(() =>
+        {
+            if (message is null || !_gitView.IsAmending || _gitView.Message.Trim().Length > 0)
+                return;
+            _gitView.Message = message;
+            _amendMessage = message;
+        });
+    }
+
+    /// <summary>
+    /// Git tab > Stashes: <see cref="StashesDialog"/>, then stash every change away, or pop, apply
+    /// or drop a stash. Open files are saved first so git takes what's on screen, and the editor
+    /// follows the files afterwards - even when a pop stops on conflicts, which keeps the stash.
+    /// Dropping reopens the list.
+    /// </summary>
+    private async Task ShowStashesAsync()
+    {
+        if (_syncCancellation is not null || _git.Primary is not { } repository)
+            return;
+        var stashes = await repository.GetStashesAsync();
+        OnUiThread(() =>
+        {
+            var changes = _git.Files.Values.Count(f => repository.Contains(f.Path)) + _editorPane.ModifiedPaths.Count(p => !_git.Files.ContainsKey(p));
+            var dialog = new StashesDialog(stashes, changes);
+            Application.Run(dialog);
+            if (dialog.Choice is not { } choice)
+                return;
+            if (choice.Action == StashAction.Drop)
+            {
+                var stash = choice.Stash!;
+                if (TedideMessageBox.Query("Drop Stash", RenameSymbolDialog.Wrap($"Delete {stash.Name} ({stash.Description})? Its changes are lost - this can't be undone."),
+                        ["Drop", "Cancel"]) == 0)
+                    _ = RunGitAsync("Dropping the Stash", r => r.DropStashAsync(stash), () =>
+                    {
+                        AppendOutputLine($"git: Dropped {stash.Name}.");
+                        _ = ShowStashesAsync();
+                    });
+                return;
+            }
+            if (!SaveOpenFiles())
+                return;
+            var projectFiles = ProjectFileContents();
+            var (what, operation) = choice.Action switch
+            {
+                StashAction.Stash => ("Stashing", (Func<GitRepository, Task<GitResult>>)(r => r.StashAsync(choice.Message))),
+                StashAction.Pop => ("Popping the Stash", r => r.UnstashAsync(choice.Stash!, drop: true)),
+                _ => ("Applying the Stash", r => r.UnstashAsync(choice.Stash!, drop: false)),
+            };
+            GitResult? outcome = null;
+            _ = RunGitAsync(what, async r => outcome = await operation(r), () =>
+            {
+                var report = outcome?.Message ?? "";
+                AppendOutputLine(choice.Action switch
+                {
+                    StashAction.Stash when report.Contains("No local changes to save", StringComparison.Ordinal) => "git: Nothing to stash.",
+                    StashAction.Stash => "git: Changes stashed.",
+                    StashAction.Pop => $"git: Popped {choice.Stash!.Name}.",
+                    _ => $"git: Applied {choice.Stash!.Name} (kept).",
+                });
+            }, () => FollowWorkingTree(projectFiles));
         });
     }
 
