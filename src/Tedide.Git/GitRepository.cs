@@ -2,14 +2,23 @@ namespace Tedide.Git;
 
 /// <summary>
 /// A git working tree, by its root folder, and the handful of operations Tedide offers on it:
-/// status, blame for one line, a file's diff against HEAD, stage, unstage, discard and commit. Every method runs git in the
-/// background and returns its result; nothing here touches the UI.
+/// status, blame, diffs, history, stage, unstage, discard, commit, branches, fetch/pull/push and
+/// resolving conflicts. Every method runs git in the background and returns its result; nothing
+/// here touches the UI.
 /// </summary>
 public sealed class GitRepository
 {
     public string Root { get; }
 
-    private GitRepository(string root) => Root = root;
+    /// <summary>The repository's .git folder (a worktree's own, for a linked worktree) - where git
+    /// keeps the files that say a merge or rebase is in progress.</summary>
+    public string GitDirectory { get; }
+
+    private GitRepository(string root, string gitDirectory)
+    {
+        Root = root;
+        GitDirectory = gitDirectory;
+    }
 
     /// <summary>The repository <paramref name="directory"/> is in, or null if it isn't in one (or
     /// git isn't installed - the IDE then simply shows no git information).</summary>
@@ -17,9 +26,9 @@ public sealed class GitRepository
     {
         if (!Directory.Exists(directory))
             return null;
-        var result = await GitRunner.RunAsync(directory, ["rev-parse", "--show-toplevel"], cancellationToken: cancellationToken);
-        return result.Succeeded && result.Output.Trim() is { Length: > 0 } root
-            ? new GitRepository(Path.GetFullPath(root))
+        var result = await GitRunner.RunAsync(directory, ["rev-parse", "--show-toplevel", "--absolute-git-dir"], cancellationToken: cancellationToken);
+        return result.Succeeded && result.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) is [var root, var gitDirectory]
+            ? new GitRepository(Path.GetFullPath(root), Path.GetFullPath(gitDirectory))
             : null;
     }
 
@@ -27,7 +36,88 @@ public sealed class GitRepository
     {
         var result = await GitRunner.RunAsync(Root, ["status", "--porcelain=v2", "--branch", "-z", "--untracked-files=all"],
             cancellationToken: cancellationToken);
-        return result.Succeeded ? GitStatus.Parse(result.Output, Root) : null;
+        return result.Succeeded ? GitStatus.Parse(result.Output, Root) with { Operation = GetOperation() } : null;
+    }
+
+    /// <summary>The merge, rebase, cherry-pick or revert that's stopped part-way (on conflicts, or
+    /// waiting to be continued), read from the marker files git leaves in its folder.</summary>
+    public GitOperation GetOperation() =>
+        Directory.Exists(Path.Combine(GitDirectory, "rebase-merge")) || Directory.Exists(Path.Combine(GitDirectory, "rebase-apply"))
+            ? GitOperation.Rebase
+        : File.Exists(Path.Combine(GitDirectory, "MERGE_HEAD")) ? GitOperation.Merge
+        : File.Exists(Path.Combine(GitDirectory, "CHERRY_PICK_HEAD")) ? GitOperation.CherryPick
+        : File.Exists(Path.Combine(GitDirectory, "REVERT_HEAD")) ? GitOperation.Revert
+        : GitOperation.None;
+
+    /// <summary>
+    /// Settles a conflicted file by taking one side whole - <paramref name="keepMine"/> for the
+    /// user's own work, else the incoming change - and marks it resolved. During a rebase git's
+    /// "ours" is the branch being rebased onto and "theirs" the user's commit, so the sides swap.
+    /// </summary>
+    public async Task<GitResult> ResolveWithAsync(string file, bool keepMine, GitOperation operation, CancellationToken cancellationToken = default)
+    {
+        var side = keepMine != (operation == GitOperation.Rebase) ? "--ours" : "--theirs";
+        // Brings the conflict back first, from the resolve-undo record git keeps: once a file's
+        // resolved its two sides are gone from the index, and choosing again took the resolved
+        // version whatever the side (caught by a test).
+        await GitRunner.RunAsync(Root, ["checkout", "-m", "--", Relative(file)], cancellationToken: cancellationToken);
+        var taken = await GitRunner.RunAsync(Root, ["checkout", side, "--", Relative(file)], cancellationToken: cancellationToken);
+        return taken.Succeeded
+            ? await GitRunner.RunAsync(Root, ["add", "--", Relative(file)], cancellationToken: cancellationToken)
+            : taken;
+    }
+
+    /// <summary>
+    /// Finishes <paramref name="operation"/> once its conflicts are resolved: a merge commits
+    /// (with <paramref name="message"/>, else git's prepared message), the others continue. git is
+    /// never allowed an editor - nobody would see it.
+    /// </summary>
+    public Task<GitResult> ContinueAsync(GitOperation operation, string? message = null, CancellationToken cancellationToken = default) =>
+        operation switch
+        {
+            GitOperation.Merge when !string.IsNullOrWhiteSpace(message) =>
+                GitRunner.RunAsync(Root, ["-c", "core.editor=true", "commit", "-F", "-"], message.Trim(), cancellationToken),
+            GitOperation.Merge => GitRunner.RunAsync(Root, ["-c", "core.editor=true", "commit", "--no-edit"], cancellationToken: cancellationToken),
+            GitOperation.Rebase => GitRunner.RunAsync(Root, ["-c", "core.editor=true", "rebase", "--continue"], cancellationToken: cancellationToken),
+            GitOperation.CherryPick => GitRunner.RunAsync(Root, ["-c", "core.editor=true", "cherry-pick", "--continue"], cancellationToken: cancellationToken),
+            GitOperation.Revert => GitRunner.RunAsync(Root, ["-c", "core.editor=true", "revert", "--continue"], cancellationToken: cancellationToken),
+            _ => Task.FromResult(new GitResult(1, "", "Nothing is in progress to continue.")),
+        };
+
+    /// <summary>Abandons <paramref name="operation"/>, putting the branch and files back as they
+    /// were before it started.</summary>
+    public Task<GitResult> AbortAsync(GitOperation operation, CancellationToken cancellationToken = default) =>
+        operation switch
+        {
+            GitOperation.Merge => GitRunner.RunAsync(Root, ["merge", "--abort"], cancellationToken: cancellationToken),
+            GitOperation.Rebase => GitRunner.RunAsync(Root, ["rebase", "--abort"], cancellationToken: cancellationToken),
+            GitOperation.CherryPick => GitRunner.RunAsync(Root, ["cherry-pick", "--abort"], cancellationToken: cancellationToken),
+            GitOperation.Revert => GitRunner.RunAsync(Root, ["revert", "--abort"], cancellationToken: cancellationToken),
+            _ => Task.FromResult(new GitResult(1, "", "Nothing is in progress to abort.")),
+        };
+
+    /// <summary>
+    /// The newest <paramref name="limit"/> commits, each with the files it changed - of the whole
+    /// repository, or just of <paramref name="file"/>, followed back through renames. A merge lists
+    /// what it changed relative to its first parent.
+    /// </summary>
+    public async Task<IReadOnlyList<GitCommit>> GetLogAsync(string? file = null, int limit = 300, CancellationToken cancellationToken = default)
+    {
+        string[] arguments = ["log", $"-n{limit}", "--format=%x1e%H%x1f%an%x1f%at%x1f%s", "--name-status", "-M", "--diff-merges=first-parent"];
+        var result = await GitRunner.RunAsync(Root, file is null ? arguments : [.. arguments, "--follow", "--", Relative(file)],
+            cancellationToken: cancellationToken);
+        return result.Succeeded ? GitCommit.ParseLog(result.Output) : [];
+    }
+
+    /// <summary>What <paramref name="commit"/> changed in <paramref name="file"/>, against its
+    /// (first) parent - a renamed file compared with its old path.</summary>
+    public async Task<GitDiff> GetCommitDiffAsync(GitCommit commit, GitCommitFile file, CancellationToken cancellationToken = default)
+    {
+        string[] paths = file.OldPath is { } old ? [old, file.Path] : [file.Path];
+        var result = await GitRunner.RunAsync(Root,
+            ["show", "--format=", "--no-color", "--no-ext-diff", "-M", "--diff-merges=first-parent", "-U3", commit.Hash, "--", .. paths],
+            cancellationToken: cancellationToken);
+        return result.Succeeded ? GitDiff.Parse(result.Output) : throw new IOException(result.Message);
     }
 
     /// <summary>

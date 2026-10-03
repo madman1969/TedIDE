@@ -16,7 +16,10 @@ namespace Tedide.App.Views;
 /// and Delete (Changes only) discards its changes. Every control is a direct child of this view: Tab only
 /// moves between peers of the same SuperView, so a list nested in a frame couldn't be reached.
 /// Fetch, Pull and Push sync the branch with its remote; Cancel stops one that's running.
-/// Branches (beside the branch name) opens <see cref="BranchesDialog"/>.
+/// Branches (beside the branch name) opens <see cref="BranchesDialog"/>, History
+/// <see cref="HistoryDialog"/>. While a merge, rebase, cherry-pick or revert is stopped on
+/// conflicts, Enter on a conflicted file opens <see cref="ConflictDialog"/> and the commit buttons
+/// become Continue and Abort.
 /// It only shows and asks - AppShell runs git (see <see cref="GitRepository"/>).
 /// </summary>
 public sealed class GitChangesView : View
@@ -31,6 +34,9 @@ public sealed class GitChangesView : View
     private readonly Button _cancelButton;
     private string _branchText = "";
     private string? _activity;
+    private readonly Button _commitButton;
+    private readonly Button _commitAllButton;
+    private GitOperation _operation;
     private List<GitFileStatus> _changes = [];
     private List<GitFileStatus> _staged = [];
     private string _shown = "";
@@ -54,6 +60,20 @@ public sealed class GitChangesView : View
     /// <summary>The Branches button, beside the branch name: switch, create or delete branches.</summary>
     public event Action? BranchesRequested;
 
+    /// <summary>The History button: the repository's commits.</summary>
+    public event Action? HistoryRequested;
+
+    /// <summary>H on a file: that file's commits.</summary>
+    public event Action<GitFileStatus>? FileHistoryRequested;
+
+    /// <summary>Enter on a conflicted file while a merge, rebase, cherry-pick or revert is stopped.</summary>
+    public event Action<GitFileStatus>? ConflictRequested;
+
+    /// <summary>Continue the stopped operation (the commit message, for a merge).</summary>
+    public event Action<GitOperation, string>? ContinueRequested;
+
+    public event Action<GitOperation>? AbortRequested;
+
     public event Action? FetchRequested;
     public event Action? PullRequested;
     public event Action? PushRequested;
@@ -68,12 +88,15 @@ public sealed class GitChangesView : View
         const int leftWidth = 40;
 
         var branchesButton = Button("Branches", 0, 0, () => BranchesRequested?.Invoke());
-        _branchLabel = new Label { X = Pos.Right(branchesButton) + 2, Y = 0, Width = Dim.Percent(leftWidth) - 14, HotKeySpecifier = noHotKey };
+        var historyButton = Button("History", Pos.Right(branchesButton) + 2, 0, () => HistoryRequested?.Invoke());
+        _branchLabel = new Label { X = Pos.Right(historyButton) + 2, Y = 0, Width = Dim.Percent(leftWidth) - 27, HotKeySpecifier = noHotKey };
         var messageLabel = new Label { Text = "Commit message:", X = 0, Y = 2 };
         _messageField = new TextView { X = 0, Y = 3, Width = Dim.Percent(leftWidth), Height = 5, BorderStyle = LineStyle.Single };
 
-        var commitButton = Button("Commit Staged", 0, 9, () => Commit(stageAll: false));
-        var commitAllButton = Button("Commit All", Pos.Right(commitButton) + 2, 9, () => Commit(stageAll: true));
+        // While a merge, rebase, cherry-pick or revert is stopped these become Continue and Abort -
+        // finishing it is what commits (see UpdateState).
+        var commitButton = _commitButton = Button("Commit Staged", 0, 9, () => Commit(stageAll: false));
+        var commitAllButton = _commitAllButton = Button("Commit All", Pos.Right(commitButton) + 2, 9, () => Commit(stageAll: true));
         var stageAllButton = Button("Stage All", 0, 11, () => StageRequested?.Invoke(_changes));
         var unstageAllButton = Button("Unstage All", Pos.Right(stageAllButton) + 2, 11, () => UnstageRequested?.Invoke(_staged));
         var fetchButton = Button("Fetch", 0, 13, () => FetchRequested?.Invoke());
@@ -100,10 +123,10 @@ public sealed class GitChangesView : View
         Wire(_changesList, () => _changes, staged: false);
         Wire(_stagedList, () => _staged, staged: true);
 
-        _actions.AddRange([branchesButton, _messageField, commitButton, commitAllButton, stageAllButton, unstageAllButton, fetchButton, pullButton, pushButton]);
+        _actions.AddRange([branchesButton, historyButton, _messageField, commitButton, commitAllButton, stageAllButton, unstageAllButton, fetchButton, pullButton, pushButton]);
         // Switching branches mid-pull would be trouble - one git operation on the branch at a time.
         _syncButtons.AddRange([branchesButton, fetchButton, pullButton, pushButton]);
-        Add([branchesButton, _branchLabel, messageLabel, _messageField, commitButton, commitAllButton, stageAllButton, unstageAllButton,
+        Add([branchesButton, historyButton, _branchLabel, messageLabel, _messageField, commitButton, commitAllButton, stageAllButton, unstageAllButton,
             fetchButton, pullButton, pushButton, _refreshButton, _cancelButton, _changesList, _stagedList]);
         SetStatus(null, null);
     }
@@ -144,6 +167,11 @@ public sealed class GitChangesView : View
                 CompareRequested?.Invoke(file);
                 key.Handled = true;
             }
+            else if (key == Key.H && !file.IsUntracked)
+            {
+                FileHistoryRequested?.Invoke(file);
+                key.Handled = true;
+            }
             else if (key == Key.B && !file.IsUntracked)
             {
                 BlameRequested?.Invoke(file);
@@ -157,13 +185,27 @@ public sealed class GitChangesView : View
         };
         list.Accepting += (_, e) =>
         {
-            if (list.SelectedItem is { } index && index >= 0 && index < items().Count && File.Exists(items()[index].Path))
-                OpenRequested?.Invoke(items()[index].Path);
+            if (list.SelectedItem is { } index && index >= 0 && index < items().Count)
+            {
+                var file = items()[index];
+                if (file.IsConflicted)
+                    ConflictRequested?.Invoke(file);
+                else if (File.Exists(file.Path))
+                    OpenRequested?.Invoke(file.Path);
+            }
             e.Handled = true;
         };
     }
 
-    private void Commit(bool stageAll) => CommitRequested?.Invoke(_messageField.Text, stageAll);
+    private void Commit(bool stageAll)
+    {
+        if (_operation == GitOperation.None)
+            CommitRequested?.Invoke(_messageField.Text, stageAll);
+        else if (stageAll)
+            AbortRequested?.Invoke(_operation);
+        else
+            ContinueRequested?.Invoke(_operation, _messageField.Text);
+    }
 
     public void ClearMessage() => _messageField.Text = "";
 
@@ -178,21 +220,30 @@ public sealed class GitChangesView : View
         var changeRows = changes.Select(f => Row(f, f.Marker)).ToList();
         var stagedRows = staged.Select(f => Row(f, f.Index)).ToList();
 
-        var shown = $"{repository?.Root}|{status?.Describe()}|{string.Join('\n', changeRows)}|{string.Join('\n', stagedRows)}";
+        var shown = $"{repository?.Root}|{status?.Describe()}|{status?.Operation}|{string.Join('\n', changeRows)}|{string.Join('\n', stagedRows)}";
         if (shown == _shown)
             return;
         _shown = shown;
         _changes = changes;
         _staged = staged;
 
+        _operation = status?.Operation ?? GitOperation.None;
+        var conflicts = changes.Count(f => f.IsConflicted);
         _branchText = repository is null || status is null
             ? "Not in a git repository."
-            : $"{status.Describe()}  ({Path.GetFileName(repository.Root)})";
+            : _operation != GitOperation.None
+                ? $"{status.Describe()}: {_operation.Describe()} stopped, " + conflicts switch
+                {
+                    0 => "resolved - Continue to finish",
+                    1 => "1 conflict",
+                    _ => $"{conflicts} conflicts",
+                }
+                : $"{status.Describe()}  ({Path.GetFileName(repository.Root)})";
         _hasRepository = status is not null;
         UpdateState();
 
-        Fill(_changesList, changeRows, $"Changes ({changeRows.Count}) - Space: stage, Enter: open, D: compare, B: blame, Del: discard");
-        Fill(_stagedList, stagedRows, $"Staged ({stagedRows.Count}) - Space: unstage, Enter: open, D: compare, B: blame");
+        Fill(_changesList, changeRows, $"Changes ({changeRows.Count}) - Space stage, Enter open, D diff, B blame, H history, Del discard");
+        Fill(_stagedList, stagedRows, $"Staged ({stagedRows.Count}) - Space unstage, Enter open, D diff, B blame, H history");
     }
 
     private bool _hasRepository;
@@ -210,6 +261,9 @@ public sealed class GitChangesView : View
     private void UpdateState()
     {
         _branchLabel.Text = _activity is null ? _branchText : $"{_branchText}  -  {_activity}";
+        var name = _operation.Describe() is { Length: > 0 } operation ? char.ToUpperInvariant(operation[0]) + operation[1..] : "";
+        _commitButton.Text = _operation == GitOperation.None ? "Commit Staged" : $"Continue {name}";
+        _commitAllButton.Text = _operation == GitOperation.None ? "Commit All" : $"Abort {name}";
         foreach (var action in _actions)
             action.Enabled = _hasRepository;
         foreach (var button in _syncButtons)

@@ -203,6 +203,11 @@ public sealed class AppShell : Window
         _editorPane.FindReferencesRequested += FindAllReferences;
         _editorPane.RenameSymbolRequested += RenameSymbol;
         _editorPane.CompareWithHeadRequested += CompareActiveWithHead;
+        _editorPane.FileHistoryRequested += () =>
+        {
+            if (_editorPane.OpenPath is { } path)
+                _ = ShowHistoryAsync(path);
+        };
         _editorPane.BlameRequested += () =>
         {
             if (_editorPane.OpenPath is { } path)
@@ -328,6 +333,11 @@ public sealed class AppShell : Window
         _gitView.RefreshRequested += () => _git.RequestRefresh();
         _gitView.FetchRequested += FetchFromRemote;
         _gitView.BranchesRequested += () => _ = ShowBranchesAsync();
+        _gitView.HistoryRequested += () => _ = ShowHistoryAsync(null);
+        _gitView.FileHistoryRequested += file => _ = ShowHistoryAsync(file.Path);
+        _gitView.ConflictRequested += ResolveConflict;
+        _gitView.ContinueRequested += ContinueOperation;
+        _gitView.AbortRequested += AbortOperation;
         _gitView.PullRequested += PullFromRemote;
         _gitView.PushRequested += () => _ = PushToRemoteAsync();
         _gitView.CancelRequested += () => _syncCancellation?.Cancel();
@@ -497,9 +507,11 @@ public sealed class AppShell : Window
     /// <summary>
     /// Runs a git operation on the solution's repository in the background, then refreshes. A
     /// failure is shown in git's own words. <paramref name="after"/> runs on the UI thread when it
-    /// worked.
+    /// worked, <paramref name="afterAnyway"/> whether or not - for operations that change files
+    /// even when they fail (a rebase stopping on new conflicts).
     /// </summary>
-    private async Task RunGitAsync(string what, Func<GitRepository, Task<GitResult>> operation, Action? after = null)
+    private async Task RunGitAsync(string what, Func<GitRepository, Task<GitResult>> operation, Action? after = null,
+        Action? afterAnyway = null)
     {
         if (_git.Primary is not { } repository)
             return;
@@ -514,6 +526,7 @@ public sealed class AppShell : Window
         }
         OnUiThread(() =>
         {
+            afterAnyway?.Invoke();
             if (result.Succeeded)
                 after?.Invoke();
             else
@@ -602,7 +615,7 @@ public sealed class AppShell : Window
     /// <paramref name="after"/> runs on the UI thread when it worked.
     /// </summary>
     private async Task SyncAsync(string activity, string title, Func<GitRepository, CancellationToken, Task<GitResult>> operation,
-        Action? after = null)
+        Action? after = null, Action? afterAnyway = null)
     {
         if (_syncCancellation is not null || _git.Primary is not { } repository)
             return;
@@ -629,6 +642,7 @@ public sealed class AppShell : Window
         {
             _syncCancellation = null;
             _gitView.SetActivity(null);
+            afterAnyway?.Invoke();
             if (result is null)
                 AppendOutputLine($"git: {title} cancelled.");
             else
@@ -653,14 +667,17 @@ public sealed class AppShell : Window
 
     /// <summary>
     /// Git tab > Pull. Saves open files with unsaved edits first, as Commit does, so git sees
-    /// what's on screen; afterwards, open files the pull changed are reloaded (and ones it deleted
-    /// closed). A conflict stops the pull - the files show "!" in the Git tab.
+    /// what's on screen; afterwards the editor follows the files on disk (see
+    /// <see cref="FollowWorkingTree"/>) - even when the pull stops on conflicts, so the conflict
+    /// markers show; the files show "!" in the Git tab.
     /// </summary>
     private void PullFromRemote()
     {
         if (_syncCancellation is not null || !SaveOpenFiles())
             return;
-        _ = SyncAsync("Pulling", "Pull", (repository, token) => repository.PullAsync(token), ReloadFilesChangedOnDisk);
+        var projectFiles = ProjectFileContents();
+        _ = SyncAsync("Pulling", "Pull", (repository, token) => repository.PullAsync(token),
+            afterAnyway: () => FollowWorkingTree(projectFiles));
     }
 
     /// <summary>After a pull: open files without unsaved edits follow what's now on disk.</summary>
@@ -763,15 +780,178 @@ public sealed class AppShell : Window
         _ = RunGitAsync(what, operation, () =>
         {
             AppendOutputLine($"git: Switched to {branch}.");
-            var reopen = _workspace.Solution?.FilePath ?? _workspace.ActiveProject?.FilePath;
-            if (reopen is not null && !ProjectFileContents().SequenceEqual(projectFiles))
-                OpenProjectOrSolution(reopen);
-            else
-            {
-                ReloadFilesChangedOnDisk();
-                _solutionExplorer.Rebuild(_workspace);
-            }
+            FollowWorkingTree(projectFiles);
         });
+    }
+
+    /// <summary>
+    /// After git changed files under the editor (a switch, pull, continue or abort): if the
+    /// loaded solution's or projects' files are no longer what <paramref name="projectFiles"/>
+    /// recorded, the solution is reopened from them; otherwise open files without unsaved edits
+    /// follow what's on disk and the Solution Explorer is rebuilt.
+    /// </summary>
+    private void FollowWorkingTree(List<KeyValuePair<string, string?>> projectFiles)
+    {
+        var reopen = _workspace.Solution?.FilePath ?? _workspace.ActiveProject?.FilePath;
+        if (reopen is not null && !ProjectFileContents().SequenceEqual(projectFiles))
+            OpenProjectOrSolution(reopen);
+        else
+        {
+            ReloadFilesChangedOnDisk();
+            _solutionExplorer.Rebuild(_workspace);
+        }
+    }
+
+    /// <summary>
+    /// Git tab > History (all commits) or File History / H (one file's): <see cref="HistoryDialog"/>,
+    /// and from it a commit's change to a file in a <see cref="CompareDialog"/> - closing that comes
+    /// back to the history at the same commit.
+    /// </summary>
+    private async Task ShowHistoryAsync(string? file)
+    {
+        if ((file is null ? _git.Primary : _git.RepositoryFor(file)) is not { } repository)
+        {
+            TedideMessageBox.ErrorQuery("History", file is null ? "The solution isn't in a git repository." : $"{Path.GetFileName(file)} isn't in a git repository.", ["OK"]);
+            return;
+        }
+        var commits = await repository.GetLogAsync(file);
+        OnUiThread(() => ShowHistory(repository, file, commits, 0));
+    }
+
+    private void ShowHistory(GitRepository repository, string? file, IReadOnlyList<GitCommit> commits, int selected)
+    {
+        if (commits.Count == 0)
+        {
+            TedideMessageBox.Query("History", file is null ? "There are no commits yet." : $"git has no history for {Path.GetFileName(file)} - it isn't committed yet.", ["OK"]);
+            return;
+        }
+        var title = file is null ? $"History - {Path.GetFileName(repository.Root)}" : $"History - {DisplayPath(file)}";
+        var dialog = new HistoryDialog(title, commits, selected);
+        Application.Run(dialog);
+        if (dialog.Choice is { } choice)
+            _ = ShowCommitChangeAsync(repository, choice.Commit, choice.File, () => ShowHistory(repository, file, commits, dialog.SelectedIndex));
+    }
+
+    /// <summary>One commit's change to one file, read-only - its line numbers are the file's as of
+    /// that commit, so there's no Go to Line. <paramref name="back"/> returns to the history.</summary>
+    private async Task ShowCommitChangeAsync(GitRepository repository, GitCommit commit, GitCommitFile file, Action back)
+    {
+        GitDiff diff;
+        try
+        {
+            diff = await repository.GetCommitDiffAsync(commit, file);
+        }
+        catch (IOException ex)
+        {
+            OnUiThread(() =>
+            {
+                TedideMessageBox.ErrorQuery("History", RenameSymbolDialog.Wrap(ex.Message), ["OK"]);
+                back();
+            });
+            return;
+        }
+        OnUiThread(() =>
+        {
+            if (diff.IsBinary || diff.Hunks.Count == 0)
+                TedideMessageBox.Query("History", RenameSymbolDialog.Wrap(diff.IsBinary
+                    ? $"{file.Path} is a binary file; {commit.ShortHash} changed it."
+                    : $"{commit.ShortHash} didn't change any lines of {file.Path} (a rename or a mode change)."), ["OK"]);
+            else
+                Application.Run(new CompareDialog($"{commit.ShortHash} {commit.Subject} - {file.Path}",
+                    $"{commit.ShortHash} by {commit.Author}, {GitBlameLine.Ago(DateTimeOffset.Now - commit.When)}:", diff, canGoToLine: false));
+            back();
+        });
+    }
+
+    /// <summary>
+    /// Git tab > Enter on a conflicted file: <see cref="ConflictDialog"/>, then keep one side, open
+    /// the file at its first conflict, or mark it resolved (asking first if markers remain).
+    /// </summary>
+    private void ResolveConflict(GitFileStatus file)
+    {
+        var path = file.Path;
+        var operation = _git.PrimaryStatus?.Operation ?? GitOperation.None;
+        string text;
+        try
+        {
+            text = _editorPane.TextOf(path) ?? (File.Exists(path) ? File.ReadAllText(path) : "");
+        }
+        catch (Exception ex) when (IsFileError(ex))
+        {
+            TedideMessageBox.ErrorQuery("Resolve Conflict", RenameSymbolDialog.Wrap(ex.Message), ["OK"]);
+            return;
+        }
+        var dialog = new ConflictDialog(DisplayPath(path), operation, ConflictDialog.CountSections(text));
+        Application.Run(dialog);
+        switch (dialog.Choice)
+        {
+            case ConflictChoice.Edit:
+                var lines = text.Split('\n');
+                var first = Array.FindIndex(lines, l => l.StartsWith("<<<<<<<", StringComparison.Ordinal));
+                if (File.Exists(path))
+                    NavigateTo(path, first < 0 ? 1 : first + 1, 1);
+                break;
+            case ConflictChoice.KeepMine or ConflictChoice.TakeTheirs:
+                if (!SaveOpenFiles())
+                    return;
+                var keepMine = dialog.Choice == ConflictChoice.KeepMine;
+                _ = RunGitAsync("Resolving the Conflict", r => r.ResolveWithAsync(path, keepMine, operation), () =>
+                {
+                    AppendOutputLine($"git: {DisplayPath(path)} resolved - {(keepMine ? "kept mine" : "took theirs")}.");
+                    Guard($"Reloading {Path.GetFileName(path)}", () => _editorPane.Reload(path));
+                });
+                break;
+            case ConflictChoice.MarkResolved:
+                if (!SaveOpenFiles())
+                    return;
+                var left = File.Exists(path) ? ConflictDialog.CountSections(File.ReadAllText(path)) : 0;
+                if (left > 0 && TedideMessageBox.Query("Mark Resolved", RenameSymbolDialog.Wrap(
+                        $"{Path.GetFileName(path)} still has {(left == 1 ? "a conflict section" : $"{left} conflict sections")} (<<<<<<< markers). Mark it resolved anyway?"),
+                        ["Mark Resolved", "Cancel"]) != 0)
+                    return;
+                _ = RunGitAsync("Marking Resolved", r => r.StageAsync([path]),
+                    () => AppendOutputLine($"git: {DisplayPath(path)} marked resolved."));
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Git tab > Continue: finishes the stopped merge (committing, with the message box's text if
+    /// any), rebase, cherry-pick or revert - once no file is still conflicted. A rebase can stop
+    /// again on the next commit's conflicts, so the editor follows the files either way.
+    /// </summary>
+    private void ContinueOperation(GitOperation operation, string message)
+    {
+        var conflicted = _git.Files.Values.Count(f => f.IsConflicted && _git.Primary?.Contains(f.Path) == true);
+        if (conflicted > 0)
+        {
+            TedideMessageBox.ErrorQuery($"Continue {operation.Describe()}", RenameSymbolDialog.Wrap(
+                $"{(conflicted == 1 ? "1 file still has" : $"{conflicted} files still have")} conflicts (marked ! in the Git tab). Press Enter on each to resolve it first."), ["OK"]);
+            return;
+        }
+        if (!SaveOpenFiles())
+            return;
+        var projectFiles = ProjectFileContents();
+        _ = RunGitAsync($"Continuing the {operation.Describe()}", r => r.ContinueAsync(operation, operation == GitOperation.Merge ? message : null),
+            () =>
+            {
+                _gitView.ClearMessage();
+                AppendOutputLine($"git: {operation.Describe()} continued.");
+            },
+            () => FollowWorkingTree(projectFiles));
+    }
+
+    /// <summary>Git tab > Abort: after asking, abandons the stopped operation - the branch and
+    /// files go back to how they were before it started.</summary>
+    private void AbortOperation(GitOperation operation)
+    {
+        var question = $"Abort the {operation.Describe()}? The branch and its files go back to how they were before it started, and any conflicts you've resolved are lost.";
+        if (TedideMessageBox.Query($"Abort {operation.Describe()}", RenameSymbolDialog.Wrap(question), ["Abort", "Cancel"]) != 0)
+            return;
+        var projectFiles = ProjectFileContents();
+        _ = RunGitAsync($"Aborting the {operation.Describe()}", r => r.AbortAsync(operation),
+            () => AppendOutputLine($"git: {operation.Describe()} aborted."),
+            () => FollowWorkingTree(projectFiles));
     }
 
     /// <summary>The loaded solution's and projects' files as they are on disk (null for one that's

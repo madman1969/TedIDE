@@ -35,6 +35,10 @@ public sealed record GitResult(int ExitCode, string Output, string Error)
                 : message.Contains("[rejected]", StringComparison.Ordinal)
                   && (message.Contains("fetch first", StringComparison.Ordinal) || message.Contains("non-fast-forward", StringComparison.Ordinal))
                     ? "The remote has commits you don't have yet. Pull first, then push again."
+                : message.Contains("CONFLICT (", StringComparison.Ordinal)
+                  || message.Contains("Automatic merge failed", StringComparison.Ordinal)
+                  || message.Contains("could not apply", StringComparison.Ordinal)
+                    ? "git stopped on conflicts - the files marked ! in the Git tab. Press Enter on each to resolve it, then Continue; or Abort to put everything back as it was."
                 : message.Contains("would be overwritten by checkout", StringComparison.Ordinal)
                   || message.Contains("before you switch branches", StringComparison.Ordinal)
                     ? "Your uncommitted changes clash with that branch's version of the same files. Commit or discard them first, then switch."

@@ -238,6 +238,120 @@ public sealed class GitRemoteTests : IDisposable
     }
 
     [Fact]
+    public async Task GetLogAsync_ListsCommitsWithTheirFiles_AndFollowsAFileThroughARename()
+    {
+        var repository = await SetUpAsync();                       // "First": adds main.c
+        Write(Mine, "other.c", "x\n");
+        await repository.CommitAsync("Add other", stageAll: true);
+        await Git(Mine, "mv", "main.c", "game.c");
+        await repository.CommitAsync("Rename main to game", stageAll: true);
+        Write(Mine, "game.c", "one\nTWO\nthree\n");
+        await repository.CommitAsync("Edit game", stageAll: true);
+
+        var log = await repository.GetLogAsync();
+        Assert.Equal(["Edit game", "Rename main to game", "Add other", "First"], log.Select(c => c.Subject));
+        Assert.Equal("Tester", log[0].Author);
+        Assert.Equal(new GitCommitFile('M', "game.c"), Assert.Single(log[0].Files));
+        Assert.Equal(new GitCommitFile('R', "game.c", "main.c"), Assert.Single(log[1].Files));
+        Assert.Equal(new GitCommitFile('A', "main.c"), Assert.Single(log[3].Files));
+
+        var history = await repository.GetLogAsync(Path.Combine(Mine, "game.c"));
+        Assert.Equal(["Edit game", "Rename main to game", "First"], history.Select(c => c.Subject));
+
+        var edit = await repository.GetCommitDiffAsync(log[0], log[0].Files[0]);
+        Assert.Equal((1, 1), (edit.Added, edit.Removed));
+        Assert.Contains(new DiffLine(DiffLineKind.Added, "TWO", null, 2), Assert.Single(edit.Hunks).Lines);
+        // The first commit has no parent: everything is added.
+        Assert.Equal((3, 0), (await repository.GetCommitDiffAsync(log[3], log[3].Files[0])) is var first ? (first.Added, first.Removed) : default);
+    }
+
+    [Fact]
+    public void ParseLog_ReadsHeadersAndNameStatus()
+    {
+        var output = "\x1e" + "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\x1f" + "Ann Other\x1f" + "1759500000\x1f" + "Fix: a\tb\n\nM\tsrc/a.c\nR087\told.c\tnew.c\n"
+            + "\x1e" + "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\x1f" + "Me\x1f" + "1759400000\x1f" + "Empty\n";
+
+        var log = GitCommit.ParseLog(output);
+
+        Assert.Equal(2, log.Count);
+        Assert.Equal("aaaaaaa", log[0].ShortHash);
+        Assert.Equal("Fix: a\tb", log[0].Subject);
+        Assert.Equal([new GitCommitFile('M', "src/a.c"), new GitCommitFile('R', "new.c", "old.c")], log[0].Files);
+        Assert.Empty(log[1].Files);
+    }
+
+    /// <summary>"mine" on main and a branch "other" that both changed line 2 of main.c.</summary>
+    private async Task<GitRepository> DivergeAsync()
+    {
+        var repository = await SetUpAsync();
+        await repository.CreateBranchAsync("other");
+        Write(Mine, "main.c", "one\nTHEIRS\nthree\n");
+        await repository.CommitAsync("Theirs", stageAll: true);
+        await repository.SwitchAsync(new GitBranch("main", false, false, null));
+        Write(Mine, "main.c", "one\nMINE\nthree\n");
+        await repository.CommitAsync("Mine", stageAll: true);
+        return repository;
+    }
+
+    [Fact]
+    public async Task MergeConflict_IsDetected_ResolvedWithEitherSide_AndContinued()
+    {
+        var repository = await DivergeAsync();
+        var main = Path.Combine(Mine, "main.c");
+
+        var merge = await GitRunner.RunAsync(Mine, ["merge", "--no-edit", "other"]);
+        Assert.False(merge.Succeeded);
+        Assert.StartsWith("git stopped on conflicts", merge.Explanation);
+        var status = (await repository.GetStatusAsync())!;
+        Assert.Equal(GitOperation.Merge, status.Operation);
+        Assert.True(Assert.Single(status.Files).IsConflicted);
+
+        Assert.True((await repository.ResolveWithAsync(main, keepMine: false, GitOperation.Merge)).Succeeded);
+        Assert.Equal("one\nTHEIRS\nthree\n", File.ReadAllText(main));
+        Assert.True((await repository.ResolveWithAsync(main, keepMine: true, GitOperation.Merge)).Succeeded);
+        Assert.Equal("one\nMINE\nthree\n", File.ReadAllText(main));
+
+        Assert.True((await repository.ContinueAsync(GitOperation.Merge)).Succeeded);
+        status = (await repository.GetStatusAsync())!;
+        Assert.Equal(GitOperation.None, status.Operation);
+        Assert.Empty(status.Files);
+        Assert.StartsWith("Merge branch 'other'", (await repository.DescribeHeadAsync())![8..]);
+    }
+
+    [Fact]
+    public async Task RebaseConflict_KeepMineMeansTheUsersCommit_AndContinuesWithoutAnEditor()
+    {
+        var repository = await DivergeAsync();
+        var main = Path.Combine(Mine, "main.c");
+
+        Assert.False((await GitRunner.RunAsync(Mine, ["rebase", "other"])).Succeeded);
+        Assert.Equal(GitOperation.Rebase, (await repository.GetStatusAsync())!.Operation);
+
+        // git's --ours during a rebase is "other"; Keep Mine must still mean the user's "Mine".
+        Assert.True((await repository.ResolveWithAsync(main, keepMine: true, GitOperation.Rebase)).Succeeded);
+        Assert.Equal("one\nMINE\nthree\n", File.ReadAllText(main));
+
+        var continued = await repository.ContinueAsync(GitOperation.Rebase);
+        Assert.True(continued.Succeeded, continued.Message);
+        Assert.Equal(GitOperation.None, (await repository.GetStatusAsync())!.Operation);
+        Assert.EndsWith(" Mine", await repository.DescribeHeadAsync());
+    }
+
+    [Fact]
+    public async Task AbortAsync_PutsTheBranchBackAsItWas()
+    {
+        var repository = await DivergeAsync();
+        await GitRunner.RunAsync(Mine, ["merge", "--no-edit", "other"]);
+
+        Assert.True((await repository.AbortAsync(GitOperation.Merge)).Succeeded);
+
+        var status = (await repository.GetStatusAsync())!;
+        Assert.Equal(GitOperation.None, status.Operation);
+        Assert.Empty(status.Files);
+        Assert.Equal("one\nMINE\nthree\n", File.ReadAllText(Path.Combine(Mine, "main.c")));
+    }
+
+    [Fact]
     public void Branch_ParseSkipsSymbolicRefs()
     {
         var output = string.Join('\n',

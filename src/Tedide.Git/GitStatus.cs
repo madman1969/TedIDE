@@ -23,6 +23,9 @@ public sealed record GitStatus(string? Branch, string? Upstream, int Ahead, int 
     /// <summary>HEAD's commit id, or null before the first commit.</summary>
     public string? Head { get; init; }
 
+    /// <summary>A merge, rebase, cherry-pick or revert stopped part-way, if one is.</summary>
+    public GitOperation Operation { get; init; }
+
     /// <summary>"main ↑2 ↓1" - the branch, and how far it is ahead of and behind its upstream. A
     /// detached HEAD shows as "(detached)".</summary>
     public string Describe()

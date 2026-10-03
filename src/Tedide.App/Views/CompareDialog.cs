@@ -33,8 +33,19 @@ public sealed class CompareDialog : Dialog
     /// <param name="displayPath">The file's name as the title shows it, e.g. relative to its project.</param>
     /// <param name="unsaved">Whether the editor has edits not saved yet - they're part of the diff.</param>
     public CompareDialog(string displayPath, GitDiff diff, bool unsaved)
+        : this($"Compare with Last Commit - {displayPath}",
+            $"HEAD against the {(unsaved ? "editor's text, unsaved edits included" : "file")}:", diff, canGoToLine: true)
     {
-        Title = $"Compare with Last Commit - {displayPath}";
+    }
+
+    /// <summary>
+    /// Any diff - History shows a past commit's changes this way, with <paramref name="canGoToLine"/>
+    /// false: its line numbers are the file's as of that commit, not the editor's.
+    /// </summary>
+    /// <param name="summary">What's being compared, before the change counts.</param>
+    public CompareDialog(string title, string summary, GitDiff diff, bool canGoToLine)
+    {
+        Title = title;
         // The title echoes a file name, and a title reads its first "_" as a hotkey marker.
         HotKeySpecifier = new System.Text.Rune(0xFFFF);
         Width = Dim.Percent(90);
@@ -43,9 +54,9 @@ public sealed class CompareDialog : Dialog
         Arrangement &= ~ViewArrangement.Resizable;
 
         var hunks = diff.Hunks.Count == 1 ? "1 change" : $"{diff.Hunks.Count} changes";
-        var summary = new Label
+        var summaryLabel = new Label
         {
-            Text = $"HEAD against the {(unsaved ? "editor's text, unsaved edits included" : "file")}:  {hunks},  +{diff.Added} -{diff.Removed}",
+            Text = $"{summary}  {hunks},  +{diff.Added} -{diff.Removed}",
             X = 0, Y = 0, Width = Dim.Fill(1),
             HotKeySpecifier = new System.Text.Rune(0xFFFF),
         };
@@ -83,25 +94,36 @@ public sealed class CompareDialog : Dialog
             _table.SetSelection(0, FirstChange(), false, null);
         _table.Accepting += (_, e) =>
         {
-            AcceptSelection();
+            if (canGoToLine)
+                AcceptSelection();
+            else
+                Application.RequestStop(this);
             e.Handled = true;
         };
 
-        var goButton = new Button { Text = "_Go to Line", IsDefault = true, SchemeName = "Accent", X = Pos.Center() - 19, Y = Pos.AnchorEnd(1), Width = 18 };
-        goButton.Accepting += (_, e) =>
-        {
-            AcceptSelection();
-            e.Handled = true;
-        };
-
-        var closeButton = new Button { Text = "Close", X = Pos.Center() + 1, Y = Pos.AnchorEnd(1), Width = 18 };
+        var closeButton = new Button { Text = "Close", X = canGoToLine ? Pos.Center() + 1 : Pos.Center() - 9, Y = Pos.AnchorEnd(1), Width = 18 };
         closeButton.Accepting += (_, e) =>
         {
             Application.RequestStop(this);
             e.Handled = true;
         };
+        Add([summaryLabel, _table, closeButton]);
 
-        Add([summary, _table, goButton, closeButton]);
+        if (canGoToLine)
+        {
+            var goButton = new Button { Text = "_Go to Line", IsDefault = true, SchemeName = "Accent", X = Pos.Center() - 19, Y = Pos.AnchorEnd(1), Width = 18 };
+            goButton.Accepting += (_, e) =>
+            {
+                AcceptSelection();
+                e.Handled = true;
+            };
+            Add(goButton);
+        }
+        else
+        {
+            closeButton.IsDefault = true;
+            closeButton.SchemeName = "Accent";
+        }
         _table.SetFocus();
     }
 

@@ -83,6 +83,9 @@ public sealed class EditorPane : View
     /// <summary>Raised by the context menu's Blame, for the file shown.</summary>
     public event Action? BlameRequested;
 
+    /// <summary>Raised by the context menu's File History, for the file shown.</summary>
+    public event Action? FileHistoryRequested;
+
     /// <summary>Raised when a tab's close button (or a middle-click, or Ctrl+W in the editor) asks
     /// to close that file. The host decides - it may need to ask about unsaved changes first.</summary>
     public event Action<string>? CloseRequested;
@@ -182,6 +185,7 @@ public sealed class EditorPane : View
         contextMenuItems.Add(new Line());
         contextMenuItems.Add(new MenuItem("Compare with Last Commit", "", () => CompareWithHeadRequested?.Invoke()));
         contextMenuItems.Add(new MenuItem("Blame", "", () => BlameRequested?.Invoke()));
+        contextMenuItems.Add(new MenuItem("File History", "", () => FileHistoryRequested?.Invoke()));
 
         _tabStrip.TabSelected += index => Activate(_documents[index]);
         _tabStrip.TabCloseRequested += index => CloseRequested?.Invoke(_documents[index].Path);
