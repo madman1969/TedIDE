@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Tedide.Build;
 using Tedide.Core;
 using Terminal.Gui.Configuration;
@@ -44,6 +45,7 @@ public sealed class OutputView : TextView
 
     public void AppendLine(string line)
     {
+        line = StripEscapeCodes(line);
         GuiAttribute? attribute = Cc65DiagnosticParser.TryParse(line)?.Severity switch
         {
             DiagnosticSeverity.Error => SchemeManager.GetScheme("Error").Normal,
@@ -55,6 +57,19 @@ public sealed class OutputView : TextView
         Reload();
         MoveEnd();
     }
+
+    /// <summary>
+    /// <paramref name="line"/> without terminal escape codes. VICE colours its log ("Main CPU:",
+    /// "AUTOSTART:") with ANSI codes that TextView would show as junk ("←[97;40m").
+    /// </summary>
+    internal static string StripEscapeCodes(string line) =>
+        line.Contains('\u001b') ? EscapeCode.Replace(line, "") : line;
+
+    /// <summary>A CSI sequence (colours, cursor moves), an OSC one (window title, ended by BEL or
+    /// ESC \), or any other two-character escape.</summary>
+    private static readonly Regex EscapeCode = new(
+        @"\x1B\[[0-?]*[ -/]*[@-~]|\x1B\][^\x07\x1B]*(?:\x07|\x1B\\)?|\x1B[@-~]",
+        RegexOptions.Compiled);
 
     /// <summary>
     /// Loads a copy of the line list: TextView keeps the list it's given as its own model and
