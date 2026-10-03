@@ -71,11 +71,11 @@ Function reference (all in `driver.ps1`):
 
 | Function | Does |
 |---|---|
-| `Start-TedideApp -Exe <path>` | Launches `dotnet <path>` inside a **new** Windows Terminal window (`wt -w new`), waits for it to appear. |
-| `Get-TedideWindow` | Returns the `Process` for the Tedide-titled Windows Terminal window, or `$null`. |
+| `Start-TedideApp -Exe <path>` | Launches `dotnet <path>` inside a **new** Windows Terminal window (`wt -w new`), records that window's handle and the `dotnet` process id, and waits (up to 10s) until the app has set its title. |
+| `Get-TedideWindow` | Returns `.MainWindowHandle` and `.Title` for the launched window (whatever its title - it changes while a dialog is open), or `$null`. |
 | `Save-TedideScreenshot -Name <stem> [-OutDir <dir>]` | Captures the actual window (not a console-buffer read - see Gotchas) to `<OutDir>\<stem>.png`. |
-| `Send-TedideKeys -Keys <SendKeys string>` | Focuses the window, sends keys via `System.Windows.Forms.SendKeys`, waits ~400ms to settle. |
-| `Stop-TedideApp` | Kills the Windows Terminal window and any orphaned `dotnet ... Tedide.App.dll` process. |
+| `Send-TedideKeys -Keys <SendKeys string>` | Focuses the window, sends keys via `System.Windows.Forms.SendKeys`, waits ~400ms to settle. Throws rather than sending if the window couldn't be focused, so keys never leak to another app. |
+| `Stop-TedideApp` | Kills only the launched `dotnet` process, then closes only its window (WM_CLOSE). Never stops the `WindowsTerminal` process - it hosts every terminal window, including the user's own. |
 
 **Side effect to know about**: Tedide persists real per-user state to
 `%LocalAppData%\Tedide\` (`recent.json` for the Recent Projects list,
@@ -141,7 +141,8 @@ agent (nothing to screenshot or send keys to without the mechanics above).
 | Symptom | Fix |
 |---|---|
 | `MSB3027`/`MSB3021` "being used by another process" on build | A Tedide instance (yours or a leftover test one) has the default `bin/` locked. Build to a scratch `-o` dir instead (see Build), or close the running instance. |
-| `Get-TedideWindow` returns `$null` right after `Start-TedideApp` | The app takes a moment past the window merely existing before its first draw - `Start-TedideApp` already waits up to 5s and settles 500ms further; if it's still not ready, add a longer `Start-Sleep` before your first `Save-TedideScreenshot`/`Send-TedideKeys`. |
+| `Get-TedideWindow` returns `$null` right after `Start-TedideApp` | The app takes a moment past the window merely existing before its first draw - `Start-TedideApp` already waits up to 10s for the app's title and settles 500ms further; if it's still not ready, add a longer `Start-Sleep` before your first `Save-TedideScreenshot`/`Send-TedideKeys`. |
+| Window "lost" once a dialog opens (before 2026-10-03) | The driver used to find the window by the exact title "Tedide - CC65 IDE", which Tedide changes while a dialog is open ("Go To Line", ...). It now tracks the window handle `Start-TedideApp` recorded, so this only recurs if you dot-source the driver afresh without calling `Start-TedideApp` (the title fallback). |
 | Screenshot shows a blank/all-white window | Almost always means you launched it the wrong way (not via `wt.exe`) - see the first Gotcha. |
-| Two (or more) "Tedide - CC65 IDE" tabs in one screenshot | Leftover tab from a previous run that didn't get cleaned up - always pair `Start-TedideApp` with a `finally { Stop-TedideApp }`, and `Get-Process WindowsTerminal \| Stop-Process -Force` to hard-reset between unrelated test sessions (note: this closes **all** Windows Terminal windows, including any the user has open - only do this when you're sure that's acceptable). |
+| Two (or more) "Tedide - CC65 IDE" tabs in one screenshot | Leftover tab from a previous run that didn't get cleaned up - always pair `Start-TedideApp` with a `finally { Stop-TedideApp }`, Never `Get-Process WindowsTerminal \| Stop-Process` to clean up: Windows Terminal runs all its windows in one process, so that closes the user's own terminals too. Close a stray test window by its handle instead (`[TedideDriver.Native]::PostMessage($hwnd, 0x10, 0, 0)`). |
 | `Save-TedideScreenshot` throws "A generic error occurred in GDI+." | `-OutDir` doesn't exist yet - `Bitmap.Save()` throws this opaque error instead of a clear "directory not found" one. `Save-TedideScreenshot` now creates `-OutDir` itself, but a from-scratch `-OutDir` you pass elsewhere still needs to exist first. |
