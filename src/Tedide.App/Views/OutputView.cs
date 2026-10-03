@@ -1,6 +1,7 @@
 using Tedide.Build;
 using Tedide.Core;
 using Terminal.Gui.Configuration;
+using Terminal.Gui.Drawing;
 using Terminal.Gui.ViewBase;
 using Terminal.Gui.Views;
 using GuiAttribute = Terminal.Gui.Drawing.Attribute;
@@ -24,6 +25,9 @@ public sealed class OutputView : TextView
 {
     private readonly List<List<GuiCell>> _lines = [];
 
+    /// <summary>Whether each line is plain - no diagnostic colour of its own. See <see cref="OnDrawReadOnlyColor"/>.</summary>
+    private readonly List<bool> _plain = [];
+
     public OutputView()
     {
         ReadOnly = true;
@@ -34,7 +38,8 @@ public sealed class OutputView : TextView
     public void Clear()
     {
         _lines.Clear();
-        Load(_lines);
+        _plain.Clear();
+        Reload();
     }
 
     public void AppendLine(string line)
@@ -46,9 +51,18 @@ public sealed class OutputView : TextView
             _ => null,
         };
         _lines.Add(GuiCell.ToCellList(line, attribute));
-        Load(_lines);
+        _plain.Add(attribute is null);
+        Reload();
         MoveEnd();
     }
+
+    /// <summary>
+    /// Loads a copy of the line list: TextView keeps the list it's given as its own model and
+    /// edits it - loading an empty one inserted a blank line into _lines itself, after which every
+    /// row was one off from _plain (confirmed live: the first line drawn highlighted, the warning
+    /// below it plain).
+    /// </summary>
+    private void Reload() => Load([.. _lines]);
 
     // TextView's own OnDrawNormalColor/OnDrawReadOnlyColor ignore each Cell's Attribute by default
     // (per their own doc: "Override to provide custom coloring... Defaults to Scheme.Normal/Focus")
@@ -63,11 +77,14 @@ public sealed class OutputView : TextView
             base.OnDrawNormalColor(line, idxCol, idxRow);
     }
 
-    protected override void OnDrawReadOnlyColor(List<GuiCell> line, int idxCol, int idxRow)
-    {
-        if (idxCol < line.Count && line[idxCol].Attribute is { } attribute)
-            SetAttribute(attribute);
-        else
-            base.OnDrawReadOnlyColor(line, idxCol, idxRow);
-    }
+    // A plain line is drawn in the pane's Normal colours, whatever its cells say: TextView.Load()
+    // fills every cell without an attribute with the theme's Focus colour (TextModel.SetAttributes,
+    // writing into _lines itself), which drew each plain line - build banners, git's report - as a
+    // highlighted bar (found by logging the cells' attributes while drawing). Going by _plain
+    // rather than the cells also lets plain lines follow a theme change. The pane never wraps and
+    // gets a copy of _lines (see Reload), so a drawn row is a line of _lines.
+    protected override void OnDrawReadOnlyColor(List<GuiCell> line, int idxCol, int idxRow) =>
+        SetAttribute(idxRow < _plain.Count && !_plain[idxRow] && idxCol < line.Count && line[idxCol].Attribute is { } attribute
+            ? attribute
+            : GetAttributeForRole(VisualRole.Normal));
 }
