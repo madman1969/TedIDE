@@ -120,7 +120,11 @@ public sealed class AppShell : Window
         _git = new GitTracker(
             () => (_workspace.Projects.Select(p => p.Directory).ToList(), _workspace.Solution?.Directory ?? _workspace.ActiveProject?.Directory),
             OnUiThread);
-        Title = "Tedide - CC65 IDE";
+        // The title carries the debug state ("Stopped in detect_system at ..."): Terminal.Gui reads
+        // its "_" as a hotkey marker, dropping it, and crashed in BorderView.TryUpdateTerminalTitle
+        // when the next, shorter title came in with the old hotkey's position.
+        HotKeySpecifier = new System.Text.Rune(0xFFFF);
+        Title = AppTitle;
         Width = Dim.Fill();
         Height = Dim.Fill();
 
@@ -347,6 +351,11 @@ public sealed class AppShell : Window
         _outputTabs.Add(_gitTab);
 
         _debugPanel.FrameActivated += frame => OpenSymbol((frame.FilePath!, frame.Line));
+        _debugPanel.BreakpointActivated += breakpoint =>
+        {
+            if (_workspace.ActiveProject is { } project)
+                OpenSymbol((Path.Combine(project.Directory, breakpoint.SourceFile), breakpoint.Line));
+        };
 
         // Breakpoint highlighting registered before the current-debug-line one, so the latter's
         // Accent color wins on a line that's both a breakpoint and the paused line - see
@@ -2926,8 +2935,8 @@ public sealed class AppShell : Window
     {
         var name = dbgFile.FindEnclosingFunctionName(address) ?? dbgFile.FindNearestLabel(address) ?? "?";
         return dbgFile.FindProjectSourceLocationForAddress(address, project.Directory) is { } location
-            ? new CallFrame($"{name}  {DebugPath(project, location.FilePath)}:{location.Line}", Path.Combine(project.Directory, location.FilePath), location.Line)
-            : new CallFrame($"{name}  (${address:X4})", null, 0);
+            ? new CallFrame(name, $"{DebugPath(project, location.FilePath)}:{location.Line}", Path.Combine(project.Directory, location.FilePath), location.Line)
+            : new CallFrame(name, $"${address:X4}", null, 0);
     }
 
     /// <summary>How many bytes before and after the PC the Disassembly tab reads.</summary>
@@ -3063,11 +3072,10 @@ public sealed class AppShell : Window
             return;
         }
 
-        // Switch to the Debug tab immediately so its status/register panel is what the user sees
+        // Switch to the Debug tab immediately so its locals/call stack panel is what the user sees
         // as the session comes up, rather than whatever tab (Output/Error List/Symbols) happened
         // to be selected before.
         ShowDebugTab();
-        _debugPanel.ClearHistory();
 
         var buildResult = await BuildActiveProjectAsync();
         if (buildResult is not { Succeeded: true })
@@ -3089,7 +3097,7 @@ public sealed class AppShell : Window
         // of it). RunActiveProjectAsync's own _vice.Launch call already gets this right.
         var viceProcess = _vice.Launch(project, line => Application.Invoke(() => AppendOutputLine(line)), enableBinaryMonitor: true);
 
-        OnUiThread(() => _debugPanel.SetStatus("Connecting to VICE..."));
+        OnUiThread(() => SetDebugStatus("Connecting to VICE..."));
         // VICE needs a moment to start listening on its binary monitor port after the process
         // starts - retry rather than failing on the first attempt. A fresh client per attempt: a
         // TcpClient whose connect has failed isn't reliably reusable. And give up straight away
@@ -3119,7 +3127,7 @@ public sealed class AppShell : Window
             Application.Invoke(() =>
             {
                 AppendOutputLine(reason);
-                _debugPanel.SetStatus("Not debugging.");
+                SetDebugStatus(null);
             });
             return;
         }
@@ -3166,7 +3174,7 @@ public sealed class AppShell : Window
         }
 
         Log.Debug("Debug start: checkpoints set, continuing");
-        Application.Invoke(() => _debugPanel.SetStatus("Running..."));
+        Application.Invoke(() => SetDebugStatus("Running..."));
         await _debugClient.ContinueAsync();
     }
 
@@ -3199,7 +3207,7 @@ public sealed class AppShell : Window
 
             _isStopped = false;
             SetDebugLine(null);
-            _debugPanel.SetStatus("Running...");
+            SetDebugStatus("Running...");
             _editorPane.Editor.SetNeedsDraw();
         });
         return client;
@@ -3366,7 +3374,7 @@ public sealed class AppShell : Window
                 {
                     ShowStoppedAt(registers, watchLines, locals, registers["PC"], $" (checkpoint #{args.Checkpoint.Number})");
                     ShowDebugViews(views);
-                    Log.Debug("CheckpointHit done: status is now {Status}", _debugPanel.StatusText);
+                    Log.Debug("CheckpointHit done: status is now {Status}", _debugStatus);
                 });
             }
             catch (Exception ex)
@@ -3384,7 +3392,7 @@ public sealed class AppShell : Window
 
         _isStopped = false;
         SetDebugLine(null);
-        _debugPanel.SetStatus("Running...");
+        SetDebugStatus("Running...");
         _editorPane.Editor.SetNeedsDraw();
         await _debugClient.ContinueAsync();
     }
@@ -3392,7 +3400,7 @@ public sealed class AppShell : Window
     /// <summary>
     /// Updates the Debug panel and editor to show where execution has stopped: registers, watches,
     /// the source line <paramref name="pc"/> resolves to (opened, centered and highlighted), and a
-    /// "Stopped [in function] at file:line" status plus history entry, with
+    /// "Stopped [in function] at file:line" status (in the window title), with
     /// <paramref name="statusSuffix"/> appended (e.g. which checkpoint fired). Falls back to a bare
     /// address when the PC has no source line. Must run on the UI thread - it touches
     /// Editor/TextDocument state, which enforces single-thread ownership.
@@ -3427,8 +3435,7 @@ public sealed class AppShell : Window
             SetDebugLine(null);
             status = (pc is { } pcv ? $"Stopped at ${pcv:X4}" : "Stopped.") + statusSuffix;
         }
-        _debugPanel.SetStatus(status);
-        _debugPanel.AddHistoryEntry(status);
+        SetDebugStatus(status);
         _editorPane.Editor.SetNeedsDraw();
     }
 
@@ -3585,12 +3592,11 @@ public sealed class AppShell : Window
         Application.Invoke(() =>
         {
             SetDebugLine(null);
-            _debugPanel.SetStatus("Not debugging.");
+            SetDebugStatus(null);
             _debugPanel.SetRegisters(null);
             _debugPanel.SetWatches([]);
             _debugPanel.SetLocals([]);
             _debugPanel.SetCallStack([]);
-            _debugPanel.ClearHistory();
             _disassemblyView.Show([], "Start debugging to see the code around the PC.");
             _memoryView.Show(0, [], [], "Start debugging, then enter a symbol or $address.");
             _memorySnapshot = null;
@@ -4234,12 +4240,28 @@ public sealed class AppShell : Window
 
     /// <summary>
     /// Switches the Output/Error List pane to its "Debug" tab and gives the debug panel input
-    /// focus - used when a debug session starts, so its status/register panel is immediately
+    /// focus - used when a debug session starts, so its debugger windows are immediately
     /// visible rather than left behind whatever tab the user had last selected. Focus moves back
     /// to the editor as soon as execution actually stops somewhere (see <see cref="OpenSymbol"/>,
     /// called from <see cref="OnCheckpointHit"/>/<see cref="StepDebuggingAsync"/>), so this is only
     /// the very first thing the user sees while the session is coming up.
     /// </summary>
+    private const string AppTitle = "Tedide - CC65 IDE";
+
+    /// <summary>The debug state ("Running...", "Stopped in main at main.c:24"), or null when not
+    /// debugging.</summary>
+    private string? _debugStatus;
+
+    /// <summary>Shows the debug state in the window title, as Visual Studio does, rather than in
+    /// the Debug tab; null puts the plain title back.</summary>
+    private void SetDebugStatus(string? status)
+    {
+        _debugStatus = status;
+        Title = DebugTitle(status);
+    }
+
+    internal static string DebugTitle(string? status) => status is null ? AppTitle : $"{AppTitle} - {status}";
+
     private void ShowDebugTab()
     {
         _outputTabs.Value = _debugTab;

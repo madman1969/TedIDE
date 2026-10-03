@@ -489,11 +489,12 @@ line, not just launching the emulator and watching it run.
 3. **Debug > Start Debugging** (Shift+F5) builds, launches VICE with `-binarymonitor`, connects,
    opens (and centers the editor on) the source line containing `main()`, resolves every enabled
    breakpoint's source line to an address via the `.dbg` file, sets them, and starts running. The
-   **Debug** tab is switched to automatically so its status/register panel is visible right away.
+   **Debug** tab is switched to automatically so its debugger windows are visible right away.
    The editor becomes read-only for the whole session - the running binary no longer matches
    whatever you'd type, and this also guarantees jumping between files while stopped never gets
-   blocked by an "unsaved changes?" prompt. When a breakpoint is hit, the Debug tab shows the
-   register snapshot and status (`Stopped at <file>:<line>`), and the editor jumps to and
+   blocked by an "unsaved changes?" prompt. When a breakpoint is hit, the window title shows where
+   (`Tedide - CC65 IDE - Stopped in main at main.c:24`, as Visual Studio shows its debug state in
+   the title bar), the Debug tab's windows refresh, and the editor jumps to and
    vertically centers the current line (highlighted via a `Terminal.Gui.Editor` line transformer,
    not the gutter - see step 2; the same centering happens for every other stop below, not just the
    first). **Continue** (Ctrl+F5) resumes; **Step Over** (F10) and **Step Into** (F7 - Windows Terminal keeps F11 for full screen) advance by *source line*, not raw 6502
@@ -507,14 +508,17 @@ line, not just launching the emulator and watching it run.
    editable again.
 
    ![Tedide stopped in a debug session inside CBMInfo's detect_video_system: video.c open with the current line highlighted, and the Debug tab showing the status, breakpoints, two watches, the recent stops, the function's local variables and the 6502 registers](docs/images/debugging-session.png)
-4. The **Debug** tab itself shows, beyond the register table: the register values with the 6502
-   status register (`FL`) decoded into its individual flags (`N V - B D I Z C`, set flags shown as
-   their letter and clear ones as `.`, alongside the raw hex byte); the status line's enclosing
-   function name when it resolves (`Stopped in detect_system at main.c:116`, from the `.dbg` file's
-   own `scope` records) rather than just a line number; a compact strip of every breakpoint in the
-   project (not just the current file), each marked `(disabled)` if toggled off; a short "recent
-   stops" history (last 20, most recent first) so earlier stops aren't lost the moment a new one
-   overwrites the status line; and a **watches** strip - **Debug > Add Watch...** prompts for a
+4. The **Debug** tab is laid out like Visual Studio's two default groups of debugger windows:
+   **Locals | Watch** on the left, **Call Stack | Breakpoints | Registers** on the right, each a
+   small set of tabs so every window gets the pane's full height.
+   - **Registers** shows the 6502 status register (`FL`) decoded into its individual flags
+     (`N V - B D I Z C`, set flags shown as their letter and clear ones as `.`, alongside the raw
+     hex byte).
+   - The title's status names the enclosing function when it resolves (`Stopped in detect_system
+     at main.c:116`, from the `.dbg` file's own `scope` records).
+   - **Breakpoints** lists every breakpoint in the project (not just the current file): `●` armed,
+     `○` disabled. Enter opens its source line.
+   - **Watch** - **Debug > Add Watch...** prompts for a
    symbol name (matched against the `.dbg` file's own symbol table, with or without cc65's leading
    underscore) or a raw address (`$d020`, `0xd020`, or decimal), plus whether to read it as a single
    byte or a little-endian word, and shows its live value (`raster ($D012) = $34`) refreshed on every
@@ -523,7 +527,7 @@ line, not just launching the emulator and watching it run.
    them rather than risk showing a stale address.
 
    ![The Add Watch dialog with $d020 entered as the address, and a checkbox to read it as a 2-byte word](docs/images/debugging-add-watch.png)
-5. Beside the registers, a **Locals** table lists the parameters and local variables of the C
+5. The **Locals** window lists the parameters and local variables of the C
    function execution stopped in, with each one's type and value (`i : unsigned int = 1 ($0001)`),
    refreshed on every stop. cc65 keeps C locals on a software stack and its debug info records only
    each variable's offset in the function's stack frame - no types, and nothing about how far the
@@ -535,9 +539,10 @@ line, not just launching the emulator and watching it run.
    say) aren't shown - cc65 leaves them out of its debug info.
 
    ![The Debug tab: status, breakpoints and watches lines ($d020 = $FE, $d012 = $EB), the recent stops history, the Locals table (max_raster : unsigned = 229, i : unsigned int = 1) and the register table](docs/images/debugging-debug-tab.png)
-6. A **call stack** sits beside the recent stops, innermost first, for example
-   `border_flash  src/border.s:46` ← `animation_step  src/animation.c:51` ← `main  src/main.c:23`.
-   Press Enter on a frame to open its source line.
+6. The **Call Stack** window lists the frames innermost first, as Function and Location columns,
+   for example `border_flash  src/border.s:46` ← `animation_step  src/animation.c:51` ←
+   `main  src/main.c:23`, with `►` marking the current frame. Press Enter on a frame to open its
+   source line.
    - cc65 keeps no frame records, so Tedide rebuilds the stack from the 6502's hardware stack. Any
      pushed address that points just past a `JSR` in the program's code counts as a return address.
    - Frames inside cc65's runtime show the nearest label instead (`pushax+3`).

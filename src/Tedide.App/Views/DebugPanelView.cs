@@ -18,155 +18,139 @@ public sealed record WatchEntry(string Label, ushort Address, int Size);
 /// in, with its declared type (or "?" when the source didn't say) and formatted value.</summary>
 public sealed record LocalRow(string Name, string Type, string Value);
 
-/// <summary>One call stack frame: its text ("main  main.c:24") and, when it has one, the source
-/// location to open - an absolute path - for activating it.</summary>
-public sealed record CallFrame(string Text, string? FilePath, int Line)
+/// <summary>One call stack frame: the function (or nearest label), where it is ("main.c:24", or
+/// "$080D" with no source line), and, when it has one, the source location to open - an absolute
+/// path - for activating it.</summary>
+public sealed record CallFrame(string Function, string Location, string? FilePath, int Line)
 {
-    public override string ToString() => Text;
+    public override string ToString() => $"{Function}  {Location}";
 }
 
 /// <summary>
-/// The "Debug" tab: a status line (not debugging / connecting / running / stopped-at-file:line,
-/// now including the enclosing function name when it's resolvable), a compact breakpoints strip
-/// (every breakpoint for the active project, not just the current file - unlike the editor's own
-/// red-line highlighting), a compact watches strip (arbitrary addresses/symbols, refreshed from
-/// VICE each time execution stops), a short "recent stops" history, and a register table refreshed
-/// from a <see cref="RegisterSnapshot"/> each time execution stops (see AppShell's own debugging
-/// wiring). The full breakpoint list (toggle/delete) still lives in <see cref="BreakpointsDialog"/> -
-/// the strip here is read-only, just enough to see what's armed without leaving this tab.
+/// The "Debug" tab, laid out like Visual Studio's two default debugger window groups: Locals and
+/// Watch on the left, Call Stack, Breakpoints and Registers on the right, each group a small set
+/// of tabs (<see cref="PaneTabs"/>) so every window gets the pane's full height. The debug state itself (running, stopped
+/// in main at main.c:24) is in the window title, as in VS - AppShell sets it. Everything here is
+/// refreshed by AppShell each time execution stops.
 /// </summary>
 public sealed class DebugPanelView : View
 {
-    private readonly Label _statusLabel;
-    private readonly Label _breakpointsLabel;
-    private readonly Label _watchesLabel;
-    private readonly ListView _historyList;
-    private readonly ListView _callStackList;
+    /// <summary>VS's yellow current-statement arrow, on the innermost call stack frame.</summary>
+    internal const string CurrentFrameMarker = "►";
+
+    private readonly ListView _watchList;
+    private readonly ListView _breakpointList;
+    private readonly TableView _callStackTable;
     private readonly TableView _localsTable;
     private readonly TableView _registersTable;
-    private readonly ObservableCollection<string> _history = [];
-    private ObservableCollection<CallFrame> _callStack = [];
-
-    private const int MaxHistoryEntries = 20;
+    private readonly PaneTabs _leftGroup;
+    private readonly PaneTabs _rightGroup;
+    private IReadOnlyList<CallFrame> _callStack = [];
+    private IReadOnlyList<BreakpointEntry> _breakpoints = [];
 
     /// <summary>Raised when the user activates a call stack frame that has a source location.</summary>
     public event Action<CallFrame>? FrameActivated;
 
+    /// <summary>Raised when the user activates a breakpoint - to open its source line.</summary>
+    public event Action<BreakpointEntry>? BreakpointActivated;
+
     public DebugPanelView()
     {
-        // HotKeySpecifier disabled: a Label reads "_" as a hotkey marker by default, which turned
-        // "Stopped in animation_step" into "animationstep" - function names are full of underscores.
-        var noHotKey = new System.Text.Rune(0xFFFF);
-        _statusLabel = new Label { X = 0, Y = 0, Width = Dim.Fill(), Text = "Not debugging.", HotKeySpecifier = noHotKey };
-        _breakpointsLabel = new Label { X = 0, Y = 1, Width = Dim.Fill(), Text = "Breakpoints: none", HotKeySpecifier = noHotKey };
-        _watchesLabel = new Label { X = 0, Y = 2, Width = Dim.Fill(), Text = "Watches: none" };
+        _localsTable = Table();
+        _watchList = List();
+        _leftGroup = new PaneTabs(("Locals", _localsTable), ("Watch", _watchList)) { X = 0, Y = 0, Width = Dim.Percent(50), Height = Dim.Fill() };
 
-        // The call stack (left) and recent stops (right) share one band under their own headings.
-        var callStackLabel = new Label { X = 0, Y = 3, Text = "Call stack (Enter to open):" };
-        _callStackList = new ListView
+        _callStackTable = Table();
+        _callStackTable.Accepted += (_, _) =>
         {
-            X = 0, Y = 4, Width = Dim.Percent(50), Height = 5,
-            ViewportSettings = ViewportSettingsFlags.HasScrollBars,
+            if (_callStackTable.Value?.SelectedCell is { } cell && cell.Y >= 0 && cell.Y < _callStack.Count && _callStack[cell.Y].FilePath is not null)
+                FrameActivated?.Invoke(_callStack[cell.Y]);
         };
-        _callStackList.SetSource(_callStack);
-        _callStackList.Accepting += (_, e) =>
+        _breakpointList = List();
+        _breakpointList.Accepting += (_, e) =>
         {
-            if (_callStackList.SelectedItem is { } index && index >= 0 && index < _callStack.Count && _callStack[index].FilePath is not null)
-                FrameActivated?.Invoke(_callStack[index]);
+            if (_breakpointList.SelectedItem is { } index && index >= 0 && index < _breakpoints.Count)
+                BreakpointActivated?.Invoke(_breakpoints[index]);
             e.Handled = true;
         };
+        _registersTable = Table();
+        _rightGroup = new PaneTabs(("Call Stack", _callStackTable), ("Breakpoints", _breakpointList), ("Registers", _registersTable))
+        {
+            X = Pos.Right(_leftGroup) + 1, Y = 0, Width = Dim.Fill(), Height = Dim.Fill(),
+        };
 
-        var historyLabel = new Label { X = Pos.Right(_callStackList) + 1, Y = 3, Text = "Recent stops:" };
-        _historyList = new ListView
-        {
-            X = Pos.Right(_callStackList) + 1, Y = 4, Width = Dim.Fill(), Height = 5,
-            ViewportSettings = ViewportSettingsFlags.HasScrollBars,
-        };
-        _historyList.SetSource(_history);
-        _localsTable = new TableView
-        {
-            X = 0, Y = Pos.Bottom(_historyList), Width = Dim.Percent(60), Height = Dim.Fill(),
-            FullRowSelect = true,
-            ViewportSettings = ViewportSettingsFlags.HasScrollBars,
-        };
-        _registersTable = new TableView
-        {
-            X = Pos.Right(_localsTable) + 1, Y = Pos.Bottom(_historyList), Width = Dim.Fill(), Height = Dim.Fill(),
-            FullRowSelect = true,
-            ViewportSettings = ViewportSettingsFlags.HasScrollBars,
-        };
-        Add(_statusLabel, _breakpointsLabel, _watchesLabel, callStackLabel, _callStackList, historyLabel, _historyList, _localsTable, _registersTable);
+        Add(_leftGroup, _rightGroup);
         SetLocals([]);
+        SetWatches([]);
+        SetCallStack([]);
+        SetBreakpoints([]);
         SetRegisters(null);
     }
+
+    private static TableView Table() => new()
+    {
+        FullRowSelect = true,
+        ViewportSettings = ViewportSettingsFlags.HasScrollBars,
+    };
+
+    private static ListView List() => new()
+    {
+        ViewportSettings = ViewportSettingsFlags.HasScrollBars,
+        KeystrokeNavigator = null,
+    };
 
     /// <summary>Replaces the call stack, innermost frame first; an empty list clears it.</summary>
     public void SetCallStack(IReadOnlyList<CallFrame> frames)
     {
-        _callStack = new ObservableCollection<CallFrame>(frames);
-        _callStackList.SetSource(_callStack);
+        _callStack = frames;
+        var table = new DataTable();
+        table.Columns.Add(" ");
+        table.Columns.Add("Function");
+        table.Columns.Add("Location");
+        foreach (var row in CallStackRows(frames))
+            table.Rows.Add(row.Marker, row.Function, row.Location);
+        _callStackTable.Table = new DataTableSource(table);
     }
+
+    /// <summary>The Call Stack's rows: the current-statement marker on the innermost frame only.</summary>
+    internal static IEnumerable<(string Marker, string Function, string Location)> CallStackRows(IReadOnlyList<CallFrame> frames) =>
+        frames.Select((frame, i) => (i == 0 ? CurrentFrameMarker : "", frame.Function, frame.Location));
 
     /// <summary>Replaces the Locals table - the stopped function's parameters and locals, refreshed
     /// on every stop like the registers; an empty list clears it.</summary>
     public void SetLocals(IReadOnlyList<LocalRow> locals)
     {
         var table = new DataTable();
-        table.Columns.Add("Local");
-        table.Columns.Add("Type");
+        table.Columns.Add("Name");
         table.Columns.Add("Value");
+        table.Columns.Add("Type");
         foreach (var local in locals)
-            table.Rows.Add(local.Name, local.Type, local.Value);
+            table.Rows.Add(local.Name, local.Value, local.Type);
         _localsTable.Table = new DataTableSource(table);
     }
 
-    public void SetStatus(string text) => _statusLabel.Text = text;
-
-    public string StatusText => _statusLabel.Text;
-
-    /// <summary>Replaces the breakpoints strip from every breakpoint in the active project (not
+    /// <summary>Replaces the Breakpoints list with every breakpoint in the active project (not
     /// scoped to the currently open file) - called wherever <c>AppShell.RefreshBreakpointHighlights</c>
     /// is, since the underlying set changes at exactly the same points.</summary>
     public void SetBreakpoints(IReadOnlyList<BreakpointEntry> breakpoints)
     {
-        if (breakpoints.Count == 0)
-        {
-            _breakpointsLabel.Text = "Breakpoints: none";
-            return;
-        }
-
-        var entries = breakpoints.Select(b => b.Enabled ? b.Describe() : $"{b.Describe()} (disabled)");
-        _breakpointsLabel.Text = $"Breakpoints: {string.Join(", ", entries)}";
+        _breakpoints = breakpoints;
+        _breakpointList.SetSource(new ObservableCollection<string>(BreakpointRows(breakpoints)));
     }
 
-    /// <summary>Replaces the watches strip with each entry's label and current value (already
-    /// formatted by the caller, e.g. "raster ($D012) = $34" or "score ($033C) = $1234") - called
-    /// after every stop (checkpoint hit or step), same as <see cref="SetRegisters"/>.</summary>
-    public void SetWatches(IReadOnlyList<string> formattedWatches)
-    {
-        _watchesLabel.Text = formattedWatches.Count == 0
-            ? "Watches: none"
-            : $"Watches: {string.Join(", ", formattedWatches)}";
-    }
+    /// <summary>"● main.c:24", "○ main.c:30 (disabled)", or a hint when there are none.</summary>
+    internal static IEnumerable<string> BreakpointRows(IReadOnlyList<BreakpointEntry> breakpoints) =>
+        breakpoints.Count == 0
+            ? ["No breakpoints. F9 sets one on the current line."]
+            : breakpoints.Select(b => b.Enabled ? $"● {b.Describe()}" : $"○ {b.Describe()} (disabled)");
 
-    /// <summary>Prepends one line to the "recent stops" history (most recent first), trimming to
-    /// the last <see cref="MaxHistoryEntries"/> - called whenever a checkpoint hit or step lands
-    /// somewhere new.</summary>
-    public void AddHistoryEntry(string text)
-    {
-        _history.Insert(0, text);
-        if (_history.Count > MaxHistoryEntries)
-            _history.RemoveAt(_history.Count - 1);
-        _historyList.SetSource(_history);
-    }
-
-    /// <summary>Clears the history - called when a debug session starts or stops, so a new
-    /// session doesn't show the previous one's stops.</summary>
-    public void ClearHistory()
-    {
-        _history.Clear();
-        _historyList.SetSource(_history);
-    }
+    /// <summary>Replaces the Watch list with each entry's label and current value (already
+    /// formatted by the caller, e.g. "raster ($D012) = $34") - called after every stop (checkpoint
+    /// hit or step), same as <see cref="SetRegisters"/>.</summary>
+    public void SetWatches(IReadOnlyList<string> formattedWatches) =>
+        _watchList.SetSource(new ObservableCollection<string>(formattedWatches.Count == 0
+            ? ["No watches. Debug > Add Watch... adds one."]
+            : formattedWatches));
 
     /// <summary>Replaces the displayed registers, or clears them (pass null) when not stopped/not debugging.</summary>
     public void SetRegisters(RegisterSnapshot? snapshot)
