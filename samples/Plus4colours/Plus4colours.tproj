@@ -1,17 +1,27 @@
 {
   "Name": "Plus4colours",
   "Target": "Plus4",
+  "OutputType": "Application",
+  "ProjectReferences": [],
   "OptimizationLevel": "Maximum",
   "GenerateAssemblyListing": true,
   "AddSourceAsComment": true,
   "GenerateLinkerMap": true,
-  "ExportLabels": false,
+  "GenerateDebugInfo": true,
+  "ExportLabels": true,
+  "EnableSuperCpu": false,
+  "UseOpt6502": true,
+  "Opt6502Mode": "Speed",
   "SourceFiles": [
     "src/main.c"
   ],
   "OutputFile": "bin/Plus4colours.prg",
+  "LinkerConfigPath": null,
   "IncludePaths": [
     "include"
   ],
-  "ExtraArguments": []
+  "PreprocessorDefines": [],
+  "ExtraArguments": [],
+  "PreBuildCommands": [],
+  "PostBuildCommands": []
 }

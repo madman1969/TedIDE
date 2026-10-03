@@ -1,11 +1,17 @@
 {
   "Name": "HelloCBM",
   "Target": "C64",
+  "OutputType": "Application",
+  "ProjectReferences": [],
   "OptimizationLevel": "Maximum",
   "GenerateAssemblyListing": true,
   "AddSourceAsComment": true,
-  "GenerateLinkerMap": false,
-  "ExportLabels": false,
+  "GenerateLinkerMap": true,
+  "GenerateDebugInfo": true,
+  "ExportLabels": true,
+  "EnableSuperCpu": false,
+  "UseOpt6502": true,
+  "Opt6502Mode": "Speed",
   "SourceFiles": [
     "src/main.c",
     "src/screen.c",
@@ -15,8 +21,12 @@
     "src/border.s"
   ],
   "OutputFile": "bin/HelloCBM.prg",
+  "LinkerConfigPath": null,
   "IncludePaths": [
     "include"
   ],
-  "ExtraArguments": []
+  "PreprocessorDefines": [],
+  "ExtraArguments": [],
+  "PreBuildCommands": [],
+  "PostBuildCommands": []
 }
