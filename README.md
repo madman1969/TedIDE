@@ -17,14 +17,25 @@ Doc Viewer" below.
 
 ## Features
 
+### Projects and editing
+
 - **Solutions and projects** - `.tsln`/`.tproj` files, New Project scaffolding for every Commodore
-  target, multi-project solutions with library projects, project references and a startup project.
+  target, multi-project solutions with library projects, project references and a startup project,
+  and a Recent Projects and Solutions list.
 - **Solution Explorer** - a folder tree of each project's sources, headers and linker configs, a
-  Generated Files node, and New/Rename/Delete File from its right-click menu.
+  Generated Files node, and right-click menus to add, rename and delete files, add projects, and
+  build, clean, configure, remove or delete a project.
 - **Tabbed editor** - syntax highlighting for C, 6502/ca65 assembly, listings, linker maps, VICE
   label files and linker configs; per-tab undo history; open tabs remembered per project.
 - **Code navigation** - Go To Definition, Find All References and Rename Symbol across C and
   assembly, Navigate Backward/Forward, Find/Replace, Find in Files and Go To Line.
+- **Visual Studio keys** - F5 debug, Ctrl+F5 run, Ctrl+B build, F9/F10/F12 and the Ctrl+Alt tool
+  window keys, wherever Windows Terminal lets the key through.
+- **Themes** - nine true-colour themes, shared with the Doc Viewer, including Borland Turbo C,
+  Commodore 64 and Amber Phosphor.
+
+### Building and running
+
 - **Building** - per-file `cl65` builds with live output, an Error List, Build/Clean Solution,
   Cancel Build, and pre- and post-build commands.
 - **Project Settings** - target, optimization, compiler and linker options, include paths and
@@ -32,19 +43,32 @@ Doc Viewer" below.
 - **opt6502** - a built-in optimizer for cc65's generated assembly, favouring size or speed.
 - **Running in VICE** - launches the emulator matching the target, with the right memory setup for
   the VIC-20, C16 and Plus/4.
-- **Source-level debugging** - over VICE's binary monitor: breakpoints (with conditions), stepping
-  by C line, registers, watches, locals, a call stack, and Memory and Disassembly tabs.
+
+### Debugging
+
+- **Source-level debugging** - over VICE's binary monitor: breakpoints (with conditions, and
+  enable/disable), stepping by C line, and the debug state in the window title.
+- **Debugger windows** - laid out like Visual Studio's: Locals and Watch beside Call Stack,
+  Breakpoints and Registers, plus Memory and Disassembly tabs.
 - **Symbols** - a filterable browser for the linker map and label file.
-- **Git** - status markers in the Solution Explorer, the branch and the caret line's blame, a full
-  Blame view, change bars in the editor's gutter that follow unsaved edits, Compare with Last
-  Commit, the history of the repository or a file, and a Git tab to stage, unstage, discard,
-  commit (or amend), stash, fetch, pull and push, switch, create and delete branches, and resolve
-  conflicts.
+
+### Git
+
+- **In the editor** - status markers in the Solution Explorer, the branch and the caret line's
+  blame above the editor, change bars in the gutter that follow unsaved edits, Compare with Last
+  Commit, a full Blame view and a file's history.
+- **The Git tab** - stage, unstage, discard, commit (or amend the last commit), stash, and fetch,
+  pull and push.
+- **Branches and history** - switch, create and delete branches, browse the repository's history,
+  and resolve merge, rebase, cherry-pick and revert conflicts.
+
+### Help and samples
+
 - **Help** - F1 context help opens the bundled **Doc Viewer** at the word under the caret: the cc65
   manuals, The C Book, C64-Wiki, Wikipedia and the VICE manual, with full-text search and bookmarks.
-- **Themes** - nine true-colour themes, shared with the Doc Viewer, including Borland Turbo C,
-  Commodore 64 and Amber Phosphor.
 - **Samples** - nine sample projects, from a bouncing-characters demo to a C128 text editor.
+- **Standalone builds** - publish Tedide and the Doc Viewer as single executables that need no .NET
+  runtime installed.
 
 ## Contents
 
@@ -331,7 +355,7 @@ would take them too. Add New Project starts beside the existing projects, never 
 
 ### Git
 
-When a project lives in a git repository, Tedide shows its state and can commit, using the `git`
+When a project lives in a git repository, Tedide shows its state and works with it, using the `git`
 command line you already have, so your own config, hooks and line-ending rules apply. Without git,
 or outside a repository, none of this appears.
 
@@ -347,8 +371,27 @@ or outside a repository, none of this appears.
   Open files with unsaved edits are saved before anything is staged or committed.
 - It refreshes after saves, builds and file operations, and every few seconds, so commits made in
   another terminal show up too.
+- **Change bars** in the editor's gutter mark added, modified and removed lines against the last
+  commit, and follow unsaved edits as you type.
+- **Compare with Last Commit** (the editor's right-click menu, or D on a file in the Git tab) shows
+  the file's changes, unsaved edits included, and can jump to a changed line.
+- **Blame** (right-click, or B) shows every line with the commit, author and age that last changed
+  it. **File History** (right-click, or H) and the Git tab's **History** button list commits; pick
+  one to see what it changed.
+- **Branches...** switches, creates and deletes branches. Only merged branches can be deleted, and
+  a switch that would clash with uncommitted changes says so and suggests a stash.
+- **Amend last commit** loads the last commit's message to edit. Amending a commit that's already
+  pushed asks first, since the next push would need a force push, which Tedide never does.
+- **Stashes...** puts every uncommitted change away, new files included, and pops, applies or
+  drops a stash.
+- **Fetch, Pull and Push** sync with the upstream, and **Cancel** stops one that's taking too long.
+  Pull merges unless git is configured to rebase. Push publishes a new branch with tracking set up.
+  Sign-in goes through Git Credential Manager, as in a terminal.
+- **Conflicts** - while a merge, rebase, cherry-pick or revert is stopped, conflicted files show
+  `!`. Enter on one keeps your version, takes theirs, or opens it to edit the marked sections by
+  hand and then marks it resolved. The commit buttons become **Continue** and **Abort**.
 
-Fetch, pull and push aren't offered; use git itself for those.
+### Building and running
 
 Press **Ctrl+B** (or **Build > Build Solution**) to build every project, libraries first, or
 **Build > Build Project** for just the startup project. Visual Studio's Ctrl+Shift+B works too:
@@ -391,8 +434,8 @@ Two more tabs sit alongside Output/Error List: **Symbols** parses the project's 
 (if "Generate linker map file"/"Export labels" are on - see "Project Settings dialog" below) into a
 filterable table of every module/segment/export/import/label, without disturbing the plain-text
 editing of those files themselves - activating a row opens the underlying file and jumps to the
-matching line. **Debug** shows the active debugging session's registers and status - see
-"Debugging" below.
+matching line. **Debug** holds the debugger windows - Locals, Watch, Call Stack, Breakpoints and
+Registers - see "Debugging" below.
 
 ![The Symbols tab listing the CBMInfo build's modules - its own object files and the cc65 library members linked in - with their segment counts](docs/images/running-symbols.png)
 
@@ -972,34 +1015,37 @@ The theme covers more than the window chrome:
 In place and tested:
 
 - **Projects** - the project/solution model; File > New Project scaffolding with the samples'
-  `src`/`include`/`lib`/`bin` layout; a Recent Projects and Solutions list; the ten-tab Project
+  `src`/`include`/`lib`/`bin` layout; a Recent Projects and Solutions list; the nine-tab Project
   Settings dialog, including pre- and post-build commands; a Solution Explorer folder tree with a Generated Files node and New File,
   Add Existing Item, Rename and Delete; and multi-project solutions with library projects,
   project references, a startup project, and Build/Clean Solution.
 - **Editing** - a tabbed editor with syntax highlighting for C, 6502/ca65 assembly,
   assembler listings, linker maps, VICE label files and linker configs, all colored by the active
   theme; Find/Replace, Find in Files and Go To Line; Go To Definition and Find All References
-  across C and assembly; Rename Symbol; Navigate Backward/Forward; and F1 context help in the Doc
-  Viewer.
+  across C and assembly; Rename Symbol; Navigate Backward/Forward; F1 context help in the Doc
+  Viewer; and Visual Studio's keys wherever Windows Terminal passes them through.
 - **Building and running** - per-file `cl65` builds with live output, diagnostics parsed into the
   Error List, Cancel Build and Clean Project; a symbol browser for linker maps and labels; and
   Run in the VICE emulator matching the target, with the right memory configuration for the VIC-20,
   C16 and Plus/4.
 - **Debugging** - source-level debugging against VICE's binary monitor protocol: breakpoints with
-  persistent in-editor highlighting, conditions and a Breakpoints dialog; stepping by source line
-  (Step Into runs straight through cc65's runtime library); registers with decoded status flags;
-  the enclosing function name; memory watches; a Locals table of the stopped function's
-  parameters and local variables with their types and values; a call stack; a stop history;
-  Memory and Disassembly tabs; and a read-only editor with the current line auto-centered while a
-  session is active.
+  persistent in-editor highlighting, conditions, enable/disable and a Breakpoints dialog; stepping
+  by source line (Step Into runs straight through cc65's runtime library); the debug state and
+  enclosing function in the window title; Visual Studio's debugger windows - Locals (the stopped
+  function's parameters and local variables with their types and values), Watch, Call Stack,
+  Breakpoints and Registers (with decoded status flags); Memory and Disassembly tabs; and a
+  read-only editor with the current line auto-centered while a session is active.
 - **Git** - status markers in the Solution Explorer, the branch and the caret line's blame above
-  the editor, and a Git tab to stage, unstage, discard and commit.
-- **Tedide.DocViewer** - the cc65 manuals and The C Book in a category tree, with full-text
+  the editor, gutter change bars, Compare with Last Commit, Blame and History views, and a Git tab
+  to stage, unstage, discard, commit or amend, stash, fetch, pull and push, manage branches and
+  resolve conflicts.
+- **Tedide.DocViewer** - the cc65 manuals, The C Book, C64-Wiki, Wikipedia and the VICE manual in
+  a category tree, with full-text
   search, bookmarks, Find on Page, Back/Forward history and syntax-highlighted code blocks.
 - **Themes** - nine runtime-switchable themes shared by both apps, covering syntax highlighting,
   adjusted for readability, and drawn in true color inside Windows Terminal.
 - **Everything else** - file-based logging for crash diagnosis, standalone-executable publish tasks
-  for both apps, and about 860 unit tests across six test projects (`dotnet test Tedide.slnx`).
+  for both apps, and about 910 unit tests across six test projects (`dotnet test Tedide.slnx`).
 
 Not yet implemented: a visual editor for `.cfg` linker configs
 (syntax highlighting only today - see "Editing" above).
