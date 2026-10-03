@@ -18,10 +18,13 @@
  * Where a helper has a 65SC02 variant (`.if .cpu`), the 6502 one is used; for every helper here
  * both variants leave identical state (pushax's final `sta (sp)` vs `sta (sp),y` runs with Y
  * already 0), so it's right whichever library the program links - the 6502 one every Commodore
- * target uses, or a 65C02 one. popax is deliberately absent: its variants leave Y different.
+ * target uses, or a 65C02 one. Helpers whose variants differ are deliberately absent: popax,
+ * tosaddax and pusheax (Y), incax1 (carry).
  *
- * Checked by tests/sim65: a stack-heavy program run in cc65's own simulator gives identical
- * output with and without this pass, for sim6502 and sim65c02 at every cc65 -O level.
+ * Checked by tests/sim65 (run_sim65_tests.sh), against both the 6502 and 65C02 libraries:
+ * stress.c and helpers.c give identical output with and without this pass at every cc65 -O level,
+ * and regs.s (from gen_regs.py) calls every helper below 256 times with varied registers, sp and
+ * memory and checks the inlined copies leave exactly the same registers, flags and memory.
  *
  * Because the bodies are version-specific, this only runs on cc65 2.19 output that imports the
  * zero-page `sp` (later cc65 renamed it c_sp) and includes `.macpack longbranch` (needed to fix up
@@ -39,13 +42,16 @@
 /*
  * One inlinable helper. Lines are ca65 statements; "{1}"/"{2}" are the body's own local labels
  * and "{E}" the label placed after the block (only emitted when something jumps to it).
- * cycles_saved is for the path that doesn't take any mid-body exit: the JSR+RTS pair (12), less
- * 3 where that path now runs a JMP {E} instead.
+ * cycles_saved is for the path that doesn't take any mid-body exit: the JSR+RTS pair (12), plus 3
+ * for helpers that were a `ldy #n / jmp other` stub, less 3 where that path now runs a JMP {E}.
+ * zp names the zero-page symbols the body uses; a call is only inlined in a file that imports all
+ * of them.
  */
 typedef struct {
     const char *name;
     const char *const *lines;
     int cycles_saved;
+    const char *zp;
 } RuntimeHelper;
 
 /* pushax.s: push0 / pusha0 / pushax */
@@ -97,22 +103,180 @@ static const char *const PUSHW0SP[] = {
     "lda sp", "sec", "sbc #2", "sta sp", "bcs {1}", "dec sp+1",
     "{1}: lda (sp),y", "tax", "dey", "lda (sp),y", "ldy #$00", "sta (sp),y", "iny", "txa", "sta (sp),y", NULL};
 
+/* decsp1.s, decsp3.s, decsp5-8.s (decsp3/5-8 are decsp2 with a different constant) */
+static const char *const DECSP1[] = {"ldy sp", "bne {1}", "dec sp+1", "{1}: dec sp", NULL};
+static const char *const DECSP3[] = {
+    "lda sp", "sec", "sbc #3", "sta sp", "bcc {1}", "jmp {E}", "{1}: dec sp+1", NULL};
+static const char *const DECSP5[] = {
+    "lda sp", "sec", "sbc #5", "sta sp", "bcc {1}", "jmp {E}", "{1}: dec sp+1", NULL};
+static const char *const DECSP6[] = {
+    "lda sp", "sec", "sbc #6", "sta sp", "bcc {1}", "jmp {E}", "{1}: dec sp+1", NULL};
+static const char *const DECSP7[] = {
+    "lda sp", "sec", "sbc #7", "sta sp", "bcc {1}", "jmp {E}", "{1}: dec sp+1", NULL};
+static const char *const DECSP8[] = {
+    "lda sp", "sec", "sbc #8", "sta sp", "bcc {1}", "jmp {E}", "{1}: dec sp+1", NULL};
+
+/* addysp.s: addysp1 / addysp; incsp3-8.s are `ldy #n / jmp addysp` */
+#define ADDYSP_BODY "pha", "clc", "tya", "adc sp", "sta sp", "bcc {1}", "inc sp+1", "{1}: pla"
+static const char *const ADDYSP[] = {ADDYSP_BODY, NULL};
+static const char *const ADDYSP1[] = {"iny", ADDYSP_BODY, NULL};
+static const char *const INCSP3[] = {"ldy #3", ADDYSP_BODY, NULL};
+static const char *const INCSP4[] = {"ldy #4", ADDYSP_BODY, NULL};
+static const char *const INCSP5[] = {"ldy #5", ADDYSP_BODY, NULL};
+static const char *const INCSP6[] = {"ldy #6", ADDYSP_BODY, NULL};
+static const char *const INCSP7[] = {"ldy #7", ADDYSP_BODY, NULL};
+static const char *const INCSP8[] = {"ldy #8", ADDYSP_BODY, NULL};
+
+/* addeqsp.s: addeq0sp / addeqysp */
+#define ADDEQYSP_BODY "clc", "adc (sp),y", "sta (sp),y", "pha", "iny", "txa", "adc (sp),y", "sta (sp),y", "tax", "pla"
+static const char *const ADDEQYSP[] = {ADDEQYSP_BODY, NULL};
+static const char *const ADDEQ0SP[] = {"ldy #0", ADDEQYSP_BODY, NULL};
+
+/* subeqsp.s: subeq0sp / subeqysp */
+#define SUBEQYSP_BODY "sec", "eor #$FF", "adc (sp),y", "sta (sp),y", "pha", "iny", "txa", "eor #$FF", \
+                      "adc (sp),y", "sta (sp),y", "tax", "pla"
+static const char *const SUBEQYSP[] = {SUBEQYSP_BODY, NULL};
+static const char *const SUBEQ0SP[] = {"ldy #0", SUBEQYSP_BODY, NULL};
+
+/* leaaxsp.s: leaa0sp / leaaxsp */
+#define LEAAXSP_BODY "clc", "adc sp", "pha", "txa", "adc sp+1", "tax", "pla"
+static const char *const LEAAXSP[] = {LEAAXSP_BODY, NULL};
+static const char *const LEAA0SP[] = {"ldx #$00", LEAAXSP_BODY, NULL};
+
+/* icmp.s: tosicmp0 / tosicmp - the caller branches on the flags it leaves */
+#define TOSICMP_BODY "sta sreg", "stx sreg+1", "ldy #$00", "lda (sp),y", "tax", "inc sp", "bne {1}", "inc sp+1", \
+                     "{1}: lda (sp),y", "inc sp", "bne {2}", "inc sp+1", \
+                     "{2}: sec", "sbc sreg+1", "bne {4}", "cpx sreg", "beq {3}", "adc #$FF", "ora #$01", \
+                     "{3}: jmp {E}", "{4}: bvc {3}", "eor #$FF", "ora #$01"
+static const char *const TOSICMP[] = {TOSICMP_BODY, NULL};
+static const char *const TOSICMP0[] = {"ldx #$00", TOSICMP_BODY, NULL};
+
+/* staxspi.s: staxspidx, which ends `jmp incsp2` - incsp2.s's body follows in its place. Its
+   65SC02 variant differs only before `ldy tmp1`, which reloads Y and resets the flags. */
+static const char *const STAXSPIDX[] = {
+    "sty tmp1", "pha", "ldy #1", "lda (sp),y", "sta ptr1+1", "dey", "lda (sp),y", "sta ptr1", "ldy tmp1",
+    "iny", "txa", "sta (ptr1),y", "dey", "pla", "sta (ptr1),y",
+    "inc sp", "beq {1}", "inc sp", "beq {2}", "jmp {E}", "{1}: inc sp", "{2}: inc sp+1", NULL};
+
+/* incax2.s (`add #2` from macpack generic spelled out); incaxy.s: incax4 / incaxy; incax3/5-8.s
+   are `ldy #n / jmp incaxy`. incax1 is absent: its 65SC02 variant (INA) leaves carry differently. */
+static const char *const INCAX2[] = {"clc", "adc #2", "bcc {1}", "inx", "{1}:", NULL};
+#define INCAXY_BODY "sty tmp1", "clc", "adc tmp1", "bcc {1}", "inx", "{1}:"
+static const char *const INCAXY[] = {INCAXY_BODY, NULL};
+static const char *const INCAX3[] = {"ldy #3", INCAXY_BODY, NULL};
+static const char *const INCAX4[] = {"ldy #4", INCAXY_BODY, NULL};
+static const char *const INCAX5[] = {"ldy #5", INCAXY_BODY, NULL};
+static const char *const INCAX6[] = {"ldy #6", INCAXY_BODY, NULL};
+static const char *const INCAX7[] = {"ldy #7", INCAXY_BODY, NULL};
+static const char *const INCAX8[] = {"ldy #8", INCAXY_BODY, NULL};
+
+/* aslax1.s: aslax1 / shlax1; aslax2.s: aslax2 / shlax2 */
+static const char *const ASLAX1[] = {"stx tmp1", "asl a", "rol tmp1", "ldx tmp1", NULL};
+static const char *const ASLAX2[] = {"stx tmp1", "asl a", "rol tmp1", "asl a", "rol tmp1", "ldx tmp1", NULL};
+
+/* mulax3.s, mulax5.s, mulax9.s */
+static const char *const MULAX3[] = {
+    "sta ptr1", "stx ptr1+1", "asl a", "rol ptr1+1",
+    "clc", "adc ptr1", "pha", "txa", "adc ptr1+1", "tax", "pla", NULL};
+static const char *const MULAX5[] = {
+    "sta ptr1", "stx ptr1+1", "asl a", "rol ptr1+1", "asl a", "rol ptr1+1",
+    "clc", "adc ptr1", "pha", "txa", "adc ptr1+1", "tax", "pla", NULL};
+static const char *const MULAX9[] = {
+    "sta ptr1", "stx ptr1+1", "asl a", "rol ptr1+1", "asl a", "rol ptr1+1", "asl a", "rol ptr1+1",
+    "clc", "adc ptr1", "pha", "txa", "adc ptr1+1", "tax", "pla", NULL};
+
+/* ldaxi.s: ldaxi / ldaxidx */
+#define LDAXIDX_BODY "sta ptr1", "stx ptr1+1", "lda (ptr1),y", "tax", "dey", "lda (ptr1),y"
+static const char *const LDAXIDX[] = {LDAXIDX_BODY, NULL};
+static const char *const LDAXI[] = {"ldy #1", LDAXIDX_BODY, NULL};
+
+/* laddeq.s: laddeq1 / laddeqa / laddeq. The two variants both reach `pha` with Y=1 and the same
+   carry, and TXA resets N/Z straight after. */
+#define LADDEQ_BODY "sty ptr1+1", "clc", "ldy #$00", "adc (ptr1),y", "sta (ptr1),y", "iny", \
+                    "pha", "txa", "adc (ptr1),y", "sta (ptr1),y", "tax", "iny", \
+                    "lda sreg", "adc (ptr1),y", "sta (ptr1),y", "sta sreg", "iny", \
+                    "lda sreg+1", "adc (ptr1),y", "sta (ptr1),y", "sta sreg+1", "pla"
+static const char *const LADDEQ[] = {LADDEQ_BODY, NULL};
+static const char *const LADDEQA[] = {"ldx #$00", "stx sreg", "stx sreg+1", LADDEQ_BODY, NULL};
+static const char *const LADDEQ1[] = {"lda #$01", "ldx #$00", "stx sreg", "stx sreg+1", LADDEQ_BODY, NULL};
+
 static const RuntimeHelper HELPERS[] = {
-    {"pushax", PUSHAX, 12},
-    {"pusha0", PUSHA0, 12},
-    {"push0", PUSH0, 12},
-    {"pusha", PUSHA, 9},
-    {"decsp2", DECSP2, 9},
-    {"decsp4", DECSP4, 9},
-    {"incsp2", INCSP2, 9},
-    {"incsp1", INCSP1, 12},
-    {"ldaxysp", LDAXYSP, 12},
-    {"ldax0sp", LDAX0SP, 12},
-    {"staxysp", STAXYSP, 12},
-    {"stax0sp", STAX0SP, 12},
-    {"pushwysp", PUSHWYSP, 12},
-    {"pushw0sp", PUSHW0SP, 12},
+    {"pushax", PUSHAX, 12, "sp"},
+    {"pusha0", PUSHA0, 12, "sp"},
+    {"push0", PUSH0, 12, "sp"},
+    {"pusha", PUSHA, 9, "sp"},
+    {"decsp1", DECSP1, 12, "sp"},
+    {"decsp2", DECSP2, 9, "sp"},
+    {"decsp3", DECSP3, 9, "sp"},
+    {"decsp4", DECSP4, 9, "sp"},
+    {"decsp5", DECSP5, 9, "sp"},
+    {"decsp6", DECSP6, 9, "sp"},
+    {"decsp7", DECSP7, 9, "sp"},
+    {"decsp8", DECSP8, 9, "sp"},
+    {"incsp1", INCSP1, 12, "sp"},
+    {"incsp2", INCSP2, 9, "sp"},
+    {"addysp", ADDYSP, 12, "sp"},
+    {"addysp1", ADDYSP1, 12, "sp"},
+    {"incsp3", INCSP3, 15, "sp"},
+    {"incsp4", INCSP4, 15, "sp"},
+    {"incsp5", INCSP5, 15, "sp"},
+    {"incsp6", INCSP6, 15, "sp"},
+    {"incsp7", INCSP7, 15, "sp"},
+    {"incsp8", INCSP8, 15, "sp"},
+    {"ldaxysp", LDAXYSP, 12, "sp"},
+    {"ldax0sp", LDAX0SP, 12, "sp"},
+    {"staxysp", STAXYSP, 12, "sp"},
+    {"stax0sp", STAX0SP, 12, "sp"},
+    {"pushwysp", PUSHWYSP, 12, "sp"},
+    {"pushw0sp", PUSHW0SP, 12, "sp"},
+    {"addeqysp", ADDEQYSP, 12, "sp"},
+    {"addeq0sp", ADDEQ0SP, 12, "sp"},
+    {"subeqysp", SUBEQYSP, 12, "sp"},
+    {"subeq0sp", SUBEQ0SP, 12, "sp"},
+    {"leaaxsp", LEAAXSP, 12, "sp"},
+    {"leaa0sp", LEAA0SP, 12, "sp"},
+    {"tosicmp", TOSICMP, 9, "sp sreg"},
+    {"tosicmp0", TOSICMP0, 9, "sp sreg"},
+    {"staxspidx", STAXSPIDX, 12, "sp tmp1 ptr1"},
+    {"incax2", INCAX2, 12, ""},
+    {"incaxy", INCAXY, 12, "tmp1"},
+    {"incax3", INCAX3, 15, "tmp1"},
+    {"incax4", INCAX4, 12, "tmp1"},
+    {"incax5", INCAX5, 15, "tmp1"},
+    {"incax6", INCAX6, 15, "tmp1"},
+    {"incax7", INCAX7, 15, "tmp1"},
+    {"incax8", INCAX8, 15, "tmp1"},
+    {"aslax1", ASLAX1, 12, "tmp1"},
+    {"shlax1", ASLAX1, 12, "tmp1"},
+    {"aslax2", ASLAX2, 12, "tmp1"},
+    {"shlax2", ASLAX2, 12, "tmp1"},
+    {"mulax3", MULAX3, 12, "ptr1"},
+    {"mulax5", MULAX5, 12, "ptr1"},
+    {"mulax9", MULAX9, 12, "ptr1"},
+    {"ldaxidx", LDAXIDX, 12, "ptr1"},
+    {"ldaxi", LDAXI, 12, "ptr1"},
+    {"laddeq", LADDEQ, 12, "sreg ptr1"},
+    {"laddeqa", LADDEQA, 12, "sreg ptr1"},
+    {"laddeq1", LADDEQ1, 12, "sreg ptr1"},
 };
+
+static bool is_zp_symbol(const Program *prog, const char *name);
+
+/* True if the file imports every zero-page symbol in the space-separated list names. */
+static bool has_zp_symbols(const Program *prog, const char *names) {
+    char name[32];
+    while (*names) {
+        while (*names == ' ') names++;
+        size_t len = strcspn(names, " ");
+        if (len == 0) break;
+        if (len >= sizeof(name)) return false;
+        memcpy(name, names, len);
+        name[len] = '\0';
+        if (!is_zp_symbol(prog, name)) return false;
+        names += len;
+    }
+    return true;
+}
 
 static const RuntimeHelper *find_helper(const char *name) {
     for (size_t i = 0; i < sizeof(HELPERS) / sizeof(HELPERS[0]); i++) {
@@ -178,13 +342,29 @@ static AstNode *make_node(Program *prog, const char *line, int line_num) {
 }
 
 /*
- * Expands one helper after call (which is then marked dead - its label, if any, still prints
- * first; see write_output_ast). Returns false if memory ran out.
+ * Expands one helper after call, which is then marked dead. Returns false if memory ran out.
+ *
+ * A label on the call (often a loop's own label - `L0005: jsr decsp5`) is moved onto a live
+ * label-only line ahead of the body, never left on the dead call: the other passes look straight
+ * through dead lines, so a label left there would be invisible to them. The dead-code pass would
+ * then delete the start of the body as unreachable after a preceding JMP, and the constant pass
+ * could carry a register value across what is really a branch target.
  */
 static bool inline_call(Program *prog, AstNode *call, const RuntimeHelper *helper, int site) {
     bool uses_end = false;
     AstNode *after = call;
     char line[256];
+
+    if (call->label) {
+        snprintf(line, sizeof(line), "%s%s", call->label, prog->config.supports_colon_labels ? ":" : "");
+        AstNode *label = make_node(prog, line, call->line_num);
+        if (!label) return false;
+        label->next = call->next;
+        call->next = label;
+        after = label;
+        free(call->label);
+        call->label = NULL;
+    }
 
     for (const char *const *text = helper->lines; *text; text++) {
         // Rewrite "{1}", "{2}", "{E}" into this site's unique cheap-local labels, and indent
@@ -327,13 +507,19 @@ void optimize_inline_runtime_ast(Program *prog) {
 
     mark_loops(prog);
 
+    // Debugging aid: OPT6502_INLINE_LIMIT=n inlines only the first n call sites, so a failing
+    // program can be bisected down to the one site that breaks it.
+    const char *limit_text = getenv("OPT6502_INLINE_LIMIT");
+    int limit = limit_text ? atoi(limit_text) : -1;
+
     int site = 0;
     for (AstNode *node = prog->root; node; node = node->next) {
         if (!node->in_loop || node->is_dead || node->no_optimize || node->is_inlined ||
             !op_is(node, "JSR") || !node->operand) continue;
 
         const RuntimeHelper *helper = find_helper(node->operand);
-        if (!helper) continue;
+        if (!helper || !has_zp_symbols(prog, helper->zp)) continue;
+        if (limit >= 0 && site >= limit) break;
 
         int call_bytes, call_cycles;
         estimate_cost(prog, node, &call_bytes, &call_cycles);

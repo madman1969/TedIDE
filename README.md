@@ -608,12 +608,13 @@ single Save/Cancel footer:
   cc65's own `-O` already removes most of the same patterns, so on its own it helps most with the
   Optimizer tab set to None.
 
-  *Favour speed* (`Opt6502Mode: Speed`) also replaces calls to cc65's runtime stack helpers
-  (`pushax`, `ldaxysp`, `incsp2`, ...) inside loops with the helpers' own code. That saves 9-12
-  cycles per call on every pass round the loop, for a few hundred bytes more code. cc65 always
-  calls these helpers, so this still pays off on top of `-Oirs`: 3.7-7% fewer cycles on a
-  stack-heavy test program, checked for identical results in cc65's simulator (see opt6502's
-  `TEDIDE.md`). The Output panel then reports bytes *added* alongside cycles saved. Off (the
+  *Favour speed* (`Opt6502Mode: Speed`) also replaces calls to 57 of cc65's short runtime helpers
+  (`pushax`, `ldaxysp`, `incsp2`, `tosicmp`, `addeqysp`, ...) inside loops with the helpers' own
+  code. That saves 9-15 cycles per call on every pass round the loop, for a few hundred bytes more
+  code. cc65 always calls these helpers, so this still pays off on top of `-Oirs`: 5% fewer
+  cycles on a stack-heavy test program (10% without cc65 optimization). It's checked for identical
+  results in cc65's simulator, including a test of every inlined helper's register and flag
+  results (see opt6502's `TEDIDE.md`). The Output panel then reports bytes *added* alongside cycles saved. Off (the
   default), opt6502 only ever makes code smaller.
 
   The opt6502 used is Tedide's patched fork in `tools/opt6502` (upstream

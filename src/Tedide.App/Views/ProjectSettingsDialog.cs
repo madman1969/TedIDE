@@ -585,7 +585,7 @@ public sealed class ProjectSettingsDialog : Dialog
         var speedHelpLabel = new Label
         {
             Text = "Replaces calls to cc65's stack helpers (pushax, ldaxysp, incsp2...) inside loops\n" +
-                   "with their own code - 4-7% faster on stack-heavy loops in testing, even with -Oirs,\n" +
+                   "with their own code - about 5% faster on stack-heavy loops in testing, even with -Oirs,\n" +
                    "for a few hundred bytes. Off: opt6502 only ever makes code smaller.",
             X = 0, Y = 9, Width = Dim.Fill(1), Height = 3,
         };
