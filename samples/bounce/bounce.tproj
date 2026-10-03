@@ -1,17 +1,27 @@
 {
   "Name": "bounce",
   "Target": "C64",
-  "OptimizationLevel": "None",
+  "OutputType": "Application",
+  "ProjectReferences": [],
+  "OptimizationLevel": "Maximum",
   "GenerateAssemblyListing": true,
   "AddSourceAsComment": true,
-  "GenerateLinkerMap": false,
-  "ExportLabels": false,
+  "GenerateLinkerMap": true,
+  "GenerateDebugInfo": true,
+  "ExportLabels": true,
+  "EnableSuperCpu": false,
+  "UseOpt6502": true,
+  "Opt6502Mode": "Speed",
   "SourceFiles": [
     "src/bounce.c"
   ],
   "OutputFile": "bin/bounce.prg",
+  "LinkerConfigPath": null,
   "IncludePaths": [
     "include"
   ],
-  "ExtraArguments": []
+  "PreprocessorDefines": [],
+  "ExtraArguments": [],
+  "PreBuildCommands": [],
+  "PostBuildCommands": []
 }
