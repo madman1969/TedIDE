@@ -63,6 +63,8 @@ public sealed class CompareDialog : Dialog
             BorderStyle = LineStyle.Single,
             ViewportSettings = ViewportSettingsFlags.HasScrollBars,
         };
+        // Otherwise the column headers scroll away with the first row.
+        _table.Style.AlwaysShowHeaders = true;
         _table.Style.RowColorGetter = args =>
         {
             if (args.RowIndex < 0 || args.RowIndex >= _rows.Count)
@@ -85,14 +87,14 @@ public sealed class CompareDialog : Dialog
             e.Handled = true;
         };
 
-        var goButton = new Button { Text = "_Go to Line", IsDefault = true, SchemeName = "Accent", X = Pos.Center() - 15, Y = Pos.AnchorEnd(1), Width = 14 };
+        var goButton = new Button { Text = "_Go to Line", IsDefault = true, SchemeName = "Accent", X = Pos.Center() - 19, Y = Pos.AnchorEnd(1), Width = 18 };
         goButton.Accepting += (_, e) =>
         {
             AcceptSelection();
             e.Handled = true;
         };
 
-        var closeButton = new Button { Text = "Close", X = Pos.Center() + 1, Y = Pos.AnchorEnd(1), Width = 14 };
+        var closeButton = new Button { Text = "Close", X = Pos.Center() + 1, Y = Pos.AnchorEnd(1), Width = 18 };
         closeButton.Accepting += (_, e) =>
         {
             Application.RequestStop(this);
@@ -157,7 +159,7 @@ public sealed class CompareDialog : Dialog
 
     /// <summary><paramref name="scheme"/> with unselected text in <paramref name="hue"/>, made
     /// readable on the scheme's background - the same treatment as the Solution Explorer's git letters.</summary>
-    private static Scheme Tinted(Scheme scheme, Color hue)
+    internal static Scheme Tinted(Scheme scheme, Color hue)
     {
         var background = scheme.Normal.Background;
         return new Scheme(scheme)

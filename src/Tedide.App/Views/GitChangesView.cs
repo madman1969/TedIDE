@@ -12,8 +12,8 @@ namespace Tedide.App.Views;
 /// The Git tab: the solution repository's branch, a commit message with Commit (what's staged) and
 /// Commit All (everything, new files included, as Visual Studio's does), and two lists - Changes
 /// and Staged. In a list, Space stages or unstages the selected file, Enter opens it, D compares it
-/// with the last commit (see <see cref="CompareDialog"/>), and Delete (Changes only) discards its
-/// changes. Every control is a direct child of this view: Tab only
+/// with the last commit (see <see cref="CompareDialog"/>), B blames it (see <see cref="BlameDialog"/>),
+/// and Delete (Changes only) discards its changes. Every control is a direct child of this view: Tab only
 /// moves between peers of the same SuperView, so a list nested in a frame couldn't be reached.
 /// It only shows and asks - AppShell runs git (see <see cref="GitRepository"/>).
 /// </summary>
@@ -35,6 +35,9 @@ public sealed class GitChangesView : View
 
     /// <summary>D on a file: compare it with the last commit.</summary>
     public event Action<GitFileStatus>? CompareRequested;
+
+    /// <summary>B on a file: show who last changed each of its lines.</summary>
+    public event Action<GitFileStatus>? BlameRequested;
 
     /// <summary>The message, and whether to stage everything first (Commit All).</summary>
     public event Action<string, bool>? CommitRequested;
@@ -114,6 +117,11 @@ public sealed class GitChangesView : View
                 CompareRequested?.Invoke(file);
                 key.Handled = true;
             }
+            else if (key == Key.B && !file.IsUntracked)
+            {
+                BlameRequested?.Invoke(file);
+                key.Handled = true;
+            }
             else if (key == Key.Delete && !staged)
             {
                 DiscardRequested?.Invoke(file);
@@ -156,8 +164,8 @@ public sealed class GitChangesView : View
         foreach (var action in _actions)
             action.Enabled = status is not null;
 
-        Fill(_changesList, changeRows, $"Changes ({changeRows.Count}) - Space: stage, Enter: open, D: compare, Del: discard");
-        Fill(_stagedList, stagedRows, $"Staged ({stagedRows.Count}) - Space: unstage, Enter: open, D: compare");
+        Fill(_changesList, changeRows, $"Changes ({changeRows.Count}) - Space: stage, Enter: open, D: compare, B: blame, Del: discard");
+        Fill(_stagedList, stagedRows, $"Staged ({stagedRows.Count}) - Space: unstage, Enter: open, D: compare, B: blame");
     }
 
     private static void Fill(ListView list, List<string> rows, string title)

@@ -35,8 +35,8 @@ Doc Viewer" below.
 - **Source-level debugging** - over VICE's binary monitor: breakpoints (with conditions), stepping
   by C line, registers, watches, locals, a call stack, and Memory and Disassembly tabs.
 - **Symbols** - a filterable browser for the linker map and label file.
-- **Git** - status markers in the Solution Explorer, the branch and the caret line's blame, a
-  Git tab to stage, unstage, discard and commit, Compare with Last Commit for any file, and
+- **Git** - status markers in the Solution Explorer, the branch and the caret line's blame, a full
+  Blame view, a Git tab to stage, unstage, discard and commit, Compare with Last Commit for any file, and
   change bars in the editor's gutter (added, modified, removed) that follow unsaved edits.
 - **Help** - F1 context help opens the bundled **Doc Viewer** at the word under the caret: the cc65
   manuals, The C Book, C64-Wiki, Wikipedia and the VICE manual, with full-text search and bookmarks.

@@ -44,6 +44,18 @@ public sealed class GitRepository
     }
 
     /// <summary>
+    /// Who last changed every line of <paramref name="file"/>, blaming <paramref name="currentText"/>
+    /// (the editor's text, unsaved edits included) as <see cref="BlameLineAsync"/> does. Null for a
+    /// file git doesn't track.
+    /// </summary>
+    public async Task<IReadOnlyList<GitBlameFileLine>?> BlameFileAsync(string file, string currentText, CancellationToken cancellationToken = default)
+    {
+        var result = await GitRunner.RunAsync(Root, ["blame", "--line-porcelain", "--contents", "-", "--", Relative(file)],
+            currentText, cancellationToken);
+        return result.Succeeded ? GitBlameLine.ParseFile(result.Output) : null;
+    }
+
+    /// <summary>
     /// <paramref name="file"/>'s committed contents (HEAD), or null when HEAD doesn't have it - a
     /// new file, or a repository with no commits yet. <paramref name="headPath"/> is where it was
     /// in HEAD, for a file renamed since.

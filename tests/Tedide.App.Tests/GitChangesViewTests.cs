@@ -38,4 +38,28 @@ public sealed class GitChangesViewTests : IDisposable
 
         Assert.Equal(path, compared?.Path);
     }
+
+    [Fact]
+    public async Task B_InTheChangesList_AsksToBlameATrackedFileOnly()
+    {
+        using (var git = Process.Start(new ProcessStartInfo("git", ["init", "-q"]) { WorkingDirectory = _dir, CreateNoWindow = true })!)
+            await git.WaitForExitAsync();
+        var tracked = Path.Combine(_dir, "main.c");
+        var untracked = Path.Combine(_dir, "new.c");
+        var repository = (await GitRepository.FindAsync(_dir))!;
+        var status = new GitStatus("main", null, 0, 0, true,
+            [new GitFileStatus(tracked, '.', 'M'), new GitFileStatus(untracked, '.', '.', IsUntracked: true)]);
+
+        var view = new GitChangesView();
+        view.SetStatus(repository, status);
+        var blamed = new List<string>();
+        view.BlameRequested += file => blamed.Add(file.Path);
+        var list = view.SubViews.OfType<ListView>().First();
+
+        list.NewKeyDownEvent(Key.B);
+        list.SelectedItem = 1;
+        list.NewKeyDownEvent(Key.B);
+
+        Assert.Equal([tracked], blamed);
+    }
 }

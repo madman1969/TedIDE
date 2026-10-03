@@ -10,7 +10,8 @@ public sealed record GitBlameLine(string Commit, string Author, DateTimeOffset W
     public string Describe(DateTimeOffset now) =>
         IsCommitted ? $"{Author}, {Ago(now - When)}: {Summary}" : "Not committed yet";
 
-    internal static string Ago(TimeSpan age) => age.TotalMinutes switch
+    /// <summary>"3 days ago" - the largest whole unit, rounded down.</summary>
+    public static string Ago(TimeSpan age) => age.TotalMinutes switch
     {
         < 1 => "just now",
         < 60 => Plural((int)age.TotalMinutes, "minute"),
@@ -23,19 +24,49 @@ public sealed record GitBlameLine(string Commit, string Author, DateTimeOffset W
     private static string Plural(int count, string unit) => $"{count} {unit}{(count == 1 ? "" : "s")} ago";
 
     /// <summary>Parses the porcelain blame of a single line (<c>-L n,n</c>); null if there's none.</summary>
-    public static GitBlameLine? Parse(string output)
+    public static GitBlameLine? Parse(string output) => Parse(output.Split('\n'), 0, out _, out _);
+
+    /// <summary>
+    /// Parses a whole file's blame from <c>git blame --line-porcelain</c>, which repeats each
+    /// commit's details on every line: who last changed each line, its 1-based number and its text.
+    /// </summary>
+    public static IReadOnlyList<GitBlameFileLine> ParseFile(string output)
     {
         var lines = output.Split('\n');
-        if (lines.Length == 0 || lines[0].Split(' ') is not [{ Length: 40 } commit, ..])
+        var result = new List<GitBlameFileLine>();
+        var start = 0;
+        while (start < lines.Length)
+        {
+            if (Parse(lines, start, out var end, out var lineNumber) is not { } blame)
+                break;
+            var text = end < lines.Length ? lines[end][1..].TrimEnd('\r') : "";
+            result.Add(new GitBlameFileLine(lineNumber, text, blame));
+            start = end + 1;
+        }
+        return result;
+    }
+
+    /// <summary>One line's record, from its "hash orig final" header at <paramref name="start"/> to
+    /// the tab-prefixed text line, whose index is <paramref name="textLine"/>.</summary>
+    private static GitBlameLine? Parse(string[] lines, int start, out int textLine, out int lineNumber)
+    {
+        textLine = lines.Length;
+        lineNumber = 0;
+        if (start >= lines.Length || lines[start].Split(' ') is not [{ Length: 40 } commit, _, var final, ..])
             return null;
+        int.TryParse(final, out lineNumber);
 
         string author = "", summary = "";
         long time = 0;
         var offset = TimeSpan.Zero;
-        foreach (var line in lines.Skip(1))
+        for (var i = start + 1; i < lines.Length; i++)
         {
+            var line = lines[i];
             if (line.StartsWith('\t'))
-                break; // the line's own text ends the header
+            {
+                textLine = i; // the line's own text ends the header
+                break;
+            }
             var space = line.IndexOf(' ');
             var (key, value) = space < 0 ? (line, "") : (line[..space], line[(space + 1)..]);
             switch (key)
@@ -55,3 +86,6 @@ public sealed record GitBlameLine(string Commit, string Author, DateTimeOffset W
             ? new TimeSpan(hours, minutes, 0) * (zone[0] == '-' ? -1 : 1)
             : TimeSpan.Zero;
 }
+
+/// <summary>One line of a whole file's blame: its 1-based number, its text and who last changed it.</summary>
+public sealed record GitBlameFileLine(int Line, string Text, GitBlameLine Blame);

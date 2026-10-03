@@ -200,6 +200,11 @@ public sealed class AppShell : Window
         _editorPane.FindReferencesRequested += FindAllReferences;
         _editorPane.RenameSymbolRequested += RenameSymbol;
         _editorPane.CompareWithHeadRequested += CompareActiveWithHead;
+        _editorPane.BlameRequested += () =>
+        {
+            if (_editorPane.OpenPath is { } path)
+                _ = ShowBlameAsync(path);
+        };
         _editorPane.ActiveDocumentChanged += OnActiveDocumentChanged;
         _editorPane.CloseRequested += path => CloseFile(path);
         _editorFrame.Add(_editorPane);
@@ -315,6 +320,7 @@ public sealed class AppShell : Window
         _gitView.DiscardRequested += DiscardFile;
         _gitView.OpenRequested += OpenFile;
         _gitView.CompareRequested += file => _ = CompareWithHeadAsync(file.Path, file.OriginalPath);
+        _gitView.BlameRequested += file => _ = ShowBlameAsync(file.Path);
         _gitView.CommitRequested += Commit;
         _gitView.RefreshRequested += () => _git.RequestRefresh();
         _gitTab.Add(_gitView);
@@ -637,6 +643,57 @@ public sealed class AppShell : Window
             var dialog = new CompareDialog(DisplayPath(path), diff, unsaved);
             Application.Run(dialog);
             if (dialog.GoToLine is not { } line || !File.Exists(path) && !_editorPane.IsOpen(path))
+                return;
+            if (!_editorPane.IsShown(path))
+                OpenFile(path);
+            if (_editorPane.IsShown(path))
+                NavigateTo(path, Math.Min(line, _editorPane.Editor.Document!.LineCount), 1);
+        });
+    }
+
+    /// <summary>
+    /// Git phase 5b: who last changed every line of <paramref name="path"/>, in a
+    /// <see cref="BlameDialog"/> opened at the caret's line - an open file's unsaved edits included,
+    /// as "not committed yet". Going to a line from there opens the file at it.
+    /// </summary>
+    private async Task ShowBlameAsync(string path)
+    {
+        const string title = "Blame";
+        var name = Path.GetFileName(path);
+        if (_git.RepositoryFor(path) is not { } repository)
+        {
+            TedideMessageBox.ErrorQuery(title, $"{name} isn't in a git repository.", ["OK"]);
+            return;
+        }
+        if (_git.Files.GetValueOrDefault(path) is { IsUntracked: true })
+        {
+            TedideMessageBox.ErrorQuery(title, $"git doesn't track {name} yet, so it has no history to show.", ["OK"]);
+            return;
+        }
+        // Read here, on the UI thread - the document belongs to it.
+        var caretLine = _editorPane.IsShown(path) ? _editorPane.CaretPosition.Line : 1;
+        IReadOnlyList<GitBlameFileLine>? lines;
+        try
+        {
+            var text = _editorPane.TextOf(path) ?? await File.ReadAllTextAsync(path);
+            lines = await repository.BlameFileAsync(path, text);
+        }
+        catch (Exception ex) when (IsFileError(ex))
+        {
+            OnUiThread(() => TedideMessageBox.ErrorQuery(title, RenameSymbolDialog.Wrap(ex.Message), ["OK"]));
+            return;
+        }
+
+        OnUiThread(() =>
+        {
+            if (lines is null)
+            {
+                TedideMessageBox.ErrorQuery(title, $"git couldn't blame {name}.", ["OK"]);
+                return;
+            }
+            var dialog = new BlameDialog(DisplayPath(path), lines, caretLine);
+            Application.Run(dialog);
+            if (dialog.GoToLine is not { } line)
                 return;
             if (!_editorPane.IsShown(path))
                 OpenFile(path);

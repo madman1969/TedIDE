@@ -92,6 +92,40 @@ public class GitParsingTests
         Assert.Null(GitBlameLine.Parse(""));
     }
 
+    [Fact]
+    public void BlameFile_ReadsEveryLine()
+    {
+        var output = string.Join('\n',
+            "1e48df5aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa 1 1 2",
+            "author aross",
+            "author-time 1759500000",
+            "author-tz +0000",
+            "summary First",
+            "filename main.c",
+            "\tone",
+            "1e48df5aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa 2 2",
+            "author aross",
+            "author-time 1759500000",
+            "author-tz +0000",
+            "summary First",
+            "filename main.c",
+            "\t", // an empty line
+            "0000000000000000000000000000000000000000 3 3 1",
+            "author Not Committed Yet",
+            "summary Version of main.c from main.c",
+            "filename main.c",
+            "\tthree\r",
+            "");
+
+        var lines = GitBlameLine.ParseFile(output);
+
+        Assert.Equal([1, 2, 3], lines.Select(l => l.Line));
+        Assert.Equal(["one", "", "three"], lines.Select(l => l.Text));
+        Assert.Equal("First", lines[1].Blame.Summary);
+        Assert.False(lines[2].Blame.IsCommitted);
+        Assert.Empty(GitBlameLine.ParseFile(""));
+    }
+
     [Theory]
     [InlineData(0.5, "just now")]
     [InlineData(1, "1 minute ago")]

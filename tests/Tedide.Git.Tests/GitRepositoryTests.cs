@@ -108,6 +108,21 @@ public sealed class GitRepositoryTests : IDisposable
     }
 
     [Fact]
+    public async Task BlameFileAsync_BlamesEveryLineOfTheEditorsText()
+    {
+        var repo = await InitAsync();
+        var main = Write("main.c", "one\ntwo\n");
+        await repo.CommitAsync("Add main", stageAll: true);
+
+        var lines = (await repo.BlameFileAsync(main, "one\nedited\ntwo\n"))!;
+
+        Assert.Equal(["one", "edited", "two"], lines.Select(l => l.Text));
+        Assert.Equal([true, false, true], lines.Select(l => l.Blame.IsCommitted));
+        Assert.Equal("Add main", lines[2].Blame.Summary);
+        Assert.Null(await repo.BlameFileAsync(Write("new.c", "x\n"), "x\n"));
+    }
+
+    [Fact]
     public async Task CommitAsync_ReportsWhyNothingWasCommitted()
     {
         var repo = await InitAsync();
