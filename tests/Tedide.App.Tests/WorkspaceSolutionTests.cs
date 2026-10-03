@@ -118,6 +118,29 @@ public class WorkspaceSolutionTests : IDisposable
         Assert.DoesNotContain(Views.SolutionExplorerTree.EnumerateFiles(game.Directory), f => f.Contains(Path.Combine("Gfx", "src")));
     }
 
+    [Fact]
+    public void SaveAll_LeavesUnchangedOlderFilesAlone_AsEveryBuildDoesIt()
+    {
+        var tproj = Path.Combine(_directory, "Old.tproj");
+        var tsln = Path.Combine(_directory, "Old.tsln");
+        const string projectJson = """{ "Name": "Old", "Target": "C64", "SourceFiles": ["src/main.c"] }""";
+        const string solutionJson = """{ "Name": "Old", "ProjectPaths": ["Old.tproj"] }""";
+        File.WriteAllText(tproj, projectJson);
+        File.WriteAllText(tsln, solutionJson);
+        var workspace = new Workspace();
+        workspace.OpenSolution(tsln);
+
+        workspace.SaveAll();
+
+        Assert.Equal(projectJson, File.ReadAllText(tproj));
+        Assert.Equal(solutionJson, File.ReadAllText(tsln));
+
+        workspace.Projects[0].IncludePaths = ["include"];
+        workspace.SaveAll();
+        Assert.Equal(["include"], TedideProject.Load(tproj).IncludePaths);
+        Assert.Equal(solutionJson, File.ReadAllText(tsln));
+    }
+
     [Theory]
     [InlineData("Gfx", "gfx")]
     [InlineData("My-Lib 2", "my_lib_2")]

@@ -256,11 +256,13 @@ public sealed class Workspace
         return solution;
     }
 
+    /// <summary>Saves the solution and projects that have changed since they were loaded or last
+    /// saved - see <see cref="TedideProject.SaveIfChanged"/>. Unchanged files aren't touched.</summary>
     public void SaveAll()
     {
-        Solution?.Save();
+        Solution?.SaveIfChanged();
         foreach (var project in Projects)
-            project.Save();
+            project.SaveIfChanged();
     }
 
     /// <summary>Discards the currently loaded solution/project(s) from this session. Files already saved to disk are untouched.</summary>

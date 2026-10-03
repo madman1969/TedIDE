@@ -39,16 +39,38 @@ public sealed class TedideSolution
         var solution = JsonSerializer.Deserialize<TedideSolution>(json, JsonOptions)
             ?? throw new InvalidDataException($"Could not parse solution file '{path}'.");
         solution.FilePath = Path.GetFullPath(path);
+        solution._savedJson = solution.Serialize();
         return solution;
     }
 
     public void Save(string? path = null)
     {
         path ??= FilePath ?? throw new InvalidOperationException("No path specified and solution has no FilePath.");
-        var json = JsonSerializer.Serialize(this, JsonOptions);
+        var json = Serialize();
         File.WriteAllText(path, json);
         FilePath = Path.GetFullPath(path);
+        _savedJson = json;
     }
+
+    /// <summary>
+    /// Saves only if something changed since it was loaded or last saved - what File > Save and
+    /// every build do. Compared as this class would write it, not against the file's text: a file
+    /// from an older Tedide lacks fields added since, and rewriting it to add them made every
+    /// build show it as changed in git. True if it was written.
+    /// </summary>
+    public bool SaveIfChanged()
+    {
+        if (FilePath is not null && File.Exists(FilePath) && Serialize() == _savedJson)
+            return false;
+        Save();
+        return true;
+    }
+
+    /// <summary>The JSON <see cref="Save"/> last wrote or <see cref="Load"/> read, as this class
+    /// writes it - see <see cref="SaveIfChanged"/>.</summary>
+    private string? _savedJson;
+
+    private string Serialize() => JsonSerializer.Serialize(this, JsonOptions);
 
     /// <summary>Loads every referenced project relative to this solution's directory.</summary>
     public List<TedideProject> LoadProjects()
