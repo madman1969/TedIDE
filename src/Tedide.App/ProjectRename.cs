@@ -101,6 +101,10 @@ internal static class ProjectRename
             IsSamePathIgnoringCase(Path.GetFullPath(Path.Combine(oldSolutionDirectory, p)), Path.GetFullPath(oldProjectFile)));
         if (index >= 0)
             solution.ProjectPaths[index] = Path.GetRelativePath(Path.GetDirectoryName(solutionFile)!, project.FilePath).Replace('\\', '/');
+        // Likewise the startup project, if it was this one.
+        if (solution.StartupProject is { } startup
+            && IsSamePathIgnoringCase(Path.GetFullPath(Path.Combine(oldSolutionDirectory, startup)), Path.GetFullPath(oldProjectFile)))
+            solution.StartupProject = Path.GetRelativePath(Path.GetDirectoryName(solutionFile)!, project.FilePath).Replace('\\', '/');
 
         solution.Save(solutionFile);
         return new Result(project.FilePath, solution.FilePath, folderNotRenamedReason);

@@ -21,6 +21,10 @@ namespace Tedide.App.Views;
 /// <see cref="AddExistingItemRequested"/>, <see cref="RenameFileRequested"/> and
 /// <see cref="DeleteFileRequested"/> carry those requests up to the host, which owns the actual
 /// filesystem/project-file changes.
+///
+/// A loaded solution is the root node, offering Add New/Existing Project and Build/Clean Solution.
+/// Each project node offers Set as Startup Project, Build, Clean, Settings and Remove from
+/// Solution; the startup project is drawn in bold, as in Visual Studio.
 /// </summary>
 public sealed class SolutionExplorerTree : TreeView
 {
@@ -37,6 +41,7 @@ public sealed class SolutionExplorerTree : TreeView
     private static readonly string[] IgnoredDirectoryNames = ["bin", "obj", ".git", ".vs"];
 
     private readonly PopoverMenu _contextMenu;
+    private bool _contextMenuOpen;
 
     /// <summary>Raised with the target directory when "New File..." is chosen from the context menu.</summary>
     public event Action<string>? NewFileRequested;
@@ -52,6 +57,19 @@ public sealed class SolutionExplorerTree : TreeView
 
     public event Action<string>? FileActivated;
 
+    public event Action? AddNewProjectRequested;
+    public event Action? AddExistingProjectRequested;
+    public event Action? BuildSolutionRequested;
+    public event Action? CleanSolutionRequested;
+    public event Action<TedideProject>? SetStartupProjectRequested;
+    public event Action<TedideProject>? BuildProjectRequested;
+    public event Action<TedideProject>? CleanProjectRequested;
+    public event Action<TedideProject>? ProjectSettingsRequested;
+    public event Action<TedideProject>? RemoveProjectRequested;
+
+    /// <summary>The startup project, drawn in bold - see <see cref="Rebuild"/>.</summary>
+    private TedideProject? _startupProject;
+
     public SolutionExplorerTree()
     {
         _contextMenu = new PopoverMenu { Target = new WeakReference<View>(this) };
@@ -60,7 +78,33 @@ public sealed class SolutionExplorerTree : TreeView
         // from the tree's own scheme at draw time, so a theme switch restyles them immediately.
         // Every other node gets that scheme explicitly: returning null (documented as "use the
         // default") drew files white-on-black whatever the theme.
-        ColorGetter = node => node is FolderNode ? FolderScheme(GetScheme()) : GetScheme();
+        ColorGetter = node => node switch
+        {
+            FolderNode => FolderScheme(GetScheme()),
+            TreeNode { Tag: TedideProject project } when project == _startupProject => StartupScheme(GetScheme()),
+            _ => GetScheme(),
+        };
+
+        // Choosing a context-menu item also reaches the tree as an activation, which toggles the
+        // selected node - Set as Startup Project collapsed the whole solution (confirmed live). So
+        // while the menu is up, and until the event that closed it has finished, activation is
+        // ignored.
+        _contextMenu.VisibleChanged += (_, _) =>
+        {
+            if (_contextMenu.Visible)
+                _contextMenuOpen = true;
+            else
+                Application.AddTimeout(TimeSpan.Zero, () =>
+                {
+                    _contextMenuOpen = false;
+                    return false;
+                });
+        };
+        Activating += (_, e) =>
+        {
+            if (_contextMenuOpen)
+                e.Handled = true;
+        };
 
         Accepted += (_, _) =>
         {
@@ -98,10 +142,29 @@ public sealed class SolutionExplorerTree : TreeView
     /// </summary>
     private bool TryShowContextMenu(TreeNode node, Point screenPosition)
     {
-        List<MenuItem> items = [];
+        List<View> items = [];
 
         switch (node.Tag)
         {
+            case TedideSolution:
+                items.Add(new MenuItem("Add New Project...", "", () => AddNewProjectRequested?.Invoke()));
+                items.Add(new MenuItem("Add Existing Project...", "", () => AddExistingProjectRequested?.Invoke()));
+                items.Add(new Line());
+                items.Add(new MenuItem("Build Solution", "", () => BuildSolutionRequested?.Invoke()));
+                items.Add(new MenuItem("Clean Solution", "", () => CleanSolutionRequested?.Invoke()));
+                break;
+            case TedideProject project:
+                if (project != _startupProject)
+                    items.Add(new MenuItem("Set as Startup Project", "", () => SetStartupProjectRequested?.Invoke(project)));
+                items.Add(new MenuItem("Build", "", () => BuildProjectRequested?.Invoke(project)));
+                items.Add(new MenuItem("Clean", "", () => CleanProjectRequested?.Invoke(project)));
+                items.Add(new MenuItem("Settings...", "", () => ProjectSettingsRequested?.Invoke(project)));
+                if (_hasSolution)
+                {
+                    items.Add(new Line());
+                    items.Add(new MenuItem("Remove from Solution", "", () => RemoveProjectRequested?.Invoke(project)));
+                }
+                break;
             case string path when Directory.Exists(path):
                 items.Add(new MenuItem("New File...", "", () => NewFileRequested?.Invoke(path)));
                 items.Add(new MenuItem("Add Existing Item...", "", () => AddExistingItemRequested?.Invoke(path)));
@@ -131,13 +194,34 @@ public sealed class SolutionExplorerTree : TreeView
     /// </summary>
     internal static Scheme FolderScheme(Scheme treeScheme) => TreeNodeSchemes.Emphasised(treeScheme);
 
+    /// <summary><paramref name="treeScheme"/> in bold, selected or not - the startup project.</summary>
+    internal static Scheme StartupScheme(Scheme treeScheme) => new(treeScheme)
+    {
+        Normal = treeScheme.Normal with { Style = treeScheme.Normal.Style | Terminal.Gui.Drawing.TextStyle.Bold },
+        Focus = treeScheme.Focus with { Style = treeScheme.Focus.Style | Terminal.Gui.Drawing.TextStyle.Bold },
+        Active = treeScheme.Active with { Style = treeScheme.Active.Style | Terminal.Gui.Drawing.TextStyle.Bold },
+    };
+
+    private bool _hasSolution;
+
     public void Rebuild(Workspace workspace)
     {
         ClearObjects();
+        _startupProject = workspace.ActiveProject;
+        _hasSolution = workspace.Solution is not null;
+
+        // A solution gets a root node of its own, holding its projects; a bare .tproj is the root itself.
+        TreeNode? solutionNode = null;
+        if (workspace.Solution is { } solution)
+        {
+            var count = workspace.Projects.Count;
+            solutionNode = new TreeNode { Text = $"Solution '{solution.Name}' ({count} project{(count == 1 ? "" : "s")})", Tag = solution };
+        }
 
         foreach (var project in workspace.Projects)
         {
-            var projectNode = new TreeNode { Text = $"{project.Name} ({project.Target.ToCl65Id()})", Tag = project };
+            var kind = project.IsLibrary ? ", library" : "";
+            var projectNode = new TreeNode { Text = $"{project.Name} ({project.Target.ToCl65Id()}{kind})", Tag = project };
 
             // Show every source/header file in the project directory tree, not just the ones
             // passed to cl65 (SourceFiles) - headers are included via #include, never compiled
@@ -147,8 +231,16 @@ public sealed class SolutionExplorerTree : TreeView
 
             AddGeneratedFilesNode(projectNode, project);
 
-            AddObject(projectNode);
+            if (solutionNode is not null)
+                solutionNode.Children.Add(projectNode);
+            else
+                AddObject(projectNode);
         }
+
+        // Added once complete: the tree reads a node's children when it's added, so projects put
+        // under it afterwards never showed.
+        if (solutionNode is not null)
+            AddObject(solutionNode);
 
         ExpandAll();
     }

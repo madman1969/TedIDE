@@ -17,16 +17,21 @@ public sealed class NewProjectDialog : Dialog
     private readonly TextField _nameField;
     private readonly TextField _directoryField;
     private readonly DropDownList _targetField;
+    private readonly DropDownList _outputTypeField;
 
     public string ProjectName => _nameField.Text;
     public string Directory => _directoryField.Text;
     public Cc65Target? Target { get; private set; }
+    public ProjectOutputType OutputType { get; private set; }
 
-    public NewProjectDialog()
+    /// <param name="parentDirectory">Where the new project's folder goes by default - the open
+    /// solution's folder when adding to it, else the current directory.</param>
+    /// <param name="title">"New Project", or "Add New Project" when it joins the open solution.</param>
+    public NewProjectDialog(string? parentDirectory = null, string title = "New Project")
     {
-        Title = "New Project";
+        Title = title;
         Width = 60;
-        Height = 18;
+        Height = 22;
         // A real Padding adornment (rather than hand-offsetting every child's X/Y by 1) so the
         // whole dialog gets consistent breathing room from its border - children below are
         // positioned relative to this inset content area, i.e. X = 0 is already 2 cells in.
@@ -47,7 +52,7 @@ public sealed class NewProjectDialog : Dialog
         _directoryField = new TextField
         {
             X = 0, Y = 6, Width = Dim.Fill(12),
-            Text = Path.Combine(System.Environment.CurrentDirectory, "NewGame"),
+            Text = Path.Combine(parentDirectory ?? System.Environment.CurrentDirectory, "NewGame"),
         };
 
         var browseButton = DirectoryBrowseButton.Create(_directoryField, y: 6);
@@ -63,6 +68,16 @@ public sealed class NewProjectDialog : Dialog
             Text = "c64",
         };
 
+        // A library is archived into a .lib for other projects in the solution to link - see
+        // TedideProject.OutputType.
+        var outputTypeLabel = new Label { Text = "Output type:", X = 0, Y = 12 };
+        _outputTypeField = new DropDownList
+        {
+            X = 0, Y = 14, Width = Dim.Fill(1),
+            Source = new ListWrapper<string>(new ObservableCollection<string>(Enum.GetNames<ProjectOutputType>())),
+            Text = nameof(ProjectOutputType.Application),
+        };
+
         // The primary action: Accent-scheme so it visually pops against the dialog's normal
         // chrome, the same accent color the app uses for the menu bar's own highlighted items.
         var createButton = new Button { Text = "_Create", IsDefault = true, SchemeName = "Accent", X = Pos.Center() - 13, Y = Pos.AnchorEnd(1), Width = 12 };
@@ -75,6 +90,7 @@ public sealed class NewProjectDialog : Dialog
                 return;
             }
             Target = target;
+            OutputType = Enum.TryParse<ProjectOutputType>(_outputTypeField.Text, out var outputType) ? outputType : ProjectOutputType.Application;
             Application.RequestStop(this);
             e.Handled = true;
         };
@@ -86,6 +102,6 @@ public sealed class NewProjectDialog : Dialog
             e.Handled = true;
         };
 
-        Add([nameLabel, _nameField, dirLabel, _directoryField, browseButton, targetLabel, _targetField, createButton, cancelButton]);
+        Add([nameLabel, _nameField, dirLabel, _directoryField, browseButton, targetLabel, _targetField, outputTypeLabel, _outputTypeField, createButton, cancelButton]);
     }
 }

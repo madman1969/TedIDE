@@ -45,17 +45,29 @@ public sealed class ErrorListView : TableView
     }
 
     /// <summary>Replaces the displayed list, e.g. with a fresh <see cref="BuildResult.Diagnostics"/> after each build (or an empty list at the start of one).</summary>
-    public void SetDiagnostics(IReadOnlyList<BuildDiagnostic> diagnostics)
+    /// <param name="displayPath">How to show a file path - the host shortens absolute ones to
+    /// their project-relative form. As-is when not given.</param>
+    public void SetDiagnostics(IReadOnlyList<BuildDiagnostic> diagnostics, Func<string, string>? displayPath = null)
     {
         _diagnostics = diagnostics;
 
         var table = new DataTable();
         table.Columns.Add("Severity");
+        // The host names the project only in a solution with more than one.
+        var showProject = diagnostics.Any(d => d.Project is not null);
+        if (showProject)
+            table.Columns.Add("Project");
         table.Columns.Add("File");
         table.Columns.Add("Line", typeof(int));
         table.Columns.Add("Message");
         foreach (var diagnostic in diagnostics)
-            table.Rows.Add(diagnostic.Severity.ToString(), diagnostic.FilePath, diagnostic.Line, diagnostic.Message);
+        {
+            var file = diagnostic.FilePath.Length > 0 && displayPath is not null ? displayPath(diagnostic.FilePath) : diagnostic.FilePath;
+            if (showProject)
+                table.Rows.Add(diagnostic.Severity.ToString(), diagnostic.Project ?? "", file, diagnostic.Line, diagnostic.Message);
+            else
+                table.Rows.Add(diagnostic.Severity.ToString(), file, diagnostic.Line, diagnostic.Message);
+        }
 
         Table = new DataTableSource(table);
     }

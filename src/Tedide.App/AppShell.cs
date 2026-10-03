@@ -134,6 +134,15 @@ public sealed class AppShell : Window
         _solutionExplorer.AddExistingItemRequested += AddExistingItem;
         _solutionExplorer.RenameFileRequested += RenameFile;
         _solutionExplorer.DeleteFileRequested += DeleteFile;
+        _solutionExplorer.AddNewProjectRequested += AddNewProject;
+        _solutionExplorer.AddExistingProjectRequested += AddExistingProject;
+        _solutionExplorer.BuildSolutionRequested += () => _ = BuildSolutionAsync();
+        _solutionExplorer.CleanSolutionRequested += CleanSolution;
+        _solutionExplorer.SetStartupProjectRequested += SetStartupProject;
+        _solutionExplorer.BuildProjectRequested += project => _ = BuildProjectsAsync([project]);
+        _solutionExplorer.CleanProjectRequested += project => CleanProjects([project]);
+        _solutionExplorer.ProjectSettingsRequested += ShowProjectSettings;
+        _solutionExplorer.RemoveProjectRequested += RemoveProject;
         explorerFrame.Add(_solutionExplorer);
 
         _editorFrame = new FrameView
@@ -400,8 +409,10 @@ public sealed class AppShell : Window
         var buildMenu = new MenuBarItem("_Build", new List<MenuItem>
         {
             new("_Build Project", "", () => _ = BuildActiveProjectAsync(), Key.F5),
+            new("Build _Solution", "", () => _ = BuildSolutionAsync(), Key.Empty),
             new("C_ancel Build", "", CancelBuild, Key.Empty),
             new("_Clean Project", "", CleanActiveProject, Key.Empty),
+            new("Clea_n Solution", "", CleanSolution, Key.Empty),
             new("_Run Project", "", () => _ = RunActiveProjectAsync(), Key.F6),
         });
 
@@ -582,7 +593,7 @@ public sealed class AppShell : Window
                 return;
             SaveLastOpenFileForActiveProject();
             _editorPane.CloseAll();
-            _workspace.NewProject(dialog.Directory, dialog.ProjectName, target);
+            _workspace.NewProject(dialog.Directory, dialog.ProjectName, target, dialog.OutputType);
             _solutionExplorer.Rebuild(_workspace);
             _symbolPanel.Refresh(_workspace.ActiveProject);
             LoadBreakpointsForActiveProject();
@@ -1127,7 +1138,9 @@ public sealed class AppShell : Window
             .ToList();
         // Every open tab's current text, unsaved edits included, so positions match the editor.
         var openTexts = _editorPane.OpenPaths.ToDictionary(p => p, p => _editorPane.TextOf(p)!, StringComparer.OrdinalIgnoreCase);
-        IEnumerable<string> macros = _workspace.ActiveProject is { } project
+        // The macros of the project the shown file belongs to - its target may not be the startup project's.
+        var macroProject = (_editorPane.OpenPath is { } shown ? _workspace.ProjectFor(shown) : null) ?? _workspace.ActiveProject;
+        IEnumerable<string> macros = macroProject is { } project
             ? project.Target.PredefinedMacros().Concat(project.PreprocessorDefines.Select(d => d.Split('=', 2)[0].Trim()))
             : [];
 
@@ -1546,10 +1559,10 @@ public sealed class AppShell : Window
         _sessionState.LastOpenFile = _editorPane.OpenPath is { } openPath
             ? Path.GetRelativePath(project.Directory, openPath)
             : null;
-        // Only this project's own files - a tab from elsewhere (a cc65 header opened by Go To
-        // Definition, say) is left out rather than stored as a "..\..\" path.
+        // Only files in the solution's projects - a tab from elsewhere (a cc65 header opened by Go
+        // To Definition, say) is left out rather than stored as a "..\..\" path.
         _sessionState.OpenFiles = _editorPane.OpenPaths
-            .Where(p => IsSameOrInsideDirectory(p, project.Directory))
+            .Where(p => _workspace.ProjectFor(p) is not null)
             .Select(p => Path.GetRelativePath(project.Directory, p))
             .ToList();
         _sessionState.Save(project.ResolvedSessionFile);
@@ -2131,6 +2144,8 @@ public sealed class AppShell : Window
             AppendOutputLine("No project loaded. Use File > Open Project or File > New Project first.");
             return;
         }
+        if (!CheckStartupProjectRuns("debug"))
+            return;
         if (!project.GenerateDebugInfo)
         {
             TedideMessageBox.ErrorQuery("Debug Info Required",
@@ -2816,14 +2831,26 @@ public sealed class AppShell : Window
         || (ex is ArgumentException && ex is not ArgumentNullException and not ArgumentOutOfRangeException);
 
     /// <summary>
-    /// Builds the active project. Returns null (having already reported why) if none is loaded,
-    /// another build is still running, or the build was cancelled via <see cref="CancelBuild"/> -
-    /// callers (Run, Start Debugging) treat that the same as a failed build and stop there.
+    /// Build > Build Project (F5): builds the startup project, after any libraries it references.
+    /// Returns null (having already reported why) if none is loaded, another build is still
+    /// running, or the build was cancelled via <see cref="CancelBuild"/> - callers (Run, Start
+    /// Debugging) treat that the same as a failed build and stop there.
     /// </summary>
-    private async Task<BuildResult?> BuildActiveProjectAsync()
+    private Task<BuildResult?> BuildActiveProjectAsync() =>
+        BuildProjectsAsync(_workspace.ActiveProject is { } project ? [project] : []);
+
+    /// <summary>Build > Build Solution: every project, each after the libraries it references.</summary>
+    private Task<BuildResult?> BuildSolutionAsync() => BuildProjectsAsync(_workspace.Projects.ToList());
+
+    /// <summary>
+    /// Builds <paramref name="roots"/> and every library they reference, in dependency order (see
+    /// <see cref="ProjectGraph.BuildOrder"/>). A project whose library failed is skipped rather
+    /// than linked against a stale or missing .lib; the others still build. The result succeeds
+    /// only if every project did, and carries every project's diagnostics, with absolute paths.
+    /// </summary>
+    private async Task<BuildResult?> BuildProjectsAsync(IReadOnlyList<TedideProject> roots)
     {
-        var project = _workspace.ActiveProject;
-        if (project is null)
+        if (roots.Count == 0)
         {
             AppendOutputLine("No project loaded. Use File > Open Project or File > New Project first.");
             return null;
@@ -2842,14 +2869,67 @@ public sealed class AppShell : Window
             return null;
         _outputView.Clear();
         _errorListView.SetDiagnostics([]);
-        AppendOutputLine($"------ Build started: {project.Name} ({project.Target.ToCl65Id()}) ------");
+
+        var solution = _workspace.Projects.ToList();
+        IReadOnlyList<TedideProject> order;
+        try
+        {
+            order = ProjectGraph.BuildOrder(solution, roots);
+        }
+        catch (InvalidDataException ex)
+        {
+            // A bad reference (missing, not a library, or a cycle) - nothing is built.
+            var diagnostic = new BuildDiagnostic("", 0, DiagnosticSeverity.Error, ex.Message);
+            AppendOutputLine($"------ Build FAILED: {ex.Message} ------");
+            _errorListView.SetDiagnostics([diagnostic]);
+            return new BuildResult(false, 1, [], [diagnostic], TimeSpan.Zero);
+        }
 
         var cancellation = new CancellationTokenSource();
         _buildCancellation = cancellation;
-        BuildResult result;
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var outputLines = new List<string>();
+        var diagnostics = new List<BuildDiagnostic>();
+        var failed = new HashSet<TedideProject>();
+        var succeeded = 0;
+        var skipped = 0;
         try
         {
-            result = await _toolchain.BuildAsync(project, onOutputLine: AppendOutputLine, cancellation.Token);
+            foreach (var project in order)
+            {
+                var libraries = ProjectGraph.LinkedLibraries(solution, project);
+                if (libraries.FirstOrDefault(failed.Contains) is { } failedLibrary)
+                {
+                    AppendOutputLine($"------ Skipped {project.Name}: {failedLibrary.Name} didn't build ------");
+                    failed.Add(project);
+                    skipped++;
+                    continue;
+                }
+
+                AppendOutputLine($"------ Build started: {project.Name} ({project.Target.ToCl65Id()}{(project.IsLibrary ? ", library" : "")}) ------");
+                var result = await _toolchain.BuildAsync(project, AppendOutputLine, cancellation.Token, libraries);
+                outputLines.AddRange(result.RawOutputLines);
+                // Each project's tools report paths relative to its own folder.
+                diagnostics.AddRange(result.Diagnostics.Select(d => d with
+                {
+                    FilePath = d.FilePath.Length == 0 || Path.IsPathRooted(d.FilePath) ? d.FilePath : Path.GetFullPath(Path.Combine(project.Directory, d.FilePath)),
+                    // Shown in the Error List's Project column - only worth one with several projects.
+                    Project = solution.Count > 1 ? project.Name : null,
+                }));
+
+                if (result.Succeeded)
+                {
+                    succeeded++;
+                    AppendOutputLine($"------ {project.Name}: build succeeded in {result.Duration.TotalSeconds:0.0}s ------");
+                    if (new FileInfo(project.ResolvedOutputFile) is { Exists: true } outputFile)
+                        AppendOutputLine($"{Path.GetFileName(project.ResolvedOutputFile)}: {outputFile.Length} bytes");
+                }
+                else
+                {
+                    failed.Add(project);
+                    AppendOutputLine($"------ {project.Name}: build FAILED ({result.Errors.Count()} error(s)) in {result.Duration.TotalSeconds:0.0}s ------");
+                }
+            }
         }
         catch (OperationCanceledException)
         {
@@ -2864,25 +2944,21 @@ public sealed class AppShell : Window
             cancellation.Dispose();
         }
 
+        if (order.Count > 1)
+            AppendOutputLine($"========== Build: {succeeded} succeeded, {failed.Count - skipped} failed, {skipped} skipped ==========");
+
         // Past the await, so not on the UI thread - see OnUiThread.
         OnUiThread(() =>
         {
-            _errorListView.SetDiagnostics(result.Diagnostics);
-            AppendOutputLine(result.Succeeded
-                ? $"------ Build succeeded in {result.Duration.TotalSeconds:0.0}s ------"
-                : $"------ Build FAILED ({result.Errors.Count()} error(s)) in {result.Duration.TotalSeconds:0.0}s ------");
-
-            if (result.Succeeded && new FileInfo(project.ResolvedOutputFile) is { Exists: true } outputFile)
-                AppendOutputLine($"{Path.GetFileName(project.ResolvedOutputFile)}: {outputFile.Length} bytes");
-
+            _errorListView.SetDiagnostics(diagnostics, DisplayPath);
             // Refreshes the Solution Explorer's "Generated Files" node - e.g. newly-written
             // assembler listings (see SolutionExplorerTree.AddGeneratedFilesNode) only appear once
             // the tree is rebuilt after this build actually wrote them.
             _solutionExplorer.Rebuild(_workspace);
-            _symbolPanel.Refresh(project);
+            _symbolPanel.Refresh(_workspace.ActiveProject);
         });
 
-        return result;
+        return new BuildResult(failed.Count == 0, failed.Count == 0 ? 0 : 1, outputLines, diagnostics, stopwatch.Elapsed);
     }
 
     /// <summary>Build > Cancel Build: stops the running build, if any (see <see cref="BuildActiveProjectAsync"/>).</summary>
@@ -2908,6 +2984,8 @@ public sealed class AppShell : Window
     private async Task RunActiveProjectAsync()
     {
         ShowOutputTab();
+        if (!CheckStartupProjectRuns("run"))
+            return;
 
         var result = await BuildActiveProjectAsync();
         if (result is null)
@@ -2931,33 +3009,134 @@ public sealed class AppShell : Window
         }
     }
 
-    /// <summary>Deletes the active project's build artifacts (object files and the linked output binary) without rebuilding.</summary>
-    private void CleanActiveProject() => Guard("Cleaning the project", () => CleanActiveProjectCore());
-
-    private void CleanActiveProjectCore()
+    /// <summary>
+    /// False, having said why, if the startup project is a library - there's nothing to
+    /// <paramref name="action"/>. A library only becomes code that runs inside a program.
+    /// </summary>
+    private bool CheckStartupProjectRuns(string action)
     {
-        var project = _workspace.ActiveProject;
-        if (project is null)
+        if (_workspace.ActiveProject is not { IsLibrary: true } library)
+            return true;
+        AppendOutputLine($"{library.Name} is a library, so there's nothing to {action}. Right-click an application in the "
+            + "Solution Explorer and choose Set as Startup Project.");
+        return false;
+    }
+
+    /// <summary>Build > Clean Project: deletes the startup project's build artifacts (object files
+    /// and its output) without rebuilding.</summary>
+    private void CleanActiveProject() => CleanProjects(_workspace.ActiveProject is { } project ? [project] : []);
+
+    /// <summary>Build > Clean Solution: <see cref="CleanActiveProject"/> for every project.</summary>
+    private void CleanSolution() => CleanProjects(_workspace.Projects.ToList());
+
+    private void CleanProjects(IReadOnlyList<TedideProject> projects) => Guard("Cleaning", () => CleanProjectsCore(projects));
+
+    private void CleanProjectsCore(IReadOnlyList<TedideProject> projects)
+    {
+        if (projects.Count == 0)
         {
             AppendOutputLine("No project loaded. Use File > Open Project or File > New Project first.");
             return;
         }
 
-        var removed = _toolchain.Clean(project);
-        AppendOutputLine($"------ Clean: {project.Name} ------");
-        if (removed.Count == 0)
+        var total = 0;
+        foreach (var project in projects)
         {
-            AppendOutputLine("Nothing to clean.");
-            return;
+            var removed = _toolchain.Clean(project);
+            AppendOutputLine($"------ Clean: {project.Name} ------");
+            if (removed.Count == 0)
+                AppendOutputLine("Nothing to clean.");
+            foreach (var path in removed)
+                AppendOutputLine($"Deleted {Path.GetFileName(path)}");
+            total += removed.Count;
         }
-
-        foreach (var path in removed)
-            AppendOutputLine($"Deleted {Path.GetFileName(path)}");
-        AppendOutputLine($"------ Clean complete: {removed.Count} file(s) removed ------");
+        AppendOutputLine($"------ Clean complete: {total} file(s) removed ------");
 
         // Drops (or shrinks) the Solution Explorer's "Generated Files" node if the assembler
         // listings it was showing are among the files just deleted.
         _solutionExplorer.Rebuild(_workspace);
+    }
+
+    /// <summary>
+    /// Solution Explorer > Add New Project: scaffolds a project (an application or a library) in
+    /// its own folder beside the solution file, and adds it to the solution.
+    /// </summary>
+    private void AddNewProject() => Guard("Adding the project", () =>
+    {
+        if (_workspace.Solution is not { } solution)
+            return;
+        var dialog = new NewProjectDialog(solution.Directory, "Add New Project");
+        Application.Run(dialog);
+        if (dialog.Target is not { } target || string.IsNullOrWhiteSpace(dialog.ProjectName))
+            return;
+        var project = _workspace.AddNewProject(dialog.Directory, dialog.ProjectName.Trim(), target, dialog.OutputType);
+        _solutionExplorer.Rebuild(_workspace);
+        AppendOutputLine($"Added {project.Name} ({(project.IsLibrary ? "library" : "application")}) to the solution.");
+    });
+
+    /// <summary>Solution Explorer > Add Existing Project: adds a .tproj from disk to the solution.</summary>
+    private void AddExistingProject() => Guard("Adding the project", () =>
+    {
+        if (_workspace.Solution is null)
+            return;
+        var dialog = new OpenDialog { Title = "Add Existing Project" };
+        Application.Run(dialog);
+        if (dialog.FilePaths.FirstOrDefault() is not { } path)
+            return;
+        if (!path.EndsWith(TedideProject.FileExtension, StringComparison.OrdinalIgnoreCase))
+        {
+            TedideMessageBox.ErrorQuery("Unsupported file", $"Expected a {TedideProject.FileExtension} file.", ["OK"]);
+            return;
+        }
+        var project = _workspace.AddExistingProject(path);
+        _solutionExplorer.Rebuild(_workspace);
+        AppendOutputLine($"Added {project.Name} to the solution.");
+    });
+
+    /// <summary>
+    /// Solution Explorer > Remove from Solution: drops the project (its files stay on disk) and
+    /// other projects' references to it, after closing its tabs.
+    /// </summary>
+    private void RemoveProject(TedideProject project) => Guard("Removing the project", () =>
+    {
+        var choice = TedideMessageBox.Query("Remove Project",
+            $"Remove {project.Name} from the solution?\n\nIts files stay on disk; other projects stop referencing it.", ["Remove", "Cancel"]);
+        if (choice != 0)
+            return;
+
+        var openInProject = _editorPane.OpenPaths.Where(p => _workspace.ProjectFor(p) == project).ToList();
+        if (!ConfirmCloseFiles(openInProject))
+            return;
+        var wasStartup = project == _workspace.ActiveProject;
+        if (wasStartup)
+            SaveLastOpenFileForActiveProject();
+        foreach (var path in openInProject)
+            _editorPane.Close(path);
+
+        _workspace.RemoveProject(project);
+        _solutionExplorer.Rebuild(_workspace);
+        if (wasStartup)
+            OnStartupProjectChanged();
+        AppendOutputLine($"Removed {project.Name} from the solution.");
+    });
+
+    /// <summary>Solution Explorer > Set as Startup Project: the project Run, Start Debugging and
+    /// Build Project act on, remembered in the solution file.</summary>
+    private void SetStartupProject(TedideProject project) => Guard("Setting the startup project", () =>
+    {
+        SaveLastOpenFileForActiveProject();
+        _workspace.SetStartupProject(project);
+        _solutionExplorer.Rebuild(_workspace);
+        OnStartupProjectChanged();
+        AppendOutputLine($"{project.Name} is now the startup project.");
+    });
+
+    /// <summary>Breakpoints and the Symbols tab belong to the startup project - reload them for
+    /// the new one. Open tabs are left as they are.</summary>
+    private void OnStartupProjectChanged()
+    {
+        LoadBreakpointsForActiveProject();
+        _symbolPanel.Refresh(_workspace.ActiveProject);
     }
 
     /// <summary>
@@ -2967,11 +3146,13 @@ public sealed class AppShell : Window
     /// which the dialog may have just changed. If the name changed, also renames the project's
     /// folder (and its .tproj file) on disk to match - see <see cref="RenameProjectFolder"/>.
     /// </summary>
-    private void ShowProjectSettings() => Guard("Saving project settings", () => ShowProjectSettingsCore());
+    private void ShowProjectSettings() => ShowProjectSettings(_workspace.ActiveProject);
 
-    private void ShowProjectSettingsCore()
+    /// <summary>The same, for any project - the Solution Explorer's project Settings... item.</summary>
+    private void ShowProjectSettings(TedideProject? project) => Guard("Saving project settings", () => ShowProjectSettingsCore(project));
+
+    private void ShowProjectSettingsCore(TedideProject? project)
     {
-        var project = _workspace.ActiveProject;
         if (project is null)
         {
             AppendOutputLine("No project loaded. Use File > Open Project or File > New Project first.");
@@ -2982,7 +3163,7 @@ public sealed class AppShell : Window
         var oldFilePath = project.FilePath;
         var oldDirectory = project.Directory;
 
-        var dialog = new ProjectSettingsDialog(project);
+        var dialog = new ProjectSettingsDialog(project, _workspace.Projects);
         Application.Run(dialog);
         if (!dialog.Saved)
             return;
@@ -3037,6 +3218,8 @@ public sealed class AppShell : Window
 
         var oldRecentPath = _workspace.Solution?.FilePath ?? oldFilePath;
         var result = ProjectRename.Apply(project, _workspace.Solution, oldName, oldFilePath, renameFolder: true);
+        // Other projects' references follow it to its new .tproj path.
+        _workspace.RetargetReferences(oldFilePath, result.NewProjectFile);
 
         _recentProjects.Remove(oldRecentPath);
         RememberRecentProject(result.NewSolutionFile ?? result.NewProjectFile);

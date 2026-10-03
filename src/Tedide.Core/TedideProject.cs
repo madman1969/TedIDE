@@ -15,6 +15,18 @@ public sealed class TedideProject
 
     public Cc65Target Target { get; set; } = Cc65Target.C64;
 
+    /// <summary>A program (linked into <see cref="ResolvedOutputFile"/>), or a library (its object
+    /// files archived into a .lib by ar65, for projects that reference it to link against).</summary>
+    public ProjectOutputType OutputType { get; set; } = ProjectOutputType.Application;
+
+    /// <summary>
+    /// The library projects this one links against, as paths to their .tproj files relative to this
+    /// project's directory. They must be in the same solution: they build first, their include
+    /// paths are added to this project's, and their .lib files are linked in - see
+    /// <see cref="ProjectGraph"/>.
+    /// </summary>
+    public List<string> ProjectReferences { get; set; } = [];
+
     /// <summary>The cc65 compiler optimization preset to build with. Defaults to no optimization.</summary>
     public Cc65OptimizationLevel OptimizationLevel { get; set; } = Cc65OptimizationLevel.None;
 
@@ -116,8 +128,48 @@ public sealed class TedideProject
         : (Path.GetDirectoryName(Path.GetFullPath(FilePath)) ?? System.Environment.CurrentDirectory);
 
     [JsonIgnore]
+    public bool IsLibrary => OutputType == ProjectOutputType.Library;
+
+    [JsonIgnore]
     public string ResolvedOutputFile =>
-        Path.Combine(Directory, OutputFile ?? (Name + Target.DefaultOutputExtension()));
+        Path.Combine(Directory, OutputFile ?? (Name + DefaultOutputExtension));
+
+    /// <summary>".lib" for a library, else the target's own program extension.</summary>
+    [JsonIgnore]
+    public string DefaultOutputExtension => IsLibrary ? LibraryExtension : Target.DefaultOutputExtension();
+
+    public const string LibraryExtension = ".lib";
+
+    /// <summary>Absolute paths of the .tproj files in <see cref="ProjectReferences"/>.</summary>
+    [JsonIgnore]
+    public IEnumerable<string> ResolvedProjectReferences =>
+        ProjectReferences.Select(r => Path.GetFullPath(Path.Combine(Directory, r)));
+
+    /// <summary>Whether this project references the project file at <paramref name="projectFile"/>.</summary>
+    public bool References(string projectFile) =>
+        ResolvedProjectReferences.Any(r => string.Equals(r, Path.GetFullPath(projectFile), StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>Points any reference to <paramref name="oldProjectFile"/> at <paramref name="newProjectFile"/>
+    /// (after a rename), or drops it if <paramref name="newProjectFile"/> is null (after a removal).
+    /// True if anything changed.</summary>
+    public bool RetargetReference(string oldProjectFile, string? newProjectFile)
+    {
+        var index = ProjectReferences.FindIndex(r =>
+            string.Equals(Path.GetFullPath(Path.Combine(Directory, r)), Path.GetFullPath(oldProjectFile), StringComparison.OrdinalIgnoreCase));
+        if (index < 0)
+            return false;
+        if (newProjectFile is null)
+            ProjectReferences.RemoveAt(index);
+        else
+            ProjectReferences[index] = Path.GetRelativePath(Directory, newProjectFile);
+        return true;
+    }
+
+    /// <summary>Absolute paths of <see cref="IncludePaths"/> - what a project referencing this
+    /// library adds to its own <c>-I</c> list, so the library's headers are found from there.</summary>
+    [JsonIgnore]
+    public IEnumerable<string> ResolvedIncludePaths =>
+        IncludePaths.Select(i => Path.GetFullPath(Path.Combine(Directory, i)));
 
     /// <summary>
     /// Where every per-source build output goes: "obj/" in the project's own directory, mirroring

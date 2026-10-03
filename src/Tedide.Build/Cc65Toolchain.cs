@@ -33,6 +33,15 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
 {
     public string Cl65Path { get; } = cl65Path;
 
+    /// <summary>ar65, which archives a library project's object files: beside cl65 when that's a
+    /// full path, else on PATH like it.</summary>
+    public string Ar65Path { get; } = Ar65PathFor(cl65Path);
+
+    internal static string Ar65PathFor(string cl65Path) =>
+        Path.IsPathRooted(cl65Path)
+            ? Path.Combine(Path.GetDirectoryName(cl65Path)!, "ar65" + Path.GetExtension(cl65Path))
+            : "ar65";
+
     /// <summary>Runs `cl65 --version` to confirm the toolchain is reachable.</summary>
     public async Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
     {
@@ -68,11 +77,19 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
     /// </summary>
     /// <param name="project">The project to build.</param>
     /// <param name="onOutputLine">Optional callback invoked for each line of stdout/stderr as it arrives, for live output panes.</param>
+    /// <param name="libraries">The library projects it links, already built, each before the ones
+    /// it uses (see <see cref="ProjectGraph.LinkedLibraries"/>): their include paths are added to
+    /// every compile, and their .lib files to the link. A library project archives its object
+    /// files with ar65 instead of linking.</param>
     public async Task<BuildResult> BuildAsync(
         TedideProject project,
         Action<string>? onOutputLine = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        IReadOnlyList<TedideProject>? libraries = null)
     {
+        libraries ??= [];
+        var libraryIncludePaths = libraries.SelectMany(l => l.ResolvedIncludePaths).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+
         // ld65 fails outright if the output file's directory doesn't already exist (e.g. an
         // OutputFile of "bin/Foo.prg" when "bin" hasn't been created yet) rather than creating it.
         var outputDirectory = Path.GetDirectoryName(project.ResolvedOutputFile);
@@ -114,7 +131,7 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
             // cl65 won't create the obj/ subdirectory an -o/-l path points into.
             Directory.CreateDirectory(Path.GetDirectoryName(project.ResolvedObjectFileFor(sourceFile))!);
 
-            foreach (var step in BuildCompileSteps(project, sourceFile))
+            foreach (var step in BuildCompileSteps(project, sourceFile, libraryIncludePaths))
             {
                 int? exitCode;
                 if (step.Tool == BuildTool.Opt6502)
@@ -157,9 +174,20 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
         if (opt6502Files > 1)
             Capture($"opt6502: total for {opt6502Files} C files: {opt6502Total.Describe()}");
 
-        if (!compileFailed)
+        if (!compileFailed && project.IsLibrary)
         {
-            var exitCode = await RunToolAsync(Cl65Path, BuildLinkArguments(project, objectFiles), project.Directory, Capture,
+            // ar65 r adds to an existing archive - start from nothing so a module removed from the
+            // project doesn't linger in the .lib.
+            File.Delete(project.ResolvedOutputFile);
+            var exitCode = await RunToolAsync(Ar65Path, BuildArchiveArguments(project, objectFiles), project.Directory, Capture,
+                $"ar65: Error: Could not launch '{Ar65Path}'. Is cc65 installed and on PATH?", cancellationToken);
+            if (exitCode is null)
+                return Finish(false, -1);
+            lastExitCode = exitCode.Value;
+        }
+        else if (!compileFailed)
+        {
+            var exitCode = await RunToolAsync(Cl65Path, BuildLinkArguments(project, objectFiles, libraries), project.Directory, Capture,
                 $"Could not launch '{Cl65Path}'. Is cc65 installed and on PATH?", cancellationToken);
             if (exitCode is null)
             {
@@ -402,30 +430,35 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
     /// assembled - so the listing, the .dbg file and the debugger's generated-assembly view all see
     /// the code that actually runs, at the same path as without it.
     /// </summary>
-    internal static List<BuildStep> BuildCompileSteps(TedideProject project, string sourceFile)
+    internal static List<BuildStep> BuildCompileSteps(TedideProject project, string sourceFile, IReadOnlyList<string>? libraryIncludePaths = null)
     {
         var objectFile = RelativeToProject(project, project.ResolvedObjectFileFor(sourceFile));
         var listingFile = project.GenerateAssemblyListing
             ? RelativeToProject(project, project.ResolvedListingFileFor(sourceFile))
             : null;
+        var generatedAssembly = RelativeToProject(project, project.ResolvedGeneratedAssemblyFileFor(sourceFile));
+        var unoptimizedAssembly = RelativeToProject(project, project.ResolvedUnoptimizedAssemblyFileFor(sourceFile));
+        // A library's code is debugged from the program that links it, whose .dbg file names
+        // sources as cl65 was given them - and resolves them against the program's own folder. A
+        // full path resolves from anywhere.
+        if (project.IsLibrary)
+            sourceFile = Path.GetFullPath(Path.Combine(project.Directory, sourceFile));
 
         if (!TedideProject.IsCSourceFile(sourceFile))
             return [new(BuildTool.Cl65, BuildAssembleArguments(project, sourceFile, objectFile, listingFile))];
 
-        var generatedAssembly = RelativeToProject(project, project.ResolvedGeneratedAssemblyFileFor(sourceFile));
         if (!project.UseOpt6502)
         {
             return
             [
-                new(BuildTool.Cl65, BuildGenerateAssemblyArguments(project, sourceFile, generatedAssembly)),
+                new(BuildTool.Cl65, BuildGenerateAssemblyArguments(project, sourceFile, generatedAssembly, libraryIncludePaths)),
                 new(BuildTool.Cl65, BuildAssembleArguments(project, generatedAssembly, objectFile, listingFile)),
             ];
         }
 
-        var unoptimizedAssembly = RelativeToProject(project, project.ResolvedUnoptimizedAssemblyFileFor(sourceFile));
         return
         [
-            new(BuildTool.Cl65, BuildGenerateAssemblyArguments(project, sourceFile, unoptimizedAssembly)),
+            new(BuildTool.Cl65, BuildGenerateAssemblyArguments(project, sourceFile, unoptimizedAssembly, libraryIncludePaths)),
             new(BuildTool.Opt6502, [unoptimizedAssembly, generatedAssembly], BuildOpt6502Options(project)),
             new(BuildTool.Cl65, BuildAssembleArguments(project, generatedAssembly, objectFile, listingFile)),
         ];
@@ -445,7 +478,8 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
     /// Carries every compiler-level setting (optimization, <c>-T</c> source comments, include
     /// paths, defines); the listing is produced by the assemble step that follows.
     /// </summary>
-    internal static List<string> BuildGenerateAssemblyArguments(TedideProject project, string sourceFile, string outputFile)
+    internal static List<string> BuildGenerateAssemblyArguments(TedideProject project, string sourceFile, string outputFile,
+        IReadOnlyList<string>? libraryIncludePaths = null)
     {
         var args = new List<string>
         {
@@ -461,6 +495,9 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
         if (project.GenerateDebugInfo)
             args.Add("-g");
         foreach (var includePath in project.IncludePaths)
+            args.AddRange(["-I", includePath]);
+        // After the project's own, so its headers win a name clash.
+        foreach (var includePath in libraryIncludePaths ?? [])
             args.AddRange(["-I", includePath]);
         foreach (var define in project.PreprocessorDefines)
             args.AddRange(["-D", define]);
@@ -509,7 +546,7 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
     /// directory), not absolute - the generated assembly's path is recorded as-is in the .dbg
     /// file's own file table, which should stay as portable as the source paths beside it.</summary>
     private static string RelativeToProject(TedideProject project, string path) =>
-        Path.GetRelativePath(project.Directory, path);
+        project.IsLibrary ? path : Path.GetRelativePath(project.Directory, path);
 
     /// <summary>
     /// The cl65 arguments to link a project's already-compiled object files into its output
@@ -518,7 +555,8 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
     /// are appended after the object files, so ld65 resolves undefined symbols from them the same
     /// way it would object-file-then-library arguments on a hand-written command line.
     /// </summary>
-    internal static List<string> BuildLinkArguments(TedideProject project, IEnumerable<string> objectFiles)
+    internal static List<string> BuildLinkArguments(TedideProject project, IEnumerable<string> objectFiles,
+        IReadOnlyList<TedideProject>? libraries = null)
     {
         var args = new List<string>
         {
@@ -539,7 +577,13 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
             args.AddRange(["-Ln", project.ResolvedLabelsFile]);
         args.AddRange(project.ExtraArguments);
         args.AddRange(objectFiles);
+        // Referenced library projects before lib/'s prebuilt ones, which they may use too.
+        args.AddRange((libraries ?? []).Select(l => l.ResolvedOutputFile));
         args.AddRange(project.ResolvedLibFiles);
         return args;
     }
+
+    /// <summary>The ar65 arguments that archive a library project's object files into its .lib.</summary>
+    internal static List<string> BuildArchiveArguments(TedideProject project, IEnumerable<string> objectFiles) =>
+        ["r", project.ResolvedOutputFile, .. objectFiles];
 }

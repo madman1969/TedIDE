@@ -53,7 +53,10 @@ public sealed class SolutionExplorerFolderTests : IDisposable
 
         explorer.Rebuild(workspace);
 
-        var project = Assert.Single(explorer.Objects!);
+        // The solution is the root, holding the project.
+        var solution = Assert.Single(explorer.Objects!);
+        Assert.Equal("Solution 'Demo' (1 project)", solution.Text);
+        var project = Assert.Single(solution.Children);
         var children = project.Children.ToList();
         Assert.Contains(children, n => n is SolutionExplorerTree.FolderNode && n.Text == "src");
         Assert.Contains(children, n => n is SolutionExplorerTree.FolderNode && n.Text == "include");

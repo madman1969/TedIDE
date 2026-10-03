@@ -15,6 +15,10 @@ public sealed class TedideSolution
     /// <summary>Project file paths, relative to the solution file's directory.</summary>
     public List<string> ProjectPaths { get; set; } = [];
 
+    /// <summary>The project Run and Start Debugging launch (and Build Project builds), as a path
+    /// relative to the solution file's directory. Null means the first application project.</summary>
+    public string? StartupProject { get; set; }
+
     [JsonIgnore]
     public string? FilePath { get; set; }
 
@@ -57,6 +61,19 @@ public sealed class TedideSolution
         }
         return projects;
     }
+
+    /// <summary>Drops a project from <see cref="ProjectPaths"/> (and as the startup project). Its files stay on disk.</summary>
+    public void RemoveProject(TedideProject project)
+    {
+        if (project.FilePath is null)
+            return;
+        ProjectPaths.RemoveAll(p => SameFile(p, project.FilePath));
+        if (StartupProject is { } startup && SameFile(startup, project.FilePath))
+            StartupProject = null;
+    }
+
+    private bool SameFile(string relativePath, string fullPath) =>
+        string.Equals(Path.GetFullPath(Path.Combine(Directory, relativePath)), Path.GetFullPath(fullPath), StringComparison.OrdinalIgnoreCase);
 
     public void AddProject(TedideProject project)
     {

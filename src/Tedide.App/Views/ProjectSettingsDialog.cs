@@ -55,10 +55,17 @@ public sealed class ProjectSettingsDialog : Dialog
     /// <summary>True if the user chose Save (and the project was updated and saved to disk).</summary>
     public bool Saved { get; private set; }
 
-    public ProjectSettingsDialog(TedideProject project)
+    private readonly DropDownList _outputTypeField;
+
+    /// <summary>The References tab's check boxes, one per library this project could reference.</summary>
+    private readonly List<(TedideProject Library, CheckBox Field)> _referenceFields = [];
+
+    /// <param name="solutionProjects">Every project in the solution, for the References tab.</param>
+    public ProjectSettingsDialog(TedideProject project, IReadOnlyList<TedideProject> solutionProjects)
     {
         Title = $"Project Settings - {project.Name}";
-        Width = 101; // 30% wider than the original 78
+        // Wide enough for all ten tab titles in one row.
+        Width = 116;
         // Tall enough for the "Settings" tab's six label/field pairs, each now with a blank row
         // above and below its field - see the "every field needs clearance on all 4 sides"
         // convention - plus the Tabs control's own header/border chrome, and +2 for each tab's own
@@ -77,7 +84,7 @@ public sealed class ProjectSettingsDialog : Dialog
         var tabs = new Tabs { X = 0, Y = 0, Width = Dim.Fill(), Height = Dim.Fill(2) };
         var settingsTab = BuildSettingsTab(
             project, out _nameField, out _targetField, out _outputFileField, out _extraArgumentsField,
-            out _includePathsField, out _preprocessorDefinesField);
+            out _includePathsField, out _preprocessorDefinesField, out _outputTypeField);
         var optimizerTab = BuildOptimizerTab(project, out _optimizationLevelField);
         var compilerTab = BuildCompilerTab(project, out _generateListingField, out _addSourceAsCommentField);
         var linkerTab = BuildLinkerTab(project, _targetField, out _generateLinkerMapField, out _exportLabelsField, out _generateDebugInfoField, out _linkerConfigPathField);
@@ -86,6 +93,7 @@ public sealed class ProjectSettingsDialog : Dialog
         var buildEventsTab = BuildBuildEventsTab(project, out _preBuildField, out _postBuildField);
         var cc65Tab = BuildCc65Tab(out _cc65HomeField);
         var viceTab = BuildViceTab(out _viceBinDirectoryField);
+        var referencesTab = BuildReferencesTab(project, solutionProjects, _referenceFields);
         tabs.Add(settingsTab);
         tabs.Add(optimizerTab);
         tabs.Add(compilerTab);
@@ -93,6 +101,7 @@ public sealed class ProjectSettingsDialog : Dialog
         tabs.Add(superCpuTab);
         tabs.Add(opt6502Tab);
         tabs.Add(buildEventsTab);
+        tabs.Add(referencesTab);
         tabs.Add(cc65Tab);
         tabs.Add(viceTab);
 
@@ -171,6 +180,15 @@ public sealed class ProjectSettingsDialog : Dialog
             project.EnableSuperCpu = _enableSuperCpuField.Value == CheckState.Checked;
             project.UseOpt6502 = _useOpt6502Field.Value == CheckState.Checked;
             project.Opt6502Mode = _favourSpeedField.Value == CheckState.Checked ? Opt6502Mode.Speed : Opt6502Mode.Size;
+            project.OutputType = Enum.TryParse<ProjectOutputType>(_outputTypeField.Text, out var outputType) ? outputType : project.OutputType;
+            // References this tab doesn't list (one to a project no longer in the solution, say)
+            // are kept as they are; the build reports them.
+            var listed = _referenceFields.Select(r => r.Library.FilePath!).ToList();
+            project.ProjectReferences =
+            [
+                .. project.ProjectReferences.Where(r => !listed.Any(l => SameFile(Path.Combine(project.Directory, r), l))),
+                .. _referenceFields.Where(r => r.Field.Value == CheckState.Checked).Select(r => Path.GetRelativePath(project.Directory, r.Library.FilePath!)),
+            ];
             project.PreBuildCommands = CommandLines(_preBuildField.Text);
             project.PostBuildCommands = CommandLines(_postBuildField.Text);
 
@@ -225,7 +243,8 @@ public sealed class ProjectSettingsDialog : Dialog
         out TextField outputFileField,
         out TextField extraArgumentsField,
         out TextField includePathsField,
-        out TextField preprocessorDefinesField)
+        out TextField preprocessorDefinesField,
+        out DropDownList outputTypeField)
     {
         var tab = new View { Title = " _Settings ", Width = Dim.Fill(), Height = Dim.Fill() };
         // A real Padding adornment, same as the Dialog itself uses - Tabs' own header/border
@@ -264,18 +283,87 @@ public sealed class ProjectSettingsDialog : Dialog
         var definesLabel = new Label { Text = "Preprocessor defines (-D, space-separated, NAME or NAME=VALUE):", X = 0, Y = 20 };
         preprocessorDefinesField = new TextField { X = 0, Y = 22, Width = Dim.Fill(1), Text = ArgumentText.Join(project.PreprocessorDefines) };
 
+        // A library's object files are archived by ar65 into a .lib that referencing projects link -
+        // see TedideProject.OutputType.
+        var outputTypeLabel = new Label { Text = "Output type (a library builds a .lib for other projects to reference):", X = 0, Y = 24 };
+        outputTypeField = new DropDownList
+        {
+            X = 0, Y = 26, Width = Dim.Fill(1),
+            Source = new ListWrapper<string>(new ObservableCollection<string>(Enum.GetNames<ProjectOutputType>())),
+            Text = project.OutputType.ToString(),
+        };
+        // The output file's default follows the output type (and target).
+        var outputTypeFieldRef = outputTypeField;
+        var targetFieldRef = targetField;
+        void RefreshOutputLabel()
+        {
+            var extension = outputTypeFieldRef.Text == nameof(ProjectOutputType.Library)
+                ? TedideProject.LibraryExtension
+                : (Cc65TargetExtensions.TryParse(targetFieldRef.Text, out var target) ? target : project.Target).DefaultOutputExtension();
+            outputLabel.Text = $"Output file (blank = {project.Name}{extension}):";
+        }
+        outputTypeField.TextChanged += (_, _) => RefreshOutputLabel();
+        targetField.TextChanged += (_, _) => RefreshOutputLabel();
+        RefreshOutputLabel();
+
         var infoLabel = new Label
         {
             Text = $"{project.SourceFiles.Count} source file(s) in {project.Directory}",
-            X = 0, Y = 24, Width = Dim.Fill(1),
+            X = 0, Y = 28, Width = Dim.Fill(1),
         };
 
         tab.Add(
             nameLabel, nameField, targetLabel, targetField, outputLabel, outputFileField,
             extraArgsLabel, extraArgumentsField, includePathsLabel, includePathsField,
-            definesLabel, preprocessorDefinesField, infoLabel);
+            definesLabel, preprocessorDefinesField, outputTypeLabel, outputTypeField, infoLabel);
         return tab;
     }
+
+    /// <summary>
+    /// Builds the "References" tab: a check box for each library project in the solution this one
+    /// could link against (see <see cref="ProjectGraph.ReferenceCandidates"/> - never one that
+    /// would make a cycle), checked where it already does.
+    /// </summary>
+    private static View BuildReferencesTab(TedideProject project, IReadOnlyList<TedideProject> solutionProjects,
+        List<(TedideProject Library, CheckBox Field)> referenceFields)
+    {
+        var tab = new View { Title = " _References ", Width = Dim.Fill(), Height = Dim.Fill() };
+        // See BuildSettingsTab's comment on this same line - every tab needs its own Padding.
+        tab.Padding.Thickness = new Thickness(2, 1, 2, 1);
+
+        var candidates = ProjectGraph.ReferenceCandidates(solutionProjects, project);
+        var helpLabel = new Label
+        {
+            Text = candidates.Count == 0
+                ? "There are no library projects in this solution for this project to reference.\n\n" +
+                  "To add one, right-click the solution in the Solution Explorer, choose Add New Project,\n" +
+                  "and set its output type to Library."
+                : "Library projects this one links against. Each builds first; its include paths are\n" +
+                  "added to this project's, and its .lib to the link.",
+            X = 0, Y = 0, Width = Dim.Fill(1), Height = candidates.Count == 0 ? 4 : 2,
+        };
+        tab.Add(helpLabel);
+
+        var y = 3;
+        foreach (var library in candidates)
+        {
+            var field = new CheckBox
+            {
+                Text = $"{library.Name} ({library.Target.ToCl65Id()}) - {Path.GetRelativePath(project.Directory, library.FilePath!)}",
+                X = 0, Y = y,
+                Value = project.References(library.FilePath!) ? CheckState.Checked : CheckState.UnChecked,
+                // The text holds a path - a "_" in it is not a hotkey marker.
+                HotKeySpecifier = new System.Text.Rune(0xFFFF),
+            };
+            referenceFields.Add((library, field));
+            tab.Add(field);
+            y += 2;
+        }
+        return tab;
+    }
+
+    private static bool SameFile(string a, string b) =>
+        string.Equals(Path.GetFullPath(a), Path.GetFullPath(b), StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Builds the "Optimizer" tab (the <see cref="Cc65OptimizationLevel"/> preset dropdown, plus a help block explaining each flag).</summary>
     private static View BuildOptimizerTab(TedideProject project, out DropDownList optimizationLevelField)

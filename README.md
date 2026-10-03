@@ -269,6 +269,29 @@ to resize both panes.
 
 ![The Solution Explorer for the CBMInfo sample: include, src and Generated Files folders, with the right-click menu open on the src folder offering New File... and Add Existing Item...](docs/images/running-solution-explorer.png)
 
+### Solutions with several projects
+
+A solution can hold any number of projects. Right-click the solution, the root of the Solution
+Explorer, for **Add New Project...**, **Add Existing Project...**, **Build Solution** and **Clean
+Solution**. Right-click a project for **Set as Startup Project**, **Build**, **Clean**,
+**Settings...** and **Remove from Solution**, which leaves its files on disk.
+
+- **The startup project**, shown in bold, is the one F5 builds, F6 runs and Start Debugging
+  debugs; its breakpoints and symbols are the ones shown. It's saved in the `.tsln`. Without one,
+  it's the first application project.
+- **Library projects.** A project's output type is Application or Library. A library's object
+  files are archived by `ar65` into a `.lib` instead of being linked.
+- **References.** A project can reference library projects in the same solution, on the
+  **References** tab of Project Settings. Each library builds first, its include paths are added to
+  the project's own, and its `.lib` is linked in, each library before the ones it uses. References
+  can't form a cycle, and the References tab only offers libraries that wouldn't make one.
+- **Building.** Build Project builds the startup project and the libraries it needs; Build Solution
+  builds every project. Each library builds before anything that uses it. If a library fails, the
+  projects that use it are skipped rather than linked against an old `.lib`, and the rest still
+  build. The Error List adds a **Project** column.
+- **Debugging into a library.** A library's sources are compiled by full path, so the debug info of
+  the program that links it finds them.
+
 Press **F5** (or **Build > Build Project**) to invoke `cl65` - once per source file (`-c`, compile
 and assemble but don't link) so each gets its own assembler listing, then once more to link the
 resulting object files into the output binary; output from every invocation streams live into the
@@ -587,7 +610,9 @@ an example, laid out the way GitHub's most common C project layout does (`src/`,
   "LinkerConfigPath": null,
   "IncludePaths": ["include"],
   "PreprocessorDefines": [],
-  "ExtraArguments": []
+  "ExtraArguments": [],
+  "OutputType": "Application",
+  "ProjectReferences": []
 }
 ```
 
@@ -608,15 +633,19 @@ an example, laid out the way GitHub's most common C project layout does (`src/`,
 | `PreprocessorDefines` | Preprocessor defines passed as `-D <value>` (compile-time only), each either `"NAME"` or `"NAME=VALUE"`. |
 | (CPU) | Not a field - every compile and assemble passes `--cpu` explicitly, from a hand-checked per-target table (`Cc65TargetExtensions.Cc65Cpu`): `6502` for every Commodore target (their 6502/6510/8502/7501/6509 all share the NMOS 6502 instruction set), or `65816` for a C64 with `EnableSuperCpu` on. |
 | `ExtraArguments` | Appended verbatim to the `cl65` command line, after the fields above - positional flags like a hand-written `-I`/`-D` here only affect source files listed after them on the command line, same as `IncludePaths`/`PreprocessorDefines`. |
+| `OutputType` | `Application` (the default) or `Library`, whose object files `ar65` archives into a `.lib` (by default `<Name>.lib`) for other projects to link - see "Solutions with several projects" above. |
+| `ProjectReferences` | The library projects this one links, as paths to their `.tproj` files relative to this project's directory. They must be in the same solution. |
 | `lib/` folder | Not a `.tproj` field at all - just a folder Tedide scans on every build (`TedideProject.ResolvedLibFiles`). Every `.lib` file found directly inside it is passed to `ld65` at link time, after the compiled object files, so linking against a prebuilt cc65 library archive is a matter of dropping it in `lib/`, nothing more. |
 | `{Name}.breakpoints.json` | Not a `.tproj` field either - a separate sidecar file for the project's debugger breakpoints (see "Debugging" above), kept out of `.tproj` since it's session/debugging state, not build configuration. Gitignored, like the session file below - it's per-user state. If it can't be read (e.g. hand-edited into invalid JSON), it's moved aside to `{Name}.breakpoints.json.corrupt` and the project opens with no breakpoints, with a note in Output. |
 | `{Name}.session.json` | Another sidecar file, recording which file was open in the editor - written when you quit Tedide or switch to a different project/solution, and reopened automatically the next time this same project loads (see `SessionStateFile`), for the same "not build configuration" reason as the breakpoints file above. Also gitignored, and recovered the same way if unreadable. |
 
-A `.tsln` file just lists the `.tproj` files that make up a solution.
+A `.tsln` file lists the `.tproj` files that make up a solution (`ProjectPaths`, relative to the
+`.tsln`), and the startup project (`StartupProject`, null for the first application).
 
 ## Project Settings dialog
 
-**Project > Settings...** opens one dialog covering everything above, as nine tabs sharing a
+**Project > Settings...** opens one dialog covering everything above for the startup project (the
+Solution Explorer's project **Settings...** opens it for any project), as ten tabs sharing a
 single Save/Cancel footer:
 
 - **Settings** - display name, target platform, output file override, extra `cl65` arguments,
@@ -715,6 +744,8 @@ single Save/Cancel footer:
   ```text
   c1541 -format "game,01" d64 game.d64 -write "$(OutputFile)" game
   ```
+- **References** - the library projects this one links against, as check boxes - see "Solutions
+  with several projects" above.
 
 - **CC65** - the `CC65_HOME` environment variable (where cl65 finds target headers/libraries) -
   a per-machine toolchain setting, not project state, so it's saved once and applies to every
@@ -867,9 +898,10 @@ The theme covers more than the window chrome:
 In place and tested:
 
 - **Projects** - the project/solution model; File > New Project scaffolding with the samples'
-  `src`/`include`/`lib`/`bin` layout; a Recent Projects and Solutions list; the nine-tab Project
-  Settings dialog, including pre- and post-build commands; and a Solution Explorer folder tree with a Generated Files node and New File,
-  Add Existing Item, Rename and Delete.
+  `src`/`include`/`lib`/`bin` layout; a Recent Projects and Solutions list; the ten-tab Project
+  Settings dialog, including pre- and post-build commands; a Solution Explorer folder tree with a Generated Files node and New File,
+  Add Existing Item, Rename and Delete; and multi-project solutions with library projects,
+  project references, a startup project, and Build/Clean Solution.
 - **Editing** - a tabbed editor with syntax highlighting for C, 6502/ca65 assembly,
   assembler listings, linker maps, VICE label files and linker configs, all colored by the active
   theme; Find/Replace, Find in Files and Go To Line; Go To Definition and Find All References
