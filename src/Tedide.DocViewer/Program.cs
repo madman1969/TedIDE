@@ -50,6 +50,14 @@ try
     ThemeSwitcher.SaveFailed += ex => Log.Error(ex, "Could not save the theme setting");
     ThemeSwitcher.Apply(ThemeSettings.Load().Theme, persist: false);
     var shell = new DocViewerShell(database);
+    // "--topic word": Tedide's F1 (see Tedide.Core's ContextHelp). Shown once the window is up -
+    // the search dialog it may open is modal, and a heading can only be scrolled to once laid out.
+    if (TopicArgument(args) is { } topic)
+        Application.AddTimeout(TimeSpan.Zero, () =>
+        {
+            shell.ShowTopic(topic);
+            return false;
+        });
     Application.Run(shell);
     try
     {
@@ -68,3 +76,9 @@ finally
 }
 
 return 0;
+
+static string? TopicArgument(string[] args)
+{
+    var index = Array.FindIndex(args, a => string.Equals(a, "--topic", StringComparison.OrdinalIgnoreCase));
+    return index >= 0 && index + 1 < args.Length && !string.IsNullOrWhiteSpace(args[index + 1]) ? args[index + 1] : null;
+}

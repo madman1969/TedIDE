@@ -24,7 +24,9 @@ public sealed class SearchDialog : Dialog
     /// <summary>The result the user activated, or null if the dialog was cancelled without picking one.</summary>
     public SearchResult? SelectedResult { get; private set; }
 
-    public SearchDialog(DocDatabase database)
+    /// <param name="initialQuery">Searched for straight away when given - e.g. a word Tedide's F1
+    /// found no heading for (see <see cref="DocViewerShell.ShowTopic"/>).</param>
+    public SearchDialog(DocDatabase database, string initialQuery = "")
     {
         _database = database;
 
@@ -98,6 +100,11 @@ public sealed class SearchDialog : Dialog
 
         Add([searchLabel, _searchField, searchButton, _statusLabel, _resultsList, openButton, closeButton]);
         _searchField.SetFocus();
+        if (initialQuery.Length > 0)
+        {
+            _searchField.Text = initialQuery;
+            RunSearch();
+        }
     }
 
     private void RunSearch()

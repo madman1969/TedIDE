@@ -42,6 +42,9 @@ public sealed class AppShell : Window
     // after every ProjectSettingsDialog save - see ShowProjectSettings).
     private readonly ViceEmulator _vice = new();
     private readonly RecentProjectsSettings _recentProjects = RecentProjectsSettings.Load();
+
+    /// <summary>Navigate Backward/Forward (Alt+Left/Alt+Right) - see <see cref="RecordJump"/>.</summary>
+    private readonly NavigationHistory _navigationHistory = new();
     private readonly LayoutSettings _layoutSettings = LayoutSettings.Load();
 
     /// <summary>The File menu's "Recent Projects and Solutions" item - kept as a field so its
@@ -228,7 +231,11 @@ public sealed class AppShell : Window
         var symbolsTab = new View { Title = " _Symbols ", Width = Dim.Fill(), Height = Dim.Fill() };
         _symbolPanel.Width = Dim.Fill();
         _symbolPanel.Height = Dim.Fill();
-        _symbolPanel.LineActivated += OpenSymbol;
+        _symbolPanel.LineActivated += entry =>
+        {
+            RecordJump();
+            OpenSymbol(entry);
+        };
         symbolsTab.Add(_symbolPanel);
 
         _referencesTab = new View { Title = " _References ", Width = Dim.Fill(), Height = Dim.Fill() };
@@ -433,6 +440,7 @@ public sealed class AppShell : Window
 
         var helpMenu = new MenuBarItem("_Help", new List<MenuItem>
         {
+            new("_Context Help", "", ShowContextHelp, ContextHelpKey),
             new("_About Tedide...", "", ShowAbout, Key.Empty),
         });
 
@@ -451,6 +459,8 @@ public sealed class AppShell : Window
         editMenuItems.AddAt(2, new MenuItem("Go To _Definition", "", GoToDefinition, GoToDefinitionKey));
         editMenuItems.AddAt(3, new MenuItem("Find All _References", "", FindAllReferences, FindReferencesKey));
         editMenuItems.AddAt(4, new MenuItem("Re_name Symbol...", "", RenameSymbol, RenameSymbolKey));
+        editMenuItems.AddAt(5, new MenuItem("Navigate _Backward", "", NavigateBackward, NavigateBackwardKey));
+        editMenuItems.AddAt(6, new MenuItem("Navigate For_ward", "", NavigateForward, NavigateForwardKey));
         menuBar.Menus = [fileMenu, menuBar.EditMenu, menuBar.ViewMenu, buildMenu, debugMenu, projectMenu, themeMenu, helpMenu];
         menuBar.X = 0;
         menuBar.Y = 0;
@@ -472,6 +482,14 @@ public sealed class AppShell : Window
 
     /// <summary>F2, as in VS Code - Visual Studio's own Ctrl+R, Ctrl+R is a two-key chord.</summary>
     private static readonly Key RenameSymbolKey = Key.F2;
+
+    /// <summary>Not Visual Studio's Ctrl+- and Ctrl+Shift+-: Windows Terminal takes those for its
+    /// font size. Alt+Left/Alt+Right are VS Code's, and the Doc Viewer's own Back/Forward.</summary>
+    private static readonly Key NavigateBackwardKey = Key.CursorLeft.WithAlt;
+    private static readonly Key NavigateForwardKey = Key.CursorRight.WithAlt;
+
+    /// <summary>F1, as in Visual Studio - see <see cref="ShowContextHelp"/>.</summary>
+    private static readonly Key ContextHelpKey = Key.F1;
 
     /// <summary>
     /// App-wide keys that have no status-bar Shortcut to carry them. A key reaches this only after
@@ -497,6 +515,12 @@ public sealed class AppShell : Window
             action = FindAllReferences;
         else if (key == RenameSymbolKey)
             action = RenameSymbol;
+        else if (key == NavigateBackwardKey)
+            action = NavigateBackward;
+        else if (key == NavigateForwardKey)
+            action = NavigateForward;
+        else if (key == ContextHelpKey)
+            action = ShowContextHelp;
         else if (key == Key.PageDown.WithCtrl)
             action = () => _editorPane.CycleDocument(1);
         else if (key == Key.PageUp.WithCtrl)
@@ -868,6 +892,7 @@ public sealed class AppShell : Window
         File.Move(path, newPath);
         // An open tab follows the file to its new name, unsaved edits and all.
         _editorPane.Rename(path, newPath);
+        _navigationHistory.MovePath(path, newPath);
 
         foreach (var project in _workspace.Projects)
         {
@@ -903,6 +928,7 @@ public sealed class AppShell : Window
         _editorPane.Close(path);
 
         File.Delete(path);
+        _navigationHistory.RemoveFile(path);
 
         foreach (var project in _workspace.Projects)
         {
@@ -1036,6 +1062,7 @@ public sealed class AppShell : Window
         Application.Run(dialog);
         if (dialog.LineNumber is { } lineNumber)
         {
+            RecordJump();
             _editorPane.Editor.CaretOffset = document.GetLineByNumber(lineNumber).Offset;
             _editorPane.Editor.SetFocus();
         }
@@ -1055,8 +1082,10 @@ public sealed class AppShell : Window
     /// <param name="highlightLength">When non-zero, that many characters from the column are
     /// selected, so the symbol a reference or definition points at stands out - the same
     /// SelectRange highlighting <see cref="OpenDiagnostic"/> gives a whole line.</param>
-    private void NavigateTo(string filePath, int lineNumber, int columnNumber, int highlightLength = 0)
+    private void NavigateTo(string filePath, int lineNumber, int columnNumber, int highlightLength = 0, bool recordJump = true)
     {
+        if (recordJump)
+            RecordJump();
         if (!string.Equals(_editorPane.OpenPath, filePath, StringComparison.OrdinalIgnoreCase))
         {
             OpenFile(filePath);
@@ -1160,6 +1189,83 @@ public sealed class AppShell : Window
 
         NavigateTo(target.FilePath, target.Line, target.Column, target.Kind == SymbolKind.File ? 0 : target.Name.Length);
     }
+
+    /// <summary>Remembers where the caret is, before a jump moves it, for Navigate Backward. Called
+    /// by every jump: Go To Definition, the References and Error List tabs, Find in Files, Go To
+    /// Line and the Symbols tab - not by the debugger following execution.</summary>
+    private void RecordJump()
+    {
+        if (_editorPane.OpenPath is { } path)
+        {
+            var (line, column) = _editorPane.CaretPosition;
+            _navigationHistory.RecordJump(new CaretLocation(path, line, column));
+        }
+    }
+
+    private CaretLocation? CurrentCaretLocation()
+    {
+        if (_editorPane.OpenPath is not { } path)
+            return null;
+        var (line, column) = _editorPane.CaretPosition;
+        return new CaretLocation(path, line, column);
+    }
+
+    /// <summary>Edit > Navigate Backward (Alt+Left): back to where the caret was before the last jump.</summary>
+    private void NavigateBackward() => Guard("Navigating backward", () =>
+    {
+        if (_navigationHistory.GoBack(CurrentCaretLocation()) is { } target)
+            GoToHistoryLocation(target);
+        else
+            ReportNavigation("Nothing to navigate back to.");
+    });
+
+    /// <summary>Edit > Navigate Forward (Alt+Right): undoes a Navigate Backward.</summary>
+    private void NavigateForward() => Guard("Navigating forward", () =>
+    {
+        if (_navigationHistory.GoForward(CurrentCaretLocation()) is { } target)
+            GoToHistoryLocation(target);
+        else
+            ReportNavigation("Nothing to navigate forward to.");
+    });
+
+    private void GoToHistoryLocation(CaretLocation target)
+    {
+        if (!File.Exists(target.FilePath))
+        {
+            _navigationHistory.RemoveFile(target.FilePath);
+            ReportNavigation($"{Path.GetFileName(target.FilePath)} no longer exists.");
+            return;
+        }
+        NavigateTo(target.FilePath, target.Line, target.Column, recordJump: false);
+    }
+
+    /// <summary>
+    /// Help > Context Help (F1): opens the Doc Viewer at the word under the caret - the section
+    /// whose heading names it, or a search for it - or at its first page if there's no word.
+    /// </summary>
+    private void ShowContextHelp() => Guard("Opening the Doc Viewer", () =>
+    {
+        string? topic = null;
+        if (_editorPane.OpenPath is not null && _editorPane.Editor.Document is { } document)
+        {
+            var (line, column) = _editorPane.CaretPosition;
+            var lineText = document.GetText(document.GetLineByNumber(line));
+            topic = ContextHelp.WordAt(lineText, column);
+        }
+
+        var candidates = ContextHelp.CandidatePaths(AppContext.BaseDirectory, Environment.GetEnvironmentVariable(ContextHelp.DocViewerPathVariable));
+        if (ContextHelp.FindDocViewer(candidates) is not { } docViewer)
+        {
+            TedideMessageBox.ErrorQuery("Doc Viewer not found",
+                $"{ContextHelp.DocViewerFileName} wasn't found. Looked in:\n\n{string.Join('\n', candidates)}\n\n"
+                + $"Publish it beside Tedide, or set {ContextHelp.DocViewerPathVariable} to its full path.", ["OK"]);
+            return;
+        }
+
+        var insideWindowsTerminal = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WT_SESSION"));
+        using var _ = System.Diagnostics.Process.Start(ContextHelp.CreateStartInfo(docViewer, topic, insideWindowsTerminal));
+        AppendOutputLine(topic is null ? "Opened the Doc Viewer." : $"Opened the Doc Viewer at '{topic}'.");
+    });
 
     /// <summary>The source line a definition sits on, for <see cref="DefinitionPickerDialog"/>'s list.</summary>
     private static string SourceLineOf(SymbolDefinition definition)
@@ -1324,6 +1430,7 @@ public sealed class AppShell : Window
         if (!File.Exists(filePath))
             return;
 
+        RecordJump();
         if (!string.Equals(_editorPane.OpenPath, filePath, StringComparison.OrdinalIgnoreCase))
         {
             OpenFile(filePath);
@@ -1466,8 +1573,9 @@ public sealed class AppShell : Window
             AppendOutputLine(problem);
 
         // Whatever was open belonged to the previous project, and callers have already settled
-        // its unsaved changes (see ConfirmCloseFiles).
+        // its unsaved changes (see ConfirmCloseFiles). Its jump history goes with it.
         _editorPane.CloseAll();
+        _navigationHistory.Clear();
         if (_workspace.ActiveProject is not { } activeProject)
             return;
 
@@ -2933,6 +3041,7 @@ public sealed class AppShell : Window
         _recentProjects.Remove(oldRecentPath);
         RememberRecentProject(result.NewSolutionFile ?? result.NewProjectFile);
 
+        _navigationHistory.MovePath(oldDirectory, project.Directory);
         foreach (var (oldPath, relative) in openInProject)
         {
             var newPath = Path.Combine(project.Directory, relative);

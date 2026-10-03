@@ -7,7 +7,7 @@
 ![Tedide paused in a VICE debugging session: the HelloCBM sample's animation.c open with the current line highlighted, the Solution Explorer on the left, and the Debug panel showing the step history and 6502 registers](docs/images/tedide.png)
 
 A terminal (TUI) IDE for [cc65](https://cc65.github.io/) development, modeled loosely
-on Visual Studio: a resizable solution explorer, a single-file source editor with 6502/ca65
+on Visual Studio: a resizable solution explorer, a tabbed source editor with 6502/ca65
 syntax highlighting, a build output pane (with a separate Error List and a symbol browser) and a
 menu/status bar, all driven by `cl65` - plus project/optimizer/compiler/linker settings, Find in
 Files, a VICE emulator launcher, source-level debugging against VICE's own binary monitor
@@ -162,8 +162,7 @@ From the **File** menu:
   ![The New Project dialog: a project name, its destination directory with a Browse button, and a Commodore target platform picker set to c64](docs/images/running-new-project.png)
 - **Open Project...** and pick `samples/HelloCBM/HelloCBM.tsln` (or `samples/HelloCBM/HelloCBM.tproj`) for a
   working example - it's deliberately split across several `.c`/`.h`/`.s` files (see layout above) to
-  show off the Solution Explorer's folder tree even though only one of them can be open for editing
-  at a time (see "Editing" below), and its `border.s`/`animation.c` use per-target conditional
+  show off the Solution Explorer's folder tree and the editor's tabs (see "Editing" below), and its `border.s`/`animation.c` use per-target conditional
   compilation so the same sample builds correctly on every Commodore machine cc65 targets, not just
   the C64.
 - **Open Project...** and pick `samples/HelloPlus4/HelloPlus4.tsln` for the opposite story - a Plus/4-only tour
@@ -362,10 +361,22 @@ underscore. Comments and strings are left as they are.
   worked out before anything is written, so a file that's changed underneath stops the rename
   before any file is touched.
 
-Press **Ctrl+W** (or **File > Close File**) to close the open file. If it has unsaved changes
-you're prompted to save, discard, or cancel first - the same prompt appears if you select a
-*different* file in the Solution Explorer while the current one is modified, since opening a new
-file replaces whatever's currently open (see "Editing" below).
+**Edit > Navigate Backward** (Alt+Left) returns to where the caret was before the last jump, and
+**Edit > Navigate Forward** (Alt+Right) undoes that, as in Visual Studio. Go To Definition, the
+References and Error List tabs, Find in Files, Go To Line and the Symbols tab all count as jumps;
+ordinary caret moves and typing don't. Visual Studio's own Ctrl+- isn't used, because Windows
+Terminal takes it for its font size.
+
+**Help > Context Help** (F1) opens the Doc Viewer at the word under the caret: the section whose
+heading names it, such as `cputsxy` in the cc65 function reference or `.BYTE` in the ca65 manual,
+or a search for the word when no heading does. Inside Windows Terminal the Doc Viewer opens as a
+new tab in the same window; elsewhere it gets a console window of its own. Tedide looks for
+`Tedide.DocViewer.exe` beside itself, then in a `publish-docviewer` folder next to its own folder
+(the layout the publish tasks produce), then in the repository's own Doc Viewer build output. Set
+`TEDIDE_DOCVIEWER` to the exe's full path to use one somewhere else.
+
+Press **Ctrl+W** (or **File > Close File**) to close the file being shown. If it has unsaved
+changes you're prompted to save, discard, or cancel first (see "Editing" below).
 
 ## Debugging
 
@@ -506,6 +517,9 @@ alongside the licence (C64-Wiki, Wikipedia), or the manual's own Copyright and G
 All of it comes from `Docs.db`, an embedded SQLite database built once ahead of time by
 `tools/Cc65DocsDbBuilder` from the sources' own HTML (checked in under its `SourceHtml/`) -
 regenerate it (and rebuild) if any of them change.
+
+`Tedide.DocViewer --topic <word>` opens straight at the section whose heading names the word, or
+at a search for it. Tedide's F1 uses this (see "Running" above).
 
 ![The Doc Viewer showing the cc65 manual's "coding" page: the contents tree on the left with the page selected, and on the right its rendered text with themed headings and syntax-highlighted C and 6502 code blocks](docs/images/docviewer.png)
 
@@ -759,12 +773,22 @@ file, an assembly file and a listing all read consistently in whichever theme is
 
 ![A VICE label file: al commands, addresses and symbol names each highlighted](docs/images/editing-labels.png)
 
-Tedide is deliberately single-document: only one file can be open at a time. Selecting a
-different file in the Solution Explorer (or opening one that's already open, which is a no-op)
-replaces whatever's currently shown - prompting to save first if it has unsaved changes, the same
-as **Close File**. `EditorPane` implements this with one `Editor` instance, constructed once and
-reused for the lifetime of the app; opening a file swaps in a fresh `TextDocument` for that file
-rather than creating a new `Editor`, and closing resets it to an empty, read-only placeholder.
+Each open file gets a tab above the editor. A `*` marks unsaved changes, and the `x` (or a
+middle-click) closes the tab. Click a tab, use the mouse wheel over the strip, or press
+**Ctrl+PgDn**/**Ctrl+PgUp** (**File > Next File**/**Previous File**) to switch. Selecting a file in
+the Solution Explorer opens it in a new tab, or switches to its tab if it's already open.
+
+- **Ctrl+S** saves the file being shown, and **File > Save All** saves every modified tab. A build
+  saves them all first.
+- Closing a tab, closing the project, opening another one, or quitting asks once about every
+  unsaved tab involved.
+- Renaming a file, or the project's folder, keeps its tab and any unsaved edits.
+- Each project remembers its open tabs, and which one was showing, in its `.session.json` file.
+
+`EditorPane` implements this with one `Editor` instance, constructed once and reused for the
+lifetime of the app. Each tab keeps its own `TextDocument` (and so its own undo history), encoding
+and caret position, and switching tabs swaps that document into the editor. With no tab open, the
+editor is an empty, read-only placeholder.
 This mirrors the document-swapping pattern used by Terminal.Gui.Editor's own reference app
 (`tui-cs/Editor`'s "ted"), including its call to `Editor.ClearSelection()` before swapping
 documents - confirmed by direct comparison against ted's source, down to matching its exact
@@ -846,10 +870,11 @@ In place and tested:
   `src`/`include`/`lib`/`bin` layout; a Recent Projects and Solutions list; the nine-tab Project
   Settings dialog, including pre- and post-build commands; and a Solution Explorer folder tree with a Generated Files node and New File,
   Add Existing Item, Rename and Delete.
-- **Editing** - a single-document editor with syntax highlighting for C, 6502/ca65 assembly,
+- **Editing** - a tabbed editor with syntax highlighting for C, 6502/ca65 assembly,
   assembler listings, linker maps, VICE label files and linker configs, all colored by the active
   theme; Find/Replace, Find in Files and Go To Line; Go To Definition and Find All References
-  across C and assembly; Rename Symbol.
+  across C and assembly; Rename Symbol; Navigate Backward/Forward; and F1 context help in the Doc
+  Viewer.
 - **Building and running** - per-file `cl65` builds with live output, diagnostics parsed into the
   Error List, Cancel Build and Clean Project; a symbol browser for linker maps and labels; and
   Run in the VICE emulator matching the target, with the right memory configuration for the VIC-20,

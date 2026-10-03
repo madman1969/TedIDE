@@ -164,7 +164,7 @@ public sealed class PageFindDialog : Dialog
         return last;
     }
 
-    private static string? HeadingText(string line)
+    internal static string? HeadingText(string line)
     {
         var hashes = 0;
         while (hashes < line.Length && line[hashes] == '#')

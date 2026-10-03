@@ -124,5 +124,16 @@ public sealed class DocDatabase : IDisposable
         return results;
     }
 
+    /// <summary>Every page's Markdown, in catalog order (books, categories, pages) - for
+    /// <see cref="TopicLookup"/>, which wants the earlier book to win a tie.</summary>
+    internal IEnumerable<TopicLookup.Page> AllPages()
+    {
+        using var command = _connection.CreateCommand();
+        command.CommandText = "SELECT FileName, Markdown FROM Pages ORDER BY BookSortOrder, CategorySortOrder, PageSortOrder;";
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
+            yield return new TopicLookup.Page(reader.GetString(0), reader.GetString(1));
+    }
+
     public void Dispose() => _connection.Dispose();
 }

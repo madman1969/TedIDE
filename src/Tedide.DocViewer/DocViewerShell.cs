@@ -250,7 +250,13 @@ public sealed class DocViewerShell : Window
         _contentFrame.Title = $"{entry.FileName} - {entry.Description}";
         _contentView.Text = _database.GetMarkdown(entry.FileName);
         if (anchor is not null)
+        {
+            // The view only builds a page's heading anchors in a layout pass, and setting Text just
+            // threw the old ones away - without this, an anchor on a newly shown page was never found
+            // and the page stayed at its top.
+            _contentView.Layout();
             _contentView.ScrollToAnchor(anchor);
+        }
         else
             _contentView.Viewport = _contentView.Viewport with { X = 0, Y = 0 };
     }
@@ -285,9 +291,26 @@ public sealed class DocViewerShell : Window
             NavigateTo(entry.FileName, entry.Anchor, pushHistory: false);
     }
 
-    private void ShowSearchDialog()
+    /// <summary>
+    /// Tedide's F1 (<c>--topic word</c>, see Program.cs): opens the section whose heading names the
+    /// word (see <see cref="TopicLookup"/>), or, if none does, the search dialog already searching
+    /// for it.
+    /// </summary>
+    public void ShowTopic(string word)
     {
-        var dialog = new SearchDialog(_database);
+        // Called as the app starts: make sure the window has its size before a page is laid out in it.
+        Layout();
+        if (TopicLookup.Find(_database.AllPages(), word) is { } topic)
+            NavigateTo(topic.FileName, topic.Anchor, pushHistory: true);
+        else
+            ShowSearchDialog(word);
+    }
+
+    private void ShowSearchDialog() => ShowSearchDialog(string.Empty);
+
+    private void ShowSearchDialog(string initialQuery)
+    {
+        var dialog = new SearchDialog(_database, initialQuery);
         Application.Run(dialog);
         if (dialog.SelectedResult is { } result)
             NavigateTo(result.FileName, null, pushHistory: true);
