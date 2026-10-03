@@ -15,8 +15,37 @@ protocol, and a Recent Projects and Solutions list. A companion app, **Tedide.Do
 cc65's own manuals offline with a category tree, full-text search and bookmarks - see "Running the
 Doc Viewer" below.
 
+## Features
+
+- **Solutions and projects** - `.tsln`/`.tproj` files, New Project scaffolding for every Commodore
+  target, multi-project solutions with library projects, project references and a startup project.
+- **Solution Explorer** - a folder tree of each project's sources, headers and linker configs, a
+  Generated Files node, and New/Rename/Delete File from its right-click menu.
+- **Tabbed editor** - syntax highlighting for C, 6502/ca65 assembly, listings, linker maps, VICE
+  label files and linker configs; per-tab undo history; open tabs remembered per project.
+- **Code navigation** - Go To Definition, Find All References and Rename Symbol across C and
+  assembly, Navigate Backward/Forward, Find/Replace, Find in Files and Go To Line.
+- **Building** - per-file `cl65` builds with live output, an Error List, Build/Clean Solution,
+  Cancel Build, and pre- and post-build commands.
+- **Project Settings** - target, optimization, compiler and linker options, include paths and
+  defines, SuperCPU support, build events and references, all in one dialog.
+- **opt6502** - a built-in optimizer for cc65's generated assembly, favouring size or speed.
+- **Running in VICE** - launches the emulator matching the target, with the right memory setup for
+  the VIC-20, C16 and Plus/4.
+- **Source-level debugging** - over VICE's binary monitor: breakpoints (with conditions), stepping
+  by C line, registers, watches, locals, a call stack, and Memory and Disassembly tabs.
+- **Symbols** - a filterable browser for the linker map and label file.
+- **Git** - status markers in the Solution Explorer, the branch and the caret line's blame, and a
+  Git tab to stage, unstage, discard and commit.
+- **Help** - F1 context help opens the bundled **Doc Viewer** at the word under the caret: the cc65
+  manuals, The C Book, C64-Wiki, Wikipedia and the VICE manual, with full-text search and bookmarks.
+- **Themes** - nine true-colour themes, shared with the Doc Viewer, including Borland Turbo C,
+  Commodore 64 and Amber Phosphor.
+- **Samples** - nine sample projects, from a bouncing-characters demo to a C128 text editor.
+
 ## Contents
 
+- [Features](#features)
 - [Prerequisites](#prerequisites)
 - [Solution layout](#solution-layout)
 - [Running](#running)
