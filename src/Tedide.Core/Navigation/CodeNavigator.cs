@@ -258,8 +258,8 @@ public sealed class CodeNavigator
         var key = LinkKey(parsed.Language, symbol);
         if (newName == symbol)
             return new RenamePlan(symbol, [], "That's the name it already has.");
-        if (!references.References.Any(r => r.IsDefinition))
-            return new RenamePlan(symbol, [], $"'{symbol}' isn't defined in this project (it may come from cc65's own headers), so it can't be renamed here.");
+        if (WhyNotRenamable(parsed, line, column, symbol, references) is { } blocker)
+            return new RenamePlan(symbol, [], blocker);
 
         // The new name, as C would spell it, when the symbol is shared with C.
         var isCheapLocal = symbol.StartsWith('@');
@@ -293,6 +293,33 @@ public sealed class CodeNavigator
             return new TextEdit(r.FilePath, r.Line, r.Column, oldText, replacement);
         }).ToList();
         return new RenamePlan(symbol, edits);
+    }
+
+    /// <summary>
+    /// Why the symbol at the caret can't be renamed whatever the new name, or null if it can: it
+    /// isn't defined in the project, or it's a member name more than one struct or union declares.
+    /// Checked before asking for a name, as well as by <see cref="PlanRename"/>.
+    /// </summary>
+    public string? WhyNotRenamable(string file, int line, int column)
+    {
+        var references = FindReferences(file, line, column);
+        return references.Symbol is { } symbol && Parse(file) is { } parsed
+            ? WhyNotRenamable(parsed, line, column, symbol, references)
+            : null;
+    }
+
+    private string? WhyNotRenamable(ParsedFile parsed, int line, int column, string symbol, ReferencesResult references)
+    {
+        if (!references.References.Any(r => r.IsDefinition))
+            return $"'{symbol}' isn't defined in this project (it may come from cc65's own headers), so it can't be renamed here.";
+
+        // Members are matched by name alone - which struct "s->x" belongs to isn't worked out - so
+        // with several structs declaring an "x", renaming one would silently rename them all.
+        if (IsMember(parsed, line, column) && MemberDeclarations(symbol) is { Count: > 1 } declared)
+            return $"'{symbol}' is a member of {declared.Count} structs or unions "
+                + $"({string.Join(", ", declared.Take(3).Select(d => $"{Path.GetFileName(d.FilePath)}:{d.Line}"))}{(declared.Count > 3 ? ", ..." : "")}). "
+                + "Tedide can't tell which one this is yet, so renaming it would change them all.";
+        return null;
     }
 
     private static bool IsIdentifier(string name) =>
@@ -356,6 +383,22 @@ public sealed class CodeNavigator
             .Where(d => d.Scope is { } scope && d.Name == token.Text && scope.Contains(token.Line) && d.Line <= token.Line)
             .OrderByDescending(d => d.Scope!.Value.StartLine)
             .FirstOrDefault();
+
+    /// <summary>Whether the symbol at 1-based <paramref name="line"/>/<paramref name="column"/> is a
+    /// struct/union member - used after "." or "->", or its own declaration in a struct body.</summary>
+    private static bool IsMember(ParsedFile file, int line, int column) =>
+        SymbolAt(file, line, column) is { } token
+        && (IsMemberAccess(file, token) || file.Definitions.Any(d => d.Kind == SymbolKind.Member && SamePlace(d, file.Path, token)));
+
+    /// <summary>Every struct/union member called <paramref name="name"/> across the project's files.</summary>
+    private List<SymbolDefinition> MemberDeclarations(string name) =>
+        _projectFiles
+            .Select(Parse)
+            .Where(f => f is not null)
+            .SelectMany(f => f!.Definitions)
+            .Where(d => d.Kind == SymbolKind.Member && d.Name == name)
+            .DistinctBy(d => (d.FilePath.ToUpperInvariant(), d.Line, d.Column))
+            .ToList();
 
     /// <summary>Whether a C token follows "." or "->", i.e. names a struct/union member.</summary>
     private static bool IsMemberAccess(ParsedFile file, SourceToken token)

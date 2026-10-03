@@ -380,7 +380,9 @@ underscore. Comments and strings are left as they are.
 
 - It refuses invalid names, C keywords, and names already in use, including a local that would
   capture a renamed global. It also refuses symbols the project doesn't define, such as cc65
-  library functions.
+  library functions, and a struct or union member whose name more than one struct declares: which
+  struct `s->x` belongs to isn't worked out yet, so renaming one `x` would rename them all. Those two
+  are refused as soon as you press F2, before a new name is asked for.
 - In the open file, the rename is a single editor change that Undo reverts, and the file stays
   unsaved.
 - Every other file is rewritten on disk straight away, in its own encoding. All the new text is

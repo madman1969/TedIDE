@@ -1338,6 +1338,13 @@ public sealed class AppShell : Window
             return;
         }
 
+        // Refused up front when no new name could help, rather than after one has been typed.
+        if (navigator.WhyNotRenamable(path, line, column) is { } blocker)
+        {
+            TedideMessageBox.ErrorQuery("Can't Rename", RenameSymbolDialog.Wrap(blocker), ["OK"]);
+            return;
+        }
+
         var fileCount = references.References.Select(r => r.FilePath).Distinct(StringComparer.OrdinalIgnoreCase).Count();
         var dialog = new RenameSymbolDialog(symbol, references.References.Count, fileCount, name => navigator.PlanRename(path, line, column, name));
         Application.Run(dialog);
