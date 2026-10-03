@@ -48,6 +48,9 @@ public sealed class EditorPane : View
     /// <summary>Raised by the context menu's Find All References, for the symbol at the caret.</summary>
     public event Action? FindReferencesRequested;
 
+    /// <summary>Raised by the context menu's Rename Symbol, for the symbol at the caret.</summary>
+    public event Action? RenameSymbolRequested;
+
     /// <summary>The caret's 1-based line and column, in characters - the same coordinates
     /// <see cref="Tedide.Core.Navigation.CodeNavigator"/> works in.</summary>
     public (int Line, int Column) CaretPosition
@@ -109,10 +112,11 @@ public sealed class EditorPane : View
         // keeps exactly one place responsible for how that dialog gets shown.
         var contextMenuItems = Editor.ContextMenu!.Root!;
         contextMenuItems.Add(new Line());
-        // Both act on the symbol at the caret. The keys are shown as help text only: AppShell's
-        // OnKeyDown handles F12/Shift+F12, since this menu only exists while it's open.
+        // All three act on the symbol at the caret. The keys are shown as help text only: AppShell's
+        // OnKeyDown handles F12/Shift+F12/F2, since this menu only exists while it's open.
         contextMenuItems.Add(new MenuItem("Go To Definition", "F12", () => GoToDefinitionRequested?.Invoke()));
         contextMenuItems.Add(new MenuItem("Find All References", "Shift+F12", () => FindReferencesRequested?.Invoke()));
+        contextMenuItems.Add(new MenuItem("Rename Symbol...", "F2", () => RenameSymbolRequested?.Invoke()));
         contextMenuItems.Add(new Line());
         contextMenuItems.Add(new MenuItem("Find...", "", () => Editor.InvokeCommand(Command.Find)));
         contextMenuItems.Add(new MenuItem("Replace...", "", () => Editor.InvokeCommand(Command.Replace)));

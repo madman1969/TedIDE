@@ -156,6 +156,7 @@ public sealed class AppShell : Window
         _editorPane.FindInFilesRequested += ShowFindInFiles;
         _editorPane.GoToDefinitionRequested += GoToDefinition;
         _editorPane.FindReferencesRequested += FindAllReferences;
+        _editorPane.RenameSymbolRequested += RenameSymbol;
         _editorFrame.Add(_editorPane);
         // explorerFrame's Width (above) reads _editorFrame.Frame.Width live, but within a single
         // layout pass explorerFrame is resolved before _editorFrame is - so it reads _editorFrame's
@@ -412,6 +413,7 @@ public sealed class AppShell : Window
         editMenuItems.AddAt(1, new MenuItem("_Go To Line...", "", ShowGoToLine, Key.G.WithCtrl));
         editMenuItems.AddAt(2, new MenuItem("Go To _Definition", "", GoToDefinition, GoToDefinitionKey));
         editMenuItems.AddAt(3, new MenuItem("Find All _References", "", FindAllReferences, FindReferencesKey));
+        editMenuItems.AddAt(4, new MenuItem("Re_name Symbol...", "", RenameSymbol, RenameSymbolKey));
         menuBar.Menus = [fileMenu, menuBar.EditMenu, menuBar.ViewMenu, buildMenu, debugMenu, projectMenu, themeMenu, helpMenu];
         menuBar.X = 0;
         menuBar.Y = 0;
@@ -430,6 +432,9 @@ public sealed class AppShell : Window
     /// <summary>Visual Studio's own keys for Go To Definition and Find All References.</summary>
     private static readonly Key GoToDefinitionKey = Key.F12;
     private static readonly Key FindReferencesKey = Key.F12.WithShift;
+
+    /// <summary>F2, as in VS Code - Visual Studio's own Ctrl+R, Ctrl+R is a two-key chord.</summary>
+    private static readonly Key RenameSymbolKey = Key.F2;
 
     /// <summary>
     /// App-wide keys that have no status-bar Shortcut to carry them. A key reaches this only after
@@ -453,6 +458,8 @@ public sealed class AppShell : Window
             action = GoToDefinition;
         else if (key == FindReferencesKey)
             action = FindAllReferences;
+        else if (key == RenameSymbolKey)
+            action = RenameSymbol;
 
         if (action is null)
             return base.OnKeyDown(key);
@@ -1152,6 +1159,96 @@ public sealed class AppShell : Window
         AppendOutputLine($"Find All References: '{result.Symbol}' - {result.References.Count} reference(s) in {fileCount} file(s).");
         _outputTabs.Value = _referencesTab;
         _referencesView.SetFocus();
+    }
+
+    /// <summary>
+    /// Edit > Rename Symbol (F2): renames the symbol at the caret everywhere Find All References
+    /// finds it, after <see cref="RenameSymbolDialog"/> has checked the new name. The open file is
+    /// changed in the editor as one undoable step and left unsaved; every other file is rewritten on
+    /// disk in its own encoding, all of them worked out before any is written, so a file that's
+    /// changed underneath stops the rename before anything is touched.
+    /// </summary>
+    private void RenameSymbol() => Guard("Renaming the symbol", RenameSymbolCore);
+
+    private void RenameSymbolCore()
+    {
+        if (_editorPane.OpenPath is not { } path)
+            return;
+
+        var (line, column) = _editorPane.CaretPosition;
+        var navigator = CreateNavigator();
+        var references = navigator.FindReferences(path, line, column);
+        if (references.Symbol is not { } symbol)
+        {
+            ReportNavigation(references.Message ?? "No symbol at the cursor.");
+            return;
+        }
+
+        var fileCount = references.References.Select(r => r.FilePath).Distinct(StringComparer.OrdinalIgnoreCase).Count();
+        var dialog = new RenameSymbolDialog(symbol, references.References.Count, fileCount, name => navigator.PlanRename(path, line, column, name));
+        Application.Run(dialog);
+        if (dialog.Plan is not { } plan)
+            return;
+
+        var otherFiles = plan.Edits
+            .Where(e => !string.Equals(e.FilePath, path, StringComparison.OrdinalIgnoreCase))
+            .GroupBy(e => e.FilePath, StringComparer.OrdinalIgnoreCase)
+            .Select(group =>
+            {
+                var (text, encoding) = SourceFileText.Read(group.Key);
+                return (Path: group.Key, Text: RenamePlan.Apply(text, group), Encoding: encoding);
+            })
+            .ToList();
+        var openFileEdits = plan.Edits.Where(e => string.Equals(e.FilePath, path, StringComparison.OrdinalIgnoreCase)).ToList();
+
+        foreach (var file in otherFiles)
+            SourceFileText.Write(file.Path, file.Text, file.Encoding);
+
+        if (openFileEdits.Count > 0)
+            ApplyEditsToOpenFile(openFileEdits);
+
+        // Every listed position may have moved.
+        _referencesView.SetReferences([], DisplayPath);
+        var newName = plan.Edits.FirstOrDefault(e => e.FilePath == path)?.NewText ?? plan.Edits[0].NewText;
+        AppendOutputLine($"Renamed '{symbol}' to '{newName}': {plan.Edits.Count} change(s) in {plan.FileCount} file(s)"
+            + (openFileEdits.Count > 0 ? $" - {Path.GetFileName(path)} is unsaved." : "."));
+    }
+
+    /// <summary>Applies a rename's edits to the editor's document as a single undo step, checking each
+    /// spot still holds the old name (it's the same text the plan was made from, so it should).</summary>
+    private void ApplyEditsToOpenFile(IReadOnlyList<TextEdit> edits)
+    {
+        var editor = _editorPane.Editor;
+        var document = editor.Document!;
+        var caret = editor.CaretOffset;
+        var located = edits
+            .Select(e => (Edit: e, Offset: document.GetLineByNumber(e.Line).Offset + e.Column - 1))
+            .OrderByDescending(x => x.Offset)
+            .ToList();
+        if (located.Any(x => document.GetText(x.Offset, x.Edit.OldText.Length) != x.Edit.OldText))
+            throw new InvalidDataException($"{Path.GetFileName(_editorPane.OpenPath)} changed while the rename was being worked out.");
+
+        editor.ClearSelection();
+        document.UndoStack.StartUndoGroup();
+        try
+        {
+            foreach (var (edit, offset) in located)
+            {
+                document.Replace(offset, edit.OldText.Length, edit.NewText);
+                // Keep the caret on the same code: shifted by renames before it, and at the start
+                // of the renamed word if it was inside one.
+                if (offset + edit.OldText.Length <= caret)
+                    caret += edit.NewText.Length - edit.OldText.Length;
+                else if (offset < caret)
+                    caret = offset;
+            }
+        }
+        finally
+        {
+            document.UndoStack.EndUndoGroup();
+        }
+        editor.CaretOffset = Math.Clamp(caret, 0, document.TextLength);
+        editor.SetFocus();
     }
 
     /// <summary>Go To Definition/Find All References feedback ("No symbol at the cursor.", ...),

@@ -346,6 +346,103 @@ public class CodeNavigatorTests
         Assert.Equal(3, members.References.Count);
     }
 
+    private static RenamePlan Rename(string file, string text, string needle, string newName, int occurrence = 1)
+    {
+        var (line, column) = At(text, needle, occurrence);
+        return Navigator().PlanRename(file, line, column, newName);
+    }
+
+    [Fact]
+    public void PlanRename_FromC_RewritesTheAssemblySideWithItsUnderscore()
+    {
+        var plan = Rename(MainC, MainCText, "border_flash();", "flash_border");
+
+        Assert.Null(plan.Error);
+        Assert.Equal(3, plan.FileCount);
+        Assert.Equal(2, plan.Edits.Count(e => e.FilePath == BorderS && e is { OldText: "_border_flash", NewText: "_flash_border" }));
+        Assert.Contains(plan.Edits, e => e.FilePath == ScreenH && e.NewText == "flash_border");
+        Assert.Contains(plan.Edits, e => e.FilePath == MainC && e.NewText == "flash_border");
+
+        var renamed = RenamePlan.Apply(BorderSText, plan.Edits.Where(e => e.FilePath == BorderS));
+        Assert.Contains(".export _flash_border", renamed);
+        Assert.Contains(".proc _flash_border: near", renamed);
+    }
+
+    [Fact]
+    public void PlanRename_FromAssembly_TakesTheUnderscoredName()
+    {
+        var plan = Rename(BorderS, BorderSText, "_border_flash: near", "_flash");
+
+        Assert.Null(plan.Error);
+        Assert.Contains(plan.Edits, e => e.FilePath == MainC && e.NewText == "flash");
+        Assert.Contains("needs one too", Rename(BorderS, BorderSText, "_border_flash: near", "flash").Error);
+    }
+
+    [Fact]
+    public void PlanRename_OfALocal_LeavesTheSameNamedGlobalAndParameterAlone()
+    {
+        var plan = Rename(ScreenC, ScreenCText, "width = i", "w");
+
+        Assert.Null(plan.Error);
+        Assert.Equal(2, plan.Edits.Count);
+        var renamed = RenamePlan.Apply(ScreenCText, plan.Edits);
+        Assert.Contains("unsigned char w = i;", renamed);
+        Assert.Contains("frame_count += w;", renamed);
+        Assert.Contains("static unsigned char width = 3;", renamed);
+        Assert.Contains("i < width", renamed);
+    }
+
+    [Fact]
+    public void PlanRename_OfACheapLocal_KeepsTheAtSign()
+    {
+        var plan = Rename(BorderS, BorderSText, "@loop", "@again", occurrence: 2);
+
+        Assert.Null(plan.Error);
+        Assert.Equal(2, plan.Edits.Count);
+        Assert.Contains("must start with '@'", Rename(BorderS, BorderSText, "@loop", "again", occurrence: 2).Error);
+        Assert.Contains("Only a cheap local", Rename(BorderS, BorderSText, "next:", "@next").Error);
+    }
+
+    [Theory]
+    [InlineData("2fast", "isn't a valid name")]
+    [InlineData("for", "C keyword")]
+    [InlineData("draw_box", "already has")]
+    [InlineData("frame_count", "already used")]
+    [InlineData("SCREEN_W", "already used")]
+    public void PlanRename_RefusesBadOrClashingNames(string newName, string expected)
+    {
+        var plan = Rename(MainC, MainCText, "draw_box(p", newName);
+
+        Assert.Empty(plan.Edits);
+        Assert.Contains(expected, plan.Error);
+    }
+
+    [Fact]
+    public void PlanRename_RefusesAGlobalNameALocalWouldCapture()
+    {
+        // A global renamed to "i" would be hidden by draw_box's own local "i".
+        var plan = Rename(ScreenC, ScreenCText, "frame_count;", "i");
+
+        Assert.Contains("already used", plan.Error);
+    }
+
+    [Fact]
+    public void PlanRename_RefusesSymbolsDefinedOutsideTheProject()
+    {
+        Assert.Contains("isn't defined in this project", Rename(MainC, MainCText, "printf", "print").Error);
+        Assert.Equal("No symbol at the cursor.", Navigator().PlanRename(MainC, At(MainCText, "return").Line, 3, "x").Error);
+    }
+
+    [Fact]
+    public void RenamePlanApply_RefusesTextThatHasChanged()
+    {
+        var edit = new TextEdit(MainC, 1, 1, "old", "new");
+
+        Assert.Equal("new text", RenamePlan.Apply("old text", [edit]));
+        Assert.Throws<InvalidDataException>(() => RenamePlan.Apply("odd text", [edit]));
+        Assert.Throws<InvalidDataException>(() => RenamePlan.Apply("old", [edit with { Line = 5 }]));
+    }
+
     [Fact]
     public void FindReferences_OfACheapLocal_StaysBetweenItsLabels()
     {

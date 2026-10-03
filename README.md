@@ -349,6 +349,19 @@ C and ca65 rather than matching text (see `Tedide.Core/Navigation`):
   not the other twenty target headers that also define it.
 - When there's still more than one candidate, a picker lists them.
 
+**Edit > Rename Symbol...** (F2, also on the right-click menu) renames the symbol under the caret
+everywhere Find All References finds it, including the assembly side of a C name with its
+underscore. Comments and strings are left as they are.
+
+- It refuses invalid names, C keywords, and names already in use, including a local that would
+  capture a renamed global. It also refuses symbols the project doesn't define, such as cc65
+  library functions.
+- In the open file, the rename is a single editor change that Undo reverts, and the file stays
+  unsaved.
+- Every other file is rewritten on disk straight away, in its own encoding. All the new text is
+  worked out before anything is written, so a file that's changed underneath stops the rename
+  before any file is touched.
+
 Press **Ctrl+W** (or **File > Close File**) to close the open file. If it has unsaved changes
 you're prompted to save, discard, or cancel first - the same prompt appears if you select a
 *different* file in the Solution Explorer while the current one is modified, since opening a new
@@ -790,7 +803,7 @@ In place and tested:
 - **Editing** - a single-document editor with syntax highlighting for C, 6502/ca65 assembly,
   assembler listings, linker maps, VICE label files and linker configs, all colored by the active
   theme; Find/Replace, Find in Files and Go To Line; Go To Definition and Find All References
-  across C and assembly.
+  across C and assembly; Rename Symbol.
 - **Building and running** - per-file `cl65` builds with live output, diagnostics parsed into the
   Error List, Cancel Build and Clean Project; a symbol browser for linker maps and labels; and
   Run in the VICE emulator matching the target, with the right memory configuration for the VIC-20,

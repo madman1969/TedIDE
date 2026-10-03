@@ -10,6 +10,43 @@ public sealed record DefinitionResult(string? Symbol, IReadOnlyList<SymbolDefini
 /// <summary>The outcome of <see cref="CodeNavigator.FindReferences"/>.</summary>
 public sealed record ReferencesResult(string? Symbol, IReadOnlyList<SymbolReference> References, string? Message = null);
 
+/// <summary>One replacement of <see cref="OldText"/> by <see cref="NewText"/> at a 1-based line and column.</summary>
+public sealed record TextEdit(string FilePath, int Line, int Column, string OldText, string NewText);
+
+/// <summary>
+/// The outcome of <see cref="CodeNavigator.PlanRename"/>: every edit a rename makes, or an
+/// <see cref="Error"/> saying why it can't be done (in which case there are no edits).
+/// </summary>
+public sealed record RenamePlan(string? Symbol, IReadOnlyList<TextEdit> Edits, string? Error = null)
+{
+    public int FileCount => Edits.Select(e => e.FilePath).Distinct(StringComparer.OrdinalIgnoreCase).Count();
+
+    /// <summary>
+    /// Applies <paramref name="edits"/> (all for the same file) to <paramref name="text"/>, last
+    /// first so earlier positions stay valid. Throws <see cref="InvalidDataException"/> if the text
+    /// at an edit's position isn't what the edit expects - the file changed since the plan was made.
+    /// </summary>
+    public static string Apply(string text, IEnumerable<TextEdit> edits)
+    {
+        var lineStarts = new List<int> { 0 };
+        for (var i = 0; i < text.Length; i++)
+            if (text[i] == '\n')
+                lineStarts.Add(i + 1);
+
+        var result = new System.Text.StringBuilder(text);
+        foreach (var (edit, offset) in edits
+            .Select(e => (Edit: e, Offset: e.Line - 1 < lineStarts.Count ? lineStarts[e.Line - 1] + e.Column - 1 : -1))
+            .OrderByDescending(x => x.Offset))
+        {
+            if (offset < 0 || offset + edit.OldText.Length > text.Length
+                || string.CompareOrdinal(text, offset, edit.OldText, 0, edit.OldText.Length) != 0)
+                throw new InvalidDataException($"{Path.GetFileName(edit.FilePath)} has changed since the rename was worked out (line {edit.Line}).");
+            result.Remove(offset, edit.OldText.Length).Insert(offset, edit.NewText);
+        }
+        return result.ToString();
+    }
+}
+
 /// <summary>
 /// Go To Definition and Find All References over a project's C and ca65 sources, built on
 /// <see cref="CSymbolScanner"/> and <see cref="AsmSymbolScanner"/>. Everything is worked out fresh
@@ -200,6 +237,88 @@ public sealed class CodeNavigator
             }
         }
         return new ReferencesResult(token.Text, references);
+    }
+
+    /// <summary>
+    /// Works out renaming the symbol at the caret to <paramref name="newName"/>: every reference
+    /// <see cref="FindReferences"/> finds is rewritten, so comments, strings and same-named locals
+    /// are left alone. <paramref name="newName"/> is spelled as in the file the caret is in, so
+    /// renaming assembly's <c>_foo</c> takes an underscored name too; the C side of the link gets
+    /// it without the underscore, and vice versa. Refused for a symbol the project doesn't define
+    /// (a cc65 library function), an invalid name, or a name already in use.
+    /// </summary>
+    public RenamePlan PlanRename(string file, int line, int column, string newName)
+    {
+        newName = newName.Trim();
+        var references = FindReferences(file, line, column);
+        if (references.Symbol is not { } symbol)
+            return new RenamePlan(null, [], references.Message ?? "No symbol at the cursor.");
+
+        var parsed = Parse(file)!;
+        var key = LinkKey(parsed.Language, symbol);
+        if (newName == symbol)
+            return new RenamePlan(symbol, [], "That's the name it already has.");
+        if (!references.References.Any(r => r.IsDefinition))
+            return new RenamePlan(symbol, [], $"'{symbol}' isn't defined in this project (it may come from cc65's own headers), so it can't be renamed here.");
+
+        // The new name, as C would spell it, when the symbol is shared with C.
+        var isCheapLocal = symbol.StartsWith('@');
+        var isLinked = key.StartsWith("c:", StringComparison.Ordinal);
+        string? error = null;
+        if (isCheapLocal != newName.StartsWith('@'))
+            error = isCheapLocal ? "A cheap local label's name must start with '@'." : "Only a cheap local label's name can start with '@'.";
+        else if (!IsIdentifier(isCheapLocal ? newName[1..] : newName))
+            error = $"'{newName}' isn't a valid name: use letters, digits and '_', not starting with a digit.";
+        else if (isLinked && parsed.Language == SourceLanguage.Assembly && !newName.StartsWith('_'))
+            error = $"'{symbol}' is shared with C code, which sees it without its leading '_' - the new name needs one too.";
+        if (error is not null)
+            return new RenamePlan(symbol, [], error);
+
+        var cName = isLinked && parsed.Language == SourceLanguage.Assembly ? newName[1..] : newName;
+        var newKey = LinkKey(parsed.Language, newName);
+        var touchesC = references.References.Any(r => SourceTokenizer.LanguageOf(r.FilePath) == SourceLanguage.C);
+        if (touchesC && CSymbolScanner.IsKeyword(cName))
+            return new RenamePlan(symbol, [], $"'{cName}' is a C keyword.");
+
+        if (FindConflict(parsed, line, column, newName, newKey) is { } conflict)
+            return new RenamePlan(symbol, [],
+                $"'{newName}' is already used - {conflict.KindText} at {Path.GetFileName(conflict.FilePath)}({conflict.Line}).");
+
+        var edits = references.References.Select(r =>
+        {
+            var oldText = r.LineText.Substring(r.Column - 1, r.Length);
+            var replacement = SourceTokenizer.LanguageOf(r.FilePath) == SourceLanguage.Assembly && isLinked ? "_" + cName
+                : SourceTokenizer.LanguageOf(r.FilePath) == SourceLanguage.C ? cName
+                : newName;
+            return new TextEdit(r.FilePath, r.Line, r.Column, oldText, replacement);
+        }).ToList();
+        return new RenamePlan(symbol, edits);
+    }
+
+    private static bool IsIdentifier(string name) =>
+        name.Length > 0 && (char.IsAsciiLetter(name[0]) || name[0] == '_') && name.All(c => char.IsAsciiLetterOrDigit(c) || c == '_');
+
+    /// <summary>An existing symbol the new name would collide with: for a local, another local of
+    /// that name in the same file whose scope overlaps; for anything else, a project-wide symbol of
+    /// that name, or a local of that name that would capture one of the references.</summary>
+    private SymbolDefinition? FindConflict(ParsedFile file, int line, int column, string newName, string newKey)
+    {
+        var token = SymbolAt(file, line, column)!.Value;
+        if (LocalDefinition(file, token) is { Scope: { } scope })
+            return file.Definitions.FirstOrDefault(d => d.Name == newName && d.Scope is { } other
+                && other.StartLine <= scope.EndLine && scope.StartLine <= other.EndLine);
+
+        var global = GlobalDefinitions(_projectFiles, newKey).FirstOrDefault();
+        if (global is not null)
+            return global;
+
+        var references = FindReferences(file.Path, line, column).References;
+        foreach (var reference in references)
+            if (Parse(reference.FilePath) is { } other)
+                if (other.Definitions.FirstOrDefault(d => d.Scope is { } s && s.Contains(reference.Line)
+                    && LinkKey(other.Language, d.Name) == newKey) is { } captured)
+                    return captured;
+        return null;
     }
 
     private SymbolReference Reference(ParsedFile file, SourceToken token)
