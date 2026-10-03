@@ -11,7 +11,7 @@ typedef struct {
     char symbol;
 } Sprite;
 
-#define NUM_CHARS 5
+#define NUM_CHARS 8
 
 int main(void)
 {
@@ -37,6 +37,8 @@ int main(void)
     {
         for (i = 0; i < NUM_CHARS; i++)
         {
+        	textcolor(COLOR_BLACK + i);
+        	
             /* Erase old position */
             gotoxy(s[i].x, s[i].y);
             cputc(' ');
