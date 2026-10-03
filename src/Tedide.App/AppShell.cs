@@ -327,6 +327,7 @@ public sealed class AppShell : Window
         _gitView.CommitRequested += Commit;
         _gitView.RefreshRequested += () => _git.RequestRefresh();
         _gitView.FetchRequested += FetchFromRemote;
+        _gitView.BranchesRequested += () => _ = ShowBranchesAsync();
         _gitView.PullRequested += PullFromRemote;
         _gitView.PushRequested += () => _ = PushToRemoteAsync();
         _gitView.CancelRequested += () => _syncCancellation?.Cancel();
@@ -516,7 +517,7 @@ public sealed class AppShell : Window
             if (result.Succeeded)
                 after?.Invoke();
             else
-                TedideMessageBox.ErrorQuery($"{what} Failed", RenameSymbolDialog.Wrap(result.Message), ["OK"]);
+                TedideMessageBox.ErrorQuery($"{what} Failed", RenameSymbolDialog.Wrap(result.Explanation), ["OK"]);
             _git.RequestRefresh();
         });
     }
@@ -715,6 +716,82 @@ public sealed class AppShell : Window
                 _ = SyncAsync("Pushing", "Push", (r, token) => r.PushAsync(remote, branch, token));
         });
     }
+
+    /// <summary>
+    /// Git tab > Branches: lists the branches in <see cref="BranchesDialog"/> and does what's
+    /// chosen there - switch, create (and switch to), or delete. Deleting reopens the list.
+    /// </summary>
+    private async Task ShowBranchesAsync()
+    {
+        if (_syncCancellation is not null || _git.Primary is not { } repository)
+            return;
+        var branches = await repository.GetBranchesAsync();
+        OnUiThread(() =>
+        {
+            var dialog = new BranchesDialog(branches, _git.PrimaryStatus?.Branch);
+            Application.Run(dialog);
+            switch (dialog.Choice)
+            {
+                case (BranchAction.Switch, { IsCurrent: false } branch, _):
+                    ChangeBranch("Switching Branch", r => r.SwitchAsync(branch), branch.LocalName);
+                    break;
+                case (BranchAction.Create, _, { } name):
+                    ChangeBranch("Creating the Branch", r => r.CreateBranchAsync(name), name);
+                    break;
+                case (BranchAction.Delete, { } branch, _):
+                    _ = RunGitAsync("Deleting the Branch", r => r.DeleteBranchAsync(branch.Name), () =>
+                    {
+                        AppendOutputLine($"git: Deleted branch {branch.Name}.");
+                        _ = ShowBranchesAsync();
+                    });
+                    break;
+            }
+        });
+    }
+
+    /// <summary>
+    /// Switches (or creates and switches) branch. Open files with unsaved edits are saved first, so
+    /// git carries them over - or refuses, if they clash with the other branch. Afterwards the
+    /// editor and Solution Explorer follow the files now on disk; if the branch has different
+    /// project or solution files, the solution is reopened from them.
+    /// </summary>
+    private void ChangeBranch(string what, Func<GitRepository, Task<GitResult>> operation, string branch)
+    {
+        if (!SaveOpenFiles())
+            return;
+        var projectFiles = ProjectFileContents();
+        _ = RunGitAsync(what, operation, () =>
+        {
+            AppendOutputLine($"git: Switched to {branch}.");
+            var reopen = _workspace.Solution?.FilePath ?? _workspace.ActiveProject?.FilePath;
+            if (reopen is not null && !ProjectFileContents().SequenceEqual(projectFiles))
+                OpenProjectOrSolution(reopen);
+            else
+            {
+                ReloadFilesChangedOnDisk();
+                _solutionExplorer.Rebuild(_workspace);
+            }
+        });
+    }
+
+    /// <summary>The loaded solution's and projects' files as they are on disk (null for one that's
+    /// gone), to tell whether a branch switch changed them.</summary>
+    private List<KeyValuePair<string, string?>> ProjectFileContents() =>
+        _workspace.Projects.Select(p => p.FilePath)
+            .Prepend(_workspace.Solution?.FilePath)
+            .OfType<string>()
+            .Select(path =>
+            {
+                try
+                {
+                    return KeyValuePair.Create(path, File.Exists(path) ? File.ReadAllText(path) : null);
+                }
+                catch (Exception ex) when (IsFileError(ex))
+                {
+                    return KeyValuePair.Create(path, (string?)null);
+                }
+            })
+            .ToList();
 
     /// <summary>Editor right-click > Compare with Last Commit, for the file shown.</summary>
     private void CompareActiveWithHead()

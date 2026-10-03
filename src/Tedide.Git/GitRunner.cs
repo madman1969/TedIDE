@@ -35,6 +35,15 @@ public sealed record GitResult(int ExitCode, string Output, string Error)
                 : message.Contains("[rejected]", StringComparison.Ordinal)
                   && (message.Contains("fetch first", StringComparison.Ordinal) || message.Contains("non-fast-forward", StringComparison.Ordinal))
                     ? "The remote has commits you don't have yet. Pull first, then push again."
+                : message.Contains("would be overwritten by checkout", StringComparison.Ordinal)
+                  || message.Contains("before you switch branches", StringComparison.Ordinal)
+                    ? "Your uncommitted changes clash with that branch's version of the same files. Commit or discard them first, then switch."
+                : message.Contains("is not fully merged", StringComparison.Ordinal)
+                    ? "That branch has commits that aren't merged anywhere else, so deleting it would lose them. Tedide only deletes merged branches; use git branch -D in a terminal if you really mean to."
+                : message.Contains("is not a valid branch name", StringComparison.Ordinal)
+                    ? "That isn't a valid branch name: no spaces, no ~ ^ : ? * [ \\, and no \"..\"."
+                : message.Contains("already exists", StringComparison.Ordinal) && message.Contains("branch", StringComparison.OrdinalIgnoreCase)
+                    ? "A branch with that name already exists."
                 : null;
             return plain is null ? message : $"{plain}\n\n{message}";
         }

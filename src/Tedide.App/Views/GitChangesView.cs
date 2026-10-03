@@ -16,6 +16,7 @@ namespace Tedide.App.Views;
 /// and Delete (Changes only) discards its changes. Every control is a direct child of this view: Tab only
 /// moves between peers of the same SuperView, so a list nested in a frame couldn't be reached.
 /// Fetch, Pull and Push sync the branch with its remote; Cancel stops one that's running.
+/// Branches (beside the branch name) opens <see cref="BranchesDialog"/>.
 /// It only shows and asks - AppShell runs git (see <see cref="GitRepository"/>).
 /// </summary>
 public sealed class GitChangesView : View
@@ -50,6 +51,9 @@ public sealed class GitChangesView : View
 
     public event Action? RefreshRequested;
 
+    /// <summary>The Branches button, beside the branch name: switch, create or delete branches.</summary>
+    public event Action? BranchesRequested;
+
     public event Action? FetchRequested;
     public event Action? PullRequested;
     public event Action? PushRequested;
@@ -63,7 +67,8 @@ public sealed class GitChangesView : View
         var noHotKey = new Rune(0xFFFF);
         const int leftWidth = 40;
 
-        _branchLabel = new Label { X = 0, Y = 0, Width = Dim.Percent(leftWidth), HotKeySpecifier = noHotKey };
+        var branchesButton = Button("Branches", 0, 0, () => BranchesRequested?.Invoke());
+        _branchLabel = new Label { X = Pos.Right(branchesButton) + 2, Y = 0, Width = Dim.Percent(leftWidth) - 14, HotKeySpecifier = noHotKey };
         var messageLabel = new Label { Text = "Commit message:", X = 0, Y = 2 };
         _messageField = new TextView { X = 0, Y = 3, Width = Dim.Percent(leftWidth), Height = 5, BorderStyle = LineStyle.Single };
 
@@ -95,9 +100,10 @@ public sealed class GitChangesView : View
         Wire(_changesList, () => _changes, staged: false);
         Wire(_stagedList, () => _staged, staged: true);
 
-        _actions.AddRange([_messageField, commitButton, commitAllButton, stageAllButton, unstageAllButton, fetchButton, pullButton, pushButton]);
-        _syncButtons.AddRange([fetchButton, pullButton, pushButton]);
-        Add([_branchLabel, messageLabel, _messageField, commitButton, commitAllButton, stageAllButton, unstageAllButton,
+        _actions.AddRange([branchesButton, _messageField, commitButton, commitAllButton, stageAllButton, unstageAllButton, fetchButton, pullButton, pushButton]);
+        // Switching branches mid-pull would be trouble - one git operation on the branch at a time.
+        _syncButtons.AddRange([branchesButton, fetchButton, pullButton, pushButton]);
+        Add([branchesButton, _branchLabel, messageLabel, _messageField, commitButton, commitAllButton, stageAllButton, unstageAllButton,
             fetchButton, pullButton, pushButton, _refreshButton, _cancelButton, _changesList, _stagedList]);
         SetStatus(null, null);
     }
@@ -181,7 +187,7 @@ public sealed class GitChangesView : View
 
         _branchText = repository is null || status is null
             ? "Not in a git repository."
-            : $"Branch: {status.Describe()}  ({Path.GetFileName(repository.Root)})";
+            : $"{status.Describe()}  ({Path.GetFileName(repository.Root)})";
         _hasRepository = status is not null;
         UpdateState();
 

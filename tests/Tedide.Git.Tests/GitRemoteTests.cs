@@ -168,6 +168,97 @@ public sealed class GitRemoteTests : IDisposable
     }
 
     [Fact]
+    public async Task Branches_ListsLocalThenUntrackedRemote_AndSwitchingToARemoteOneTracksIt()
+    {
+        var repository = await SetUpAsync();
+        await repository.PushAsync(publishTo: "origin", branch: "main");
+        await TheyPushAsync("one\ntwo\nthree\nfour\n", "Theirs"); // creates their clone
+        await Git(Theirs, "switch", "-q", "-c", "topic");
+        Write(Theirs, "main.c", "topic\n");
+        await Git(Theirs, "commit", "-q", "-am", "Topic work");
+        await Git(Theirs, "push", "-q", "-u", "origin", "topic");
+        await repository.FetchAsync();
+
+        var branches = await repository.GetBranchesAsync();
+        Assert.Equal(
+            [new GitBranch("main", false, true, "origin/main"), new GitBranch("origin/topic", true, false, null)],
+            branches);
+        Assert.Equal("topic", branches[1].LocalName);
+
+        Assert.True((await repository.SwitchAsync(branches[1])).Succeeded);
+        var status = (await repository.GetStatusAsync())!;
+        Assert.Equal("topic", status.Branch);
+        Assert.Equal("origin/topic", status.Upstream);
+        Assert.Equal("topic\n", File.ReadAllText(Path.Combine(Mine, "main.c")));
+        // Now tracked locally, the remote one isn't offered separately.
+        Assert.DoesNotContain(await repository.GetBranchesAsync(), b => b.IsRemote);
+    }
+
+    [Fact]
+    public async Task CreateSwitchAndDelete_OnlyDeletesMergedBranches()
+    {
+        var repository = await SetUpAsync();
+        var main = new GitBranch("main", false, false, null);
+
+        Assert.True((await repository.CreateBranchAsync("merged")).Succeeded);
+        Assert.Equal("merged", (await repository.GetStatusAsync())!.Branch);
+        Assert.True((await repository.SwitchAsync(main)).Succeeded);
+        Assert.True((await repository.DeleteBranchAsync("merged")).Succeeded);
+
+        await repository.CreateBranchAsync("unmerged");
+        Write(Mine, "main.c", "changed\n");
+        await repository.CommitAsync("Only on unmerged", stageAll: true);
+        await repository.SwitchAsync(main);
+        var refused = await repository.DeleteBranchAsync("unmerged");
+        Assert.False(refused.Succeeded);
+        Assert.StartsWith("That branch has commits that aren't merged", refused.Explanation);
+        Assert.Contains(await repository.GetBranchesAsync(), b => b.Name == "unmerged");
+
+        var badName = await repository.CreateBranchAsync("two words");
+        Assert.StartsWith("That isn't a valid branch name", badName.Explanation);
+        Assert.StartsWith("A branch with that name already exists.", (await repository.CreateBranchAsync("unmerged")).Explanation);
+    }
+
+    [Fact]
+    public async Task SwitchAsync_RefusesWhenUncommittedChangesClash()
+    {
+        var repository = await SetUpAsync();
+        await repository.CreateBranchAsync("other");
+        Write(Mine, "main.c", "other's version\n");
+        await repository.CommitAsync("Other", stageAll: true);
+        await repository.SwitchAsync(new GitBranch("main", false, false, null));
+        Write(Mine, "main.c", "an uncommitted edit\n");
+
+        var refused = await repository.SwitchAsync(new GitBranch("other", false, false, null));
+
+        Assert.False(refused.Succeeded);
+        Assert.StartsWith("Your uncommitted changes clash", refused.Explanation);
+        Assert.Equal("main", (await repository.GetStatusAsync())!.Branch);
+        Assert.Equal("an uncommitted edit\n", File.ReadAllText(Path.Combine(Mine, "main.c")));
+    }
+
+    [Fact]
+    public void Branch_ParseSkipsSymbolicRefs()
+    {
+        var output = string.Join('\n',
+            "refs/heads/main\tmain\torigin/main\t*\t",
+            "refs/heads/old\told\t\t \t",
+            "refs/remotes/origin/HEAD\torigin\t\t \trefs/remotes/origin/main",
+            "refs/remotes/origin/main\torigin/main\t\t \t",
+            "refs/remotes/origin/old\torigin/old\t\t \t",
+            "refs/remotes/origin/new\torigin/new\t\t \t",
+            "");
+
+        Assert.Equal(
+            [
+                new GitBranch("main", false, true, "origin/main"),
+                new GitBranch("old", false, false, null),
+                new GitBranch("origin/new", true, false, null),
+            ],
+            GitBranch.Parse(output));
+    }
+
+    [Fact]
     public void Explanation_OfAnythingElseIsGitsOwnMessage()
     {
         Assert.Equal("fatal: something else", new GitResult(1, "", "fatal: something else\n").Explanation);

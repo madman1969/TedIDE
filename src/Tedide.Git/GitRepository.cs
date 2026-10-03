@@ -142,6 +142,37 @@ public sealed class GitRepository
         return await GitRunner.RunAsync(Root, ["commit", "-F", "-"], message, cancellationToken);
     }
 
+    /// <summary>
+    /// The local branches, then the remote ones nothing local tracks yet - each remote's
+    /// "origin/HEAD" pointer left out, since it isn't a branch of its own.
+    /// </summary>
+    public async Task<IReadOnlyList<GitBranch>> GetBranchesAsync(CancellationToken cancellationToken = default)
+    {
+        var result = await GitRunner.RunAsync(Root,
+            ["for-each-ref", "--format=%(refname)%09%(refname:short)%09%(upstream:short)%09%(HEAD)%09%(symref)", "refs/heads", "refs/remotes"],
+            cancellationToken: cancellationToken);
+        return result.Succeeded ? GitBranch.Parse(result.Output) : [];
+    }
+
+    /// <summary>
+    /// Switches to <paramref name="branch"/>. A remote branch is checked out as a new local branch
+    /// of the same name that tracks it ("origin/topic" becomes "topic"). Uncommitted changes come
+    /// along when they don't clash with the branch; when they do, git refuses and changes nothing.
+    /// </summary>
+    public Task<GitResult> SwitchAsync(GitBranch branch, CancellationToken cancellationToken = default) =>
+        GitRunner.RunAsync(Root, branch.IsRemote ? ["switch", "--track", branch.Name] : ["switch", branch.Name],
+            cancellationToken: cancellationToken);
+
+    /// <summary>Creates <paramref name="name"/> at the current commit and switches to it,
+    /// uncommitted changes and all. git rejects a name that isn't valid or already exists.</summary>
+    public Task<GitResult> CreateBranchAsync(string name, CancellationToken cancellationToken = default) =>
+        GitRunner.RunAsync(Root, ["switch", "-c", name], cancellationToken: cancellationToken);
+
+    /// <summary>Deletes a local branch - only one already merged (<c>git branch -d</c>), so no
+    /// commits can be lost. Never the current branch.</summary>
+    public Task<GitResult> DeleteBranchAsync(string name, CancellationToken cancellationToken = default) =>
+        GitRunner.RunAsync(Root, ["branch", "-d", name], cancellationToken: cancellationToken);
+
     /// <summary>The repository's remotes, by name ("origin").</summary>
     public async Task<IReadOnlyList<string>> GetRemotesAsync(CancellationToken cancellationToken = default)
     {

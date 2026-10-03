@@ -37,7 +37,8 @@ Doc Viewer" below.
 - **Symbols** - a filterable browser for the linker map and label file.
 - **Git** - status markers in the Solution Explorer, the branch and the caret line's blame, a full
   Blame view, change bars in the editor's gutter that follow unsaved edits, Compare with Last
-  Commit for any file, and a Git tab to stage, unstage, discard, commit, fetch, pull and push.
+  Commit for any file, and a Git tab to stage, unstage, discard, commit, fetch, pull and push, and
+  to switch, create and delete branches.
 - **Help** - F1 context help opens the bundled **Doc Viewer** at the word under the caret: the cc65
   manuals, The C Book, C64-Wiki, Wikipedia and the VICE manual, with full-text search and bookmarks.
 - **Themes** - nine true-colour themes, shared with the Doc Viewer, including Borland Turbo C,
