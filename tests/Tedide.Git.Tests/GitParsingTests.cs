@@ -27,6 +27,7 @@ public class GitParsingTests
         Assert.Equal("origin/main", status.Upstream);
         Assert.Equal("main ↑2 ↓1", status.Describe());
         Assert.True(status.HasCommits);
+        Assert.Equal("1234567890123456789012345678901234567890", status.Head);
         Assert.Equal(5, status.Files.Count);
 
         var modified = status.Files[0];
@@ -53,6 +54,7 @@ public class GitParsingTests
     {
         var initial = GitStatus.Parse("# branch.oid (initial)\0# branch.head main\0", Root);
         Assert.False(initial.HasCommits);
+        Assert.Null(initial.Head);
         Assert.Equal("main", initial.Describe());
 
         Assert.Equal("(detached)", GitStatus.Parse("# branch.oid abc\0# branch.head (detached)\0", Root).Describe());
@@ -154,5 +156,42 @@ public class GitParsingTests
         var binary = GitDiff.Parse("diff --git a/x b/x\nBinary files a/x and b/x differ\n");
         Assert.True(binary.IsBinary);
         Assert.Empty(binary.Hunks);
+    }
+
+    private static GitDiff Hunks(params (int OldStart, int OldCount, int NewStart, int NewCount)[] hunks) =>
+        new(hunks.Select(h => new DiffHunk(h.OldStart, h.OldCount, h.NewStart, h.NewCount, "", [])).ToList());
+
+    [Fact]
+    public void LineChanges_MarksAddedModifiedAndRemovedLines()
+    {
+        var changes = Hunks(
+            (2, 0, 3, 2),   // lines 3-4 added
+            (5, 2, 7, 3),   // lines 7-9 replace two old lines
+            (12, 1, 13, 0)  // a line removed after line 13
+        ).LineChanges(lineCount: 20);
+
+        Assert.Equal(
+            new Dictionary<int, LineChangeKind>
+            {
+                [3] = LineChangeKind.Added,
+                [4] = LineChangeKind.Added,
+                [7] = LineChangeKind.Modified,
+                [8] = LineChangeKind.Modified,
+                [9] = LineChangeKind.Modified,
+                [14] = LineChangeKind.RemovedAbove,
+            },
+            changes);
+    }
+
+    [Fact]
+    public void LineChanges_MarksRemovalsAtEitherEndOfTheFile()
+    {
+        // Removed from the top: the new first line marks it.
+        Assert.Equal(LineChangeKind.RemovedAbove, Hunks((1, 2, 0, 0)).LineChanges(5)[1]);
+        // Removed from the end: the last line marks it, from below.
+        Assert.Equal(LineChangeKind.RemovedBelow, Hunks((6, 2, 5, 0)).LineChanges(5)[5]);
+        // Everything removed leaves the editor's one empty line.
+        Assert.Equal(LineChangeKind.RemovedAbove, Hunks((1, 5, 0, 0)).LineChanges(1)[1]);
+        Assert.Empty(GitDiff.Empty.LineChanges(10));
     }
 }

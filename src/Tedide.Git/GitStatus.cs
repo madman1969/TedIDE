@@ -20,6 +20,9 @@ public sealed record GitFileStatus(string Path, char Index, char WorkTree, strin
 /// <summary>The branch, and every changed file, from <c>git status --porcelain=v2 --branch -z</c>.</summary>
 public sealed record GitStatus(string? Branch, string? Upstream, int Ahead, int Behind, bool HasCommits, IReadOnlyList<GitFileStatus> Files)
 {
+    /// <summary>HEAD's commit id, or null before the first commit.</summary>
+    public string? Head { get; init; }
+
     /// <summary>"main ↑2 ↓1" - the branch, and how far it is ahead of and behind its upstream. A
     /// detached HEAD shows as "(detached)".</summary>
     public string Describe()
@@ -38,7 +41,7 @@ public sealed record GitStatus(string? Branch, string? Upstream, int Ahead, int 
     /// </summary>
     public static GitStatus Parse(string output, string repositoryRoot)
     {
-        string? branch = null, upstream = null;
+        string? branch = null, upstream = null, head = null;
         int ahead = 0, behind = 0;
         var hasCommits = true;
         var files = new List<GitFileStatus>();
@@ -54,9 +57,14 @@ public sealed record GitStatus(string? Branch, string? Upstream, int Ahead, int 
                 case '#':
                     var header = record[2..];
                     if (header.StartsWith("branch.oid ", StringComparison.Ordinal))
-                        hasCommits = header["branch.oid ".Length..] != "(initial)";
+                    {
+                        head = header["branch.oid ".Length..];
+                        hasCommits = head != "(initial)";
+                        if (!hasCommits)
+                            head = null;
+                    }
                     else if (header.StartsWith("branch.head ", StringComparison.Ordinal))
-                        branch = header["branch.head ".Length..] is var head && head != "(detached)" ? head : null;
+                        branch = header["branch.head ".Length..] is var name && name != "(detached)" ? name : null;
                     else if (header.StartsWith("branch.upstream ", StringComparison.Ordinal))
                         upstream = header["branch.upstream ".Length..];
                     else if (header.StartsWith("branch.ab ", StringComparison.Ordinal))
@@ -88,7 +96,7 @@ public sealed record GitStatus(string? Branch, string? Upstream, int Ahead, int 
                     break;
             }
         }
-        return new GitStatus(branch, upstream, ahead, behind, hasCommits, files);
+        return new GitStatus(branch, upstream, ahead, behind, hasCommits, files) { Head = head };
     }
 
     private static string FullPath(string root, string relative) =>

@@ -44,6 +44,14 @@ public sealed class AppShell : Window
     private string? _blameText;
     private int _blameGeneration;
     private CancellationTokenSource? _blameCancellation;
+
+    /// <summary>Git's change bars in the editor's gutter - see <see cref="RequestLineMarkers"/>.</summary>
+    private readonly GitLineMarkers _gitLineMarkers;
+    private int _lineMarkersGeneration;
+    private CancellationTokenSource? _lineMarkersCancellation;
+    /// <summary>The file the bars are for, and the git state they were worked out against - a git
+    /// refresh only recomputes them when that changes.</summary>
+    private string? _lineMarkersPath, _lineMarkersGitState;
     private readonly Cc65Toolchain _toolchain = new();
     /// <summary>Non-null only while a build is running - see <see cref="BuildActiveProjectAsync"/>
     /// and <see cref="CancelBuild"/>.</summary>
@@ -322,6 +330,8 @@ public sealed class AppShell : Window
         // doc comment for why LineTransformers (not BackgroundRenderers) is the right extension
         // point for this.
         _editorPane.Editor.LineTransformers.Add(_debugLineTransformer);
+        _gitLineMarkers = new GitLineMarkers(_editorPane.Editor);
+        _editorPane.Editor.BackgroundRenderers.Add(_gitLineMarkers);
 
         Add([_menuBar, explorerFrame, _editorFrame, _outputTabs, _statusBar]);
 
@@ -329,6 +339,7 @@ public sealed class AppShell : Window
         _workspace.Changed += () => _git.ProjectsChanged();
         _solutionExplorer.Rebuilt += () => _git.RequestRefresh();
         _editorPane.Editor.CaretChanged += (_, _) => RequestBlame();
+        _editorPane.Editor.ContentChanged += (_, _) => RequestLineMarkers();
         _git.Start();
     }
 
@@ -339,6 +350,8 @@ public sealed class AppShell : Window
         _gitView.SetStatus(_git.Primary, _git.PrimaryStatus);
         UpdateGitAnnotation();
         RequestBlame();
+        if (LineMarkersGitState() != _lineMarkersGitState)
+            RequestLineMarkers();
     }
 
     /// <summary>
@@ -399,6 +412,71 @@ public sealed class AppShell : Window
                 return;
             _blameText = blame is null ? null : $"Ln {line}: {blame.Describe(DateTimeOffset.Now)}";
             UpdateGitAnnotation();
+        });
+    }
+
+    /// <summary>What the shown file's change bars depend on besides its text: HEAD, and the file's
+    /// own git status (a commit, a discard or a checkout changes one of them).</summary>
+    private string LineMarkersGitState() =>
+        _editorPane.OpenPath is { } path
+            ? $"{_git.PrimaryStatus?.Head}|{_git.Files.GetValueOrDefault(path)}|{_git.RepositoryFor(path)?.Root}"
+            : "";
+
+    /// <summary>Works out the change bars soon - a burst of edits runs one diff, once they pause.</summary>
+    private void RequestLineMarkers()
+    {
+        var generation = ++_lineMarkersGeneration;
+        Application.AddTimeout(TimeSpan.FromMilliseconds(400), () =>
+        {
+            if (generation == _lineMarkersGeneration)
+                _ = UpdateLineMarkersAsync(generation);
+            return false;
+        });
+    }
+
+    /// <summary>
+    /// Git phase 2: diffs the shown file's text - unsaved edits included - against HEAD and shows
+    /// the result as bars in the gutter (see <see cref="GitLineMarkers"/>). None for a file outside
+    /// a repository or one git doesn't track yet, as in VS Code.
+    /// </summary>
+    private async Task UpdateLineMarkersAsync(int generation)
+    {
+        _lineMarkersCancellation?.Cancel();
+        var path = _editorPane.OpenPath;
+        _lineMarkersPath = path;
+        _lineMarkersGitState = LineMarkersGitState();
+        var file = path is null ? null : _git.Files.GetValueOrDefault(path);
+        if (path is null || _git.RepositoryFor(path) is not { } repository || file is { IsUntracked: true })
+        {
+            _gitLineMarkers.Changes = new Dictionary<int, LineChangeKind>();
+            return;
+        }
+
+        // Read here, on the UI thread - the document belongs to it.
+        var text = _editorPane.Editor.Text;
+        var lineCount = _editorPane.Editor.Document!.LineCount;
+        var cancellation = new CancellationTokenSource();
+        _lineMarkersCancellation = cancellation;
+        GitDiff diff;
+        try
+        {
+            diff = await repository.DiffWithHeadAsync(path, text, file?.OriginalPath, contextLines: 0, cancellation.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // Never worth an error dialog: the bars just stay as they were.
+            Log.Warning(ex, "Working out git change markers for {Path} failed", path);
+            return;
+        }
+
+        OnUiThread(() =>
+        {
+            if (generation == _lineMarkersGeneration && _editorPane.IsShown(path))
+                _gitLineMarkers.Changes = diff.LineChanges(lineCount);
         });
     }
 
@@ -1278,6 +1356,12 @@ public sealed class AppShell : Window
     private void OnActiveDocumentChanged()
     {
         RequestBlame();
+        if (!EditorPane.SamePath(_editorPane.OpenPath, _lineMarkersPath))
+        {
+            // The last file's bars mustn't show on this one while its own are worked out.
+            _gitLineMarkers.Changes = new Dictionary<int, LineChangeKind>();
+            RequestLineMarkers();
+        }
         _editorFrame.Title = _editorPane.OpenPath is { } path ? Path.GetFileName(path) : NoFileOpenTitle;
         UpdateLanguageIndicator();
         RefreshBreakpointHighlights();

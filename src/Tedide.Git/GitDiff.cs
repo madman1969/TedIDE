@@ -22,6 +22,17 @@ public sealed record DiffHunk(int OldStart, int OldCount, int NewStart, int NewC
         $"@@ -{OldStart},{OldCount} +{NewStart},{NewCount} @@{(Section.Length > 0 ? " " + Section : "")}";
 }
 
+/// <summary>How a line of the current file differs from the last commit, for the editor's change
+/// markers: new, changed, or the place where lines were removed - just above it, or below it at
+/// the end of the file.</summary>
+public enum LineChangeKind
+{
+    Added,
+    Modified,
+    RemovedAbove,
+    RemovedBelow,
+}
+
 /// <summary>A file's changes, parsed from git's unified diff. No hunks means no changes.</summary>
 public sealed partial record GitDiff(IReadOnlyList<DiffHunk> Hunks, bool IsBinary = false)
 {
@@ -30,6 +41,33 @@ public sealed partial record GitDiff(IReadOnlyList<DiffHunk> Hunks, bool IsBinar
     public int Added => Hunks.Sum(h => h.Lines.Count(l => l.Kind == DiffLineKind.Added));
 
     public int Removed => Hunks.Sum(h => h.Lines.Count(l => l.Kind == DiffLineKind.Removed));
+
+    /// <summary>
+    /// Each changed line of the current file, by 1-based number, as VS Code's gutter shows them: a
+    /// hunk that only adds lines is Added, one that replaces lines is Modified throughout, and one
+    /// that only removes lines marks the line now after the gap (or, at the end of the file, the
+    /// last line). <paramref name="lineCount"/> is the current file's line count.
+    /// </summary>
+    public IReadOnlyDictionary<int, LineChangeKind> LineChanges(int lineCount)
+    {
+        var changes = new Dictionary<int, LineChangeKind>();
+        foreach (var hunk in Hunks)
+        {
+            if (hunk.NewCount == 0)
+            {
+                // "+19,0": removed after line 19 (0 for the top of the file).
+                if (hunk.NewStart + 1 <= lineCount)
+                    changes.TryAdd(hunk.NewStart + 1, LineChangeKind.RemovedAbove);
+                else if (lineCount > 0)
+                    changes.TryAdd(Math.Clamp(hunk.NewStart, 1, lineCount), LineChangeKind.RemovedBelow);
+                continue;
+            }
+            var kind = hunk.OldCount == 0 ? LineChangeKind.Added : LineChangeKind.Modified;
+            for (var line = hunk.NewStart; line < hunk.NewStart + hunk.NewCount; line++)
+                changes[line] = kind;
+        }
+        return changes;
+    }
 
     [GeneratedRegex(@"^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@ ?(.*)$")]
     private static partial Regex HunkHeader();
