@@ -23,4 +23,10 @@
     <ProjectReference Include="..\..\src\Tedide.Core\Tedide.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Before/after pairs for Opt6502GoldenTests: real cc65-shaped input and the optimizer's
+         expected output (checked byte-for-byte against the C opt6502 it replaced). -->
+    <None Include="Opt6502Golden\*.s" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

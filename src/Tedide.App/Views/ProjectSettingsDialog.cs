@@ -18,13 +18,12 @@ namespace Tedide.App.Views;
 /// in them), "Linker" (ld65 link-time flags: whether to emit a linker map file and/or a VICE-format
 /// label file), "SuperCPU" (whether to launch this project in VICE's dedicated SuperCPU emulator -
 /// only enabled while Target is C64, see <see cref="TedideProject.EnableSuperCpu"/>), "opt6502"
-/// (whether to run opt6502 on generated assembly, plus where its executable is), "CC65" (the
-/// CC65_HOME environment variable), and "VICE" (the VICE emulator's bin directory). Source files
+/// (whether to optimize generated assembly, and for size or speed), "CC65" (the CC65_HOME
+/// environment variable), and "VICE" (the VICE emulator's bin directory). Source files
 /// aren't edited here - that's the Solution Explorer's right-click New File/Delete File job (see
 /// <see cref="SolutionExplorerTree"/>).
 /// On "Save", writes every field from the project-bound tabs onto the given
-/// <see cref="TedideProject"/> in one go and persists it to disk; the "CC65"/"VICE" tabs and the
-/// opt6502 executable path aren't
+/// <see cref="TedideProject"/> in one go and persists it to disk; the "CC65"/"VICE" tabs aren't
 /// project state (they're this machine's toolchain install, not any one project) so they're
 /// persisted separately to <see cref="ToolchainSettings"/> instead - the caller (AppShell) reloads
 /// and applies that immediately after a save, and is also responsible for refreshing anything that
@@ -50,7 +49,6 @@ public sealed class ProjectSettingsDialog : Dialog
     private readonly CheckBox _enableSuperCpuField;
     private readonly CheckBox _useOpt6502Field;
     private readonly CheckBox _favourSpeedField;
-    private readonly TextField _opt6502PathField;
 
     /// <summary>True if the user chose Save (and the project was updated and saved to disk).</summary>
     public bool Saved { get; private set; }
@@ -82,7 +80,7 @@ public sealed class ProjectSettingsDialog : Dialog
         var compilerTab = BuildCompilerTab(project, out _generateListingField, out _addSourceAsCommentField);
         var linkerTab = BuildLinkerTab(project, _targetField, out _generateLinkerMapField, out _exportLabelsField, out _generateDebugInfoField, out _linkerConfigPathField);
         var superCpuTab = BuildSuperCpuTab(project, out _enableSuperCpuField);
-        var opt6502Tab = BuildOpt6502Tab(project, out _useOpt6502Field, out _favourSpeedField, out var cpuLabel, out _opt6502PathField);
+        var opt6502Tab = BuildOpt6502Tab(project, out _useOpt6502Field, out _favourSpeedField, out var cpuLabel);
         var cc65Tab = BuildCc65Tab(out _cc65HomeField);
         var viceTab = BuildViceTab(out _viceBinDirectoryField);
         tabs.Add(settingsTab);
@@ -185,7 +183,6 @@ public sealed class ProjectSettingsDialog : Dialog
                 {
                     Cc65Home = _cc65HomeField.Text.Trim() is { Length: > 0 } cc65Home ? cc65Home : null,
                     ViceBinDirectory = _viceBinDirectoryField.Text.Trim() is { Length: > 0 } viceBinDirectory ? viceBinDirectory : null,
-                    Opt6502Path = _opt6502PathField.Text.Trim() is { Length: > 0 } opt6502Path ? opt6502Path : null,
                 }.Save();
             }
             catch (Exception ex) when (AppShell.IsFileError(ex))
@@ -545,14 +542,13 @@ public sealed class ProjectSettingsDialog : Dialog
 
     /// <summary>
     /// Builds the "opt6502" tab: the <see cref="TedideProject.UseOpt6502"/> toggle, the
-    /// <see cref="TedideProject.Opt6502Mode"/> speed/size choice, the CPU this project builds for
-    /// (read-only - it follows Target and the SuperCPU tab, see <see cref="CpuDescription"/>; the
-    /// constructor keeps it live), and where opt6502.exe is. That path is this machine's install,
-    /// not project state, so like the CC65/VICE tabs it's saved to <see cref="ToolchainSettings"/>
-    /// rather than the project.
+    /// <see cref="TedideProject.Opt6502Mode"/> speed/size choice, and the CPU this project builds
+    /// for (read-only - it follows Target and the SuperCPU tab, see <see cref="CpuDescription"/>;
+    /// the constructor keeps it live). The optimizer is built into Tedide (Tedide.Build's
+    /// Opt6502Optimizer), so there's nothing to install or locate.
     /// </summary>
     private static View BuildOpt6502Tab(
-        TedideProject project, out CheckBox useOpt6502Field, out CheckBox favourSpeedField, out Label cpuLabel, out TextField opt6502PathField)
+        TedideProject project, out CheckBox useOpt6502Field, out CheckBox favourSpeedField, out Label cpuLabel)
     {
         // "p" rather than "o" - "_Optimizer" already has O.
         var tab = new View { Title = " o_pt6502 ", Width = Dim.Fill(), Height = Dim.Fill() };
@@ -596,24 +592,7 @@ public sealed class ProjectSettingsDialog : Dialog
             X = 0, Y = 13, Width = Dim.Fill(1),
         };
 
-        var pathLabel = new Label { Text = "opt6502 executable (blank = opt6502.exe beside Tedide, then PATH):", X = 0, Y = 15 };
-        opt6502PathField = new TextField
-        {
-            X = 0, Y = 17, Width = Dim.Fill(12),
-            Text = ToolchainSettings.Load().Opt6502Path ?? string.Empty,
-        };
-        var browseButton = FileBrowseButton.Create(
-            opt6502PathField, y: 17, "Select opt6502 Executable",
-            allowedTypes: () => [new AllowedType("Programs", ".exe")]);
-
-        var pathHelpLabel = new Label
-        {
-            Text = "Build it with tools\\opt6502\\build.cmd (needs the Visual Studio C++ tools). Saved to\n" +
-                   "Tedide's settings for this machine, not the project - same as the VICE tab.",
-            X = 0, Y = 19, Width = Dim.Fill(1), Height = 2,
-        };
-
-        tab.Add(useOpt6502Field, helpLabel, favourSpeedField, speedHelpLabel, cpuLabel, pathLabel, opt6502PathField, browseButton, pathHelpLabel);
+        tab.Add(useOpt6502Field, helpLabel, favourSpeedField, speedHelpLabel, cpuLabel);
         return tab;
     }
 

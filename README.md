@@ -40,8 +40,6 @@ Doc Viewer" below.
   configurable via **Project > Settings > VICE**, alongside `CC65_HOME` under its own **CC65** tab
   (both are per-machine toolchain settings, not project state, so they're saved once and apply to
   every project). Everything else, including Build Project and Clean Project, works fine without it.
-- (Optional) Visual Studio 2022+ with the C++ tools - only to build `opt6502.exe` (see the
-  **opt6502** tab under "Project Settings dialog") with `tools\opt6502\build.cmd`.
 
 ## Solution layout
 
@@ -52,7 +50,8 @@ src/
                        plus parsers for cc65's generated output: LinkerMapFile (lnk.map), LabelsFile (.lbl)
                        and Debugging/DbgFile (.dbg - source-line <-> address resolution for the debugger)
   Tedide.Build/        Drives cl65 as an external process, parses its output into diagnostics, launches VICE
-                       (optionally with its binary monitor enabled - see Tedide.Debug)
+                       (optionally with its binary monitor enabled - see Tedide.Debug); Opt6502/ is the
+                       optional optimizer for cc65's generated assembly - see its README.md
   Tedide.Debug/        A client for VICE's binary monitor protocol (breakpoints, registers, memory, stepping)
                        - what Tedide.App's Debug menu talks to once VICE is launched with -binarymonitor
   Tedide.Theming/      The nine color themes/scheme switching shared by Tedide.App and Tedide.DocViewer
@@ -68,8 +67,8 @@ tests/
 tools/
   Cc65DocsDbBuilder/   One-off converter: cc65's HTML manuals -> Docs.db (Markdown + FTS5 search index),
                        embedded in Tedide.DocViewer - see "Running the Doc Viewer" below
-  opt6502/             Tedide's patched fork of CTalkobt/opt6502 (GPL-3), an optional optimizer run on
-                       cc65's generated assembly - see its TEDIDE.md for what changed and why
+  Opt6502Cli/          Command-line front end to the optimizer (opt6502.exe), plus its behaviour tests
+                       in cc65's simulator (run_sim65_tests.sh) - see src/Tedide.Build/Opt6502/README.md
 samples/
   HelloCBM/            A small multi-file sample solution/project, buildable for every Commodore cc65 target
     HelloCBM.tsln
@@ -591,8 +590,9 @@ single Save/Cancel footer:
   result needs a SuperCPU (or `xscpu64`) to run.
 
   ![The SuperCPU tab: an "Enable SuperCPU support" checkbox and an explanation that it's only available for the C64 target](docs/images/project-settings-supercpu.png)
-- **opt6502** - *Optimize generated assembly with opt6502* (`UseOpt6502`), a read-only line naming
-  the CPU the build uses (following Target and the SuperCPU tab live), and where `opt6502.exe` is.
+- **opt6502** - *Optimize generated assembly with opt6502* (`UseOpt6502`), *Favour speed*
+  (`Opt6502Mode`), and a read-only line naming the CPU the build uses (following Target and the
+  SuperCPU tab live). The optimizer is built into Tedide, so there's nothing to install.
   When on, each C file is compiled to `obj/src/foo.c.cc65.s`, opt6502 writes its optimized version to
   the usual `obj/src/foo.c.s`, and that's what's assembled - so the listing, the `.dbg` file and the
   debugger all see the code that actually runs. Hand-written assembly is never touched. Each file's
@@ -614,14 +614,14 @@ single Save/Cancel footer:
   code. cc65 always calls these helpers, so this still pays off on top of `-Oirs`: 5% fewer
   cycles on a stack-heavy test program (10% without cc65 optimization). It's checked for identical
   results in cc65's simulator, including a test of every inlined helper's register and flag
-  results (see opt6502's `TEDIDE.md`). The Output panel then reports bytes *added* alongside cycles saved. Off (the
-  default), opt6502 only ever makes code smaller.
+  results. The Output panel then reports bytes *added* alongside cycles saved. Off (the default),
+  opt6502 only ever makes code smaller.
 
-  The opt6502 used is Tedide's patched fork in `tools/opt6502` (upstream
-  couldn't assemble cc65 output and miscompiled several patterns - see its `TEDIDE.md`), built with
-  `tools\opt6502\build.cmd`; Tedide's build copies the result beside `Tedide.App.exe`, where it's
-  found automatically. The path field (per-machine, like CC65/VICE) overrides that, and PATH is the
-  last resort. If opt6502 can't be found, the build fails with an error saying how to get it.
+  The optimizer lives in `src/Tedide.Build/Opt6502` - its `README.md` lists every rule, why each is
+  safe, and how it's tested. It began as a patched fork of
+  [CTalkobt/opt6502](https://github.com/CTalkobt/opt6502), whose release couldn't assemble cc65
+  output and miscompiled several patterns; Tedide's version is an MIT reimplementation, checked
+  byte-for-byte against that fork before it was removed.
 - **CC65** - the `CC65_HOME` environment variable (where cl65 finds target headers/libraries) -
   a per-machine toolchain setting, not project state, so it's saved once and applies to every
   project (see "Prerequisites" above).
@@ -632,8 +632,8 @@ single Save/Cancel footer:
 
   ![The VICE tab: the VICE bin directory (C:\GTK3VICE-3.9-win64\bin) with a Browse button and an explanation](docs/images/project-settings-vice.png)
 
-Saving writes every project-bound field (all tabs except CC65/VICE and the opt6502 path, which are
-per-machine settings saved separately) to the `.tproj` in one go. If the display name changed, the project's own folder
+Saving writes every project-bound field (all tabs except CC65/VICE, which are per-machine settings
+saved separately) to the `.tproj` in one go. If the display name changed, the project's own folder
 (and its `.tproj` file) is renamed to match - e.g. renaming "HelloGame" to "SuperGame" moves
 `.../HelloGame/` to `.../SuperGame/` and `HelloGame.tproj` to `SuperGame.tproj` within it,
 following the same "folder named after the project" convention File > New Project scaffolds.

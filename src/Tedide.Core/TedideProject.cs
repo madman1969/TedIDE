@@ -55,10 +55,10 @@ public sealed class TedideProject
     /// ignored for every other target. Defaults to off.</summary>
     public bool EnableSuperCpu { get; set; }
 
-    /// <summary>Whether each C file's cc65-generated assembly is run through opt6502 (Tedide's
-    /// patched fork, see tools/opt6502) before it's assembled - see Tedide.Build's
-    /// Cc65Toolchain.BuildCompileSteps. Defaults to off. Hand-written assembly sources are never
-    /// touched.</summary>
+    /// <summary>Whether each C file's cc65-generated assembly is run through Tedide's optimizer
+    /// (Tedide.Build's Opt6502Optimizer, still called opt6502 after the program it replaced) before
+    /// it's assembled - see Tedide.Build's Cc65Toolchain.BuildCompileSteps. Defaults to off.
+    /// Hand-written assembly sources are never touched.</summary>
     public bool UseOpt6502 { get; set; }
 
     /// <summary>Whether opt6502 favours size or speed - see <see cref="Core.Opt6502Mode"/>. Defaults

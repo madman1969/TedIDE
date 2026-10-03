@@ -1,51 +1,37 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Text;
+using Tedide.Build.Opt6502;
 using Tedide.Core;
 
 namespace Tedide.Build;
 
-/// <summary>The external program one <see cref="BuildStep"/> runs.</summary>
+/// <summary>What one <see cref="BuildStep"/> runs.</summary>
 internal enum BuildTool
 {
+    /// <summary>cl65, as an external process.</summary>
     Cl65,
+
+    /// <summary><see cref="Opt6502Optimizer"/>, in-process.</summary>
     Opt6502,
 }
 
-/// <summary>One external process invocation of a build - see <see cref="Cc65Toolchain.BuildCompileSteps"/>.</summary>
-internal sealed record BuildStep(BuildTool Tool, List<string> Arguments);
+/// <summary>
+/// One step of a build - see <see cref="Cc65Toolchain.BuildCompileSteps"/>. For cl65,
+/// <see cref="Arguments"/> is its command line; for the optimizer, the input and output files
+/// (relative to the project directory), with <see cref="Opt6502"/> its options.
+/// </summary>
+internal sealed record BuildStep(BuildTool Tool, List<string> Arguments, Opt6502Options? Opt6502 = null);
 
 /// <summary>
 /// Drives the cc65 toolchain (cl65) as an external process to build a <see cref="TedideProject"/>.
 /// Assumes cl65 (and its ca65/ld65/co65 companions) are available on PATH, unless overridden.
-/// Projects with <see cref="TedideProject.UseOpt6502"/> on also run opt6502 - see
-/// <see cref="Opt6502Path"/> for where it's looked for.
+/// Projects with <see cref="TedideProject.UseOpt6502"/> on also have each C file's generated
+/// assembly optimized, in-process, by <see cref="Opt6502Optimizer"/>.
 /// </summary>
-public sealed class Cc65Toolchain(string cl65Path = "cl65", string? opt6502Path = null)
+public sealed class Cc65Toolchain(string cl65Path = "cl65")
 {
-    public const string Opt6502ExecutableName = "opt6502.exe";
-
     public string Cl65Path { get; } = cl65Path;
-
-    /// <summary>
-    /// The opt6502 executable configured in Tedide's toolchain settings, or null/blank for the
-    /// default - see <see cref="ResolveOpt6502Path"/>. Settable so a changed setting applies to
-    /// the running app without a restart, same as ViceEmulator.BinDirectory.
-    /// </summary>
-    public string? Opt6502Path { get; set; } = opt6502Path;
-
-    /// <summary>
-    /// Where opt6502 is actually run from: <paramref name="configuredPath"/> if one is set;
-    /// otherwise an opt6502.exe beside Tedide itself in <paramref name="baseDirectory"/> (where
-    /// Tedide.App's build copies tools/opt6502/bin/opt6502.exe when it has been built); otherwise
-    /// plain "opt6502", left to PATH.
-    /// </summary>
-    internal static string ResolveOpt6502Path(string? configuredPath, string baseDirectory)
-    {
-        if (!string.IsNullOrWhiteSpace(configuredPath))
-            return configuredPath.Trim();
-        var besideTedide = Path.Combine(baseDirectory, Opt6502ExecutableName);
-        return File.Exists(besideTedide) ? besideTedide : "opt6502";
-    }
 
     /// <summary>Runs `cl65 --version` to confirm the toolchain is reachable.</summary>
     public async Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
@@ -109,7 +95,6 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65", string? opt6502Path 
         var objectFiles = new List<string>();
         var compileFailed = false;
         var lastExitCode = 0;
-        var opt6502Path = ResolveOpt6502Path(Opt6502Path, AppContext.BaseDirectory);
         var opt6502Total = Opt6502Stats.Empty;
         var opt6502Files = 0;
         foreach (var sourceFile in project.SourceFiles)
@@ -122,29 +107,17 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65", string? opt6502Path 
                 int? exitCode;
                 if (step.Tool == BuildTool.Opt6502)
                 {
-                    // opt6502 -quiet prints only errors and its one stats line - the stats become a
-                    // readable per-file summary line (and count toward the build total below), and
-                    // its bare "Error: ..." lines get a tool prefix so Cc65DiagnosticParser reports them.
-                    void CaptureOpt6502(string? line)
+                    // Each file's savings become a readable summary line, and count toward the
+                    // build total below.
+                    cancellationToken.ThrowIfCancellationRequested();
+                    var stats = RunOptimizer(project, step, Capture);
+                    if (stats is not null)
                     {
-                        if (line is null)
-                            return;
-                        if (Opt6502Stats.TryParse(line, out var stats))
-                        {
-                            opt6502Total = opt6502Total.Add(stats);
-                            opt6502Files++;
-                            Capture($"opt6502: {sourceFile}: {stats.Describe()}");
-                        }
-                        else
-                        {
-                            Capture(line.StartsWith("Error:", StringComparison.Ordinal) ? "opt6502: " + line : line);
-                        }
+                        opt6502Total = opt6502Total.Add(stats);
+                        opt6502Files++;
+                        Capture($"opt6502: {sourceFile}: {stats.Describe()}");
                     }
-
-                    exitCode = await RunToolAsync(opt6502Path, step.Arguments, project.Directory, CaptureOpt6502,
-                        $"opt6502: Error: opt6502 is turned on for this project, but '{opt6502Path}' could not be run. Build it with " +
-                        @"tools\opt6502\build.cmd, or set its location on Project Settings' opt6502 tab.",
-                        cancellationToken);
+                    exitCode = stats is null ? 1 : 0;
                 }
                 else
                 {
@@ -192,7 +165,31 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65", string? opt6502Path 
     }
 
     /// <summary>
-    /// Runs one tool invocation (cl65 or opt6502) to completion, streaming its stdout/stderr lines
+    /// Runs an optimizer <see cref="BuildStep"/>: reads cc65's generated assembly, optimizes it and
+    /// writes the result where the assemble step expects it. Returns what was done, or null - after
+    /// reporting an <c>opt6502: Error:</c> line, which <see cref="Cc65DiagnosticParser"/> turns into
+    /// an Error List entry - if either file couldn't be read or written. Latin-1 round-trips every
+    /// byte, so nothing in the source is altered by decoding it.
+    /// </summary>
+    private static Opt6502Stats? RunOptimizer(TedideProject project, BuildStep step, Action<string?> capture)
+    {
+        var input = Path.Combine(project.Directory, step.Arguments[0]);
+        var output = Path.Combine(project.Directory, step.Arguments[1]);
+        try
+        {
+            var result = Opt6502Optimizer.Optimize(File.ReadAllText(input, Encoding.Latin1), step.Opt6502!);
+            File.WriteAllText(output, result.Output, Encoding.Latin1);
+            return result.Stats;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            capture($"opt6502: Error: {ex.Message}");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Runs one cl65 invocation to completion, streaming its stdout/stderr lines
     /// to <paramref name="capture"/> as they arrive. Returns its exit code, or null if the process
     /// couldn't even be started (e.g. cl65 isn't on PATH) - distinct from a normal nonzero exit
     /// code, since the caller should give up immediately rather than trying further invocations
@@ -328,9 +325,9 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65", string? opt6502Path 
     /// listing per invocation.
     /// With <see cref="TedideProject.UseOpt6502"/> on, a C file takes three: cc65's assembly goes
     /// to obj/foo.c.cc65.s instead (<see cref="TedideProject.ResolvedUnoptimizedAssemblyFileFor"/>),
-    /// opt6502 writes its optimized version to the usual obj/foo.c.s, and that's what's assembled -
-    /// so the listing, the .dbg file and the debugger's generated-assembly view all see the code
-    /// that actually runs, at the same path as without opt6502.
+    /// the optimizer writes its optimized version to the usual obj/foo.c.s, and that's what's
+    /// assembled - so the listing, the .dbg file and the debugger's generated-assembly view all see
+    /// the code that actually runs, at the same path as without it.
     /// </summary>
     internal static List<BuildStep> BuildCompileSteps(TedideProject project, string sourceFile)
     {
@@ -356,28 +353,18 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65", string? opt6502Path 
         return
         [
             new(BuildTool.Cl65, BuildGenerateAssemblyArguments(project, sourceFile, unoptimizedAssembly)),
-            new(BuildTool.Opt6502, BuildOpt6502Arguments(project, unoptimizedAssembly, generatedAssembly)),
+            new(BuildTool.Opt6502, [unoptimizedAssembly, generatedAssembly], BuildOpt6502Options(project)),
             new(BuildTool.Cl65, BuildAssembleArguments(project, generatedAssembly, objectFile, listingFile)),
         ];
     }
 
     /// <summary>
-    /// The opt6502 arguments to optimize cc65's generated assembly <paramref name="inputFile"/>
-    /// into <paramref name="outputFile"/>: the project's <see cref="TedideProject.Opt6502Mode"/>
-    /// (always passed explicitly - opt6502's own default is -speed, which adds code), ca65 syntax,
-    /// the project's CPU (see <see cref="Cc65TargetExtensions.Opt6502Cpu"/> - "65816" for a
-    /// SuperCPU project, which lets opt6502 use STZ), and -quiet so its only output is errors plus
-    /// the stats line BuildAsync turns into the Output panel's metrics.
+    /// The optimizer options for <paramref name="project"/>: its <see cref="TedideProject.Opt6502Mode"/>,
+    /// and its CPU (see <see cref="Cc65TargetExtensions.Opt6502Cpu"/> - "65816" for a SuperCPU
+    /// project, which lets the optimizer use STZ).
     /// </summary>
-    internal static List<string> BuildOpt6502Arguments(TedideProject project, string inputFile, string outputFile) =>
-    [
-        "-quiet",
-        project.Opt6502Mode == Opt6502Mode.Speed ? "-speed" : "-size",
-        "-asm", "ca65",
-        "-cpu", project.Target.Opt6502Cpu(project.EnableSuperCpu),
-        inputFile,
-        outputFile,
-    ];
+    internal static Opt6502Options BuildOpt6502Options(TedideProject project) =>
+        new(project.Opt6502Mode, project.Target.Opt6502Cpu(project.EnableSuperCpu));
 
     /// <summary>
     /// The cl65 arguments to compile a C source file to assembly only (<c>-S</c>), written to
