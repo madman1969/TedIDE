@@ -3,20 +3,9 @@
  * and deflates) between 0 and the screen's full size, redrawn each frame
  * from an off-screen buffer until a key is pressed.
  */
-#include <conio.h>
-#include <stdlib.h>
-#include <string.h>
-#include "screen.h"
+#include <inflate.h>
 
-/*
-  Function Prototypes
-*/
-void build_screen(Screen *scrn);
-void clear_screen(Screen *scrn);
-void free_screen(Screen *scrn);
-void draw_screen(Screen *scrn);
-void draw_sprite(Screen *scrn, Sprite *sprite);
-void update_sprite(Screen *scrn, Sprite* sprite); 
+
 
 void main(void)
 {
