@@ -34,6 +34,32 @@ public sealed class DocumentTabStrip : View
         Width = Dim.Fill();
     }
 
+    /// <summary>
+    /// Text shown right-aligned in whatever room the tabs leave - the git branch and who last
+    /// changed the caret's line (the status bar had no room for it). Shortened to fit, and left out
+    /// when there's barely any room.
+    /// </summary>
+    public string Annotation
+    {
+        get => _annotation;
+        set
+        {
+            if (_annotation == value)
+                return;
+            _annotation = value;
+            SetNeedsDraw();
+        }
+    }
+
+    private string _annotation = "";
+
+    /// <summary>The part of <paramref name="annotation"/> that fits in <paramref name="room"/>
+    /// columns, ending in "…" when cut; empty when there's too little room to be worth showing.</summary>
+    internal static string Fit(string annotation, int room) =>
+        room < 8 || annotation.Length == 0 ? ""
+        : annotation.Length <= room ? annotation
+        : annotation[..(room - 1)] + "…";
+
     public void SetTabs(IReadOnlyList<Tab> tabs, int active)
     {
         _tabs = tabs;
@@ -67,7 +93,10 @@ public sealed class DocumentTabStrip : View
         AddStr(0, 0, new string(' ', Math.Max(0, width)));
         _hitAreas.Clear();
         if (_tabs.Count == 0)
+        {
+            DrawAnnotation(0, width);
             return true;
+        }
 
         var first = FirstVisible(_tabs, _active, width);
         var x = 0;
@@ -96,7 +125,19 @@ public sealed class DocumentTabStrip : View
             AddStr(x, 0, "|");
             x++;
         }
+        DrawAnnotation(x, width);
         return true;
+    }
+
+    /// <summary>Draws <see cref="Annotation"/> right-aligned after column <paramref name="tabsEnd"/>,
+    /// dimmed so it doesn't compete with the tabs.</summary>
+    private void DrawAnnotation(int tabsEnd, int width)
+    {
+        var text = Fit(_annotation, width - tabsEnd - 3);
+        if (text.Length == 0)
+            return;
+        SetAttribute(GetAttributeForRole(VisualRole.Disabled));
+        AddStr(width - text.Length - 1, 0, text);
     }
 
     protected override bool OnMouseEvent(Mouse mouse)

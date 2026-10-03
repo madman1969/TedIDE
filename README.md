@@ -55,6 +55,8 @@ src/
                        optional optimizer for cc65's generated assembly - see its README.md
   Tedide.Debug/        A client for VICE's binary monitor protocol (breakpoints, registers, memory, stepping)
                        - what Tedide.App's Debug menu talks to once VICE is launched with -binarymonitor
+  Tedide.Git/          Runs the git command line and parses its output (status, blame, stage, commit) -
+                       what the Solution Explorer's markers and the Git tab use
   Tedide.Theming/      The nine color themes/scheme switching shared by Tedide.App and Tedide.DocViewer
   Tedide.App/          The Terminal.Gui TUI shell (menu bar, solution explorer, editor, output/error
                        list/symbols/debug panes, dialogs)
@@ -65,6 +67,7 @@ tests/
   Tedide.Build.Tests/
   Tedide.Debug.Tests/  Protocol-level tests (byte-exact request/response encoding) plus a fake TCP
                        server standing in for VICE, for ViceMonitorClient's request/response correlation
+  Tedide.Git.Tests/    Parser tests on fixture output, plus tests against real git in temporary repositories
 tools/
   Cc65DocsDbBuilder/   One-off converter: cc65's HTML manuals -> Docs.db (Markdown + FTS5 search index),
                        embedded in Tedide.DocViewer - see "Running the Doc Viewer" below
@@ -294,6 +297,27 @@ would take them too. Add New Project starts beside the existing projects, never 
   build. The Error List adds a **Project** column.
 - **Debugging into a library.** A library's sources are compiled by full path, so the debug info of
   the program that links it finds them.
+
+### Git
+
+When a project lives in a git repository, Tedide shows its state and can commit, using the `git`
+command line you already have, so your own config, hooks and line-ending rules apply. Without git,
+or outside a repository, none of this appears.
+
+- **The Solution Explorer** marks each changed file with git's letter and a colour: `M` modified
+  (amber), `?` new and untracked or `A` added (green), `!` conflicted (red).
+- **The tab row** above the editor shows the branch, how far it is ahead of or behind its upstream
+  (`main ↑2 ↓1`), and who last changed the caret's line: `Ln 12: aross, 3 days ago: Add tabs`. An
+  edited line reads "Not committed yet", since the editor's own text is what gets blamed.
+- **The Git tab** lists Changes and Staged files. In either list, Space stages or unstages the
+  selected file, Enter opens it, and Delete (Changes only) discards its changes after asking. A new
+  file is deleted instead, and an open tab is reloaded or closed to match. Commit Staged commits
+  what's staged; Commit All stages everything first, new files included, as Visual Studio does.
+  Open files with unsaved edits are saved before anything is staged or committed.
+- It refreshes after saves, builds and file operations, and every few seconds, so commits made in
+  another terminal show up too.
+
+Fetch, pull and push aren't offered; use git itself for those.
 
 Press **F5** (or **Build > Build Project**) to invoke `cl65` - once per source file (`-c`, compile
 and assemble but don't link) so each gets its own assembler listing, then once more to link the
@@ -924,15 +948,16 @@ In place and tested:
   parameters and local variables with their types and values; a call stack; a stop history;
   Memory and Disassembly tabs; and a read-only editor with the current line auto-centered while a
   session is active.
+- **Git** - status markers in the Solution Explorer, the branch and the caret line's blame above
+  the editor, and a Git tab to stage, unstage, discard and commit.
 - **Tedide.DocViewer** - the cc65 manuals and The C Book in a category tree, with full-text
   search, bookmarks, Find on Page, Back/Forward history and syntax-highlighted code blocks.
 - **Themes** - nine runtime-switchable themes shared by both apps, covering syntax highlighting,
   adjusted for readability, and drawn in true color inside Windows Terminal.
 - **Everything else** - file-based logging for crash diagnosis, standalone-executable publish tasks
-  for both apps, and about 770 unit tests across five test projects (`dotnet test Tedide.slnx`).
+  for both apps, and about 860 unit tests across six test projects (`dotnet test Tedide.slnx`).
 
-Not yet implemented: true multi-project solution builds (a loaded solution's *first* project is
-always the one Build/Clean/Run/Debug act on), and a visual editor for `.cfg` linker configs
+Not yet implemented: a visual editor for `.cfg` linker configs
 (syntax highlighting only today - see "Editing" above).
 
 Note: this app is built against [Terminal.Gui v2](https://github.com/tui-cs/Terminal.Gui)

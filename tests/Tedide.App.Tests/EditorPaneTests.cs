@@ -38,6 +38,32 @@ public sealed class EditorPaneTests : IDisposable
     }
 
     [Fact]
+    public void Reload_ReplacesTheTextFromDisk_AndClearsUnsavedEdits()
+    {
+        var pane = new EditorPane();
+        var main = File("main.c", "one\n");
+        pane.Open(main);
+        pane.Editor.Document!.Insert(0, "edited ");
+        Assert.True(pane.IsModified);
+
+        System.IO.File.WriteAllText(main, "restored\n");
+        pane.Reload(main);
+
+        Assert.Equal("restored\n", pane.Editor.Text);
+        Assert.False(pane.IsModified);
+        pane.Reload(Path.Combine(_dir.FullName, "not-open.c")); // nothing happens
+    }
+
+    [Theory]
+    [InlineData("main · Ln 3: Tester", 40, "main · Ln 3: Tester")]
+    [InlineData("main · Ln 3: Tester, 3 days ago", 12, "main · Ln 3…")]
+    [InlineData("main", 5, "")]
+    public void TabStripAnnotation_IsCutToTheRoomTheTabsLeave(string annotation, int room, string expected)
+    {
+        Assert.Equal(expected, DocumentTabStrip.Fit(annotation, room));
+    }
+
+    [Fact]
     public void Open_TreatsDifferentSpellingsOfOnePathAsTheSameFile()
     {
         var pane = new EditorPane();

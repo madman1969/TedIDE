@@ -9,6 +9,7 @@ using Tedide.Core;
 using Tedide.Core.Debugging;
 using Tedide.Core.Navigation;
 using Tedide.Debug;
+using Tedide.Git;
 using Terminal.Gui.App;
 using Terminal.Gui.Editor;
 using Terminal.Gui.Editor.Document;
@@ -33,6 +34,16 @@ namespace Tedide.App;
 public sealed class AppShell : Window
 {
     private readonly Workspace _workspace = new();
+
+    /// <summary>Git status for the Solution Explorer, the status bar and the Git tab - see <see cref="GitTracker"/>.</summary>
+    private readonly GitTracker _git;
+    private readonly GitChangesView _gitView = new();
+    private View _gitTab = null!;
+
+    /// <summary>Who last changed the caret's line - see <see cref="BlameCaretLineAsync"/>.</summary>
+    private string? _blameText;
+    private int _blameGeneration;
+    private CancellationTokenSource? _blameCancellation;
     private readonly Cc65Toolchain _toolchain = new();
     /// <summary>Non-null only while a build is running - see <see cref="BuildActiveProjectAsync"/>
     /// and <see cref="CancelBuild"/>.</summary>
@@ -95,6 +106,9 @@ public sealed class AppShell : Window
 
     public AppShell()
     {
+        _git = new GitTracker(
+            () => (_workspace.Projects.Select(p => p.Directory).ToList(), _workspace.Solution?.Directory ?? _workspace.ActiveProject?.Directory),
+            OnUiThread);
         Title = "Tedide - CC65 IDE";
         Width = Dim.Fill();
         Height = Dim.Fill();
@@ -284,6 +298,18 @@ public sealed class AppShell : Window
         disassemblyTab.Add(_disassemblyView);
         _outputTabs.Add(disassemblyTab);
 
+        _gitTab = new View { Title = " _Git ", Width = Dim.Fill(), Height = Dim.Fill() };
+        _gitView.Width = Dim.Fill();
+        _gitView.Height = Dim.Fill();
+        _gitView.StageRequested += StageFiles;
+        _gitView.UnstageRequested += UnstageFiles;
+        _gitView.DiscardRequested += DiscardFile;
+        _gitView.OpenRequested += OpenFile;
+        _gitView.CommitRequested += Commit;
+        _gitView.RefreshRequested += () => _git.RequestRefresh();
+        _gitTab.Add(_gitView);
+        _outputTabs.Add(_gitTab);
+
         _debugPanel.FrameActivated += frame => OpenSymbol((frame.FilePath!, frame.Line));
 
         // Breakpoint highlighting registered before the current-debug-line one, so the latter's
@@ -296,6 +322,182 @@ public sealed class AppShell : Window
         _editorPane.Editor.LineTransformers.Add(_debugLineTransformer);
 
         Add([_menuBar, explorerFrame, _editorFrame, _outputTabs, _statusBar]);
+
+        _git.Changed += OnGitChanged;
+        _workspace.Changed += () => _git.ProjectsChanged();
+        _solutionExplorer.Rebuilt += () => _git.RequestRefresh();
+        _editorPane.Editor.CaretChanged += (_, _) => RequestBlame();
+        _git.Start();
+    }
+
+    /// <summary>New git status: the Solution Explorer's markers, the Git tab, the branch and blame.</summary>
+    private void OnGitChanged()
+    {
+        _solutionExplorer.SetGitStatus(_git.Files);
+        _gitView.SetStatus(_git.Primary, _git.PrimaryStatus);
+        UpdateGitAnnotation();
+        RequestBlame();
+    }
+
+    /// <summary>
+    /// "main ↑2 · Ln 12: aross, 3 days ago: Add tabs" at the right of the editor's tab row - the
+    /// branch, then who last changed the caret's line. Empty outside a repository. Not the status
+    /// bar: it's full at ordinary window widths, leaving the text cut to "main ·" (confirmed live).
+    /// </summary>
+    private void UpdateGitAnnotation() =>
+        _editorPane.Annotation = _git.PrimaryStatus is not { } status ? ""
+            : _blameText is { } blame ? $"{status.Describe()}  ·  {blame}"
+            : status.Describe();
+
+    /// <summary>Blames the caret's line soon - a burst of caret moves (typing, holding an arrow
+    /// key) runs one <c>git blame</c>, once they pause.</summary>
+    private void RequestBlame()
+    {
+        var generation = ++_blameGeneration;
+        Application.AddTimeout(TimeSpan.FromMilliseconds(400), () =>
+        {
+            if (generation == _blameGeneration)
+                _ = BlameCaretLineAsync(generation);
+            return false;
+        });
+    }
+
+    /// <summary>Phase 5a of git support: who last changed the caret's line, blamed against the
+    /// editor's own text so unsaved edits read as "Not committed yet". Nothing for a file outside a
+    /// repository or one git doesn't track.</summary>
+    private async Task BlameCaretLineAsync(int generation)
+    {
+        _blameCancellation?.Cancel();
+        if (_editorPane.OpenPath is not { } path || _git.RepositoryFor(path) is not { } repository
+            || _git.Files.TryGetValue(path, out var file) && file.IsUntracked)
+        {
+            _blameText = null;
+            UpdateGitAnnotation();
+            return;
+        }
+
+        // Read here, on the UI thread - the document belongs to it.
+        var line = _editorPane.CaretPosition.Line;
+        var text = _editorPane.Editor.Text;
+        var cancellation = new CancellationTokenSource();
+        _blameCancellation = cancellation;
+        GitBlameLine? blame;
+        try
+        {
+            blame = await repository.BlameLineAsync(path, line, text, cancellation.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        OnUiThread(() =>
+        {
+            if (generation != _blameGeneration)
+                return;
+            _blameText = blame is null ? null : $"Ln {line}: {blame.Describe(DateTimeOffset.Now)}";
+            UpdateGitAnnotation();
+        });
+    }
+
+    /// <summary>
+    /// Runs a git operation on the solution's repository in the background, then refreshes. A
+    /// failure is shown in git's own words. <paramref name="after"/> runs on the UI thread when it
+    /// worked.
+    /// </summary>
+    private async Task RunGitAsync(string what, Func<GitRepository, Task<GitResult>> operation, Action? after = null)
+    {
+        if (_git.Primary is not { } repository)
+            return;
+        GitResult result;
+        try
+        {
+            result = await operation(repository);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            result = new GitResult(1, "", ex.Message);
+        }
+        OnUiThread(() =>
+        {
+            if (result.Succeeded)
+                after?.Invoke();
+            else
+                TedideMessageBox.ErrorQuery($"{what} Failed", RenameSymbolDialog.Wrap(result.Message), ["OK"]);
+            _git.RequestRefresh();
+        });
+    }
+
+    /// <summary>
+    /// Before staging or committing: saves the open files with unsaved edits, so what git takes is
+    /// what's on screen. Not <see cref="SaveAll"/> - that also rewrites the .tproj/.tsln files,
+    /// which then showed up as changed themselves (confirmed live).
+    /// </summary>
+    private bool SaveOpenFiles() => _editorPane.ModifiedPaths.All(SaveFile);
+
+    /// <summary>Git tab > Space or Stage All.</summary>
+    private void StageFiles(IReadOnlyList<GitFileStatus> files)
+    {
+        if (files.Count == 0 || !SaveOpenFiles())
+            return;
+        _ = RunGitAsync("Staging", repository => repository.StageAsync(files.Select(f => f.Path)));
+    }
+
+    /// <summary>Git tab > Space on a staged file, or Unstage All. The files themselves don't change.</summary>
+    private void UnstageFiles(IReadOnlyList<GitFileStatus> files)
+    {
+        if (files.Count == 0)
+            return;
+        var hasCommits = _git.PrimaryStatus?.HasCommits ?? true;
+        _ = RunGitAsync("Unstaging", repository => repository.UnstageAsync(files.Select(f => f.Path), hasCommits));
+    }
+
+    /// <summary>
+    /// Git tab > Delete: throws away a file's unstaged changes after asking - a file git doesn't
+    /// track yet is deleted. An open tab follows: reloaded from disk, or closed for a deleted file,
+    /// its unsaved edits going too (the question says so).
+    /// </summary>
+    private void DiscardFile(GitFileStatus file)
+    {
+        var name = Path.GetFileName(file.Path);
+        var unsaved = _editorPane.IsModifiedFile(file.Path) ? " Its unsaved edits in the editor go too." : "";
+        var question = file.IsUntracked
+            ? $"Delete {name}? git doesn't track it, so this can't be undone.{unsaved}"
+            : $"Discard the changes to {name}? This can't be undone.{unsaved}";
+        if (TedideMessageBox.Query("Discard Changes", RenameSymbolDialog.Wrap(question), ["Discard", "Cancel"]) != 0)
+            return;
+        _ = RunGitAsync("Discarding", repository => repository.DiscardAsync([file]), () =>
+        {
+            if (file.IsUntracked)
+                _editorPane.Close(file.Path);
+            else
+                Guard($"Reloading {name}", () => _editorPane.Reload(file.Path));
+        });
+    }
+
+    /// <summary>Git tab > Commit Staged / Commit All. Saves open files first (see <see cref="SaveOpenFiles"/>),
+    /// then reports the new commit in Output.</summary>
+    private void Commit(string message, bool stageAll)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            TedideMessageBox.ErrorQuery("Commit", "Write a commit message first.", ["OK"]);
+            return;
+        }
+        if (!SaveOpenFiles())
+            return;
+        string? head = null;
+        _ = RunGitAsync("Commit", async repository =>
+        {
+            var result = await repository.CommitAsync(message.Trim(), stageAll);
+            if (result.Succeeded)
+                head = await repository.DescribeHeadAsync();
+            return result;
+        }, () =>
+        {
+            _gitView.ClearMessage();
+            AppendOutputLine($"Committed {head}");
+        });
     }
 
     private const string NoFileOpenTitle = "(no file open)";
@@ -1008,6 +1210,7 @@ public sealed class AppShell : Window
     /// </summary>
     private void OnActiveDocumentChanged()
     {
+        RequestBlame();
         _editorFrame.Title = _editorPane.OpenPath is { } path ? Path.GetFileName(path) : NoFileOpenTitle;
         UpdateLanguageIndicator();
         RefreshBreakpointHighlights();
@@ -2812,6 +3015,7 @@ public sealed class AppShell : Window
     {
         if (_editorPane.Save(path) is { } notice)
             AppendOutputLine(notice);
+        _git.RequestRefresh();
     });
 
     /// <summary>File > Save (Ctrl+S): the file being shown, plus the loaded project/solution files.</summary>

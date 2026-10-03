@@ -1,5 +1,8 @@
 using System.Drawing;
 using Tedide.Core;
+using Tedide.Git;
+using Terminal.Gui.Configuration;
+using Color = Terminal.Gui.Drawing.Color;
 using Tedide.Theming;
 using Terminal.Gui.App;
 using Terminal.Gui.Input;
@@ -71,6 +74,12 @@ public sealed class SolutionExplorerTree : TreeView
     /// <summary>The startup project, drawn in bold - see <see cref="Rebuild"/>.</summary>
     private TedideProject? _startupProject;
 
+    /// <summary>Changed files by full path, from git - see <see cref="SetGitStatus"/>.</summary>
+    private IReadOnlyDictionary<string, GitFileStatus> _gitFiles = new Dictionary<string, GitFileStatus>();
+
+    /// <summary>Raised at the end of every <see cref="Rebuild"/> - the files shown may have changed.</summary>
+    public event Action? Rebuilt;
+
     public SolutionExplorerTree()
     {
         _contextMenu = new PopoverMenu { Target = new WeakReference<View>(this) };
@@ -83,6 +92,7 @@ public sealed class SolutionExplorerTree : TreeView
         {
             FolderNode => FolderScheme(GetScheme()),
             TreeNode { Tag: TedideProject project } when project == _startupProject => StartupScheme(GetScheme()),
+            TreeNode { Tag: string path } when _gitFiles.TryGetValue(path, out var status) => GitScheme(GetScheme(), status.Marker),
             _ => GetScheme(),
         };
 
@@ -220,6 +230,53 @@ public sealed class SolutionExplorerTree : TreeView
 
     private bool _hasSolution;
 
+    /// <summary>
+    /// <paramref name="treeScheme"/> with unselected text in the colour for a git status letter -
+    /// VS Code's: green for a new file, amber for a changed one, red for a conflict. Fixed hues
+    /// rather than theme roles (no role is reliably green - a string is red-brown in VS2026 Dark,
+    /// which made a new file look like an error), each made readable on the theme's background.
+    /// </summary>
+    internal static Scheme GitScheme(Scheme treeScheme, char marker)
+    {
+        var hue = marker switch
+        {
+            '!' => new Color(0xE4, 0x67, 0x6B),
+            '?' or 'A' => new Color(0x73, 0xC9, 0x91),
+            _ => new Color(0xE2, 0xC0, 0x8D),
+        };
+        var background = treeScheme.Normal.Background;
+        return new Scheme(treeScheme)
+        {
+            Normal = new Terminal.Gui.Drawing.Attribute(ThemeSwitcher.Readable(hue, background), background, treeScheme.Normal.Style),
+        };
+    }
+
+    /// <summary>
+    /// Shows git's status letter after each changed file's name (main.c M, notes.txt ?) and colours
+    /// it - see <see cref="GitFileStatus.Marker"/>. Updates the nodes in place, so the tree keeps its
+    /// expansion and selection; <see cref="Rebuild"/> applies the latest status to new nodes.
+    /// </summary>
+    public void SetGitStatus(IReadOnlyDictionary<string, GitFileStatus> files)
+    {
+        _gitFiles = files;
+        ApplyGitMarkers();
+        SetNeedsDraw();
+    }
+
+    private void ApplyGitMarkers()
+    {
+        foreach (var root in Objects ?? [])
+            ApplyGitMarkers(root);
+    }
+
+    private void ApplyGitMarkers(ITreeNode node)
+    {
+        if (node is TreeNode { Tag: string path } file && node is not FolderNode)
+            file.Text = Path.GetFileName(path) + (_gitFiles.TryGetValue(path, out var status) ? $" {status.Marker}" : "");
+        foreach (var child in node.Children)
+            ApplyGitMarkers(child);
+    }
+
     public void Rebuild(Workspace workspace)
     {
         ClearObjects();
@@ -257,8 +314,10 @@ public sealed class SolutionExplorerTree : TreeView
         // under it afterwards never showed.
         if (solutionNode is not null)
             AddObject(solutionNode);
+        ApplyGitMarkers();
 
         ExpandAll();
+        Rebuilt?.Invoke();
     }
 
     /// <summary>

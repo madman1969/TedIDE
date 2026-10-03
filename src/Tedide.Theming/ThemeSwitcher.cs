@@ -167,6 +167,12 @@ public static class ThemeSwitcher
     /// <summary><paramref name="attribute"/> with only its text color adjusted to reach
     /// <paramref name="target"/>:1 - for roles drawn on another role's background, which they
     /// mustn't change.</summary>
+    /// <summary><paramref name="foreground"/>, lightened or darkened just enough to read on
+    /// <paramref name="background"/> - for a fixed colour that has to work in every theme, such as
+    /// the Solution Explorer's git status colours.</summary>
+    public static Color Readable(Color foreground, Color background) =>
+        WithReadableForeground(new GuiAttribute(foreground, background), TextContrast).Foreground;
+
     private static GuiAttribute WithReadableForeground(GuiAttribute attribute, double target) =>
         new(AdjustLightness(attribute.Foreground, attribute.Background, target).Color, attribute.Background, attribute.Style);
 

@@ -4,6 +4,7 @@
     <ProjectReference Include="..\Tedide.Core\Tedide.Core.csproj" />
     <ProjectReference Include="..\Tedide.Build\Tedide.Build.csproj" />
     <ProjectReference Include="..\Tedide.Debug\Tedide.Debug.csproj" />
+    <ProjectReference Include="..\Tedide.Git\Tedide.Git.csproj" />
     <ProjectReference Include="..\Tedide.Theming\Tedide.Theming.csproj" />
   </ItemGroup>
 

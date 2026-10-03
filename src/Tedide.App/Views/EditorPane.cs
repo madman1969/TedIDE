@@ -45,6 +45,13 @@ public sealed class EditorPane : View
     /// against it, the same way ted wires its own menu/status bar to its one Editor.</summary>
     public Editor Editor { get; }
 
+    /// <summary>Text shown at the right of the tab row - see <see cref="DocumentTabStrip.Annotation"/>.</summary>
+    public string Annotation
+    {
+        get => _tabStrip.Annotation;
+        set => _tabStrip.Annotation = value;
+    }
+
     /// <summary>The file shown in the editor, or null if none is open.</summary>
     public string? OpenPath => _active?.Path;
 
@@ -333,6 +340,25 @@ public sealed class EditorPane : View
             Editor.HighlightingDefinition = HighlightingManager.Instance.GetDefinitionByExtension(System.IO.Path.GetExtension(newPath));
             ActiveDocumentChanged?.Invoke();
         }
+    }
+
+    /// <summary>
+    /// Re-reads an open file from disk - after git discarded its changes, say - replacing its text
+    /// (unsaved edits included) and starting its undo history afresh. Does nothing if it isn't open.
+    /// </summary>
+    public void Reload(string path)
+    {
+        if (Find(path) is not { } document)
+            return;
+        var (text, encoding) = SourceFileText.Read(document.Path);
+        if (document == _active)
+            Editor.ClearSelection();
+        document.Document.Text = text;
+        document.Document.UndoStack.ClearAll();
+        document.Document.UndoStack.MarkAsOriginalFile();
+        document.Encoding = encoding;
+        document.CaretOffset = Math.Min(document.CaretOffset, text.Length);
+        RefreshTabs();
     }
 
     /// <summary>Saves the shown file - see <see cref="Save(string)"/>.</summary>
