@@ -75,6 +75,7 @@ Function reference (all in `driver.ps1`):
 | `Get-TedideWindow` | Returns `.MainWindowHandle` and `.Title` for the launched window (whatever its title - it changes while a dialog is open), or `$null`. |
 | `Save-TedideScreenshot -Name <stem> [-OutDir <dir>]` | Captures the actual window (not a console-buffer read - see Gotchas) to `<OutDir>\<stem>.png`. |
 | `Send-TedideKeys -Keys <SendKeys string>` | Focuses the window, sends keys via `System.Windows.Forms.SendKeys`, waits ~400ms to settle. Throws rather than sending if the window couldn't be focused, so keys never leak to another app. |
+| `Send-TedideClick -X <px> -Y <px> [-Right]` | Moves the real mouse and clicks at window-relative pixels - the same coordinates as a screenshot, so read them off one. The editor's context menu has no keyboard shortcut (Shift+F10 does nothing), so right-click to open it. |
 | `Stop-TedideApp` | Kills only the launched `dotnet` process, then closes only its window (WM_CLOSE). Never stops the `WindowsTerminal` process - it hosts every terminal window, including the user's own. |
 
 **Side effect to know about**: Tedide persists real per-user state to

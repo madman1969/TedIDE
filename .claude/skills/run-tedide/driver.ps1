@@ -14,6 +14,7 @@
       Get-TedideWindow                                    # .MainWindowHandle and .Title, or $null
       Save-TedideScreenshot -Name <file stem> [-OutDir <dir>]
       Send-TedideKeys  -Keys <SendKeys syntax string>      # e.g. "%f" = Alt+F, "{ESC}", "{ENTER}"
+      Send-TedideClick -X <px> -Y <px> [-Right]           # window-relative, as in a screenshot
       Stop-TedideApp
 
 .EXAMPLE
@@ -38,6 +39,8 @@ public delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
 [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
 [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd);
 [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+[DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
+[DllImport("user32.dll")] public static extern void mouse_event(uint flags, uint dx, uint dy, uint data, UIntPtr extraInfo);
 [StructLayout(LayoutKind.Sequential)] public struct RECT { public int Left; public int Top; public int Right; public int Bottom; }
 
 public static System.Collections.Generic.List<IntPtr> TerminalWindows()
@@ -159,6 +162,29 @@ function Send-TedideKeys {
         throw "Couldn't focus the Tedide window - not sending '$Keys'."
     }
     [System.Windows.Forms.SendKeys]::SendWait($Keys)
+    Start-Sleep -Milliseconds $SettleMs
+}
+
+function Send-TedideClick {
+    # Clicks at (X, Y) in pixels from the window's top-left corner - the same coordinates as a
+    # Save-TedideScreenshot image, so read them straight off a screenshot.
+    param([Parameter(Mandatory)][int]$X, [Parameter(Mandatory)][int]$Y, [switch]$Right, [int]$SettleMs = 400)
+    $wt = Get-TedideWindow
+    if (-not $wt) { throw "No Tedide window to click." }
+    [TedideDriver.Native]::SetForegroundWindow($wt.MainWindowHandle) | Out-Null
+    Start-Sleep -Milliseconds 150
+    if ([TedideDriver.Native]::GetForegroundWindow() -ne $wt.MainWindowHandle) {
+        throw "Couldn't focus the Tedide window - not clicking."
+    }
+    $rect = New-Object TedideDriver.Native+RECT
+    [TedideDriver.Native]::GetWindowRect($wt.MainWindowHandle, [ref]$rect) | Out-Null
+    [TedideDriver.Native]::SetCursorPos($rect.Left + $X, $rect.Top + $Y) | Out-Null
+    Start-Sleep -Milliseconds 100
+    # MOUSEEVENTF_LEFTDOWN/UP = 0x2/0x4, RIGHTDOWN/UP = 0x8/0x10
+    $down, $up = if ($Right) { 0x8, 0x10 } else { 0x2, 0x4 }
+    [TedideDriver.Native]::mouse_event($down, 0, 0, 0, [UIntPtr]::Zero)
+    Start-Sleep -Milliseconds 50
+    [TedideDriver.Native]::mouse_event($up, 0, 0, 0, [UIntPtr]::Zero)
     Start-Sleep -Milliseconds $SettleMs
 }
 
