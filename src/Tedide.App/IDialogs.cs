@@ -15,6 +15,9 @@ internal interface IDialogs
     /// what was chosen.</summary>
     void Run(Dialog dialog);
 
+    /// <summary>Shows a file picker until it closes; the files chosen, none if it was cancelled.</summary>
+    IReadOnlyList<string> PickFiles(OpenDialog dialog);
+
     /// <summary>The index of the button chosen, or null if the box was closed without one.</summary>
     int? Query(string title, string message, params string[] buttons);
 
@@ -25,6 +28,12 @@ internal interface IDialogs
 internal sealed class TerminalDialogs : IDialogs
 {
     public void Run(Dialog dialog) => Application.Run(dialog);
+
+    public IReadOnlyList<string> PickFiles(OpenDialog dialog)
+    {
+        Application.Run(dialog);
+        return dialog.FilePaths;
+    }
 
     public int? Query(string title, string message, params string[] buttons) => TedideMessageBox.Query(title, message, buttons);
 

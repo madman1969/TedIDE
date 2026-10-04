@@ -191,9 +191,14 @@ public sealed class DebugSessionTests : IDisposable
     }
 }
 
-/// <summary>The shell as <see cref="DebugSession"/> sees it, recording what it's asked to do.</summary>
-internal sealed class FakeDebugHost : IDebugSessionHost
+/// <summary>The shell as <see cref="DebugSession"/> sees it, recording what it's asked to do and
+/// opening files in <paramref name="editorPane"/>. Work posted from another thread goes to the
+/// synchronization context it was made under - <see cref="UiThread"/>'s, for a live session.</summary>
+internal sealed class FakeDebugHost(EditorPane? editorPane = null) : IDebugSessionHost
 {
+    private readonly SynchronizationContext? _ui = SynchronizationContext.Current;
+    private readonly int _uiThread = Environment.CurrentManagedThreadId;
+
     public ViceEmulator Vice { get; } = new(Path.Combine(Path.GetTempPath(), "no-vice-here"));
     public FakeDialogs Dialogs { get; } = new();
     IDialogs IDebugSessionHost.Dialogs => Dialogs;
@@ -204,7 +209,28 @@ internal sealed class FakeDebugHost : IDebugSessionHost
     public int DebugTabShown { get; private set; }
 
     public void AppendOutputLine(string line) => Output.Add(line);
-    public void OnUiThread(Action action) => action();
+    public string? DebugStatus { get; private set; }
+    public (string FilePath, int Line)? DebugLine { get; private set; }
+
+    public void OnUiThread(Action action)
+    {
+        if (_ui is null || Environment.CurrentManagedThreadId == _uiThread)
+            action();
+        else
+            _ui.Post(_ => action(), null);
+    }
+
+    /// <summary>Waits - letting posted work run - until <paramref name="condition"/> holds.</summary>
+    public async Task WaitUntilAsync(Func<bool> condition, string what)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(15);
+        while (!condition())
+        {
+            if (DateTime.UtcNow > deadline)
+                throw new TimeoutException($"Timed out waiting for {what}. Status: {DebugStatus}. Output:\n{string.Join('\n', Output)}");
+            await Task.Delay(20);
+        }
+    }
     public void Fire(Task task, string what) => Fired.Add(task);
 
     public bool Guard(string action, Action body)
@@ -213,10 +239,10 @@ internal sealed class FakeDebugHost : IDebugSessionHost
         return true;
     }
 
-    public void OpenSymbol((string FilePath, int LineNumber) entry) { }
+    public void OpenSymbol((string FilePath, int LineNumber) entry) => editorPane?.Open(entry.FilePath);
     public void CenterEditorOnLine(string filePath, int lineNumber) { }
-    public void SetDebugLine((string FilePath, int Line)? location) { }
-    public void SetDebugStatus(string? status) { }
+    public void SetDebugLine((string FilePath, int Line)? location) => DebugLine = location;
+    public void SetDebugStatus(string? status) => DebugStatus = status;
     public void ShowDebugTab() => DebugTabShown++;
 
     public Task<BuildResult?> BuildActiveProjectAsync()

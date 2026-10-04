@@ -16,7 +16,7 @@ public sealed class RecentProjectsSettings
 
     public List<string> Paths { get; set; } = [];
 
-    private static readonly string DefaultFilePath = JsonFile.UserSettingsPath("recent.json");
+    internal static readonly string DefaultFilePath = JsonFile.UserSettingsPath("recent.json");
 
     /// <summary>Where <see cref="Save"/> writes - the user's real list, except in tests.</summary>
     internal string FilePath { get; set; } = DefaultFilePath;

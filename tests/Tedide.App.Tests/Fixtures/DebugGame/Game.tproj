@@ -1,0 +1,25 @@
+{
+  "Name": "Game",
+  "Target": "C64",
+  "OutputType": "Application",
+  "ProjectReferences": [],
+  "OptimizationLevel": "None",
+  "GenerateAssemblyListing": true,
+  "AddSourceAsComment": true,
+  "GenerateLinkerMap": false,
+  "GenerateDebugInfo": true,
+  "ExportLabels": false,
+  "EnableSuperCpu": false,
+  "UseOpt6502": false,
+  "Opt6502Mode": "Size",
+  "SourceFiles": [
+    "main.c"
+  ],
+  "OutputFile": null,
+  "LinkerConfigPath": null,
+  "IncludePaths": [],
+  "PreprocessorDefines": [],
+  "ExtraArguments": [],
+  "PreBuildCommands": [],
+  "PostBuildCommands": []
+}

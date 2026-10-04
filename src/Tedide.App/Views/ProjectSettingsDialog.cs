@@ -32,38 +32,51 @@ namespace Tedide.App.Views;
 /// </summary>
 public sealed class ProjectSettingsDialog : Dialog
 {
-    private readonly TextField _nameField;
-    private readonly DropDownList _targetField;
-    private readonly TextField _outputFileField;
-    private readonly TextField _extraArgumentsField;
-    private readonly TextField _includePathsField;
-    private readonly TextField _preprocessorDefinesField;
-    private readonly DropDownList _optimizationLevelField;
-    private readonly CheckBox _generateListingField;
-    private readonly CheckBox _addSourceAsCommentField;
-    private readonly CheckBox _generateLinkerMapField;
-    private readonly CheckBox _exportLabelsField;
-    private readonly CheckBox _generateDebugInfoField;
-    private readonly TextField _linkerConfigPathField;
-    private readonly TextField _cc65HomeField;
-    private readonly TextField _viceBinDirectoryField;
-    private readonly CheckBox _enableSuperCpuField;
-    private readonly CheckBox _useOpt6502Field;
-    private readonly CheckBox _favourSpeedField;
-    private readonly TextView _preBuildField;
-    private readonly TextView _postBuildField;
+    internal readonly TextField _nameField;
+    internal readonly DropDownList _targetField;
+    internal readonly TextField _outputFileField;
+    internal readonly TextField _extraArgumentsField;
+    internal readonly TextField _includePathsField;
+    internal readonly TextField _preprocessorDefinesField;
+    internal readonly DropDownList _optimizationLevelField;
+    internal readonly CheckBox _generateListingField;
+    internal readonly CheckBox _addSourceAsCommentField;
+    internal readonly CheckBox _generateLinkerMapField;
+    internal readonly CheckBox _exportLabelsField;
+    internal readonly CheckBox _generateDebugInfoField;
+    internal readonly TextField _linkerConfigPathField;
+    internal readonly TextField _cc65HomeField;
+    internal readonly TextField _viceBinDirectoryField;
+    internal readonly CheckBox _enableSuperCpuField;
+    internal readonly CheckBox _useOpt6502Field;
+    internal readonly CheckBox _favourSpeedField;
+    internal readonly TextView _preBuildField;
+    internal readonly TextView _postBuildField;
 
     /// <summary>True if the user chose Save (and the project was updated and saved to disk).</summary>
     public bool Saved { get; private set; }
 
-    private readonly DropDownList _outputTypeField;
+    internal readonly DropDownList _outputTypeField;
 
     /// <summary>The References tab's check boxes, one per library this project could reference.</summary>
-    private readonly List<(TedideProject Library, CheckBox Field)> _referenceFields = [];
+    internal readonly List<(TedideProject Library, CheckBox Field)> _referenceFields = [];
+
+    private readonly TedideProject _project;
+    private readonly string _toolchainSettingsPath;
 
     /// <param name="solutionProjects">Every project in the solution, for the References tab.</param>
     public ProjectSettingsDialog(TedideProject project, IReadOnlyList<TedideProject> solutionProjects)
+        : this(project, solutionProjects, ToolchainSettings.DefaultFilePath)
     {
+    }
+
+    /// <param name="toolchainSettingsPath">Where the CC65 and VICE tabs' settings are read from and
+    /// saved to - the user's own file, or a test's.</param>
+    internal ProjectSettingsDialog(TedideProject project, IReadOnlyList<TedideProject> solutionProjects, string toolchainSettingsPath)
+    {
+        _project = project;
+        _toolchainSettingsPath = toolchainSettingsPath;
+        var toolchain = ToolchainSettings.Load(toolchainSettingsPath);
         Title = $"Project Settings - {project.Name}";
         // Wide enough for all nine tab titles in one row.
         Width = 106;
@@ -91,8 +104,8 @@ public sealed class ProjectSettingsDialog : Dialog
         var linkerTab = BuildLinkerTab(project, _targetField, out _generateLinkerMapField, out _exportLabelsField, out _generateDebugInfoField, out _linkerConfigPathField);
         var superCpuTab = BuildSuperCpuTab(project, out _enableSuperCpuField);
         var buildEventsTab = BuildBuildEventsTab(project, out _preBuildField, out _postBuildField);
-        var cc65Tab = BuildCc65Tab(out _cc65HomeField);
-        var viceTab = BuildViceTab(out _viceBinDirectoryField);
+        var cc65Tab = BuildCc65Tab(toolchain, out _cc65HomeField);
+        var viceTab = BuildViceTab(toolchain, out _viceBinDirectoryField);
         var referencesTab = BuildReferencesTab(project, solutionProjects, _referenceFields);
         tabs.Add(settingsTab);
         tabs.Add(optimizerTab);
@@ -142,82 +155,12 @@ public sealed class ProjectSettingsDialog : Dialog
         var saveButton = new Button { Text = "_Save", IsDefault = true, SchemeName = "Accent", X = Pos.Center() - 13, Y = Pos.AnchorEnd(1), Width = 12 };
         saveButton.Accepting += (_, e) =>
         {
-            if (!Cc65TargetExtensions.TryParse(_targetField.Text, out var target))
-            {
-                TedideMessageBox.ErrorQuery("Invalid target", $"'{_targetField.Text}' is not a known cc65 target.", ["OK"]);
-                e.Handled = true;
-                return;
-            }
-
-            if (string.IsNullOrWhiteSpace(_nameField.Text))
-            {
-                TedideMessageBox.ErrorQuery("Invalid name", "Name cannot be blank.", ["OK"]);
-                e.Handled = true;
-                return;
-            }
-
-            if (!Cc65OptimizationLevelExtensions.TryParse(_optimizationLevelField.Text, out var optimizationLevel))
-            {
-                TedideMessageBox.ErrorQuery("Invalid optimization level", $"'{_optimizationLevelField.Text}' is not a known optimization level.", ["OK"]);
-                e.Handled = true;
-                return;
-            }
-
-            project.Name = _nameField.Text.Trim();
-            project.Target = target;
-            project.OutputFile = string.IsNullOrWhiteSpace(_outputFileField.Text) ? null : _outputFileField.Text.Trim();
-            project.ExtraArguments = ArgumentText.Split(_extraArgumentsField.Text);
-            project.IncludePaths = ArgumentText.Split(_includePathsField.Text);
-            project.PreprocessorDefines = ArgumentText.Split(_preprocessorDefinesField.Text);
-            project.OptimizationLevel = optimizationLevel;
-            project.GenerateAssemblyListing = _generateListingField.Value == CheckState.Checked;
-            project.AddSourceAsComment = _addSourceAsCommentField.Value == CheckState.Checked;
-            project.GenerateLinkerMap = _generateLinkerMapField.Value == CheckState.Checked;
-            project.ExportLabels = _exportLabelsField.Value == CheckState.Checked;
-            project.GenerateDebugInfo = _generateDebugInfoField.Value == CheckState.Checked;
-            project.LinkerConfigPath = string.IsNullOrWhiteSpace(_linkerConfigPathField.Text) ? null : _linkerConfigPathField.Text.Trim();
-            project.EnableSuperCpu = _enableSuperCpuField.Value == CheckState.Checked;
-            project.UseOpt6502 = _useOpt6502Field.Value == CheckState.Checked;
-            project.Opt6502Mode = _favourSpeedField.Value == CheckState.Checked ? Opt6502Mode.Speed : Opt6502Mode.Size;
-            project.OutputType = Enum.TryParse<ProjectOutputType>(_outputTypeField.Text, out var outputType) ? outputType : project.OutputType;
-            // References this tab doesn't list (one to a project no longer in the solution, say)
-            // are kept as they are; the build reports them.
-            var listed = _referenceFields.Select(r => r.Library.FilePath!).ToList();
-            project.ProjectReferences =
-            [
-                .. project.ProjectReferences.Where(r => !listed.Any(l => SameFile(Path.Combine(project.Directory, r), l))),
-                .. _referenceFields.Where(r => r.Field.Value == CheckState.Checked).Select(r => Path.GetRelativePath(project.Directory, r.Library.FilePath!)),
-            ];
-            project.PreBuildCommands = CommandLines(_preBuildField.Text);
-            project.PostBuildCommands = CommandLines(_postBuildField.Text);
-
-            // Saved here, inside this button's handler, so a failure is reported and the dialog
-            // stays open for a retry or Cancel - an exception escaping a running dialog's handler
-            // would otherwise take down the whole app.
-            try
-            {
-                project.Save();
-
-                // Not project state - this machine's toolchain install, not any one project - so
-                // it's persisted separately rather than onto the TedideProject above. AppShell
-                // reloads and applies it (CC65_HOME to this process's environment,
-                // ViceBinDirectory to its ViceEmulator instance) immediately after this dialog closes.
-                new ToolchainSettings
-                {
-                    Cc65Home = _cc65HomeField.Text.Trim() is { Length: > 0 } cc65Home ? cc65Home : null,
-                    ViceBinDirectory = _viceBinDirectoryField.Text.Trim() is { Length: > 0 } viceBinDirectory ? viceBinDirectory : null,
-                }.Save();
-            }
-            catch (Exception ex) when (AppShell.IsFileError(ex))
-            {
-                TedideMessageBox.ErrorQuery("Could Not Save", $"Saving the project settings failed:\n{ex.Message}", ["OK"]);
-                e.Handled = true;
-                return;
-            }
-
-            Saved = true;
-            Application.RequestStop(this);
             e.Handled = true;
+            // Reported here, with the dialog left open for a correction, a retry or Cancel.
+            if (Save() is { } problem)
+                TedideMessageBox.ErrorQuery(problem.Title, problem.Message, ["OK"]);
+            else
+                Application.RequestStop(this);
         };
 
         var cancelButton = new Button { Text = "Cancel", X = Pos.Center() + 1, Y = Pos.AnchorEnd(1), Width = 12 };
@@ -228,6 +171,75 @@ public sealed class ProjectSettingsDialog : Dialog
         };
 
         Add([tabs, saveButton, cancelButton]);
+    }
+
+    /// <summary>
+    /// What Save does: checks the fields, writes them onto the project and saves it, and saves the
+    /// CC65 and VICE tabs to the toolchain settings. Returns the problem, for an error box - nothing
+    /// has been changed if a field was invalid - or null once everything is saved.
+    /// </summary>
+    internal (string Title, string Message)? Save()
+    {
+        if (!Cc65TargetExtensions.TryParse(_targetField.Text, out var target))
+            return ("Invalid target", $"'{_targetField.Text}' is not a known cc65 target.");
+
+        if (string.IsNullOrWhiteSpace(_nameField.Text))
+            return ("Invalid name", "Name cannot be blank.");
+
+        if (!Cc65OptimizationLevelExtensions.TryParse(_optimizationLevelField.Text, out var optimizationLevel))
+            return ("Invalid optimization level", $"'{_optimizationLevelField.Text}' is not a known optimization level.");
+
+        _project.Name = _nameField.Text.Trim();
+        _project.Target = target;
+        _project.OutputFile = string.IsNullOrWhiteSpace(_outputFileField.Text) ? null : _outputFileField.Text.Trim();
+        _project.ExtraArguments = ArgumentText.Split(_extraArgumentsField.Text);
+        _project.IncludePaths = ArgumentText.Split(_includePathsField.Text);
+        _project.PreprocessorDefines = ArgumentText.Split(_preprocessorDefinesField.Text);
+        _project.OptimizationLevel = optimizationLevel;
+        _project.GenerateAssemblyListing = _generateListingField.Value == CheckState.Checked;
+        _project.AddSourceAsComment = _addSourceAsCommentField.Value == CheckState.Checked;
+        _project.GenerateLinkerMap = _generateLinkerMapField.Value == CheckState.Checked;
+        _project.ExportLabels = _exportLabelsField.Value == CheckState.Checked;
+        _project.GenerateDebugInfo = _generateDebugInfoField.Value == CheckState.Checked;
+        _project.LinkerConfigPath = string.IsNullOrWhiteSpace(_linkerConfigPathField.Text) ? null : _linkerConfigPathField.Text.Trim();
+        _project.EnableSuperCpu = _enableSuperCpuField.Value == CheckState.Checked;
+        _project.UseOpt6502 = _useOpt6502Field.Value == CheckState.Checked;
+        _project.Opt6502Mode = _favourSpeedField.Value == CheckState.Checked ? Opt6502Mode.Speed : Opt6502Mode.Size;
+        _project.OutputType = Enum.TryParse<ProjectOutputType>(_outputTypeField.Text, out var outputType) ? outputType : _project.OutputType;
+        // References this tab doesn't list (one to a project no longer in the solution, say)
+        // are kept as they are; the build reports them.
+        var listed = _referenceFields.Select(r => r.Library.FilePath!).ToList();
+        _project.ProjectReferences =
+        [
+            .. _project.ProjectReferences.Where(r => !listed.Any(l => SameFile(Path.Combine(_project.Directory, r), l))),
+            .. _referenceFields.Where(r => r.Field.Value == CheckState.Checked).Select(r => Path.GetRelativePath(_project.Directory, r.Library.FilePath!)),
+        ];
+        _project.PreBuildCommands = CommandLines(_preBuildField.Text);
+        _project.PostBuildCommands = CommandLines(_postBuildField.Text);
+
+        // A failure is returned, not thrown: an exception escaping a running dialog's handler
+        // would take down the whole app.
+        try
+        {
+            _project.Save();
+
+            // Not project state - this machine's toolchain install, not any one project - so
+            // it's persisted separately rather than onto the TedideProject above. AppShell
+            // reloads and applies it (CC65_HOME to this process's environment,
+            // ViceBinDirectory to its ViceEmulator instance) immediately after this dialog closes.
+            new ToolchainSettings
+            {
+                Cc65Home = _cc65HomeField.Text.Trim() is { Length: > 0 } cc65Home ? cc65Home : null,
+                ViceBinDirectory = _viceBinDirectoryField.Text.Trim() is { Length: > 0 } viceBinDirectory ? viceBinDirectory : null,
+            }.Save(_toolchainSettingsPath);
+        }
+        catch (Exception ex) when (AppShell.IsFileError(ex))
+        {
+            return ("Could Not Save", $"Saving the project settings failed:\n{ex.Message}");
+        }
+
+        Saved = true;
+        return null;
     }
 
     /// <summary>
@@ -743,7 +755,7 @@ public sealed class ProjectSettingsDialog : Dialog
     /// Builds the "CC65" tab: the CC65_HOME environment variable, shown and edited directly (not
     /// project state - see the Save handler). Blank means "unset".
     /// </summary>
-    private static View BuildCc65Tab(out TextField cc65HomeField)
+    private static View BuildCc65Tab(ToolchainSettings toolchain, out TextField cc65HomeField)
     {
         // No mnemonic (unlike the other three tabs) - "CC65" has no letter free to underline
         // without colliding with "_Compiler"'s C, and a digit mnemonic renders invisible
@@ -759,7 +771,7 @@ public sealed class ProjectSettingsDialog : Dialog
         cc65HomeField = new TextField
         {
             X = 0, Y = 2, Width = Dim.Fill(12),
-            Text = ToolchainSettings.Load().Cc65Home ?? string.Empty,
+            Text = toolchain.Cc65Home ?? string.Empty,
         };
         var browseButton = DirectoryBrowseButton.Create(cc65HomeField, y: 2);
 
@@ -784,7 +796,7 @@ public sealed class ProjectSettingsDialog : Dialog
     /// etc - see <see cref="ViceEmulator.ExecutableNameFor"/>), shown and edited directly (not
     /// project state - see the Save handler and <see cref="ToolchainSettings"/>).
     /// </summary>
-    private static View BuildViceTab(out TextField viceBinDirectoryField)
+    private static View BuildViceTab(ToolchainSettings toolchain, out TextField viceBinDirectoryField)
     {
         var tab = new View { Title = " _VICE ", Width = Dim.Fill(), Height = Dim.Fill() };
         // See BuildSettingsTab's comment on this same line - every tab needs its own Padding.
@@ -794,7 +806,7 @@ public sealed class ProjectSettingsDialog : Dialog
         viceBinDirectoryField = new TextField
         {
             X = 0, Y = 2, Width = Dim.Fill(12),
-            Text = ToolchainSettings.Load().ViceBinDirectory ?? ViceEmulator.DefaultBinDirectory,
+            Text = toolchain.ViceBinDirectory ?? ViceEmulator.DefaultBinDirectory,
         };
         var browseButton = DirectoryBrowseButton.Create(viceBinDirectoryField, y: 2);
 

@@ -15,7 +15,7 @@ public sealed class NewFileDialog : Dialog
     private readonly TextField _nameField;
 
     /// <summary>The entered filename, or null if the dialog was cancelled.</summary>
-    public string? FileName { get; private set; }
+    public string? FileName { get; internal set; }
 
     /// <param name="targetDirectory">The folder the new file is created directly in.</param>
     /// <param name="defaultFileName">Pre-fills the file name field with this - e.g. "newfile.h"

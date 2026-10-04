@@ -97,6 +97,12 @@ internal sealed class FakeDialogs : IDialogs
         Answer?.Invoke(dialog);
     }
 
+    /// <summary>The files each <see cref="PickFiles"/> chooses, in order; once empty, every picker
+    /// is cancelled.</summary>
+    public Queue<IReadOnlyList<string>> FilePicks { get; } = new();
+
+    public IReadOnlyList<string> PickFiles(OpenDialog dialog) => FilePicks.TryDequeue(out var files) ? files : [];
+
     public int? Query(string title, string message, params string[] buttons)
     {
         Messages.Add($"{title}: {message}");

@@ -21,9 +21,13 @@ obj/
 !tests/Tedide.Core.Tests/Fixtures/*.map
 !tests/Tedide.Core.Tests/Fixtures/*.lbl
 !tests/Tedide.Core.Tests/Fixtures/*.dbg
-/TestResults/
+TestResults/
 # Per-user, per-project IDE state written beside each .tproj (see BreakpointsFile/SessionStateFile)
 # - not build configuration, and different for everyone who opens the project.
 *.breakpoints.json
 *.session.json
 *.corrupt
+
+# The debugger tests' fixture: real cc65 build output, kept in the repo so the tests don't need cc65.
+!tests/Tedide.App.Tests/Fixtures/DebugGame/obj/
+!tests/Tedide.App.Tests/Fixtures/DebugGame/**

@@ -14,15 +14,15 @@ namespace Tedide.App.Views;
 /// </summary>
 public sealed class NewProjectDialog : Dialog
 {
-    private readonly TextField _nameField;
-    private readonly TextField _directoryField;
+    internal readonly TextField _nameField;
+    internal readonly TextField _directoryField;
     private readonly DropDownList _targetField;
     private readonly DropDownList _outputTypeField;
 
     public string ProjectName => _nameField.Text;
     public string Directory => _directoryField.Text;
-    public Cc65Target? Target { get; private set; }
-    public ProjectOutputType OutputType { get; private set; }
+    public Cc65Target? Target { get; internal set; }
+    public ProjectOutputType OutputType { get; internal set; }
 
     /// <param name="parentDirectory">Where the new project's folder goes by default - the open
     /// solution's folder when adding to it, else the current directory.</param>

@@ -103,7 +103,9 @@ public sealed class GitChangesView : View
         var messageLabel = new Label { Text = "Commit message:", X = 0, Y = 2 };
         _amendBox = new CheckBox { Text = "Amend last commit", X = Pos.Right(messageLabel) + 4, Y = 2, HotKeySpecifier = noHotKey };
         _amendBox.ValueChanged += (_, _) => AmendToggled?.Invoke(IsAmending);
-        _messageField = new TextView { X = 0, Y = 3, Width = Dim.Percent(leftWidth), Height = 5, BorderStyle = LineStyle.Single };
+        // Tab moves on rather than typing a tab - a commit message has no use for one, and otherwise
+        // the buttons and file lists after it can't be reached from the keyboard.
+        _messageField = new TextView { X = 0, Y = 3, Width = Dim.Percent(leftWidth), Height = 5, BorderStyle = LineStyle.Single, TabKeyAddsTab = false };
 
         // While a merge, rebase, cherry-pick or revert is stopped these become Continue and Abort -
         // finishing it is what commits (see UpdateState).

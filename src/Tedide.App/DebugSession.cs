@@ -12,6 +12,10 @@ using Terminal.Gui.App;
 
 namespace Tedide.App;
 
+/// <summary>A VICE started for a debug session: the port its binary monitor listens on, and its
+/// exit code once it has exited (null while it's running).</summary>
+internal sealed record ViceInstance(int MonitorPort, Func<int?> ExitCode);
+
 /// <summary>What <see cref="DebugSession"/> needs from the shell around it.</summary>
 internal interface IDebugSessionHost
 {
@@ -43,6 +47,7 @@ internal interface IDebugSessionHost
 internal sealed class DebugSession
 {
     private readonly IDebugSessionHost _host;
+    private readonly Func<TedideProject, Action<string>, ViceInstance> _launchVice;
     private readonly Workspace _workspace;
     private readonly EditorPane _editorPane;
     private readonly DebugPanelView _debugPanel;
@@ -66,10 +71,14 @@ internal sealed class DebugSession
     private ushort? _memoryAddress;
     private byte[]? _memorySnapshot;
 
+    /// <param name="launchVice">Starts VICE with its binary monitor on, for a project, passing it
+    /// each line VICE writes - the real one by default, or a test's stand-in.</param>
     public DebugSession(IDebugSessionHost host, Workspace workspace, EditorPane editorPane, DebugPanelView debugPanel,
-        DisassemblyView disassemblyView, MemoryView memoryView, BreakpointLineTransformer breakpointLineTransformer)
+        DisassemblyView disassemblyView, MemoryView memoryView, BreakpointLineTransformer breakpointLineTransformer,
+        Func<TedideProject, Action<string>, ViceInstance>? launchVice = null)
     {
         _host = host;
+        _launchVice = launchVice ?? LaunchVice;
         _workspace = workspace;
         _editorPane = editorPane;
         _debugPanel = debugPanel;
@@ -709,13 +718,13 @@ internal sealed class DebugSession
         _dbgFile = DbgFile.Parse(File.ReadAllText(project.ResolvedDebugInfoFile));
         _assemblyFrames.Clear(); // this build's generated .s files replace the last session's
 
-        // Application.Invoke, not AppendOutputLine directly: Process.OutputDataReceived/
+        // Through OnUiThread, not AppendOutputLine directly: Process.OutputDataReceived/
         // ErrorDataReceived (what ViceEmulator.Launch's onOutputLine ultimately wraps) fire on a
         // thread-pool thread, not the UI thread - confirmed via a real crash this line caused
         // ("Collection was modified; enumeration operation may not execute" inside TextView's own
         // draw, racing OutputView._lines against the UI thread's concurrent draw-time enumeration
         // of it). RunActiveProjectAsync's own _host.Vice.Launch call already gets this right.
-        var viceProcess = _host.Vice.Launch(project, line => Application.Invoke(() => _host.AppendOutputLine(line)), enableBinaryMonitor: true);
+        var vice = _launchVice(project, line => _host.OnUiThread(() => _host.AppendOutputLine(line)));
 
         _host.SetDebugStatus("Connecting to VICE...");
         // VICE needs a moment to start listening on its binary monitor port after the process
@@ -723,12 +732,12 @@ internal sealed class DebugSession
         // TcpClient whose connect has failed isn't reliably reusable. And give up straight away
         // if VICE has already exited (e.g. it rejected a ROM or command-line option) rather than
         // spending the whole retry budget knocking on a port nothing will ever open.
-        for (var attempt = 0; attempt < 20 && _debugClient is null && !viceProcess.HasExited; attempt++)
+        for (var attempt = 0; attempt < 20 && _debugClient is null && vice.ExitCode() is null; attempt++)
         {
             var client = CreateDebugClient();
             try
             {
-                await client.ConnectAsync();
+                await client.ConnectAsync(port: vice.MonitorPort);
                 _debugClient = client;
                 Log.Debug("Debug start: connected to VICE on attempt {Attempt}", attempt + 1);
             }
@@ -741,8 +750,8 @@ internal sealed class DebugSession
         }
         if (_debugClient is null)
         {
-            var reason = viceProcess.HasExited
-                ? $"VICE exited during startup (exit code {viceProcess.ExitCode}) - see its output above."
+            var reason = vice.ExitCode() is { } exitCode
+                ? $"VICE exited during startup (exit code {exitCode}) - see its output above."
                 : "Could not connect to VICE's binary monitor - is VICE installed and did it launch correctly?";
             _host.AppendOutputLine(reason);
             _host.SetDebugStatus(null);
@@ -779,6 +788,13 @@ internal sealed class DebugSession
         await _debugClient.ContinueAsync();
     }
 
+    private ViceInstance LaunchVice(TedideProject project, Action<string> onOutputLine)
+    {
+        var process = _host.Vice.Launch(project, onOutputLine, enableBinaryMonitor: true);
+        var port = int.Parse(ViceEmulator.BinaryMonitorAddress.Split(':')[1], CultureInfo.InvariantCulture);
+        return new ViceInstance(port, () => process.HasExited ? process.ExitCode : null);
+    }
+
     /// <summary>A new, not-yet-connected monitor client with this shell's event handlers attached.</summary>
     private ViceMonitorClient CreateDebugClient()
     {
@@ -788,14 +804,14 @@ internal sealed class DebugSession
         // VICE closed (or crashed) under a live session: end it, so the editor becomes editable
         // again and the Debug panel stops claiming a session exists. Checked on the UI thread
         // against the *current* client, so a stale client from an earlier session does nothing.
-        client.Disconnected += () => Application.Invoke(() =>
+        client.Disconnected += () => _host.OnUiThread(() =>
         {
             if (_debugClient != client || !_isDebugging)
                 return;
             _host.AppendOutputLine("VICE closed the debugging connection - debug session ended.");
             Fire(EndDebugSessionAsync());
         });
-        client.Resumed += pc => Application.Invoke(() =>
+        client.Resumed += pc => _host.OnUiThread(() =>
         {
             Log.Debug("Resumed event: PC={PC:X4}, _isStepping={IsStepping}", pc, _isStepping);
             // Stepping resumes and re-halts the CPU just like Continue does, so it raises this same
@@ -862,14 +878,14 @@ internal sealed class DebugSession
     /// Fires whenever VICE stops at a checkpoint - reads registers, resolves the PC back to a
     /// source location (<see cref="_dbgFile"/>), and jumps the editor there. Raised on
     /// <see cref="ViceMonitorClient"/>'s read-loop thread, so the work is posted to the UI thread
-    /// with Application.Invoke, which returns at once - the read loop must stay free to answer the
+    /// with OnUiThread, which returns at once from any other thread - the read loop must stay free to answer the
     /// register and memory requests that follow. Once there, the awaits come back to the UI thread
     /// (see <see cref="UiSynchronizationContext"/>).
     /// </summary>
     private void OnCheckpointHit(CheckpointHitEventArgs args)
     {
         Log.Debug("CheckpointHit event: checkpoint #{Number}", args.Checkpoint.Number);
-        Application.Invoke(async () =>
+        _host.OnUiThread(async () =>
         {
             try
             {

@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Tedide.Debug.Tests" />
+    <InternalsVisibleTo Include="Tedide.App.Tests" />
   </ItemGroup>
 
   <PropertyGroup>

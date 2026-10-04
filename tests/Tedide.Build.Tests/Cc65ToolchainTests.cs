@@ -838,23 +838,58 @@ public class Cc65ToolchainTests
             using var cts = new CancellationTokenSource();
             var build = new Cc65Toolchain(fakeCl65).BuildAsync(project, cancellationToken: cts.Token);
 
-            var deadline = DateTime.UtcNow.AddSeconds(20);
-            while (!File.Exists(pidFile) || new FileInfo(pidFile).Length == 0)
+            // Generous waits throughout: with every test project running at once (and coverage on),
+            // starting PowerShell alone can take several seconds.
+            var deadline = DateTime.UtcNow.AddSeconds(60);
+            int childPid;
+            // Set-Content ends the PID with a newline, so a file without one is still being written.
+            while (!File.Exists(pidFile) || !TryReadPid(pidFile, out childPid))
             {
                 Assert.True(DateTime.UtcNow < deadline, "The fake cl65's child process never started.");
                 await Task.Delay(100);
             }
-            var childPid = int.Parse(File.ReadAllText(pidFile).Trim());
 
             cts.Cancel();
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() => build);
 
-            Assert.True(await HasExitedAsync(childPid, TimeSpan.FromSeconds(5)),
+            Assert.True(await HasExitedAsync(childPid, TimeSpan.FromSeconds(20)),
                 $"cl65's child process (PID {childPid}) was still running after the build was cancelled.");
         }
         finally
         {
-            dir.Delete(recursive: true);
+            await DeleteWhenReleasedAsync(dir);
+        }
+    }
+
+    private static bool TryReadPid(string pidFile, out int pid)
+    {
+        pid = 0;
+        try
+        {
+            var text = File.ReadAllText(pidFile);
+            return text.EndsWith('\n') && int.TryParse(text.Trim(), out pid);
+        }
+        catch (IOException)
+        {
+            return false; // Still open for writing.
+        }
+    }
+
+    /// <summary>Deletes a folder whose killed processes may still, briefly, hold it as their
+    /// working directory.</summary>
+    private static async Task DeleteWhenReleasedAsync(DirectoryInfo dir)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                dir.Delete(recursive: true);
+                return;
+            }
+            catch (IOException) when (attempt < 20)
+            {
+                await Task.Delay(250);
+            }
         }
     }
 

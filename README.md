@@ -800,15 +800,32 @@ tests/
   Tedide.Debug.Tests/  Byte-exact protocol tests, a fake TCP server standing in for VICE, and a scripted
                        fake target for stepping and breakpoints
   Tedide.Git.Tests/    Parser tests, plus tests against real git in temporary repositories
-  Tedide.App.Tests/
+  Tedide.App.Tests/    The commands behind the window, against a fake shell, fake dialogs, real git and a
+                       fake VICE; Fixtures/ is a real cc65 build for the debugger tests
   Tedide.DocViewer.Tests/
+  Shared/              Test doubles more than one test project uses
+scripts/
+  Verify-Live.ps1      Drives a real Tedide through its main features - see Testing below
+  hooks/pre-push       Runs the tests before a push, once turned on
 tools/
   Cc65DocsDbBuilder/   Builds Docs.db, the Doc Viewer's database, from the books' HTML
   Opt6502Cli/          A command-line opt6502, plus its tests in cc65's simulator
 samples/               The nine sample projects
 ```
 
-Run the tests with `dotnet test Tedide.slnx`.
+### Testing
+
+- **Unit tests** - `dotnet test Tedide.slnx`. Coverage is measured with
+  `dotnet test --collect:"XPlat Code Coverage"`; generated code is left out (see
+  `coverage.runsettings`).
+- **The live check** - `scripts\Verify-Live.ps1` builds Tedide and drives it in Windows Terminal
+  through a throwaway git copy of CBMInfo: navigation, the Git tab and its dialogs, a build, and
+  a debug session in VICE (`-SkipDebug` leaves that out). It takes about two minutes and types
+  into the window the whole time, so leave the keyboard alone while it runs. Your settings are
+  backed up and restored. It reports each step, and leaves a screenshot of each in
+  `%TEMP%\tedide-verify`.
+- **Before pushing** - `git config core.hooksPath scripts/hooks` runs the unit tests before every
+  push. Add `git config tedide.liveCheck true` to run the live check too.
 
 ### Implementation notes
 

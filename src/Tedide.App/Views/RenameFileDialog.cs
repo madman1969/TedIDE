@@ -16,7 +16,7 @@ public sealed class RenameFileDialog : Dialog
 
     /// <summary>The entered filename, or null if the dialog was cancelled or the name wasn't
     /// actually changed.</summary>
-    public string? NewFileName { get; private set; }
+    public string? NewFileName { get; internal set; }
 
     public RenameFileDialog(string currentFileName)
     {

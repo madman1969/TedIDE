@@ -17,14 +17,18 @@ public sealed class ToolchainSettings
     public string? Cc65Home { get; set; }
     public string? ViceBinDirectory { get; set; }
 
-    private static readonly string FilePath = JsonFile.UserSettingsPath("toolchain.json");
+    internal static readonly string DefaultFilePath = JsonFile.UserSettingsPath("toolchain.json");
 
     /// <summary>
     /// Loads the previously saved settings, or defaults (both null/unset) if none have been saved
     /// yet or the file can't be read - a missing/corrupt settings file should never stop the app
     /// from starting.
     /// </summary>
-    public static ToolchainSettings Load() => JsonFile.ReadOrDefault(FilePath, AppJsonContext.Default.ToolchainSettings);
+    public static ToolchainSettings Load() => Load(DefaultFilePath);
 
-    public void Save() => JsonFile.Write(FilePath, this, AppJsonContext.Default.ToolchainSettings);
+    internal static ToolchainSettings Load(string path) => JsonFile.ReadOrDefault(path, AppJsonContext.Default.ToolchainSettings);
+
+    public void Save() => Save(DefaultFilePath);
+
+    internal void Save(string path) => JsonFile.Write(path, this, AppJsonContext.Default.ToolchainSettings);
 }

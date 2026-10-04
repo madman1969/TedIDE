@@ -17,14 +17,24 @@ public sealed class LayoutSettings
     /// <summary><see cref="AppShell"/>'s Solution Explorer/Editor row height, as a percentage of the window's height.</summary>
     public int TopRowHeightPercent { get; set; } = 70;
 
-    private static readonly string FilePath = JsonFile.UserSettingsPath("layout.json");
+    internal static readonly string DefaultFilePath = JsonFile.UserSettingsPath("layout.json");
+
+    /// <summary>Where this was loaded from, and is saved to.</summary>
+    internal string FilePath { get; set; } = DefaultFilePath;
 
     /// <summary>
     /// Loads the previously saved splitter positions, or defaults (75%/70%, matching the app's
     /// first-run layout) if none have been saved yet or the file can't be read - a missing/corrupt
     /// settings file should never stop the app from starting.
     /// </summary>
-    public static LayoutSettings Load() => JsonFile.ReadOrDefault(FilePath, AppJsonContext.Default.LayoutSettings);
+    public static LayoutSettings Load() => Load(DefaultFilePath);
+
+    internal static LayoutSettings Load(string path)
+    {
+        var settings = JsonFile.ReadOrDefault(path, AppJsonContext.Default.LayoutSettings);
+        settings.FilePath = path;
+        return settings;
+    }
 
     public void Save() => JsonFile.Write(FilePath, this, AppJsonContext.Default.LayoutSettings);
 }

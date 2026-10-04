@@ -1,0 +1,22 @@
+#!/bin/sh
+# Tedide's pre-push check. Turn it on for your clone with:
+#     git config core.hooksPath scripts/hooks
+# It runs the unit tests before every push, and stops the push if any fail. The live check
+# (scripts/Verify-Live.ps1, about two minutes driving a real Tedide - hands off the keyboard while
+# it runs) only runs when you've also asked for it:
+#     git config tedide.liveCheck true
+# Skip both for one push with: git push --no-verify
+
+echo "pre-push: running the unit tests..."
+if ! dotnet test --nologo -v q; then
+    echo "pre-push: unit tests failed - not pushing."
+    exit 1
+fi
+
+if [ "$(git config --bool tedide.liveCheck)" = "true" ]; then
+    echo "pre-push: running the live check (scripts/Verify-Live.ps1)..."
+    if ! powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/Verify-Live.ps1; then
+        echo "pre-push: the live check failed - not pushing. Screenshots are in %TEMP%\tedide-verify."
+        exit 1
+    fi
+fi

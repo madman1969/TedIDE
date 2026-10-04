@@ -16,6 +16,13 @@ using Terminal.Gui.Views;
 
 namespace Tedide.App;
 
+/// <summary>The per-user settings files <see cref="AppShell"/> reads and writes.</summary>
+internal sealed record AppShellSettings(string RecentProjectsFile, string LayoutFile, string ToolchainFile)
+{
+    public static AppShellSettings Default { get; } =
+        new(RecentProjectsSettings.DefaultFilePath, LayoutSettings.DefaultFilePath, ToolchainSettings.DefaultFilePath);
+}
+
 /// <summary>
 /// The main window of the Tedide IDE: menu bar, solution explorer, a single-file editor pane,
 /// build output pane and status bar. Only one file can be open at a time - selecting another one
@@ -30,7 +37,8 @@ namespace Tedide.App;
 /// </summary>
 public sealed class AppShell : Window, IDebugSessionHost, IShell
 {
-    private readonly IDialogs _dialogs = new TerminalDialogs();
+    private readonly IDialogs _dialogs;
+    private readonly AppShellSettings _settings;
     private readonly Workspace _workspace = new();
 
     /// <summary>Git status for the Solution Explorer, the status bar and the Git tab - see <see cref="GitTracker"/>.</summary>
@@ -44,11 +52,11 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
     // ToolchainSettings, applied in the constructor via ApplyToolchainSettings (also reapplied
     // after every ProjectSettingsDialog save - see ShowProjectSettings).
     private readonly ViceEmulator _vice = new();
-    private readonly RecentProjectsSettings _recentProjects = RecentProjectsSettings.Load();
+    private readonly RecentProjectsSettings _recentProjects;
 
     /// <summary>Navigate Backward/Forward (Alt+Left/Alt+Right) - see <see cref="NavigationCommands.RecordJump"/>.</summary>
     private readonly NavigationHistory _navigationHistory = new();
-    private readonly LayoutSettings _layoutSettings = LayoutSettings.Load();
+    private readonly LayoutSettings _layoutSettings;
 
     /// <summary>The File menu's "Recent Projects and Solutions" item - kept as a field so its
     /// SubMenu can be rebuilt in place whenever <see cref="_recentProjects"/> changes.</summary>
@@ -83,7 +91,18 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
     private readonly EditorStatusBar _statusBar;
 
     public AppShell()
+        : this(AppShellSettings.Default, new TerminalDialogs())
     {
+    }
+
+    /// <param name="settings">The per-user settings files - the user's own, or a test's.</param>
+    /// <param name="dialogs">Shows the window's dialogs and message boxes - for real, or a test's answers.</param>
+    internal AppShell(AppShellSettings settings, IDialogs dialogs)
+    {
+        _settings = settings;
+        _dialogs = dialogs;
+        _recentProjects = RecentProjectsSettings.Load(settings.RecentProjectsFile);
+        _layoutSettings = LayoutSettings.Load(settings.LayoutFile);
         _git = new GitTracker(
             () => (_workspace.Projects.Select(p => p.Directory).ToList(), _workspace.Solution?.Directory ?? _workspace.ActiveProject?.Directory),
             OnUiThread);
@@ -102,7 +121,7 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
         // At startup, an unset Cc65Home must not clobber a CC65_HOME the user has set some other
         // way (shell profile, system env) before launching Tedide - only an explicit edit via the
         // CC65 tab's Save (see ShowProjectSettings) is allowed to unset it, hence allowUnsettingCc65Home: false here.
-        ApplyToolchainSettings(ToolchainSettings.Load(), allowUnsettingCc65Home: false);
+        ApplyToolchainSettings(ToolchainSettings.Load(settings.ToolchainFile), allowUnsettingCc65Home: false);
 
         _menuBar = BuildMenuBar();
         _statusBar = BuildStatusBar();
@@ -357,7 +376,7 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
     /// Records the two splitters' current positions (as a percentage of the window's current
     /// width/height, so they still make sense after resizing the terminal or moving to a
     /// different one) so the next run starts back where this one left off. Called once, from
-    /// Program.cs, right after <c>Application.Run(shell)</c> returns - i.e. when the user quits.
+    /// Program.cs, right after <c>_dialogs.Run(shell)</c> returns - i.e. when the user quits.
     /// </summary>
     public void SaveLayoutSettings()
     {
@@ -372,7 +391,7 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
     /// <summary>Records the active project's currently open file (see
     /// <see cref="SaveLastOpenFileForActiveProject"/>) so it's reopened next time this same
     /// project loads (see <see cref="LoadLastOpenFileForActiveProject"/>). Called once, from
-    /// Program.cs, right after <c>Application.Run(shell)</c> returns - i.e. when the user quits -
+    /// Program.cs, right after <c>_dialogs.Run(shell)</c> returns - i.e. when the user quits -
     /// alongside <see cref="SaveLayoutSettings"/>.</summary>
     public void SaveSessionState() => LogOnlyOnExit("Saving the session", SaveLastOpenFileForActiveProjectCore);
 
@@ -669,12 +688,12 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
         return statusBar;
     }
 
-    private void NewProject() => Guard("Creating the project", () => NewProjectCore());
+    internal void NewProject() => Guard("Creating the project", () => NewProjectCore());
 
     private void NewProjectCore()
     {
         var dialog = new NewProjectDialog();
-        Application.Run(dialog);
+        _dialogs.Run(dialog);
         if (dialog.Target is { } target && !string.IsNullOrWhiteSpace(dialog.ProjectName))
         {
             if (!ConfirmCloseFiles(_editorPane.OpenPaths))
@@ -695,9 +714,7 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
 
     private void OpenProject()
     {
-        var dialog = new OpenDialog { Title = "Open Project" };
-        Application.Run(dialog);
-        var path = dialog.FilePaths.FirstOrDefault();
+        var path = _dialogs.PickFiles(new OpenDialog { Title = "Open Project" }).FirstOrDefault();
         if (path is null)
             return;
 
@@ -710,13 +727,13 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
     /// Solutions submenu. Drops the path from the recent list (rather than opening it) if it no
     /// longer exists on disk, since the file may have been moved/deleted since it was recorded.
     /// </summary>
-    private void OpenProjectOrSolution(string path) => Guard("Opening the project", () => OpenProjectOrSolutionCore(path));
+    internal void OpenProjectOrSolution(string path) => Guard("Opening the project", () => OpenProjectOrSolutionCore(path));
 
     private void OpenProjectOrSolutionCore(string path)
     {
         if (!File.Exists(path))
         {
-            TedideMessageBox.ErrorQuery("File Not Found", $"'{path}' no longer exists.", ["OK"]);
+            _dialogs.ErrorQuery("File Not Found", $"'{path}' no longer exists.", ["OK"]);
             _recentProjects.Remove(path);
             RefreshRecentProjectsMenu();
             return;
@@ -725,7 +742,7 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
         var isSolution = path.EndsWith(TedideSolution.FileExtension, StringComparison.OrdinalIgnoreCase);
         if (!isSolution && !path.EndsWith(TedideProject.FileExtension, StringComparison.OrdinalIgnoreCase))
         {
-            TedideMessageBox.ErrorQuery("Unsupported file",
+            _dialogs.ErrorQuery("Unsupported file",
                 $"Expected a {TedideProject.FileExtension} or {TedideSolution.FileExtension} file.", ["OK"]);
             return;
         }
@@ -787,7 +804,7 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
         });
     }
 
-    private List<MenuItem> BuildRecentProjectsMenuItems()
+    internal List<MenuItem> BuildRecentProjectsMenuItems()
     {
         // Silently drops any entry that no longer exists on disk before building the list, so a
         // moved/deleted project just quietly disappears from the menu rather than sitting there
@@ -815,7 +832,7 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
     /// project is saved; headers are not, since cl65 never compiles them directly. The new file
     /// is opened in the editor once created.
     /// </summary>
-    private void NewFile(string directory) => Guard("Creating the file", () => NewFileCore(directory));
+    internal void NewFile(string directory) => Guard("Creating the file", () => NewFileCore(directory));
 
     private void NewFileCore(string directory)
     {
@@ -835,14 +852,14 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
         };
 
         var dialog = new NewFileDialog(directory, defaultFileName);
-        Application.Run(dialog);
+        _dialogs.Run(dialog);
         if (dialog.FileName is not { } fileName)
             return;
 
         var filePath = Path.Combine(directory, fileName);
         if (File.Exists(filePath))
         {
-            TedideMessageBox.ErrorQuery("File Exists", $"'{fileName}' already exists.", ["OK"]);
+            _dialogs.ErrorQuery("File Exists", $"'{fileName}' already exists.", ["OK"]);
             return;
         }
 
@@ -895,7 +912,7 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
     /// message once the whole batch is done rather than interrupting it file by file. Compilable
     /// copies not already in the project are added to its SourceFiles, same as <see cref="NewFile"/>.
     /// </summary>
-    private void AddExistingItem(string directory) => Guard("Adding the files", () => AddExistingItemCore(directory));
+    internal void AddExistingItem(string directory) => Guard("Adding the files", () => AddExistingItemCore(directory));
 
     private void AddExistingItemCore(string directory)
     {
@@ -917,13 +934,13 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
             AllowsMultipleSelection = true,
             AllowedTypes = [allowedType],
         };
-        Application.Run(dialog);
-        if (dialog.FilePaths.Count == 0)
+        var chosen = _dialogs.PickFiles(dialog);
+        if (chosen.Count == 0)
             return;
 
         var skipped = new List<string>();
         var addedAny = false;
-        foreach (var sourcePath in dialog.FilePaths)
+        foreach (var sourcePath in chosen)
         {
             var destinationPath = Path.Combine(directory, Path.GetFileName(sourcePath));
             var alreadyInPlace = string.Equals(Path.GetFullPath(sourcePath), Path.GetFullPath(destinationPath), StringComparison.OrdinalIgnoreCase);
@@ -953,7 +970,7 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
 
         if (skipped.Count > 0)
         {
-            TedideMessageBox.ErrorQuery("Some Files Skipped",
+            _dialogs.ErrorQuery("Some Files Skipped",
                 $"Already exists in this folder, skipped:\n{string.Join('\n', skipped)}", ["OK"]);
         }
 
@@ -969,12 +986,12 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
     /// .c -> .h, not just the base name), same as <see cref="NewFile"/>/<see cref="DeleteFile"/>'s
     /// own compilable-extension check.
     /// </summary>
-    private void RenameFile(string path) => Guard("Renaming the file", () => RenameFileCore(path));
+    internal void RenameFile(string path) => Guard("Renaming the file", () => RenameFileCore(path));
 
     private void RenameFileCore(string path)
     {
         var dialog = new RenameFileDialog(Path.GetFileName(path));
-        Application.Run(dialog);
+        _dialogs.Run(dialog);
         if (dialog.NewFileName is not { } newFileName)
             return;
 
@@ -984,7 +1001,7 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
         var isCaseOnlyRename = string.Equals(Path.GetFullPath(newPath), Path.GetFullPath(path), StringComparison.OrdinalIgnoreCase);
         if (File.Exists(newPath) && !isCaseOnlyRename)
         {
-            TedideMessageBox.ErrorQuery("File Exists", $"'{newFileName}' already exists.", ["OK"]);
+            _dialogs.ErrorQuery("File Exists", $"'{newFileName}' already exists.", ["OK"]);
             return;
         }
 
@@ -1014,11 +1031,11 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
     /// Deletes the given file from disk after confirming with the user, closing it first if it's
     /// the currently open file, and removing it from any project's SourceFiles that references it.
     /// </summary>
-    private void DeleteFile(string path) => Guard("Deleting the file", () => DeleteFileCore(path));
+    internal void DeleteFile(string path) => Guard("Deleting the file", () => DeleteFileCore(path));
 
     private void DeleteFileCore(string path)
     {
-        var choice = TedideMessageBox.Query("Delete File",
+        var choice = _dialogs.Query("Delete File",
             $"Delete '{Path.GetFileName(path)}'? This cannot be undone.", ["Delete", "Cancel"]);
         if (choice != 0)
             return;
@@ -1085,7 +1102,7 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
     /// Everything that follows the shown file (title, highlighting, breakpoints) is refreshed by
     /// <see cref="OnActiveDocumentChanged"/>.
     /// </summary>
-    private void OpenFile(string path) => Guard("Opening the file", () => _editorPane.Open(path));
+    internal void OpenFile(string path) => Guard("Opening the file", () => _editorPane.Open(path));
 
     /// <summary>
     /// Brings everything tied to "the file in the editor" up to date after a tab switch, open,
@@ -1120,7 +1137,7 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
     /// <summary>Opens the Help > About dialog. Read-only - see <see cref="AboutDialog"/>.</summary>
     private void ShowAbout()
     {
-        Application.Run(new AboutDialog());
+        _dialogs.Run(new AboutDialog());
     }
 
     /// <summary>Records whichever file is currently open (if any) as the active project's "last
@@ -1131,7 +1148,7 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
     /// and once more from Program.cs on quit (see <see cref="SaveSessionState"/>), the same two
     /// moments <see cref="SaveLayoutSettings"/> is saved at. A no-op if no project is loaded (there's
     /// nowhere to save the sidecar file).</summary>
-    private void SaveLastOpenFileForActiveProject() => Guard("Saving the session", () => SaveLastOpenFileForActiveProjectCore());
+    internal void SaveLastOpenFileForActiveProject() => Guard("Saving the session", () => SaveLastOpenFileForActiveProjectCore());
 
     private void SaveLastOpenFileForActiveProjectCore()
     {
@@ -1196,7 +1213,7 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
     }
 
     /// <summary>Closes one tab, asking about its unsaved changes first. False if the user cancelled.</summary>
-    private bool CloseFile(string path)
+    internal bool CloseFile(string path)
     {
         if (!ConfirmCloseFiles([path]))
             return false;
@@ -1205,7 +1222,7 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
     }
 
     /// <summary>File > Close All Files: closes every tab, asking about unsaved changes once for all of them.</summary>
-    private void CloseAllFiles()
+    internal void CloseAllFiles()
     {
         if (ConfirmCloseFiles(_editorPane.OpenPaths))
             _editorPane.CloseAll();
@@ -1224,7 +1241,7 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
     /// <see cref="CloseActiveFile"/>). Does nothing if nothing is loaded. Files already saved to
     /// disk are untouched; this only clears the in-memory session, same as <see cref="Workspace.Close"/>.
     /// </summary>
-    private void CloseSolution()
+    internal void CloseSolution()
     {
         if (_workspace.Projects.Count == 0)
             return;
@@ -1280,7 +1297,7 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
             ? $"Save changes to {Path.GetFileName(modified[0])}?"
             : $"Save changes to these {modified.Count} files?\n\n{string.Join('\n', modified.Take(8).Select(Path.GetFileName))}"
               + (modified.Count > 8 ? $"\n...and {modified.Count - 8} more" : "");
-        var choice = TedideMessageBox.Query("Unsaved Changes", message, [modified.Count == 1 ? "Save" : "Save All", "Discard", "Cancel"]);
+        var choice = _dialogs.Query("Unsaved Changes", message, [modified.Count == 1 ? "Save" : "Save All", "Discard", "Cancel"]);
         return choice switch
         {
             0 => modified.All(SaveFile), // a failed save must not go on to lose the buffer
@@ -1299,12 +1316,12 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
     });
 
     /// <summary>File > Save (Ctrl+S): the file being shown, plus the loaded project/solution files.</summary>
-    private bool SaveActive() =>
+    internal bool SaveActive() =>
         (_editorPane.OpenPath is not { } path || SaveFile(path)) && Guard("Saving the project", _workspace.SaveAll);
 
     /// <summary>File > Save All, and every build: each modified open file plus the project/solution
     /// files. False, having already told the user why, if anything couldn't be written.</summary>
-    private bool SaveAll() =>
+    internal bool SaveAll() =>
         _editorPane.ModifiedPaths.All(SaveFile) && Guard("Saving the project", _workspace.SaveAll);
 
     /// <summary>
@@ -1326,7 +1343,7 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
         catch (Exception ex) when (IsFileError(ex))
         {
             Log.Error(ex, "{Action} failed", action);
-            OnUiThread(() => TedideMessageBox.ErrorQuery("Error", $"{action} failed:\n{ex.Message}", ["OK"]));
+            OnUiThread(() => _dialogs.ErrorQuery("Error", $"{action} failed:\n{ex.Message}", ["OK"]));
             return false;
         }
     }
@@ -1342,12 +1359,12 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
     /// Solution Explorer > Add New Project: scaffolds a project (an application or a library) in
     /// its own folder beside the solution file, and adds it to the solution.
     /// </summary>
-    private void AddNewProject() => Guard("Adding the project", () =>
+    internal void AddNewProject() => Guard("Adding the project", () =>
     {
         if (_workspace.Solution is not { } solution)
             return;
         var dialog = new NewProjectDialog(_workspace.DefaultNewProjectParent(), "Add New Project");
-        Application.Run(dialog);
+        _dialogs.Run(dialog);
         if (dialog.Target is not { } target || string.IsNullOrWhiteSpace(dialog.ProjectName))
             return;
         var project = _workspace.AddNewProject(dialog.Directory, dialog.ProjectName.Trim(), target, dialog.OutputType);
@@ -1356,17 +1373,15 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
     });
 
     /// <summary>Solution Explorer > Add Existing Project: adds a .tproj from disk to the solution.</summary>
-    private void AddExistingProject() => Guard("Adding the project", () =>
+    internal void AddExistingProject() => Guard("Adding the project", () =>
     {
         if (_workspace.Solution is null)
             return;
-        var dialog = new OpenDialog { Title = "Add Existing Project" };
-        Application.Run(dialog);
-        if (dialog.FilePaths.FirstOrDefault() is not { } path)
+        if (_dialogs.PickFiles(new OpenDialog { Title = "Add Existing Project" }).FirstOrDefault() is not { } path)
             return;
         if (!path.EndsWith(TedideProject.FileExtension, StringComparison.OrdinalIgnoreCase))
         {
-            TedideMessageBox.ErrorQuery("Unsupported file", $"Expected a {TedideProject.FileExtension} file.", ["OK"]);
+            _dialogs.ErrorQuery("Unsupported file", $"Expected a {TedideProject.FileExtension} file.", ["OK"]);
             return;
         }
         var project = _workspace.AddExistingProject(path);
@@ -1378,9 +1393,9 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
     /// Solution Explorer > Remove from Solution: drops the project (its files stay on disk) and
     /// other projects' references to it, after closing its tabs.
     /// </summary>
-    private void RemoveProject(TedideProject project) => Guard("Removing the project", () =>
+    internal void RemoveProject(TedideProject project) => Guard("Removing the project", () =>
     {
-        var choice = TedideMessageBox.Query("Remove Project",
+        var choice = _dialogs.Query("Remove Project",
             $"Remove {project.Name} from the solution?\n\nIts files stay on disk; other projects stop referencing it.", ["Remove", "Cancel"]);
         if (choice != 0)
             return;
@@ -1407,15 +1422,15 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
     /// the folder also holds the solution file or another project - see <see cref="ProjectDeletion"/>.
     /// Its tabs close without asking about unsaved changes, since the files are going anyway.
     /// </summary>
-    private void DeleteProject(TedideProject project) => Guard("Deleting the project", () =>
+    internal void DeleteProject(TedideProject project) => Guard("Deleting the project", () =>
     {
         if (ProjectDeletion.WhyNot(_workspace, project) is { } reason)
         {
-            TedideMessageBox.ErrorQuery("Can't Delete Project", reason, ["OK"]);
+            _dialogs.ErrorQuery("Can't Delete Project", reason, ["OK"]);
             return;
         }
 
-        var choice = TedideMessageBox.Query("Delete Project",
+        var choice = _dialogs.Query("Delete Project",
             $"Delete {project.Name} and everything in its folder?\n\n{project.Directory}\n\n"
             + "The folder goes to the Recycle Bin. Other projects stop referencing it.", ["Delete", "Cancel"]);
         if (choice != 0)
@@ -1447,7 +1462,7 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
 
     /// <summary>Solution Explorer > Set as Startup Project: the project Run, Start Debugging and
     /// Build Project act on, remembered in the solution file.</summary>
-    private void SetStartupProject(TedideProject project) => Guard("Setting the startup project", () =>
+    internal void SetStartupProject(TedideProject project) => Guard("Setting the startup project", () =>
     {
         SaveLastOpenFileForActiveProject();
         _workspace.SetStartupProject(project);
@@ -1474,7 +1489,7 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
     private void ShowProjectSettings() => ShowProjectSettings(_workspace.ActiveProject);
 
     /// <summary>The same, for any project - the Solution Explorer's project Settings... item.</summary>
-    private void ShowProjectSettings(TedideProject? project) => Guard("Saving project settings", () => ShowProjectSettingsCore(project));
+    internal void ShowProjectSettings(TedideProject? project) => Guard("Saving project settings", () => ShowProjectSettingsCore(project));
 
     private void ShowProjectSettingsCore(TedideProject? project)
     {
@@ -1488,8 +1503,8 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
         var oldFilePath = project.FilePath;
         var oldDirectory = project.Directory;
 
-        var dialog = new ProjectSettingsDialog(project, _workspace.Projects);
-        Application.Run(dialog);
+        var dialog = new ProjectSettingsDialog(project, _workspace.Projects, _settings.ToolchainFile);
+        _dialogs.Run(dialog);
         if (!dialog.Saved)
             return;
 
@@ -1497,7 +1512,7 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
         // not project state - see ProjectSettingsDialog) - reload and apply immediately so a
         // changed value takes effect without restarting Tedide. Unlike the startup call in the
         // constructor, an explicit Save is allowed to unset CC65_HOME.
-        ApplyToolchainSettings(ToolchainSettings.Load(), allowUnsettingCc65Home: true);
+        ApplyToolchainSettings(ToolchainSettings.Load(_settings.ToolchainFile), allowUnsettingCc65Home: true);
 
         if (oldFilePath is not null && !string.Equals(project.Name, oldName, StringComparison.Ordinal))
             RenameProject(project, oldName, oldFilePath, oldDirectory);
@@ -1558,9 +1573,16 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
         }
 
         if (result.FolderNotRenamedReason is { } reason)
-            TedideMessageBox.ErrorQuery("Folder Not Renamed",
+            _dialogs.ErrorQuery("Folder Not Renamed",
                 $"The project was renamed to '{project.Name}', but its folder was left as-is: {reason}.", ["OK"]);
     }
+
+    // For tests: what the commands above work on and report.
+    internal Workspace Workspace => _workspace;
+    internal EditorPane EditorPane => _editorPane;
+    internal RecentProjectsSettings RecentProjects => _recentProjects;
+    internal DebugSession Debug => _debug;
+    internal string OutputText => _outputView.Text;
 
     /// <summary>Safe to call from any thread - see <see cref="OnUiThread"/>.</summary>
     private void AppendOutputLine(string line) => OnUiThread(() => _outputView.AppendLine(line));
@@ -1609,13 +1631,21 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
     /// threads - a process's output, a failed background task. Posted work runs in order, after
     /// anything already queued.
     /// </summary>
-    private static void OnUiThread(Action action)
+    private void OnUiThread(Action action)
     {
-        if (Environment.CurrentManagedThreadId == Application.MainThreadId)
+        if (Environment.CurrentManagedThreadId == _uiThreadId)
             action();
+        else if (_uiContext is not null)
+            _uiContext.Post(_ => action(), null);
         else
             Application.Invoke(action);
     }
+
+    /// <summary>The thread this window was made on - the UI thread - and its synchronization
+    /// context: <see cref="UiSynchronizationContext"/>, posting through Terminal.Gui's main loop, in
+    /// the app; a test's own UI thread in a test.</summary>
+    private readonly int _uiThreadId = Environment.CurrentManagedThreadId;
+    private readonly SynchronizationContext? _uiContext = SynchronizationContext.Current;
 
     /// <summary>
     /// Switches the Output/Error List pane to its "Output" tab and gives the output view itself
