@@ -1,0 +1,11 @@
+<Project>
+
+  <!-- The repo-wide settings (the version number) still apply. -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <!-- Every test project uses the same coverage settings - see coverage.runsettings. -->
+  <PropertyGroup>
+    <RunSettingsFilePath>$(MSBuildThisFileDirectory)..\coverage.runsettings</RunSettingsFilePath>
+  </PropertyGroup>
+
+</Project>

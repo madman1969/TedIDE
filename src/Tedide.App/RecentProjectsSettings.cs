@@ -16,13 +16,24 @@ public sealed class RecentProjectsSettings
 
     public List<string> Paths { get; set; } = [];
 
-    private static readonly string FilePath = JsonFile.UserSettingsPath("recent.json");
+    private static readonly string DefaultFilePath = JsonFile.UserSettingsPath("recent.json");
+
+    /// <summary>Where <see cref="Save"/> writes - the user's real list, except in tests.</summary>
+    internal string FilePath { get; set; } = DefaultFilePath;
 
     /// <summary>
     /// Loads the previously saved list, or an empty one if none has been saved yet or the file
     /// can't be read - a missing/corrupt settings file should never stop the app from starting.
     /// </summary>
-    public static RecentProjectsSettings Load() => JsonFile.ReadOrDefault(FilePath, AppJsonContext.Default.RecentProjectsSettings);
+    public static RecentProjectsSettings Load() => Load(DefaultFilePath);
+
+    /// <summary>The path-taking form, so tests never touch the user's real list.</summary>
+    internal static RecentProjectsSettings Load(string path)
+    {
+        var settings = JsonFile.ReadOrDefault(path, AppJsonContext.Default.RecentProjectsSettings);
+        settings.FilePath = path;
+        return settings;
+    }
 
     public void Save() => JsonFile.Write(FilePath, this, AppJsonContext.Default.RecentProjectsSettings);
 

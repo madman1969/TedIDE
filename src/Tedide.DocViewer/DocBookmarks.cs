@@ -16,13 +16,24 @@ public sealed class DocBookmarks
 {
     public List<Bookmark> Items { get; set; } = [];
 
-    private static readonly string FilePath = JsonFile.UserSettingsPath("docviewer-bookmarks.json");
+    private static readonly string DefaultFilePath = JsonFile.UserSettingsPath("docviewer-bookmarks.json");
+
+    /// <summary>Where <see cref="Save"/> writes - the user's real bookmarks, except in tests.</summary>
+    internal string FilePath { get; set; } = DefaultFilePath;
 
     /// <summary>
     /// Loads the previously saved bookmarks, or an empty list if none have been saved yet or the
     /// file can't be read - a missing/corrupt settings file should never stop the app from starting.
     /// </summary>
-    public static DocBookmarks Load() => JsonFile.ReadOrDefault(FilePath, DocViewerJsonContext.Default.DocBookmarks);
+    public static DocBookmarks Load() => Load(DefaultFilePath);
+
+    /// <summary>The path-taking form, so tests never touch the user's real bookmarks.</summary>
+    internal static DocBookmarks Load(string path)
+    {
+        var bookmarks = JsonFile.ReadOrDefault(path, DocViewerJsonContext.Default.DocBookmarks);
+        bookmarks.FilePath = path;
+        return bookmarks;
+    }
 
     public void Save() => JsonFile.Write(FilePath, this, DocViewerJsonContext.Default.DocBookmarks);
 

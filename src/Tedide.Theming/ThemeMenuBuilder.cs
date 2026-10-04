@@ -41,18 +41,17 @@ public static class ThemeMenuBuilder
             .Select(entry => new MenuItem(UncheckedPrefix + entry.Title, "", () => ThemeSwitcher.Apply(entry.Theme), Key.Empty))
             .ToList();
 
-        void UpdateChecks()
-        {
-            for (var i = 0; i < items.Count; i++)
-            {
-                var prefix = Entries[i].Theme == ThemeSwitcher.Current ? CheckedPrefix : UncheckedPrefix;
-                items[i].Title = prefix + Entries[i].Title;
-            }
-        }
-
-        UpdateChecks();
-        ThemeSwitcher.Changed += UpdateChecks;
+        UpdateChecks(items, ThemeSwitcher.Current);
+        ThemeSwitcher.Changed += () => UpdateChecks(items, ThemeSwitcher.Current);
 
         return new MenuBarItem("_Theme", items);
+    }
+
+    /// <summary>Ticks <paramref name="current"/>'s item and clears the rest - the menu's items in
+    /// the order <see cref="Build"/> made them.</summary>
+    internal static void UpdateChecks(IReadOnlyList<MenuItem> items, AppTheme current)
+    {
+        for (var i = 0; i < items.Count; i++)
+            items[i].Title = (Entries[i].Theme == current ? CheckedPrefix : UncheckedPrefix) + Entries[i].Title;
     }
 }

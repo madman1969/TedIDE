@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Coverage settings for every test project (wired up in tests/Directory.Build.props), used by
+     dotnet test with the XPlat Code Coverage collector. Generated code is left out, so the numbers measure
+     the code people wrote: the [GeneratedRegex] and System.Text.Json source generators' output
+     (*.g.cs, and anything marked [GeneratedCode]), compiler-generated members, and anything marked
+     [ExcludeFromCodeCoverage]. -->
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <Format>cobertura</Format>
+          <ExcludeByAttribute>GeneratedCodeAttribute,CompilerGeneratedAttribute,ExcludeFromCodeCoverageAttribute</ExcludeByAttribute>
+          <ExcludeByFile>**/*.g.cs,**/obj/**</ExcludeByFile>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>
