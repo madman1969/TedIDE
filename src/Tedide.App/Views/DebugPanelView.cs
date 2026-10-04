@@ -178,6 +178,9 @@ public sealed class DebugPanelView : View
             ? ["No watches. Debug > Add Watch... adds one."]
             : formattedWatches));
 
+    /// <summary>The Watch window's rows, as shown.</summary>
+    internal IReadOnlyList<string> WatchRows => _watchList.Source?.ToList().Cast<string>().ToList() ?? [];
+
     /// <summary>Replaces the displayed registers, or clears them (pass null) when not stopped/not debugging.</summary>
     public void SetRegisters(RegisterSnapshot? snapshot)
     {

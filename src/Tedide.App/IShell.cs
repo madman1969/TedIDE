@@ -4,11 +4,13 @@ namespace Tedide.App;
 
 /// <summary>
 /// The shell services <see cref="NavigationCommands"/>, <see cref="BuildCommands"/> and
-/// <see cref="GitIntegration"/> share: output, background work, error handling, files and the
-/// bottom pane. <see cref="AppShell"/> implements it.
+/// <see cref="GitIntegration"/> share: output, dialogs, background work, error handling, files and
+/// the bottom pane. <see cref="AppShell"/> implements it.
 /// </summary>
 internal interface IShell
 {
+    IDialogs Dialogs { get; }
+
     void AppendOutputLine(string line);
 
     /// <summary>Starts a task without waiting for it, reporting a failure.</summary>

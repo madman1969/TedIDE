@@ -32,7 +32,7 @@ public sealed class FindInFilesDialog : Dialog
     private List<Match> _matches = [];
 
     /// <summary>The match the user activated, or null if the dialog was cancelled without picking one.</summary>
-    public Match? SelectedMatch { get; private set; }
+    public Match? SelectedMatch { get; internal set; }
 
     /// <param name="initialSearchText">Pre-populates the search field with this text and runs the
     /// search immediately - e.g. the editor's current selection, via the right-click context menu.

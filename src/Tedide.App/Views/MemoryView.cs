@@ -107,4 +107,7 @@ public sealed class MemoryView : View
     }
 
     public void SetStatus(string status) => _statusLabel.Text = status;
+
+    /// <summary>The status line, as shown.</summary>
+    internal string Status => _statusLabel.Text;
 }

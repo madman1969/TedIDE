@@ -14,7 +14,8 @@ namespace Tedide.App;
 /// through <see cref="IShell"/>.
 /// </summary>
 internal sealed class BuildCommands(IShell shell, Workspace workspace, NavigationCommands navigation, ViceEmulator vice,
-    OutputView outputView, ErrorListView errorListView, SolutionExplorerTree solutionExplorer, SymbolPanelView symbolPanel)
+    OutputView outputView, ErrorListView errorListView, SolutionExplorerTree solutionExplorer, SymbolPanelView symbolPanel,
+    Cc65Toolchain? toolchain = null)
 {
     private readonly IShell _shell = shell;
     private readonly Workspace _workspace = workspace;
@@ -25,7 +26,7 @@ internal sealed class BuildCommands(IShell shell, Workspace workspace, Navigatio
     private readonly SolutionExplorerTree _solutionExplorer = solutionExplorer;
     private readonly SymbolPanelView _symbolPanel = symbolPanel;
 
-    private readonly Cc65Toolchain _toolchain = new();
+    private readonly Cc65Toolchain _toolchain = toolchain ?? new();
 
     /// <summary>Non-null only while a build is running - see <see cref="BuildActiveProjectAsync"/>
     /// and <see cref="CancelBuild"/>.</summary>

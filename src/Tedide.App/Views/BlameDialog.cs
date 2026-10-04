@@ -26,7 +26,7 @@ public sealed class BlameDialog : Dialog
     private readonly DateTimeOffset _now = DateTimeOffset.Now;
 
     /// <summary>The 1-based line to go to, or null if closed without one.</summary>
-    public int? GoToLine { get; private set; }
+    public int? GoToLine { get; internal set; }
 
     /// <param name="displayPath">The file's name as the title shows it, e.g. relative to its project.</param>
     /// <param name="selectedLine">The line to open on - the caret's.</param>

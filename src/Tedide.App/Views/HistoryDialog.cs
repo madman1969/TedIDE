@@ -25,7 +25,7 @@ public sealed class HistoryDialog : Dialog
     private readonly DateTimeOffset _now = DateTimeOffset.Now;
     private GitCommit? _shown;
 
-    public (GitCommit Commit, GitCommitFile File)? Choice { get; private set; }
+    public (GitCommit Commit, GitCommitFile File)? Choice { get; internal set; }
 
     /// <summary>The commit selected when the dialog closed - to reopen it there.</summary>
     public int SelectedIndex => SelectedRow ?? 0;

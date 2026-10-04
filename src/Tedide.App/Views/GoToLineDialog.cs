@@ -19,7 +19,7 @@ public sealed class GoToLineDialog : Dialog
 
     /// <summary>The entered 1-based line number, or null if the dialog was cancelled or the
     /// entered value wasn't a valid line number.</summary>
-    public int? LineNumber { get; private set; }
+    public int? LineNumber { get; internal set; }
 
     /// <param name="currentLineNumber">1-based line the caret is currently on - pre-fills the field.</param>
     /// <param name="lineCount">The open document's total line count, for range validation.</param>

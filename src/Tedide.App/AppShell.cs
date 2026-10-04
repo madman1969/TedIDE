@@ -30,6 +30,7 @@ namespace Tedide.App;
 /// </summary>
 public sealed class AppShell : Window, IDebugSessionHost, IShell
 {
+    private readonly IDialogs _dialogs = new TerminalDialogs();
     private readonly Workspace _workspace = new();
 
     /// <summary>Git status for the Solution Explorer, the status bar and the Git tab - see <see cref="GitTracker"/>.</summary>
@@ -1576,6 +1577,8 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
     void IShell.ShowPane(View content) => ShowPane(content);
 
     ViceEmulator IDebugSessionHost.Vice => _vice;
+    IDialogs IDebugSessionHost.Dialogs => _dialogs;
+    IDialogs IShell.Dialogs => _dialogs;
     void IDebugSessionHost.AppendOutputLine(string line) => AppendOutputLine(line);
     void IDebugSessionHost.OnUiThread(Action action) => OnUiThread(action);
     void IDebugSessionHost.Fire(Task task, string what) => Fire(task, what);

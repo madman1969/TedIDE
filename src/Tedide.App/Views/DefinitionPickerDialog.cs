@@ -24,7 +24,7 @@ public sealed class DefinitionPickerDialog : Dialog
     private readonly List<Entry> _entries;
     private readonly ListView _list;
 
-    public SymbolDefinition? SelectedDefinition { get; private set; }
+    public SymbolDefinition? SelectedDefinition { get; internal set; }
 
     /// <param name="lineText">The source line a definition sits on, for the list (may be empty).</param>
     /// <param name="displayPath">Shortens an absolute path for the list, e.g. relative to its project.</param>

@@ -19,7 +19,7 @@ public sealed class RenameSymbolDialog : Dialog
     private readonly Label _errorLabel;
     private readonly Func<string, RenamePlan> _planner;
 
-    public RenamePlan? Plan { get; private set; }
+    public RenamePlan? Plan { get; internal set; }
 
     public RenameSymbolDialog(string symbol, int referenceCount, int fileCount, Func<string, RenamePlan> planner)
     {
@@ -73,6 +73,9 @@ public sealed class RenameSymbolDialog : Dialog
         Add([nameLabel, _nameField, summary, _errorLabel, renameButton, cancelButton]);
         _nameField.SetFocus();
     }
+
+    /// <summary>What renaming to <paramref name="name"/> would do - what the Rename button asks.</summary>
+    internal RenamePlan PlanFor(string name) => _planner(name);
 
     private const int ContentWidth = 78;
 

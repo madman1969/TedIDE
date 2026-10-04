@@ -17,7 +17,7 @@ public sealed class BreakpointConditionDialog : Dialog
     private readonly TextField _conditionField;
 
     /// <summary>The condition entered ("" to clear it), or null if the dialog was cancelled.</summary>
-    public string? Condition { get; private set; }
+    public string? Condition { get; internal set; }
 
     public BreakpointConditionDialog(string location, string? currentCondition)
     {

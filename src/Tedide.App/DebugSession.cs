@@ -16,6 +16,7 @@ namespace Tedide.App;
 internal interface IDebugSessionHost
 {
     ViceEmulator Vice { get; }
+    IDialogs Dialogs { get; }
     void AppendOutputLine(string line);
     void OnUiThread(Action action);
     /// <summary>Starts a task without waiting for it, reporting a failure.</summary>
@@ -220,7 +221,7 @@ internal sealed class DebugSession
         var current = index >= 0 ? _breakpoints.Breakpoints[index] : new BreakpointEntry(relativePath, line);
 
         var dialog = new BreakpointConditionDialog($"{relativePath}:{line}", current.Condition);
-        Application.Run(dialog);
+        _host.Dialogs.Run(dialog);
         if (dialog.Condition is not { } condition)
             return;
 
@@ -248,7 +249,7 @@ internal sealed class DebugSession
         var dialog = new BreakpointsDialog(_breakpoints, project.ResolvedBreakpointsFile);
         dialog.BreakpointSelected += breakpoint =>
             _host.OpenSymbol((Path.Combine(project.Directory, breakpoint.SourceFile), breakpoint.Line));
-        Application.Run(dialog);
+        _host.Dialogs.Run(dialog);
         // The dialog mutates the same _breakpoints instance in place (toggle/delete) - refresh in
         // case it changed anything for the currently open file.
         RefreshBreakpointHighlights();
@@ -269,7 +270,7 @@ internal sealed class DebugSession
     public void ShowAddWatchDialog()
     {
         var dialog = new AddWatchDialog();
-        Application.Run(dialog);
+        _host.Dialogs.Run(dialog);
         if (dialog.Expression is not { } expression)
             return;
 
@@ -679,7 +680,7 @@ internal sealed class DebugSession
             return;
         if (!project.GenerateDebugInfo)
         {
-            TedideMessageBox.ErrorQuery("Debug Info Required",
+            _host.Dialogs.ErrorQuery("Debug Info Required",
                 "\"Generate debug info\" is off for this project.\n" +
                 "Enable it on the Linker tab of Project Settings, then rebuild before starting a debug session.",
                 ["OK"]);

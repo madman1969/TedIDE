@@ -30,7 +30,7 @@ public sealed class BranchesDialog : Dialog
     private readonly ListView _list;
     private readonly TextField _nameField;
 
-    public (BranchAction Action, GitBranch? Branch, string? NewName)? Choice { get; private set; }
+    public (BranchAction Action, GitBranch? Branch, string? NewName)? Choice { get; internal set; }
 
     /// <param name="currentBranch">The branch HEAD is on, or null when it's detached.</param>
     public BranchesDialog(IReadOnlyList<GitBranch> branches, string? currentBranch)

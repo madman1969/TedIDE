@@ -19,10 +19,10 @@ public sealed class AddWatchDialog : Dialog
     private readonly CheckBox _wordSizeField;
 
     /// <summary>The entered expression, or null if the dialog was cancelled or left blank.</summary>
-    public string? Expression { get; private set; }
+    public string? Expression { get; internal set; }
 
     /// <summary>1 for a single byte, 2 for a little-endian word - only meaningful when <see cref="Expression"/> is non-null.</summary>
-    public int Size { get; private set; } = 1;
+    public int Size { get; internal set; } = 1;
 
     public AddWatchDialog()
     {

@@ -19,6 +19,8 @@ namespace Tedide.App;
 internal sealed class GitIntegration
 {
     private readonly IShell _shell;
+    /// <summary>Terminal.Gui's timers, or a test's - see <see cref="GitTracker"/>.</summary>
+    private readonly Action<TimeSpan, Func<bool>> _addTimeout;
     private readonly Workspace _workspace;
     private readonly EditorPane _editorPane;
     private readonly SolutionExplorerTree _solutionExplorer;
@@ -27,9 +29,11 @@ internal sealed class GitIntegration
     private readonly GitChangesView _gitView;
 
     public GitIntegration(IShell shell, Workspace workspace, EditorPane editorPane,
-        SolutionExplorerTree solutionExplorer, NavigationCommands navigation, GitTracker git, GitChangesView gitView)
+        SolutionExplorerTree solutionExplorer, NavigationCommands navigation, GitTracker git, GitChangesView gitView,
+        Action<TimeSpan, Func<bool>>? addTimeout = null)
     {
         _shell = shell;
+        _addTimeout = addTimeout ?? ((delay, callback) => Application.AddTimeout(delay, callback));
         _workspace = workspace;
         _editorPane = editorPane;
         _solutionExplorer = solutionExplorer;
@@ -127,7 +131,7 @@ internal sealed class GitIntegration
     private void RequestBlame()
     {
         var generation = ++_blameGeneration;
-        Application.AddTimeout(TimeSpan.FromMilliseconds(400), () =>
+        _addTimeout(TimeSpan.FromMilliseconds(400), () =>
         {
             if (generation == _blameGeneration)
                 Fire(BlameCaretLineAsync(generation));
@@ -181,7 +185,7 @@ internal sealed class GitIntegration
     private void RequestLineMarkers()
     {
         var generation = ++_lineMarkersGeneration;
-        Application.AddTimeout(TimeSpan.FromMilliseconds(400), () =>
+        _addTimeout(TimeSpan.FromMilliseconds(400), () =>
         {
             if (generation == _lineMarkersGeneration)
                 Fire(UpdateLineMarkersAsync(generation));
@@ -259,7 +263,7 @@ internal sealed class GitIntegration
         if (result.Succeeded)
             after?.Invoke();
         else
-            TedideMessageBox.ErrorQuery($"{what} Failed", RenameSymbolDialog.Wrap(result.Explanation), ["OK"]);
+            _shell.Dialogs.ErrorQuery($"{what} Failed", RenameSymbolDialog.Wrap(result.Explanation), ["OK"]);
         _git.RequestRefresh();
     }
 
@@ -271,7 +275,7 @@ internal sealed class GitIntegration
     private bool SaveOpenFiles() => _editorPane.ModifiedPaths.All(_shell.SaveFile);
 
     /// <summary>Git tab > Space or Stage All.</summary>
-    private void StageFiles(IReadOnlyList<GitFileStatus> files)
+    internal void StageFiles(IReadOnlyList<GitFileStatus> files)
     {
         if (files.Count == 0 || !SaveOpenFiles())
             return;
@@ -279,7 +283,7 @@ internal sealed class GitIntegration
     }
 
     /// <summary>Git tab > Space on a staged file, or Unstage All. The files themselves don't change.</summary>
-    private void UnstageFiles(IReadOnlyList<GitFileStatus> files)
+    internal void UnstageFiles(IReadOnlyList<GitFileStatus> files)
     {
         if (files.Count == 0)
             return;
@@ -292,14 +296,14 @@ internal sealed class GitIntegration
     /// track yet is deleted. An open tab follows: reloaded from disk, or closed for a deleted file,
     /// its unsaved edits going too (the question says so).
     /// </summary>
-    private void DiscardFile(GitFileStatus file)
+    internal void DiscardFile(GitFileStatus file)
     {
         var name = Path.GetFileName(file.Path);
         var unsaved = _editorPane.IsModifiedFile(file.Path) ? " Its unsaved edits in the editor go too." : "";
         var question = file.IsUntracked
             ? $"Delete {name}? git doesn't track it, so this can't be undone.{unsaved}"
             : $"Discard the changes to {name}? This can't be undone.{unsaved}";
-        if (TedideMessageBox.Query("Discard Changes", RenameSymbolDialog.Wrap(question), ["Discard", "Cancel"]) != 0)
+        if (_shell.Dialogs.Query("Discard Changes", RenameSymbolDialog.Wrap(question), ["Discard", "Cancel"]) != 0)
             return;
         Fire(RunGitAsync("Discarding", repository => repository.DiscardAsync([file]), () =>
         {
@@ -312,24 +316,24 @@ internal sealed class GitIntegration
 
     /// <summary>Git tab > Commit Staged / Commit All. Saves open files first (see <see cref="SaveOpenFiles"/>),
     /// then reports the new commit in Output.</summary>
-    private void Commit(string message, bool stageAll, bool amend)
+    internal void Commit(string message, bool stageAll, bool amend)
     {
         if (amend)
         {
             if (_git.PrimaryStatus is { HasCommits: false })
             {
-                TedideMessageBox.ErrorQuery("Amend", "There's no commit yet to amend.", ["OK"]);
+                _shell.Dialogs.ErrorQuery("Amend", "There's no commit yet to amend.", ["OK"]);
                 return;
             }
             // The last commit is already on the remote when the branch isn't ahead of it.
-            if (_git.PrimaryStatus is { Upstream: { } upstream, Ahead: 0 } && TedideMessageBox.Query("Amend Pushed Commit",
+            if (_git.PrimaryStatus is { Upstream: { } upstream, Ahead: 0 } && _shell.Dialogs.Query("Amend Pushed Commit",
                     RenameSymbolDialog.Wrap($"The last commit is already pushed to {upstream}. Amending replaces it, so the next push will be rejected - " +
                         "it would need a force push, which Tedide never does. Amend anyway?"), ["Amend", "Cancel"]) != 0)
                 return;
         }
         else if (string.IsNullOrWhiteSpace(message))
         {
-            TedideMessageBox.ErrorQuery("Commit", "Write a commit message first.", ["OK"]);
+            _shell.Dialogs.ErrorQuery("Commit", "Write a commit message first.", ["OK"]);
             return;
         }
         if (!SaveOpenFiles())
@@ -355,7 +359,7 @@ internal sealed class GitIntegration
     /// Amend last commit ticked: an empty commit box gets the last commit's message to edit.
     /// Cleared: that message goes again, unless it's been edited.
     /// </summary>
-    private async Task LoadAmendMessageAsync(bool amending)
+    internal async Task LoadAmendMessageAsync(bool amending)
     {
         if (!amending)
         {
@@ -379,20 +383,20 @@ internal sealed class GitIntegration
     /// follows the files afterwards - even when a pop stops on conflicts, which keeps the stash.
     /// Dropping reopens the list.
     /// </summary>
-    private async Task ShowStashesAsync()
+    internal async Task ShowStashesAsync()
     {
         if (_syncCancellation is not null || _git.Primary is not { } repository)
             return;
         var stashes = await repository.GetStashesAsync();
         var changes = _git.Files.Values.Count(f => repository.Contains(f.Path)) + _editorPane.ModifiedPaths.Count(p => !_git.Files.ContainsKey(p));
         var dialog = new StashesDialog(stashes, changes);
-        Application.Run(dialog);
+        _shell.Dialogs.Run(dialog);
         if (dialog.Choice is not { } choice)
             return;
         if (choice.Action == StashAction.Drop)
         {
             var stash = choice.Stash!;
-            if (TedideMessageBox.Query("Drop Stash", RenameSymbolDialog.Wrap($"Delete {stash.Name} ({stash.Description})? Its changes are lost - this can't be undone."),
+            if (_shell.Dialogs.Query("Drop Stash", RenameSymbolDialog.Wrap($"Delete {stash.Name} ({stash.Description})? Its changes are lost - this can't be undone."),
                     ["Drop", "Cancel"]) == 0)
                 Fire(RunGitAsync("Dropping the Stash", r => r.DropStashAsync(stash), () =>
                 {
@@ -471,13 +475,13 @@ internal sealed class GitIntegration
             if (result.Succeeded)
                 after?.Invoke();
             else
-                TedideMessageBox.ErrorQuery($"{title} Failed", RenameSymbolDialog.Wrap(result.Explanation), ["OK"]);
+                _shell.Dialogs.ErrorQuery($"{title} Failed", RenameSymbolDialog.Wrap(result.Explanation), ["OK"]);
         }
         _git.RequestRefresh();
     }
 
     /// <summary>Git tab > Fetch: learns what's new on the remote; changes no files.</summary>
-    private void FetchFromRemote() => Fire(SyncAsync("Fetching", "Fetch", (repository, token) => repository.FetchAsync(token)));
+    internal void FetchFromRemote() => Fire(SyncAsync("Fetching", "Fetch", (repository, token) => repository.FetchAsync(token)));
 
     /// <summary>
     /// Git tab > Pull. Saves open files with unsaved edits first, as Commit does, so git sees
@@ -485,7 +489,7 @@ internal sealed class GitIntegration
     /// <see cref="FollowWorkingTree"/>) - even when the pull stops on conflicts, so the conflict
     /// markers show; the files show "!" in the Git tab.
     /// </summary>
-    private void PullFromRemote()
+    internal void PullFromRemote()
     {
         if (_syncCancellation is not null || !SaveOpenFiles())
             return;
@@ -516,13 +520,13 @@ internal sealed class GitIntegration
     /// Git tab > Push. A branch already on a remote is pushed to it; one that isn't is published -
     /// to origin, else the only remote - after asking. Never forced: a rejection says to pull first.
     /// </summary>
-    private async Task PushToRemoteAsync()
+    internal async Task PushToRemoteAsync()
     {
         if (_syncCancellation is not null || _git.Primary is not { } repository || _git.PrimaryStatus is not { } status)
             return;
         if (status.Branch is not { } branch)
         {
-            TedideMessageBox.ErrorQuery("Push", "HEAD isn't on a branch (it's detached), so there's nothing to push. Check out a branch first.", ["OK"]);
+            _shell.Dialogs.ErrorQuery("Push", "HEAD isn't on a branch (it's detached), so there's nothing to push. Check out a branch first.", ["OK"]);
             return;
         }
         if (status.Upstream is not null)
@@ -535,13 +539,13 @@ internal sealed class GitIntegration
         var remote = remotes.Contains("origin") ? "origin" : remotes.Count == 1 ? remotes[0] : null;
         if (remote is null)
         {
-            TedideMessageBox.ErrorQuery("Push", RenameSymbolDialog.Wrap(remotes.Count == 0
+            _shell.Dialogs.ErrorQuery("Push", RenameSymbolDialog.Wrap(remotes.Count == 0
                 ? "This repository has no remote to push to. Add one with git remote add origin <url> first."
                 : $"{branch} isn't on a remote yet, and there's no origin to publish it to (remotes: {string.Join(", ", remotes)})."), ["OK"]);
             return;
         }
         var question = $"{branch} isn't on {remote} yet. Publish it there, and push to it from now on?";
-        if (TedideMessageBox.Query("Publish Branch", RenameSymbolDialog.Wrap(question), ["Publish", "Cancel"]) == 0)
+        if (_shell.Dialogs.Query("Publish Branch", RenameSymbolDialog.Wrap(question), ["Publish", "Cancel"]) == 0)
             Fire(SyncAsync("Pushing", "Push", (r, token) => r.PushAsync(remote, branch, token)));
     }
 
@@ -549,13 +553,13 @@ internal sealed class GitIntegration
     /// Git tab > Branches: lists the branches in <see cref="BranchesDialog"/> and does what's
     /// chosen there - switch, create (and switch to), or delete. Deleting reopens the list.
     /// </summary>
-    private async Task ShowBranchesAsync()
+    internal async Task ShowBranchesAsync()
     {
         if (_syncCancellation is not null || _git.Primary is not { } repository)
             return;
         var branches = await repository.GetBranchesAsync();
         var dialog = new BranchesDialog(branches, _git.PrimaryStatus?.Branch);
-        Application.Run(dialog);
+        _shell.Dialogs.Run(dialog);
         switch (dialog.Choice)
         {
             case (BranchAction.Switch, { IsCurrent: false } branch, _):
@@ -619,7 +623,7 @@ internal sealed class GitIntegration
     {
         if ((file is null ? _git.Primary : _git.RepositoryFor(file)) is not { } repository)
         {
-            TedideMessageBox.ErrorQuery("History", file is null ? "The solution isn't in a git repository." : $"{Path.GetFileName(file)} isn't in a git repository.", ["OK"]);
+            _shell.Dialogs.ErrorQuery("History", file is null ? "The solution isn't in a git repository." : $"{Path.GetFileName(file)} isn't in a git repository.", ["OK"]);
             return;
         }
         var commits = await repository.GetLogAsync(file);
@@ -630,12 +634,12 @@ internal sealed class GitIntegration
     {
         if (commits.Count == 0)
         {
-            TedideMessageBox.Query("History", file is null ? "There are no commits yet." : $"git has no history for {Path.GetFileName(file)} - it isn't committed yet.", ["OK"]);
+            _shell.Dialogs.Query("History", file is null ? "There are no commits yet." : $"git has no history for {Path.GetFileName(file)} - it isn't committed yet.", ["OK"]);
             return;
         }
         var title = file is null ? $"History - {Path.GetFileName(repository.Root)}" : $"History - {_navigation.DisplayPath(file)}";
         var dialog = new HistoryDialog(title, commits, selected);
-        Application.Run(dialog);
+        _shell.Dialogs.Run(dialog);
         if (dialog.Choice is { } choice)
             Fire(ShowCommitChangeAsync(repository, choice.Commit, choice.File, () => ShowHistory(repository, file, commits, dialog.SelectedIndex)));
     }
@@ -651,16 +655,16 @@ internal sealed class GitIntegration
         }
         catch (IOException ex)
         {
-            TedideMessageBox.ErrorQuery("History", RenameSymbolDialog.Wrap(ex.Message), ["OK"]);
+            _shell.Dialogs.ErrorQuery("History", RenameSymbolDialog.Wrap(ex.Message), ["OK"]);
             back();
             return;
         }
         if (diff.IsBinary || diff.Hunks.Count == 0)
-            TedideMessageBox.Query("History", RenameSymbolDialog.Wrap(diff.IsBinary
+            _shell.Dialogs.Query("History", RenameSymbolDialog.Wrap(diff.IsBinary
                 ? $"{file.Path} is a binary file; {commit.ShortHash} changed it."
                 : $"{commit.ShortHash} didn't change any lines of {file.Path} (a rename or a mode change)."), ["OK"]);
         else
-            Application.Run(new CompareDialog($"{commit.ShortHash} {commit.Subject} - {file.Path}",
+            _shell.Dialogs.Run(new CompareDialog($"{commit.ShortHash} {commit.Subject} - {file.Path}",
                 $"{commit.ShortHash} by {commit.Author}, {GitBlameLine.Ago(DateTimeOffset.Now - commit.When)}:", diff, canGoToLine: false));
         back();
     }
@@ -669,7 +673,7 @@ internal sealed class GitIntegration
     /// Git tab > Enter on a conflicted file: <see cref="ConflictDialog"/>, then keep one side, open
     /// the file at its first conflict, or mark it resolved (asking first if markers remain).
     /// </summary>
-    private void ResolveConflict(GitFileStatus file)
+    internal void ResolveConflict(GitFileStatus file)
     {
         var path = file.Path;
         var operation = _git.PrimaryStatus?.Operation ?? GitOperation.None;
@@ -680,11 +684,11 @@ internal sealed class GitIntegration
         }
         catch (Exception ex) when (AppShell.IsFileError(ex))
         {
-            TedideMessageBox.ErrorQuery("Resolve Conflict", RenameSymbolDialog.Wrap(ex.Message), ["OK"]);
+            _shell.Dialogs.ErrorQuery("Resolve Conflict", RenameSymbolDialog.Wrap(ex.Message), ["OK"]);
             return;
         }
         var dialog = new ConflictDialog(_navigation.DisplayPath(path), operation, ConflictDialog.CountSections(text));
-        Application.Run(dialog);
+        _shell.Dialogs.Run(dialog);
         switch (dialog.Choice)
         {
             case ConflictChoice.Edit:
@@ -707,7 +711,7 @@ internal sealed class GitIntegration
                 if (!SaveOpenFiles())
                     return;
                 var left = File.Exists(path) ? ConflictDialog.CountSections(File.ReadAllText(path)) : 0;
-                if (left > 0 && TedideMessageBox.Query("Mark Resolved", RenameSymbolDialog.Wrap(
+                if (left > 0 && _shell.Dialogs.Query("Mark Resolved", RenameSymbolDialog.Wrap(
                         $"{Path.GetFileName(path)} still has {(left == 1 ? "a conflict section" : $"{left} conflict sections")} (<<<<<<< markers). Mark it resolved anyway?"),
                         ["Mark Resolved", "Cancel"]) != 0)
                     return;
@@ -722,12 +726,12 @@ internal sealed class GitIntegration
     /// any), rebase, cherry-pick or revert - once no file is still conflicted. A rebase can stop
     /// again on the next commit's conflicts, so the editor follows the files either way.
     /// </summary>
-    private void ContinueOperation(GitOperation operation, string message)
+    internal void ContinueOperation(GitOperation operation, string message)
     {
         var conflicted = _git.Files.Values.Count(f => f.IsConflicted && _git.Primary?.Contains(f.Path) == true);
         if (conflicted > 0)
         {
-            TedideMessageBox.ErrorQuery($"Continue {operation.Describe()}", RenameSymbolDialog.Wrap(
+            _shell.Dialogs.ErrorQuery($"Continue {operation.Describe()}", RenameSymbolDialog.Wrap(
                 $"{(conflicted == 1 ? "1 file still has" : $"{conflicted} files still have")} conflicts (marked ! in the Git tab). Press Enter on each to resolve it first."), ["OK"]);
             return;
         }
@@ -745,10 +749,10 @@ internal sealed class GitIntegration
 
     /// <summary>Git tab > Abort: after asking, abandons the stopped operation - the branch and
     /// files go back to how they were before it started.</summary>
-    private void AbortOperation(GitOperation operation)
+    internal void AbortOperation(GitOperation operation)
     {
         var question = $"Abort the {operation.Describe()}? The branch and its files go back to how they were before it started, and any conflicts you've resolved are lost.";
-        if (TedideMessageBox.Query($"Abort {operation.Describe()}", RenameSymbolDialog.Wrap(question), ["Abort", "Cancel"]) != 0)
+        if (_shell.Dialogs.Query($"Abort {operation.Describe()}", RenameSymbolDialog.Wrap(question), ["Abort", "Cancel"]) != 0)
             return;
         var projectFiles = ProjectFileContents();
         Fire(RunGitAsync($"Aborting the {operation.Describe()}", r => r.AbortAsync(operation),
@@ -787,12 +791,12 @@ internal sealed class GitIntegration
     /// <see cref="CompareDialog"/> - an open file's unsaved edits included, a renamed file compared
     /// with where it was. Going to a line from there opens the file at it.
     /// </summary>
-    private async Task CompareWithHeadAsync(string path, string? headPath = null)
+    internal async Task CompareWithHeadAsync(string path, string? headPath = null)
     {
         var name = Path.GetFileName(path);
         if (_git.RepositoryFor(path) is not { } repository)
         {
-            TedideMessageBox.ErrorQuery("Compare with Last Commit", $"{name} isn't in a git repository.", ["OK"]);
+            _shell.Dialogs.ErrorQuery("Compare with Last Commit", $"{name} isn't in a git repository.", ["OK"]);
             return;
         }
         // Read here, on the UI thread - the document belongs to it.
@@ -805,7 +809,7 @@ internal sealed class GitIntegration
         }
         catch (Exception ex) when (AppShell.IsFileError(ex))
         {
-            TedideMessageBox.ErrorQuery("Compare with Last Commit", RenameSymbolDialog.Wrap(ex.Message), ["OK"]);
+            _shell.Dialogs.ErrorQuery("Compare with Last Commit", RenameSymbolDialog.Wrap(ex.Message), ["OK"]);
             return;
         }
 
@@ -817,18 +821,18 @@ internal sealed class GitIntegration
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             Log.Warning(ex, "Comparing {Path} with HEAD failed", path);
-            TedideMessageBox.ErrorQuery("Compare with Last Commit", RenameSymbolDialog.Wrap(ex.Message), ["OK"]);
+            _shell.Dialogs.ErrorQuery("Compare with Last Commit", RenameSymbolDialog.Wrap(ex.Message), ["OK"]);
             return;
         }
 
         if (diff.IsBinary || diff.Hunks.Count == 0)
         {
-            TedideMessageBox.Query("Compare with Last Commit",
+            _shell.Dialogs.Query("Compare with Last Commit",
                 diff.IsBinary ? $"{name} is a binary file, and has changed." : $"{name} hasn't changed since the last commit.", ["OK"]);
             return;
         }
         var dialog = new CompareDialog(_navigation.DisplayPath(path), diff, unsaved);
-        Application.Run(dialog);
+        _shell.Dialogs.Run(dialog);
         if (dialog.GoToLine is not { } line || !File.Exists(path) && !_editorPane.IsOpen(path))
             return;
         if (!_editorPane.IsShown(path))
@@ -848,12 +852,12 @@ internal sealed class GitIntegration
         var name = Path.GetFileName(path);
         if (_git.RepositoryFor(path) is not { } repository)
         {
-            TedideMessageBox.ErrorQuery(title, $"{name} isn't in a git repository.", ["OK"]);
+            _shell.Dialogs.ErrorQuery(title, $"{name} isn't in a git repository.", ["OK"]);
             return;
         }
         if (_git.Files.GetValueOrDefault(path) is { IsUntracked: true })
         {
-            TedideMessageBox.ErrorQuery(title, $"git doesn't track {name} yet, so it has no history to show.", ["OK"]);
+            _shell.Dialogs.ErrorQuery(title, $"git doesn't track {name} yet, so it has no history to show.", ["OK"]);
             return;
         }
         // Read here, on the UI thread - the document belongs to it.
@@ -866,17 +870,17 @@ internal sealed class GitIntegration
         }
         catch (Exception ex) when (AppShell.IsFileError(ex))
         {
-            TedideMessageBox.ErrorQuery(title, RenameSymbolDialog.Wrap(ex.Message), ["OK"]);
+            _shell.Dialogs.ErrorQuery(title, RenameSymbolDialog.Wrap(ex.Message), ["OK"]);
             return;
         }
 
         if (lines is null)
         {
-            TedideMessageBox.ErrorQuery(title, $"git couldn't blame {name}.", ["OK"]);
+            _shell.Dialogs.ErrorQuery(title, $"git couldn't blame {name}.", ["OK"]);
             return;
         }
         var dialog = new BlameDialog(_navigation.DisplayPath(path), lines, caretLine);
-        Application.Run(dialog);
+        _shell.Dialogs.Run(dialog);
         if (dialog.GoToLine is not { } line)
             return;
         if (!_editorPane.IsShown(path))

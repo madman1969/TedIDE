@@ -43,7 +43,7 @@ internal sealed class NavigationCommands(IShell shell, Workspace workspace, Edit
         }
 
         var dialog = new FindInFilesDialog(_workspace, initialSearchText);
-        Application.Run(dialog);
+        _shell.Dialogs.Run(dialog);
         if (dialog.SelectedMatch is { } match)
             OpenMatch(match);
     }
@@ -61,7 +61,7 @@ internal sealed class NavigationCommands(IShell shell, Workspace workspace, Edit
 
         var currentLineNumber = document.GetLineByOffset(_editorPane.Editor.CaretOffset).LineNumber;
         var dialog = new GoToLineDialog(currentLineNumber, document.LineCount);
-        Application.Run(dialog);
+        _shell.Dialogs.Run(dialog);
         if (dialog.LineNumber is { } lineNumber)
         {
             RecordJump();
@@ -181,7 +181,7 @@ internal sealed class NavigationCommands(IShell shell, Workspace workspace, Edit
         if (result.Definitions.Count > 1)
         {
             var dialog = new DefinitionPickerDialog(result.Symbol ?? string.Empty, result.Definitions, SourceLineOf, DisplayPath);
-            Application.Run(dialog);
+            _shell.Dialogs.Run(dialog);
             if (dialog.SelectedDefinition is not { } chosen)
                 return;
             target = chosen;
@@ -260,7 +260,7 @@ internal sealed class NavigationCommands(IShell shell, Workspace workspace, Edit
         var candidates = ContextHelp.CandidatePaths(AppContext.BaseDirectory, Environment.GetEnvironmentVariable(ContextHelp.DocViewerPathVariable));
         if (ContextHelp.FindDocViewer(candidates) is not { } docViewer)
         {
-            TedideMessageBox.ErrorQuery("Doc Viewer not found",
+            _shell.Dialogs.ErrorQuery("Doc Viewer not found",
                 $"{ContextHelp.DocViewerFileName} wasn't found. Looked in:\n\n{string.Join('\n', candidates)}\n\n"
                 + $"Publish it beside Tedide, or set {ContextHelp.DocViewerPathVariable} to its full path.", ["OK"]);
             return;
@@ -330,13 +330,13 @@ internal sealed class NavigationCommands(IShell shell, Workspace workspace, Edit
         // Refused up front when no new name could help, rather than after one has been typed.
         if (navigator.WhyNotRenamable(path, line, column) is { } blocker)
         {
-            TedideMessageBox.ErrorQuery("Can't Rename", RenameSymbolDialog.Wrap(blocker), ["OK"]);
+            _shell.Dialogs.ErrorQuery("Can't Rename", RenameSymbolDialog.Wrap(blocker), ["OK"]);
             return;
         }
 
         var fileCount = references.References.Select(r => r.FilePath).Distinct(StringComparer.OrdinalIgnoreCase).Count();
         var dialog = new RenameSymbolDialog(symbol, references.References.Count, fileCount, name => navigator.PlanRename(path, line, column, name));
-        Application.Run(dialog);
+        _shell.Dialogs.Run(dialog);
         if (dialog.Plan is not { } plan)
             return;
 

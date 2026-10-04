@@ -31,7 +31,7 @@ public sealed class StashesDialog : Dialog
     private readonly ListView _list;
     private readonly TextField _messageField;
 
-    public (StashAction Action, GitStash? Stash, string? Message)? Choice { get; private set; }
+    public (StashAction Action, GitStash? Stash, string? Message)? Choice { get; internal set; }
 
     /// <param name="changes">How many changed files there are to stash - for the hint.</param>
     public StashesDialog(IReadOnlyList<GitStash> stashes, int changes)

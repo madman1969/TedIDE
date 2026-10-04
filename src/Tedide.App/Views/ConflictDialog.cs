@@ -25,7 +25,7 @@ public enum ConflictChoice
 /// </summary>
 public sealed class ConflictDialog : Dialog
 {
-    public ConflictChoice? Choice { get; private set; }
+    public ConflictChoice? Choice { get; internal set; }
 
     /// <param name="sections">How many conflict sections the file still has (marker lines).</param>
     public ConflictDialog(string displayPath, GitOperation operation, int sections)

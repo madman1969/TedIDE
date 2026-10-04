@@ -28,7 +28,7 @@ public sealed class CompareDialog : Dialog
     private readonly TableView _table;
 
     /// <summary>The 1-based line of the current file to go to, or null if closed without one.</summary>
-    public int? GoToLine { get; private set; }
+    public int? GoToLine { get; internal set; }
 
     /// <param name="displayPath">The file's name as the title shows it, e.g. relative to its project.</param>
     /// <param name="unsaved">Whether the editor has edits not saved yet - they're part of the diff.</param>

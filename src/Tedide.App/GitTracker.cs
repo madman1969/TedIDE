@@ -15,6 +15,7 @@ internal sealed class GitTracker
 {
     private readonly Func<(IReadOnlyList<string> Directories, string? PrimaryDirectory)> _source;
     private readonly Action<Action> _onUiThread;
+    private readonly Action<TimeSpan, Func<bool>> _addTimeout;
     private readonly Dictionary<string, GitRepository?> _repositoryByDirectory = new(StringComparer.OrdinalIgnoreCase);
     private List<GitRepository> _repositories = [];
     private bool _scheduled, _refreshing, _refreshAgain;
@@ -22,10 +23,21 @@ internal sealed class GitTracker
     /// <param name="source">The project folders, and the folder whose repository is the main one -
     /// the solution's - read on the UI thread at the start of each refresh.</param>
     public GitTracker(Func<(IReadOnlyList<string>, string?)> source, Action<Action> onUiThread)
+        : this(source, onUiThread, (delay, callback) => Application.AddTimeout(delay, callback))
+    {
+    }
+
+    /// <param name="addTimeout">Runs the callback on the UI thread after the delay, and again after
+    /// each further delay for as long as it returns true - Terminal.Gui's timers, or a test's.</param>
+    internal GitTracker(Func<(IReadOnlyList<string>, string?)> source, Action<Action> onUiThread, Action<TimeSpan, Func<bool>> addTimeout)
     {
         _source = source;
         _onUiThread = onUiThread;
+        _addTimeout = addTimeout;
     }
+
+    /// <summary>The refresh running or last run, for tests to wait on.</summary>
+    internal Task LastRefresh { get; private set; } = Task.CompletedTask;
 
     /// <summary>Every changed file in any of the repositories, by full path.</summary>
     public IReadOnlyDictionary<string, GitFileStatus> Files { get; private set; } = new Dictionary<string, GitFileStatus>();
@@ -43,7 +55,7 @@ internal sealed class GitTracker
 
     /// <summary>Starts the periodic refresh. Call once, after the UI is up.</summary>
     public void Start() =>
-        Application.AddTimeout(TimeSpan.FromSeconds(5), () =>
+        _addTimeout(TimeSpan.FromSeconds(5), () =>
         {
             RequestRefresh();
             return true;
@@ -63,13 +75,13 @@ internal sealed class GitTracker
         if (_scheduled)
             return;
         _scheduled = true;
-        Application.AddTimeout(TimeSpan.FromMilliseconds(300), () =>
+        _addTimeout(TimeSpan.FromMilliseconds(300), () =>
         {
             _scheduled = false;
             if (_refreshing)
                 _refreshAgain = true;
             else
-                BackgroundTask.Watch(RefreshAsync(_source()), exception => Log.Error(exception, "Refreshing git status failed"));
+                BackgroundTask.Watch(LastRefresh = RefreshAsync(_source()), exception => Log.Error(exception, "Refreshing git status failed"));
             return false;
         });
     }
