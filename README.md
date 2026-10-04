@@ -788,7 +788,8 @@ src/
   Tedide.Core/         The .tproj/.tsln model, cc65 target metadata, and parsers for lnk.map, .lbl
                        and .dbg; Navigation/ is the C/ca65 symbol scanner
   Tedide.Build/        Runs cl65 and parses its diagnostics, launches VICE; Opt6502/ is the optimizer
-  Tedide.Debug/        A client for VICE's binary monitor protocol
+  Tedide.Debug/        A client for VICE's binary monitor protocol, plus stepping by source line and
+                       arming breakpoints, both testable without VICE
   Tedide.Git/          Runs the git command line and parses its output
   Tedide.Theming/      The nine themes, shared by both apps
   Tedide.App/          The Terminal.Gui IDE: menus, Solution Explorer, editor, panes and dialogs
@@ -796,7 +797,8 @@ src/
 tests/
   Tedide.Core.Tests/   Includes Fixtures/: real lnk.map, .lbl and .dbg files from a build
   Tedide.Build.Tests/
-  Tedide.Debug.Tests/  Byte-exact protocol tests, plus a fake TCP server standing in for VICE
+  Tedide.Debug.Tests/  Byte-exact protocol tests, a fake TCP server standing in for VICE, and a scripted
+                       fake target for stepping and breakpoints
   Tedide.Git.Tests/    Parser tests, plus tests against real git in temporary repositories
   Tedide.App.Tests/
   Tedide.DocViewer.Tests/
@@ -810,6 +812,9 @@ Run the tests with `dotnet test Tedide.slnx`.
 
 ### Implementation notes
 
+- **The shell** - `AppShell` builds the window and wires everything together. The debugger is in
+  `DebugSession`, which calls back through `IDebugSessionHost`. Background work is started with
+  `Fire`, which logs and reports a failure instead of losing it.
 - **Editor** - Tedide uses [Terminal.Gui.Editor](https://github.com/tui-cs/Editor)'s `Editor`,
   `EditorMenuBar` and `EditorStatusBar`, as its reference app "ted" does. One `Editor` is reused for
   every tab; each tab keeps its own `TextDocument` (and undo history), encoding and caret, swapped

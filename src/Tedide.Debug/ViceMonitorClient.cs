@@ -17,7 +17,7 @@ namespace Tedide.Debug;
 /// <see cref="ViceMonitorProtocol"/>'s doc comment for how solicited vs. unsolicited responses are
 /// told apart on the wire.
 /// </summary>
-public sealed class ViceMonitorClient : IAsyncDisposable
+public sealed class ViceMonitorClient : IAsyncDisposable, IDebugTarget
 {
     private readonly TcpClient _tcpClient = new();
     private readonly SemaphoreSlim _writeLock = new(1, 1);
@@ -81,6 +81,9 @@ public sealed class ViceMonitorClient : IAsyncDisposable
         var (_, _, responseBody) = await SendAsync(ViceMonitorCommand.CheckpointSet, body, cancellationToken);
         return ViceMonitorProtocol.DecodeCheckpointInfoBody(responseBody);
     }
+
+    async Task<uint> IDebugTarget.SetBreakpointAsync(ushort address, CancellationToken cancellationToken) =>
+        (await SetCheckpointAsync(address, cancellationToken: cancellationToken)).Number;
 
     /// <summary>Makes an existing checkpoint conditional: it only stops when <paramref name="condition"/>
     /// (VICE monitor syntax, e.g. <c>A == $05</c>) holds. Throws <see cref="ViceMonitorException"/>

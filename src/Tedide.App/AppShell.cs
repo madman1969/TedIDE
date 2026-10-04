@@ -1,14 +1,11 @@
-using System.Globalization;
-using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Serilog;
 using Tedide.Theming;
 using Tedide.App.Views;
 using Tedide.Build;
 using Tedide.Core;
-using Tedide.Core.Debugging;
 using Tedide.Core.Navigation;
-using Tedide.Debug;
 using Tedide.Git;
 using Terminal.Gui.App;
 using Terminal.Gui.Editor;
@@ -31,7 +28,7 @@ namespace Tedide.App;
 /// bar's row/column indicator come wired to the editor already; the default File menu is replaced
 /// with our own project-aware one (New/Open Project instead of a single-file New/Open).
 /// </summary>
-public sealed class AppShell : Window
+public sealed class AppShell : Window, IDebugSessionHost
 {
     private readonly Workspace _workspace = new();
 
@@ -82,32 +79,12 @@ public sealed class AppShell : Window
     private readonly ReferencesView _referencesView = new();
     private readonly MemoryView _memoryView = new();
     private readonly DisassemblyView _disassemblyView = new();
-    /// <summary>Where the Memory tab reads from, once the user has entered an address, and what it
-    /// read there at the last stop - so the next stop can highlight what changed.</summary>
-    private ushort? _memoryAddress;
-    private byte[]? _memorySnapshot;
     private readonly DebugPanelView _debugPanel = new();
     private readonly CurrentDebugLineTransformer _debugLineTransformer = new();
     private readonly BreakpointLineTransformer _breakpointLineTransformer = new();
-    private BreakpointsFile _breakpoints = new();
     private SessionStateFile _sessionState = new();
-    private ViceMonitorClient? _debugClient;
-    private DbgFile? _dbgFile;
-    private bool _isDebugging;
-    private bool _isStopped;
-    private bool _isStepping;
-    /// <summary>Maps each currently-armed breakpoint to the VICE-assigned checkpoint number
-    /// <see cref="ViceMonitorClient.SetCheckpointAsync"/> returned for it, so it can be deleted
-    /// again later - see <see cref="SyncCheckpointsWithViceAsync"/>.</summary>
-    private readonly Dictionary<BreakpointEntry, uint> _checkpointNumbers = new();
-    /// <summary>Serializes every set/delete pass over VICE's checkpoints (and so every access to
-    /// <see cref="_checkpointNumbers"/>) - toggling two breakpoints in quick succession otherwise
-    /// runs two fire-and-forget <see cref="SyncCheckpointsWithViceAsync"/> passes interleaved across
-    /// their awaits, one clearing the dictionary while the other is still enumerating it.</summary>
-    private readonly SemaphoreSlim _checkpointLock = new(1, 1);
-    /// <summary>User-added memory watches for the active debug session - see <see cref="WatchEntry"/>'s
-    /// own doc comment for why these aren't persisted the way <see cref="_breakpoints"/> is.</summary>
-    private readonly List<WatchEntry> _watches = new();
+    /// <summary>Breakpoints and the VICE debug session - see <see cref="DebugSession"/>.</summary>
+    private readonly DebugSession _debug;
     private Tabs _outputTabs = null!;
     private View _outputTab = null!;
     private View _debugTab = null!;
@@ -125,6 +102,7 @@ public sealed class AppShell : Window
         // when the next, shorter title came in with the old hotkey's position.
         HotKeySpecifier = new System.Text.Rune(0xFFFF);
         Title = AppTitle;
+        _debug = new DebugSession(this, _workspace, _editorPane, _debugPanel, _disassemblyView, _memoryView, _breakpointLineTransformer);
         Width = Dim.Fill();
         Height = Dim.Fill();
 
@@ -165,10 +143,10 @@ public sealed class AppShell : Window
         _solutionExplorer.DeleteFileRequested += DeleteFile;
         _solutionExplorer.AddNewProjectRequested += AddNewProject;
         _solutionExplorer.AddExistingProjectRequested += AddExistingProject;
-        _solutionExplorer.BuildSolutionRequested += () => _ = BuildSolutionAsync();
+        _solutionExplorer.BuildSolutionRequested += () => Fire(BuildSolutionAsync());
         _solutionExplorer.CleanSolutionRequested += CleanSolution;
         _solutionExplorer.SetStartupProjectRequested += SetStartupProject;
-        _solutionExplorer.BuildProjectRequested += project => _ = BuildProjectsAsync([project]);
+        _solutionExplorer.BuildProjectRequested += project => Fire(BuildProjectsAsync([project]));
         _solutionExplorer.CleanProjectRequested += project => CleanProjects([project]);
         _solutionExplorer.ProjectSettingsRequested += ShowProjectSettings;
         _solutionExplorer.RemoveProjectRequested += RemoveProject;
@@ -210,12 +188,12 @@ public sealed class AppShell : Window
         _editorPane.FileHistoryRequested += () =>
         {
             if (_editorPane.OpenPath is { } path)
-                _ = ShowHistoryAsync(path);
+                Fire(ShowHistoryAsync(path));
         };
         _editorPane.BlameRequested += () =>
         {
             if (_editorPane.OpenPath is { } path)
-                _ = ShowBlameAsync(path);
+                Fire(ShowBlameAsync(path));
         };
         _editorPane.ActiveDocumentChanged += OnActiveDocumentChanged;
         _editorPane.CloseRequested += path => CloseFile(path);
@@ -308,11 +286,11 @@ public sealed class AppShell : Window
         var memoryTab = new View { Title = " _Memory ", Width = Dim.Fill(), Height = Dim.Fill() };
         _memoryView.Width = Dim.Fill();
         _memoryView.Height = Dim.Fill();
-        _memoryView.AddressRequested += ShowMemoryAt;
+        _memoryView.AddressRequested += _debug.ShowMemoryAt;
         _memoryView.PageRequested += delta =>
         {
-            if (_memoryAddress is { } address)
-                ShowMemoryAt($"${Math.Clamp(address + delta, 0, 0x10000 - MemoryView.ByteCount):X4}");
+            if (_debug.MemoryAddress is { } address)
+                _debug.ShowMemoryAt($"${Math.Clamp(address + delta, 0, 0x10000 - MemoryView.ByteCount):X4}");
         };
         memoryTab.Add(_memoryView);
         _outputTabs.Add(memoryTab);
@@ -320,7 +298,7 @@ public sealed class AppShell : Window
         var disassemblyTab = new View { Title = " Dis_assembly ", Width = Dim.Fill(), Height = Dim.Fill() };
         _disassemblyView.Width = Dim.Fill();
         _disassemblyView.Height = Dim.Fill();
-        _disassemblyView.SourceRequested += OpenSourceForAddress;
+        _disassemblyView.SourceRequested += _debug.OpenSourceForAddress;
         disassemblyTab.Add(_disassemblyView);
         _outputTabs.Add(disassemblyTab);
 
@@ -331,21 +309,21 @@ public sealed class AppShell : Window
         _gitView.UnstageRequested += UnstageFiles;
         _gitView.DiscardRequested += DiscardFile;
         _gitView.OpenRequested += OpenFile;
-        _gitView.CompareRequested += file => _ = CompareWithHeadAsync(file.Path, file.OriginalPath);
-        _gitView.BlameRequested += file => _ = ShowBlameAsync(file.Path);
+        _gitView.CompareRequested += file => Fire(CompareWithHeadAsync(file.Path, file.OriginalPath));
+        _gitView.BlameRequested += file => Fire(ShowBlameAsync(file.Path));
         _gitView.CommitRequested += Commit;
         _gitView.RefreshRequested += () => _git.RequestRefresh();
         _gitView.FetchRequested += FetchFromRemote;
-        _gitView.BranchesRequested += () => _ = ShowBranchesAsync();
-        _gitView.AmendToggled += amending => _ = LoadAmendMessageAsync(amending);
-        _gitView.StashesRequested += () => _ = ShowStashesAsync();
-        _gitView.HistoryRequested += () => _ = ShowHistoryAsync(null);
-        _gitView.FileHistoryRequested += file => _ = ShowHistoryAsync(file.Path);
+        _gitView.BranchesRequested += () => Fire(ShowBranchesAsync());
+        _gitView.AmendToggled += amending => Fire(LoadAmendMessageAsync(amending));
+        _gitView.StashesRequested += () => Fire(ShowStashesAsync());
+        _gitView.HistoryRequested += () => Fire(ShowHistoryAsync(null));
+        _gitView.FileHistoryRequested += file => Fire(ShowHistoryAsync(file.Path));
         _gitView.ConflictRequested += ResolveConflict;
         _gitView.ContinueRequested += ContinueOperation;
         _gitView.AbortRequested += AbortOperation;
         _gitView.PullRequested += PullFromRemote;
-        _gitView.PushRequested += () => _ = PushToRemoteAsync();
+        _gitView.PushRequested += () => Fire(PushToRemoteAsync());
         _gitView.CancelRequested += () => _syncCancellation?.Cancel();
         _gitTab.Add(_gitView);
         _outputTabs.Add(_gitTab);
@@ -407,7 +385,7 @@ public sealed class AppShell : Window
         Application.AddTimeout(TimeSpan.FromMilliseconds(400), () =>
         {
             if (generation == _blameGeneration)
-                _ = BlameCaretLineAsync(generation);
+                Fire(BlameCaretLineAsync(generation));
             return false;
         });
     }
@@ -464,7 +442,7 @@ public sealed class AppShell : Window
         Application.AddTimeout(TimeSpan.FromMilliseconds(400), () =>
         {
             if (generation == _lineMarkersGeneration)
-                _ = UpdateLineMarkersAsync(generation);
+                Fire(UpdateLineMarkersAsync(generation));
             return false;
         });
     }
@@ -561,7 +539,7 @@ public sealed class AppShell : Window
     {
         if (files.Count == 0 || !SaveOpenFiles())
             return;
-        _ = RunGitAsync("Staging", repository => repository.StageAsync(files.Select(f => f.Path)));
+        Fire(RunGitAsync("Staging", repository => repository.StageAsync(files.Select(f => f.Path))));
     }
 
     /// <summary>Git tab > Space on a staged file, or Unstage All. The files themselves don't change.</summary>
@@ -570,7 +548,7 @@ public sealed class AppShell : Window
         if (files.Count == 0)
             return;
         var hasCommits = _git.PrimaryStatus?.HasCommits ?? true;
-        _ = RunGitAsync("Unstaging", repository => repository.UnstageAsync(files.Select(f => f.Path), hasCommits));
+        Fire(RunGitAsync("Unstaging", repository => repository.UnstageAsync(files.Select(f => f.Path), hasCommits)));
     }
 
     /// <summary>
@@ -587,13 +565,13 @@ public sealed class AppShell : Window
             : $"Discard the changes to {name}? This can't be undone.{unsaved}";
         if (TedideMessageBox.Query("Discard Changes", RenameSymbolDialog.Wrap(question), ["Discard", "Cancel"]) != 0)
             return;
-        _ = RunGitAsync("Discarding", repository => repository.DiscardAsync([file]), () =>
+        Fire(RunGitAsync("Discarding", repository => repository.DiscardAsync([file]), () =>
         {
             if (file.IsUntracked)
                 _editorPane.Close(file.Path);
             else
                 Guard($"Reloading {name}", () => _editorPane.Reload(file.Path));
-        });
+        }));
     }
 
     /// <summary>Git tab > Commit Staged / Commit All. Saves open files first (see <see cref="SaveOpenFiles"/>),
@@ -621,7 +599,7 @@ public sealed class AppShell : Window
         if (!SaveOpenFiles())
             return;
         string? head = null;
-        _ = RunGitAsync(amend ? "Amend" : "Commit", async repository =>
+        Fire(RunGitAsync(amend ? "Amend" : "Commit", async repository =>
         {
             var result = await repository.CommitAsync(message.Trim(), stageAll, amend);
             if (result.Succeeded)
@@ -631,7 +609,7 @@ public sealed class AppShell : Window
         {
             _gitView.ClearMessage();
             AppendOutputLine($"{(amend ? "Amended" : "Committed")} {head}");
-        });
+        }));
     }
 
     /// <summary>The message Amend last commit loaded into the commit box, to recognise it unedited.</summary>
@@ -685,11 +663,11 @@ public sealed class AppShell : Window
                 var stash = choice.Stash!;
                 if (TedideMessageBox.Query("Drop Stash", RenameSymbolDialog.Wrap($"Delete {stash.Name} ({stash.Description})? Its changes are lost - this can't be undone."),
                         ["Drop", "Cancel"]) == 0)
-                    _ = RunGitAsync("Dropping the Stash", r => r.DropStashAsync(stash), () =>
+                    Fire(RunGitAsync("Dropping the Stash", r => r.DropStashAsync(stash), () =>
                     {
                         AppendOutputLine($"git: Dropped {stash.Name}.");
-                        _ = ShowStashesAsync();
-                    });
+                        Fire(ShowStashesAsync());
+                    }));
                 return;
             }
             if (!SaveOpenFiles())
@@ -702,7 +680,7 @@ public sealed class AppShell : Window
                 _ => ("Applying the Stash", r => r.UnstashAsync(choice.Stash!, drop: false)),
             };
             GitResult? outcome = null;
-            _ = RunGitAsync(what, async r => outcome = await operation(r), () =>
+            Fire(RunGitAsync(what, async r => outcome = await operation(r), () =>
             {
                 var report = outcome?.Message ?? "";
                 AppendOutputLine(choice.Action switch
@@ -712,7 +690,7 @@ public sealed class AppShell : Window
                     StashAction.Pop => $"git: Popped {choice.Stash!.Name}.",
                     _ => $"git: Applied {choice.Stash!.Name} (kept).",
                 });
-            }, () => FollowWorkingTree(projectFiles));
+            }, () => FollowWorkingTree(projectFiles)));
         });
     }
 
@@ -772,7 +750,7 @@ public sealed class AppShell : Window
     }
 
     /// <summary>Git tab > Fetch: learns what's new on the remote; changes no files.</summary>
-    private void FetchFromRemote() => _ = SyncAsync("Fetching", "Fetch", (repository, token) => repository.FetchAsync(token));
+    private void FetchFromRemote() => Fire(SyncAsync("Fetching", "Fetch", (repository, token) => repository.FetchAsync(token)));
 
     /// <summary>
     /// Git tab > Pull. Saves open files with unsaved edits first, as Commit does, so git sees
@@ -785,8 +763,8 @@ public sealed class AppShell : Window
         if (_syncCancellation is not null || !SaveOpenFiles())
             return;
         var projectFiles = ProjectFileContents();
-        _ = SyncAsync("Pulling", "Pull", (repository, token) => repository.PullAsync(token),
-            afterAnyway: () => FollowWorkingTree(projectFiles));
+        Fire(SyncAsync("Pulling", "Pull", (repository, token) => repository.PullAsync(token),
+            afterAnyway: () => FollowWorkingTree(projectFiles)));
     }
 
     /// <summary>After a pull: open files without unsaved edits follow what's now on disk.</summary>
@@ -822,7 +800,7 @@ public sealed class AppShell : Window
         }
         if (status.Upstream is not null)
         {
-            _ = SyncAsync("Pushing", "Push", (r, token) => r.PushAsync(cancellationToken: token));
+            Fire(SyncAsync("Pushing", "Push", (r, token) => r.PushAsync(cancellationToken: token)));
             return;
         }
 
@@ -839,7 +817,7 @@ public sealed class AppShell : Window
             }
             var question = $"{branch} isn't on {remote} yet. Publish it there, and push to it from now on?";
             if (TedideMessageBox.Query("Publish Branch", RenameSymbolDialog.Wrap(question), ["Publish", "Cancel"]) == 0)
-                _ = SyncAsync("Pushing", "Push", (r, token) => r.PushAsync(remote, branch, token));
+                Fire(SyncAsync("Pushing", "Push", (r, token) => r.PushAsync(remote, branch, token)));
         });
     }
 
@@ -865,11 +843,11 @@ public sealed class AppShell : Window
                     ChangeBranch("Creating the Branch", r => r.CreateBranchAsync(name), name);
                     break;
                 case (BranchAction.Delete, { } branch, _):
-                    _ = RunGitAsync("Deleting the Branch", r => r.DeleteBranchAsync(branch.Name), () =>
+                    Fire(RunGitAsync("Deleting the Branch", r => r.DeleteBranchAsync(branch.Name), () =>
                     {
                         AppendOutputLine($"git: Deleted branch {branch.Name}.");
-                        _ = ShowBranchesAsync();
-                    });
+                        Fire(ShowBranchesAsync());
+                    }));
                     break;
             }
         });
@@ -886,11 +864,11 @@ public sealed class AppShell : Window
         if (!SaveOpenFiles())
             return;
         var projectFiles = ProjectFileContents();
-        _ = RunGitAsync(what, operation, () =>
+        Fire(RunGitAsync(what, operation, () =>
         {
             AppendOutputLine($"git: Switched to {branch}.");
             FollowWorkingTree(projectFiles);
-        });
+        }));
     }
 
     /// <summary>
@@ -938,7 +916,7 @@ public sealed class AppShell : Window
         var dialog = new HistoryDialog(title, commits, selected);
         Application.Run(dialog);
         if (dialog.Choice is { } choice)
-            _ = ShowCommitChangeAsync(repository, choice.Commit, choice.File, () => ShowHistory(repository, file, commits, dialog.SelectedIndex));
+            Fire(ShowCommitChangeAsync(repository, choice.Commit, choice.File, () => ShowHistory(repository, file, commits, dialog.SelectedIndex)));
     }
 
     /// <summary>One commit's change to one file, read-only - its line numbers are the file's as of
@@ -1004,11 +982,11 @@ public sealed class AppShell : Window
                 if (!SaveOpenFiles())
                     return;
                 var keepMine = dialog.Choice == ConflictChoice.KeepMine;
-                _ = RunGitAsync("Resolving the Conflict", r => r.ResolveWithAsync(path, keepMine, operation), () =>
+                Fire(RunGitAsync("Resolving the Conflict", r => r.ResolveWithAsync(path, keepMine, operation), () =>
                 {
                     AppendOutputLine($"git: {DisplayPath(path)} resolved - {(keepMine ? "kept mine" : "took theirs")}.");
                     Guard($"Reloading {Path.GetFileName(path)}", () => _editorPane.Reload(path));
-                });
+                }));
                 break;
             case ConflictChoice.MarkResolved:
                 if (!SaveOpenFiles())
@@ -1018,8 +996,8 @@ public sealed class AppShell : Window
                         $"{Path.GetFileName(path)} still has {(left == 1 ? "a conflict section" : $"{left} conflict sections")} (<<<<<<< markers). Mark it resolved anyway?"),
                         ["Mark Resolved", "Cancel"]) != 0)
                     return;
-                _ = RunGitAsync("Marking Resolved", r => r.StageAsync([path]),
-                    () => AppendOutputLine($"git: {DisplayPath(path)} marked resolved."));
+                Fire(RunGitAsync("Marking Resolved", r => r.StageAsync([path]),
+                    () => AppendOutputLine($"git: {DisplayPath(path)} marked resolved.")));
                 break;
         }
     }
@@ -1041,13 +1019,13 @@ public sealed class AppShell : Window
         if (!SaveOpenFiles())
             return;
         var projectFiles = ProjectFileContents();
-        _ = RunGitAsync($"Continuing the {operation.Describe()}", r => r.ContinueAsync(operation, operation == GitOperation.Merge ? message : null),
+        Fire(RunGitAsync($"Continuing the {operation.Describe()}", r => r.ContinueAsync(operation, operation == GitOperation.Merge ? message : null),
             () =>
             {
                 _gitView.ClearMessage();
                 AppendOutputLine($"git: {operation.Describe()} continued.");
             },
-            () => FollowWorkingTree(projectFiles));
+            () => FollowWorkingTree(projectFiles)));
     }
 
     /// <summary>Git tab > Abort: after asking, abandons the stopped operation - the branch and
@@ -1058,9 +1036,9 @@ public sealed class AppShell : Window
         if (TedideMessageBox.Query($"Abort {operation.Describe()}", RenameSymbolDialog.Wrap(question), ["Abort", "Cancel"]) != 0)
             return;
         var projectFiles = ProjectFileContents();
-        _ = RunGitAsync($"Aborting the {operation.Describe()}", r => r.AbortAsync(operation),
+        Fire(RunGitAsync($"Aborting the {operation.Describe()}", r => r.AbortAsync(operation),
             () => AppendOutputLine($"git: {operation.Describe()} aborted."),
-            () => FollowWorkingTree(projectFiles));
+            () => FollowWorkingTree(projectFiles)));
     }
 
     /// <summary>The loaded solution's and projects' files as they are on disk (null for one that's
@@ -1086,7 +1064,7 @@ public sealed class AppShell : Window
     private void CompareActiveWithHead()
     {
         if (_editorPane.OpenPath is { } path)
-            _ = CompareWithHeadAsync(path);
+            Fire(CompareWithHeadAsync(path));
     }
 
     /// <summary>
@@ -1312,8 +1290,8 @@ public sealed class AppShell : Window
 
         var buildMenu = new MenuBarItem("_Build", new List<MenuItem>
         {
-            new("Build _Solution", "", () => _ = BuildSolutionAsync(), BuildSolutionKey),
-            new("_Build Project", "", () => _ = BuildActiveProjectAsync(), Key.Empty),
+            new("Build _Solution", "", () => Fire(BuildSolutionAsync()), BuildSolutionKey),
+            new("_Build Project", "", () => Fire(BuildActiveProjectAsync()), Key.Empty),
             new("C_ancel Build", "", CancelBuild, Key.Empty),
             new("_Clean Project", "", CleanActiveProject, Key.Empty),
             new("Clea_n Solution", "", CleanSolution, Key.Empty),
@@ -1327,22 +1305,22 @@ public sealed class AppShell : Window
         {
             new MenuItem("_Windows", "", new Menu(BuildDebugWindowsMenuItems())),
             new Line(),
-            new MenuItem("_Start Debugging", "", () => _ = StartDebuggingAsync(), Key.F5),
-            new MenuItem("Start Wit_hout Debugging", "", () => _ = RunActiveProjectAsync(), Key.F5.WithCtrl),
-            new MenuItem("_Continue", "", () => _ = ContinueDebuggingAsync(), Key.F5),
-            new MenuItem("Step _Over", "", () => _ = StepDebuggingAsync(stepInto: false), Key.F10),
+            new MenuItem("_Start Debugging", "", () => Fire(_debug.StartDebuggingAsync()), Key.F5),
+            new MenuItem("Start Wit_hout Debugging", "", () => Fire(RunActiveProjectAsync()), Key.F5.WithCtrl),
+            new MenuItem("_Continue", "", () => Fire(_debug.ContinueDebuggingAsync()), Key.F5),
+            new MenuItem("Step _Over", "", () => Fire(_debug.StepDebuggingAsync(stepInto: false)), Key.F10),
             // F7, not Visual Studio's F11 - Windows Terminal claims F11 for its own full-screen
             // toggle before the app ever sees it. F7/F8 is also the Turbo Pascal/Borland pairing.
-            new MenuItem("Step _Into", "", () => _ = StepDebuggingAsync(stepInto: true), Key.F7),
-            new MenuItem("Sto_p Debugging", "", () => _ = StopDebuggingAsync(), Key.F5.WithShift),
+            new MenuItem("Step _Into", "", () => Fire(_debug.StepDebuggingAsync(stepInto: true)), Key.F7),
+            new MenuItem("Sto_p Debugging", "", () => Fire(_debug.StopDebuggingAsync()), Key.F5.WithShift),
             new Line(),
-            new MenuItem("_Toggle Breakpoint", "", ToggleBreakpointAtCursor, Key.F9),
-            new MenuItem("_Enable/Disable Breakpoint", "", EnableBreakpointAtCursor, Key.F9.WithCtrl),
-            new MenuItem("Breakpoint Co_ndition...", "", EditBreakpointConditionAtCursor, Key.Empty),
-            new MenuItem("_Breakpoints...", "", ShowBreakpointsDialog, Key.Empty),
+            new MenuItem("_Toggle Breakpoint", "", _debug.ToggleBreakpointAtCursor, Key.F9),
+            new MenuItem("_Enable/Disable Breakpoint", "", _debug.EnableBreakpointAtCursor, Key.F9.WithCtrl),
+            new MenuItem("Breakpoint Co_ndition...", "", _debug.EditBreakpointConditionAtCursor, Key.Empty),
+            new MenuItem("_Breakpoints...", "", _debug.ShowBreakpointsDialog, Key.Empty),
             new Line(),
-            new MenuItem("Add W_atch...", "", ShowAddWatchDialog, Key.Empty),
-            new MenuItem("C_lear Watches", "", ClearWatches, Key.Empty),
+            new MenuItem("Add W_atch...", "", _debug.ShowAddWatchDialog, Key.Empty),
+            new MenuItem("C_lear Watches", "", _debug.ClearWatches, Key.Empty),
         });
 
         var projectMenu = new MenuBarItem("_Project", new List<MenuItem>
@@ -1463,9 +1441,9 @@ public sealed class AppShell : Window
     {
         Action? action = null;
         if (key == Key.F5.WithShift)
-            action = () => _ = StopDebuggingAsync();
+            action = () => Fire(_debug.StopDebuggingAsync());
         else if (key == Key.F9.WithCtrl)
-            action = EnableBreakpointAtCursor;
+            action = _debug.EnableBreakpointAtCursor;
         else if (key == Key.F4.WithCtrl)
             action = CloseActiveFile;
         else if (key == Key.Q.WithCtrl)
@@ -1530,18 +1508,18 @@ public sealed class AppShell : Window
         statusBar.ThemeDropDown.Visible = false;
         // Visual Studio's keys: F5 starts debugging, or continues once stopped; Ctrl+F5 runs
         // without the debugger; Ctrl+B (VS's Ctrl+Shift+B - see BuildSolutionKey) builds.
-        statusBar.Add(new Shortcut(Key.F5, "Debug", () => _ = StartOrContinueDebuggingAsync()));
-        statusBar.Add(new Shortcut(Key.F5.WithCtrl, "Run", () => _ = RunActiveProjectAsync()));
-        statusBar.Add(new Shortcut(BuildSolutionKey, "Build", () => _ = BuildSolutionAsync()));
+        statusBar.Add(new Shortcut(Key.F5, "Debug", () => Fire(_debug.StartOrContinueDebuggingAsync())));
+        statusBar.Add(new Shortcut(Key.F5.WithCtrl, "Run", () => Fire(RunActiveProjectAsync())));
+        statusBar.Add(new Shortcut(BuildSolutionKey, "Build", () => Fire(BuildSolutionAsync())));
         // A plain MenuItem's Key only acts as a hotkey while its menu is already open - a Shortcut
         // is what actually makes a key global. Ctrl+S Save had that gap (menu-only, never worked
         // while the editor had focus) until it was reported and fixed here alongside F9/Ctrl+G.
-        statusBar.Add(new Shortcut(Key.F9, "Breakpoint", ToggleBreakpointAtCursor));
+        statusBar.Add(new Shortcut(Key.F9, "Breakpoint", _debug.ToggleBreakpointAtCursor));
         // These status-bar Shortcuts are what make F10/F7 work at all: the Debug menu's own items
         // show the keys but don't bind them, because BindKeyToApplication never fires for that
         // menu's items (see OnKeyDown for the confirmed cause).
-        statusBar.Add(new Shortcut(Key.F10, "Step", () => _ = StepDebuggingAsync(stepInto: false)));
-        statusBar.Add(new Shortcut(Key.F7, "Into", () => _ = StepDebuggingAsync(stepInto: true)));
+        statusBar.Add(new Shortcut(Key.F10, "Step", () => Fire(_debug.StepDebuggingAsync(stepInto: false))));
+        statusBar.Add(new Shortcut(Key.F7, "Into", () => Fire(_debug.StepDebuggingAsync(stepInto: true))));
         statusBar.Add(new Shortcut(Key.S.WithCtrl, "Save", () => SaveActive()));
         statusBar.Add(new Shortcut(Key.G.WithCtrl, "Go To", ShowGoToLine));
         statusBar.X = 0;
@@ -1565,7 +1543,7 @@ public sealed class AppShell : Window
             _workspace.NewProject(dialog.Directory, dialog.ProjectName, target, dialog.OutputType);
             _solutionExplorer.Rebuild(_workspace);
             _symbolPanel.Refresh(_workspace.ActiveProject);
-            LoadBreakpointsForActiveProject();
+            _debug.LoadBreakpointsForActiveProject();
             LoadLastOpenFileForActiveProject();
             // NewProject always creates a wrapping .tsln alongside the .tproj (see its own doc
             // comment) - remember that, not the bare project, matching how opening one of the
@@ -1624,7 +1602,7 @@ public sealed class AppShell : Window
 
         _solutionExplorer.Rebuild(_workspace);
         _symbolPanel.Refresh(_workspace.ActiveProject);
-        LoadBreakpointsForActiveProject();
+        _debug.LoadBreakpointsForActiveProject();
         LoadLastOpenFileForActiveProject();
         RememberRecentProject(path);
     }
@@ -1933,12 +1911,11 @@ public sealed class AppShell : Window
             return;
 
         var newRelative = newPath is null ? null : RelativeSourcePath(project, newPath);
-        if (!_breakpoints.RenameSourceFile(RelativeSourcePath(project, oldPath), newRelative))
+        if (!_debug.Breakpoints.RenameSourceFile(RelativeSourcePath(project, oldPath), newRelative))
             return;
 
-        _breakpoints.Save(project.ResolvedBreakpointsFile);
-        RefreshBreakpointHighlights();
-        _ = SyncCheckpointsWithViceAsync();
+        _debug.Breakpoints.Save(project.ResolvedBreakpointsFile);
+        _debug.BreakpointsChanged();
     }
 
     /// <summary>
@@ -1985,7 +1962,7 @@ public sealed class AppShell : Window
         }
         _editorFrame.Title = _editorPane.OpenPath is { } path ? Path.GetFileName(path) : NoFileOpenTitle;
         UpdateLanguageIndicator();
-        RefreshBreakpointHighlights();
+        _debug.RefreshBreakpointHighlights();
         _debugLineTransformer.CurrentLineNumber = _debugLine is { } stop
             && _editorPane.IsShown(stop.FilePath)
                 ? stop.Line
@@ -2509,21 +2486,6 @@ public sealed class AppShell : Window
         editor.Viewport = viewport with { Y = targetY };
     }
 
-    /// <summary>Reloads <see cref="_breakpoints"/> from the active project's breakpoints sidecar
-    /// file (see <see cref="TedideProject.ResolvedBreakpointsFile"/>), or resets to an empty set if
-    /// no project is loaded. Called everywhere the active project itself changes (open/new/close,
-    /// Project Settings save) - not on every build, since breakpoints don't change from a build.</summary>
-    private void LoadBreakpointsForActiveProject()
-    {
-        string? problem = null;
-        _breakpoints = _workspace.ActiveProject is { } project
-            ? BreakpointsFile.LoadOrRecover(project.ResolvedBreakpointsFile, out problem)
-            : new BreakpointsFile();
-        if (problem is not null)
-            AppendOutputLine(problem);
-        RefreshBreakpointHighlights();
-    }
-
     /// <summary>Records whichever file is currently open (if any) as the active project's "last
     /// open file", so <see cref="LoadLastOpenFileForActiveProject"/> can reopen it automatically
     /// next time this same project becomes active again. Called right before switching away from
@@ -2555,7 +2517,7 @@ public sealed class AppShell : Window
     /// (see <see cref="TedideProject.ResolvedSessionFile"/>), closes whatever tabs are open, and
     /// reopens the tabs it recorded (any that still exist on disk), finishing on the one that was
     /// showing. Callers settle unsaved changes in the old tabs first (<see cref="ConfirmCloseFiles"/>).
-    /// Called alongside <see cref="LoadBreakpointsForActiveProject"/> at
+    /// Called alongside <see cref="DebugSession.LoadBreakpointsForActiveProject"/> at
     /// every point the active project itself changes (open/new/close) - deliberately not also at
     /// Project Settings save, since that keeps the same project active and already has its own
     /// reopen-after-rename handling (see <see cref="RenameProjectFolder"/>).</summary>
@@ -2587,1130 +2549,6 @@ public sealed class AppShell : Window
         // Finish on the tab that was showing.
         if (_sessionState.LastOpenFile is { } last && Path.Combine(activeProject.Directory, last) is var lastPath && _editorPane.IsOpen(lastPath))
             _editorPane.Open(lastPath);
-    }
-
-    /// <summary>
-    /// Recomputes <see cref="_breakpointLineTransformer"/>'s highlighted line set from
-    /// <see cref="_breakpoints"/>, scoped to the file being shown (the editor shows one tab at a
-    /// time, and this runs again on every tab switch - see <see cref="OnActiveDocumentChanged"/>),
-    /// and refreshes the Debug tab's breakpoints strip (unscoped - every breakpoint in
-    /// the project, not just the open file). Called whenever either the open file or the
-    /// breakpoint set itself changes.
-    /// </summary>
-    private void RefreshBreakpointHighlights()
-    {
-        _breakpointLineTransformer.BreakpointLines.Clear();
-        if (_workspace.ActiveProject is { } project && _editorPane.OpenPath is { } openPath)
-        {
-            var relativePath = Path.GetRelativePath(project.Directory, openPath).Replace('\\', '/');
-            foreach (var breakpoint in _breakpoints.Breakpoints)
-                if (breakpoint.Enabled && string.Equals(breakpoint.SourceFile, relativePath, StringComparison.OrdinalIgnoreCase))
-                    _breakpointLineTransformer.BreakpointLines.Add(breakpoint.Line);
-        }
-        _editorPane.Editor.SetNeedsDraw();
-        _debugPanel.SetBreakpoints(_breakpoints.Breakpoints);
-    }
-
-    /// <summary>
-    /// Toggles a breakpoint on the currently open file's cursor line (F9) - the fallback for
-    /// setting breakpoints since Terminal.Gui.Editor's Editor has no clickable gutter (see
-    /// <see cref="CurrentDebugLineTransformer"/>'s own doc comment). Saves immediately so it
-    /// survives even if the debug session (or Tedide itself) is closed without an explicit save.
-    /// </summary>
-    private void ToggleBreakpointAtCursor() => Guard("Saving breakpoints", () => ToggleBreakpointAtCursorCore());
-
-    private void ToggleBreakpointAtCursorCore()
-    {
-        var project = _workspace.ActiveProject;
-        if (project is null || _editorPane.OpenPath is not { } openPath || _editorPane.Editor.Document is not { } document)
-            return;
-
-        var line = document.GetLineByOffset(_editorPane.Editor.CaretOffset).LineNumber;
-        // .dbg file paths are forward-slashed (cl65 was invoked with e.g. "src/main.c") regardless
-        // of this being Windows - normalize so breakpoints resolve against DbgFile.FindAddressForSourceLine.
-        var relativePath = Path.GetRelativePath(project.Directory, openPath).Replace('\\', '/');
-
-        var existingIndex = _breakpoints.Breakpoints.FindIndex(b =>
-            b.Line == line && string.Equals(b.SourceFile, relativePath, StringComparison.OrdinalIgnoreCase));
-        if (existingIndex >= 0)
-        {
-            _breakpoints.Breakpoints.RemoveAt(existingIndex);
-            AppendOutputLine($"Breakpoint removed: {relativePath}:{line}");
-        }
-        else
-        {
-            _breakpoints.Breakpoints.Add(new BreakpointEntry(relativePath, line));
-            AppendOutputLine($"Breakpoint set: {relativePath}:{line}");
-        }
-
-        _breakpoints.Save(project.ResolvedBreakpointsFile);
-        RefreshBreakpointHighlights();
-        // Otherwise a breakpoint added/removed mid-session has no effect on the already-running
-        // VICE instance - checkpoints are only ever set once, at StartDebuggingAsync's own setup.
-        _ = SyncCheckpointsWithViceAsync();
-    }
-
-    /// <summary>
-    /// Debug > Enable/Disable Breakpoint (Ctrl+F9, as in Visual Studio): turns the caret line's
-    /// breakpoint off without losing it (or its condition), or back on. Nothing when the line
-    /// has no breakpoint.
-    /// </summary>
-    private void EnableBreakpointAtCursor() => Guard("Saving breakpoints", EnableBreakpointAtCursorCore);
-
-    private void EnableBreakpointAtCursorCore()
-    {
-        var project = _workspace.ActiveProject;
-        if (project is null || _editorPane.OpenPath is not { } openPath || _editorPane.Editor.Document is null)
-            return;
-
-        var line = _editorPane.CaretPosition.Line;
-        // Forward slashes, matching the .dbg file - see ToggleBreakpointAtCursorCore.
-        var relativePath = Path.GetRelativePath(project.Directory, openPath).Replace('\\', '/');
-        var index = _breakpoints.Breakpoints.FindIndex(b =>
-            b.Line == line && string.Equals(b.SourceFile, relativePath, StringComparison.OrdinalIgnoreCase));
-        if (index < 0)
-            return;
-
-        var breakpoint = _breakpoints.Breakpoints[index] with { Enabled = !_breakpoints.Breakpoints[index].Enabled };
-        _breakpoints.Breakpoints[index] = breakpoint;
-        AppendOutputLine($"Breakpoint {(breakpoint.Enabled ? "enabled" : "disabled")}: {relativePath}:{line}");
-        _breakpoints.Save(project.ResolvedBreakpointsFile);
-        RefreshBreakpointHighlights();
-        _ = SyncCheckpointsWithViceAsync();
-    }
-
-    /// <summary>
-    /// Debug > Breakpoint Condition...: sets or clears the condition (VICE monitor syntax) of the
-    /// breakpoint on the caret's line, creating the breakpoint first if there isn't one - so a
-    /// conditional breakpoint takes one step, not F9 and then this.
-    /// </summary>
-    private void EditBreakpointConditionAtCursor() => Guard("Saving breakpoints", EditBreakpointConditionAtCursorCore);
-
-    private void EditBreakpointConditionAtCursorCore()
-    {
-        var project = _workspace.ActiveProject;
-        if (project is null || _editorPane.OpenPath is not { } openPath || _editorPane.Editor.Document is null)
-            return;
-
-        var line = _editorPane.CaretPosition.Line;
-        // Forward slashes, matching the .dbg file - see ToggleBreakpointAtCursorCore.
-        var relativePath = Path.GetRelativePath(project.Directory, openPath).Replace('\\', '/');
-        var index = _breakpoints.Breakpoints.FindIndex(b =>
-            b.Line == line && string.Equals(b.SourceFile, relativePath, StringComparison.OrdinalIgnoreCase));
-        var current = index >= 0 ? _breakpoints.Breakpoints[index] : new BreakpointEntry(relativePath, line);
-
-        var dialog = new BreakpointConditionDialog($"{relativePath}:{line}", current.Condition);
-        Application.Run(dialog);
-        if (dialog.Condition is not { } condition)
-            return;
-
-        var updated = current with { Condition = condition.Length == 0 ? null : condition, Enabled = true };
-        if (index >= 0)
-            _breakpoints.Breakpoints[index] = updated;
-        else
-            _breakpoints.Breakpoints.Add(updated);
-        AppendOutputLine($"Breakpoint set: {updated.Describe()}");
-
-        _breakpoints.Save(project.ResolvedBreakpointsFile);
-        RefreshBreakpointHighlights();
-        _ = SyncCheckpointsWithViceAsync();
-    }
-
-    private void ShowBreakpointsDialog()
-    {
-        var project = _workspace.ActiveProject;
-        if (project is null)
-        {
-            AppendOutputLine("No project loaded. Use File > Open Project or File > New Project first.");
-            return;
-        }
-
-        var dialog = new BreakpointsDialog(_breakpoints, project.ResolvedBreakpointsFile);
-        dialog.BreakpointSelected += breakpoint =>
-            OpenSymbol((Path.Combine(project.Directory, breakpoint.SourceFile), breakpoint.Line));
-        Application.Run(dialog);
-        // The dialog mutates the same _breakpoints instance in place (toggle/delete) - refresh in
-        // case it changed anything for the currently open file.
-        RefreshBreakpointHighlights();
-        // Toggling a breakpoint's Enabled flag (or deleting it) here has the exact same "VICE
-        // never finds out" gap as ToggleBreakpointAtCursor - see SyncCheckpointsWithViceAsync's
-        // own doc comment. The dialog can toggle/delete several entries in one visit, but the
-        // resync itself is a full re-sync (delete everything tracked, re-set every still-enabled
-        // breakpoint), not incremental, so one call after it closes covers all of them.
-        _ = SyncCheckpointsWithViceAsync();
-    }
-
-    /// <summary>
-    /// Prompts for a watch expression, resolves it to an address (a matching <see cref="_dbgFile"/>
-    /// symbol name if one's loaded, otherwise a raw <c>$hex</c>/decimal address), and adds it to
-    /// <see cref="_watches"/>. Shows a placeholder value immediately and, if a session is currently
-    /// stopped, kicks off a real read right away rather than waiting for the next step/checkpoint.
-    /// </summary>
-    private void ShowAddWatchDialog()
-    {
-        var dialog = new AddWatchDialog();
-        Application.Run(dialog);
-        if (dialog.Expression is not { } expression)
-            return;
-
-        if (!TryResolveWatchAddress(expression, out var address, out var error))
-        {
-            AppendOutputLine(error);
-            return;
-        }
-
-        _watches.Add(new WatchEntry(expression, address, dialog.Size));
-        _debugPanel.SetWatches(_watches.Select(w => $"{w.Label} (${w.Address:X4}) = ?").ToList());
-        _ = RefreshWatchesIfStoppedAsync();
-    }
-
-    private void ClearWatches()
-    {
-        _watches.Clear();
-        _debugPanel.SetWatches([]);
-    }
-
-    /// <summary>
-    /// Resolves a watch expression to an address: first as a <see cref="_dbgFile"/> symbol name
-    /// (matched with or without cc65's leading underscore - the same convention
-    /// <see cref="DbgFile.FindEnclosingFunctionName"/> uses), falling back to a literal address
-    /// (<c>$hex</c>, <c>0xhex</c>, or plain decimal) so hardware registers (e.g. <c>$D012</c> for
-    /// the VIC-II raster line) work even without debug info loaded.
-    /// </summary>
-    private bool TryResolveWatchAddress(string expression, out ushort address, out string error)
-    {
-        expression = expression.Trim();
-
-        var symbol = _dbgFile?.Symbols.FirstOrDefault(s =>
-            s.Value is not null &&
-            (string.Equals(s.Name, expression, StringComparison.Ordinal) ||
-             string.Equals(s.Name.TrimStart('_'), expression, StringComparison.Ordinal)));
-        if (symbol is not null)
-        {
-            address = (ushort)symbol.Value!.Value;
-            error = "";
-            return true;
-        }
-
-        var hexText = expression.StartsWith('$') ? expression[1..]
-            : expression.StartsWith("0x", StringComparison.OrdinalIgnoreCase) ? expression[2..]
-            : null;
-        if (hexText is not null && ushort.TryParse(hexText, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var hexValue))
-        {
-            address = hexValue;
-            error = "";
-            return true;
-        }
-
-        if (ushort.TryParse(expression, NumberStyles.Integer, CultureInfo.InvariantCulture, out var decimalValue))
-        {
-            address = decimalValue;
-            error = "";
-            return true;
-        }
-
-        address = 0;
-        error = $"Could not resolve watch \"{expression}\" - enter a known symbol name, or an address as $hex, 0xhex, or decimal.";
-        return false;
-    }
-
-    /// <summary>Reads every watch's current value from VICE and formats it for display - pure data
-    /// fetching (no UI touched), so unlike the callers around it this needs no re-marshaling onto
-    /// the UI thread; see <see cref="RefreshWatchesIfStoppedAsync"/> and the nested-Invoke call
-    /// sites in <see cref="OnCheckpointHit"/>/<see cref="StepDebuggingAsync"/> for where the result
-    /// actually reaches <see cref="_debugPanel"/>.</summary>
-    private async Task<List<string>> FormatWatchesAsync(ViceMonitorClient debugClient)
-    {
-        // A snapshot, not _watches itself - the awaits below give the UI thread a chance to add
-        // or clear watches mid-loop, which would otherwise throw "Collection was modified".
-        var watches = _watches.ToList();
-        var formatted = new List<string>(watches.Count);
-        foreach (var watch in watches)
-        {
-            try
-            {
-                var bytes = await debugClient.GetMemoryAsync(watch.Address, (ushort)(watch.Address + watch.Size - 1));
-                var text = watch.Size == 2 && bytes.Length >= 2
-                    ? $"${(ushort)(bytes[0] | (bytes[1] << 8)):X4}"
-                    : bytes.Length >= 1 ? $"${bytes[0]:X2}" : "?";
-                formatted.Add($"{watch.Label} (${watch.Address:X4}) = {text}");
-            }
-            catch (Exception ex)
-            {
-                Log.Debug(ex, "Could not read memory for watch {Label} (${Address:X4})", watch.Label, watch.Address);
-                formatted.Add($"{watch.Label} (${watch.Address:X4}) = ?");
-            }
-        }
-        return formatted;
-    }
-
-    /// <summary>Each generated .s file's parsed stack frames, keyed by path - parsed on first stop
-    /// in it and kept for the session (cleared when a new session's build replaces them).</summary>
-    private readonly Dictionary<string, IReadOnlyList<FunctionFrame>> _assemblyFrames = new(StringComparer.OrdinalIgnoreCase);
-
-    /// <summary>
-    /// The Locals table for a stop: the parameters and function-level locals of the C function
-    /// the PC is in, read from cc65's software stack. Where each one lives comes from the frame
-    /// depth at the stopped instruction in cl65's generated .s (see <see cref="GeneratedAssemblyFrames"/>),
-    /// its type from its declaration in the C source (see <see cref="CDeclarations"/>) - cc65's
-    /// debug info has neither. Empty outside a project's C code (assembly, the runtime library)
-    /// or if anything needed is missing; never throws - locals are a convenience, not worth
-    /// failing a stop over.
-    /// </summary>
-    private async Task<IReadOnlyList<LocalRow>> ReadLocalsAsync(ViceMonitorClient debugClient, RegisterSnapshot registers)
-    {
-        try
-        {
-            if (_dbgFile is not { } dbgFile || _workspace.ActiveProject is not { } project || registers["PC"] is not { } pc)
-                return [];
-
-            var cLocation = dbgFile.FindProjectSourceLocationForAddress(pc, project.Directory);
-            var assemblyLine = dbgFile.FindAssemblyLineForAddress(pc);
-            if (cLocation is not { } c || assemblyLine is not { } asm)
-                return [];
-
-            var asmPath = Path.Combine(project.Directory, asm.FilePath);
-            if (!_assemblyFrames.TryGetValue(asmPath, out var frames))
-            {
-                if (!File.Exists(asmPath))
-                    return [];
-                frames = GeneratedAssemblyFrames.Parse(await File.ReadAllTextAsync(asmPath));
-                _assemblyFrames[asmPath] = frames;
-            }
-
-            var frame = frames.FirstOrDefault(f => asm.Line >= f.FirstLine && asm.Line <= f.LastLine);
-            if (frame is null || frame.Symbols.Count == 0)
-                return [];
-            if (!frame.Reliable || frame.DepthAt(asm.Line) is not { } depth)
-                return [new LocalRow("(locals unavailable)", "", $"{frame.Name} uses stack code Tedide can't follow")];
-
-            // cc65's software stack pointer: "sp" in cc65 2.19, renamed "c_sp" in later versions.
-            var spSymbol = dbgFile.Symbols.FirstOrDefault(s => s.Name is "sp" or "c_sp" && s.Type == "lab" && s.Value is not null);
-            if (spSymbol is null)
-                return [];
-            var spBytes = await debugClient.GetMemoryAsync((ushort)spSymbol.Value!.Value, (ushort)(spSymbol.Value.Value + 1));
-            var sp = (ushort)(spBytes[0] | spBytes[1] << 8);
-
-            var source = await File.ReadAllTextAsync(Path.Combine(project.Directory, c.FilePath));
-            var types = CDeclarations.FindTypes(source, frame.Name, frame.Symbols.Select(s => s.Name), c.Line);
-            var slots = frame.SlotsAt(depth, sp, types);
-
-            var rows = new List<LocalRow>(slots.Count);
-            foreach (var slot in slots)
-            {
-                var typeText = slot.Type?.Text ?? "?";
-                string value;
-                if (slot.Address is { } address)
-                {
-                    var bytes = await debugClient.GetMemoryAsync(address, (ushort)(address + slot.Size - 1));
-                    value = LocalValueFormatter.Format(bytes, slot.Type);
-                }
-                else if (slot.Symbol is { IsParameter: true, Offset: 0 } && registers["A"] is { } a)
-                {
-                    // cc65's fastcall: the last parameter arrives in A (low) / X (high) and is only
-                    // pushed by the function's first instruction.
-                    byte[] bytes = slot.Size == 1 ? [(byte)a] : [(byte)a, (byte)(registers["X"] ?? 0)];
-                    value = LocalValueFormatter.Format(bytes, slot.Type) + " [in A/X]";
-                }
-                else
-                {
-                    value = "(not yet on the stack)";
-                }
-                rows.Add(new LocalRow(slot.Symbol.IsParameter ? $"{slot.Symbol.Name} (param)" : slot.Symbol.Name, typeText, value));
-            }
-            return rows;
-        }
-        catch (Exception ex)
-        {
-            Log.Debug(ex, "Could not read locals");
-            return [];
-        }
-    }
-
-    /// <summary>Fire-and-forget refresh for when a watch is added/cleared outside the normal
-    /// stop/step flow - a no-op unless a session is both connected and currently stopped (reading
-    /// memory while running would race the emulator).</summary>
-    private async Task RefreshWatchesIfStoppedAsync()
-    {
-        if (_debugClient is not { } debugClient || !_isDebugging || !_isStopped)
-            return;
-
-        var watchLines = await FormatWatchesAsync(debugClient);
-        Application.Invoke(() => _debugPanel.SetWatches(watchLines));
-    }
-
-    /// <summary>What the Memory and Disassembly tabs and the call stack show for one stop - read
-    /// from VICE off the UI thread, then shown by <see cref="ShowDebugViews"/> on it.</summary>
-    private sealed record DebugViews(
-        IReadOnlyList<CallFrame> CallStack,
-        IReadOnlyList<DisassemblyRow> Disassembly,
-        string DisassemblyStatus,
-        ushort? MemoryAddress,
-        byte[] Memory,
-        HashSet<int> MemoryChanged);
-
-    /// <summary>Reads everything <see cref="DebugViews"/> holds for the current stop. Never throws:
-    /// like the locals, these are extras, not worth failing a stop over.</summary>
-    private async Task<DebugViews> ReadDebugViewsAsync(ViceMonitorClient debugClient, RegisterSnapshot registers)
-    {
-        IReadOnlyList<CallFrame> callStack = [];
-        IReadOnlyList<DisassemblyRow> disassembly = [];
-        var disassemblyStatus = "No PC to show.";
-        try
-        {
-            callStack = await ReadCallStackAsync(debugClient, registers);
-        }
-        catch (Exception ex)
-        {
-            Log.Debug(ex, "Could not read the call stack");
-        }
-        try
-        {
-            if (registers["PC"] is { } pc)
-                (disassembly, disassemblyStatus) = await ReadDisassemblyAsync(debugClient, pc);
-        }
-        catch (Exception ex)
-        {
-            Log.Debug(ex, "Could not disassemble");
-            disassemblyStatus = $"Could not read memory around the PC: {ex.Message}";
-        }
-
-        var memoryAddress = _memoryAddress;
-        byte[] memory = [];
-        HashSet<int> changed = [];
-        if (memoryAddress is { } address)
-        {
-            try
-            {
-                memory = await debugClient.GetMemoryAsync(address, (ushort)Math.Min(0xFFFF, address + MemoryView.ByteCount - 1));
-                if (_memorySnapshot is { } previous && previous.Length == memory.Length)
-                    changed = MemoryDump.ChangedOffsets(previous, memory);
-                _memorySnapshot = memory;
-            }
-            catch (Exception ex)
-            {
-                Log.Debug(ex, "Could not read memory at ${Address:X4}", address);
-            }
-        }
-        return new DebugViews(callStack, disassembly, disassemblyStatus, memoryAddress, memory, changed);
-    }
-
-    /// <summary>Shows a stop's <see cref="DebugViews"/>. Must run on the UI thread.</summary>
-    private void ShowDebugViews(DebugViews views)
-    {
-        _debugPanel.SetCallStack(views.CallStack);
-        _disassemblyView.Show(views.Disassembly, views.DisassemblyStatus);
-        if (views.MemoryAddress is { } address && views.Memory.Length > 0)
-        {
-            var changedText = views.MemoryChanged.Count == 0 ? "" : $" - {views.MemoryChanged.Count} byte(s) changed since the last stop";
-            _memoryView.Show(address, views.Memory, views.MemoryChanged, $"As of this stop{changedText}.");
-        }
-    }
-
-    /// <summary>
-    /// The call stack for a stop, innermost first: where the PC is, then each call site found on
-    /// the hardware stack by <see cref="CallStackWalker"/>. Only return addresses into the
-    /// program's own read-only segments are considered, and each one's JSR is confirmed by reading
-    /// the opcode - one small read per candidate, so a stack full of data doesn't mean 255 reads.
-    /// </summary>
-    private async Task<IReadOnlyList<CallFrame>> ReadCallStackAsync(ViceMonitorClient debugClient, RegisterSnapshot registers)
-    {
-        if (_dbgFile is not { } dbgFile || _workspace.ActiveProject is not { } project
-            || registers["PC"] is not { } pc || registers["SP"] is not { } sp)
-            return [];
-
-        var stack = await debugClient.GetMemoryAsync(0x0100, 0x01FF);
-        var isJsr = new Dictionary<ushort, bool>();
-        foreach (var site in CallStackWalker.CandidateCallSites(stack, (byte)sp).Where(a => dbgFile.IsInReadOnlySegment(a)).Distinct())
-            isJsr[site] = (await debugClient.GetMemoryAsync(site, site))[0] == CallStackWalker.JsrOpcode;
-
-        var frames = new List<CallFrame> { DescribeFrame(dbgFile, project, pc) };
-        frames.AddRange(CallStackWalker.Walk(stack, (byte)sp, site => isJsr.GetValueOrDefault(site)).Select(site => DescribeFrame(dbgFile, project, site)));
-        return frames;
-    }
-
-    /// <summary>A call stack line for <paramref name="address"/>: the function (or, in cc65's
-    /// runtime, the nearest label) and the project source line, if it has one.</summary>
-    private static CallFrame DescribeFrame(DbgFile dbgFile, TedideProject project, ushort address)
-    {
-        var name = dbgFile.FindEnclosingFunctionName(address) ?? dbgFile.FindNearestLabel(address) ?? "?";
-        return dbgFile.FindProjectSourceLocationForAddress(address, project.Directory) is { } location
-            ? new CallFrame(name, $"{DebugPath(project, location.FilePath)}:{location.Line}", Path.Combine(project.Directory, location.FilePath), location.Line)
-            : new CallFrame(name, $"${address:X4}", null, 0);
-    }
-
-    /// <summary>How many bytes before and after the PC the Disassembly tab reads.</summary>
-    private const int DisassemblyBytesBefore = 48, DisassemblyBytesAfter = 96;
-
-    /// <summary>
-    /// The instructions around <paramref name="pc"/>, decoded for the project's CPU, each noted
-    /// with the label at its address, the label its operand refers to, and the source line where
-    /// a new one starts.
-    /// </summary>
-    private async Task<(IReadOnlyList<DisassemblyRow> Rows, string Status)> ReadDisassemblyAsync(ViceMonitorClient debugClient, ushort pc)
-    {
-        var start = (ushort)Math.Max(0, pc - DisassemblyBytesBefore);
-        var end = (ushort)Math.Min(0xFFFF, pc + DisassemblyBytesAfter);
-        var bytes = await debugClient.GetMemoryAsync(start, end);
-        var cpu = _workspace.ActiveProject?.ResolvedCc65Cpu ?? "6502";
-        var cmos = Disassembler6502.IsCmos(cpu);
-        var from = Disassembler6502.FindStartBefore(bytes, pc - start, DisassemblyBytesBefore, cmos);
-
-        var dbgFile = _dbgFile;
-        var project = _workspace.ActiveProject;
-        (string FilePath, int Line)? lastLocation = null;
-        var rows = new List<DisassemblyRow>();
-        foreach (var instruction in Disassembler6502.Disassemble(bytes, start, from, maxCount: 48, cmos))
-        {
-            var notes = new List<string>();
-            if (dbgFile?.FindLabelAt(instruction.Address) is { } label)
-                notes.Add($"{label}:");
-            if (instruction.Target is { } target && instruction.Mnemonic != "bra" && dbgFile?.FindLabelAt(target) is { } targetLabel)
-                notes.Add($"-> {targetLabel}");
-            if (dbgFile is not null && project is not null
-                && dbgFile.FindProjectSourceLocationForAddress(instruction.Address, project.Directory) is { } location
-                && location != lastLocation)
-            {
-                notes.Add($"{DebugPath(project, location.FilePath)}:{location.Line}");
-                lastLocation = location;
-            }
-            rows.Add(new DisassemblyRow(instruction, instruction.Address == pc, string.Join("  ", notes)));
-        }
-        return (rows, $"PC ${pc:X4} - {cpu} instructions; cycles: * +1 on a page crossing, ** branch +1 taken, +1 more crossing a page.");
-    }
-
-    /// <summary>
-    /// Memory tab: resolves an address the way Add Watch does (symbol, $hex or decimal) and shows
-    /// the memory there - read now if execution is stopped, otherwise at the next stop.
-    /// </summary>
-    private void ShowMemoryAt(string expression)
-    {
-        if (!TryResolveWatchAddress(expression, out var address, out var error))
-        {
-            _memoryView.SetStatus(error);
-            return;
-        }
-
-        _memoryAddress = address;
-        _memorySnapshot = null;
-        if (_debugClient is not { } debugClient || !_isDebugging || !_isStopped)
-        {
-            _memoryView.SetStatus($"${address:X4} will be shown when execution next stops.");
-            return;
-        }
-
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                var bytes = await debugClient.GetMemoryAsync(address, (ushort)Math.Min(0xFFFF, address + MemoryView.ByteCount - 1));
-                _memorySnapshot = bytes;
-                OnUiThread(() => _memoryView.Show(address, bytes, [], "As of this stop."));
-            }
-            catch (Exception ex)
-            {
-                OnUiThread(() => _memoryView.SetStatus($"Could not read memory: {ex.Message}"));
-            }
-        });
-    }
-
-    /// <summary>Opens the project source line an address belongs to - for a Disassembly row.</summary>
-    private void OpenSourceForAddress(ushort address)
-    {
-        if (_dbgFile is not { } dbgFile || _workspace.ActiveProject is not { } project)
-            return;
-        if (dbgFile.FindProjectSourceLocationForAddress(address, project.Directory) is { } location)
-            OpenSymbol((Path.Combine(project.Directory, location.FilePath), location.Line));
-        else
-            AppendOutputLine($"${address:X4} has no source line in this project.");
-    }
-
-    /// <summary>
-    /// Builds the active project (if needed), launches it in VICE with the binary monitor enabled,
-    /// connects <see cref="_debugClient"/>, sets every enabled breakpoint (resolved to an address
-    /// via <see cref="_dbgFile"/>), and starts it running. Requires <see cref="TedideProject.GenerateDebugInfo"/>
-    /// to be on - without it there's no .dbg file to resolve breakpoints/addresses against.
-    /// Every caller fires this and forgets it, so any exception is caught and reported here and
-    /// whatever was already set up is torn down - otherwise e.g. VICE not being installed would
-    /// leave the Debug tab showing a half-started session with no error at all.
-    /// </summary>
-    private async Task StartDebuggingAsync()
-    {
-        try
-        {
-            await StartDebuggingCoreAsync();
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error starting debug session");
-            Application.Invoke(() => AppendOutputLine($"Could not start debugging: {ex.Message}"));
-            await EndDebugSessionAsync();
-        }
-    }
-
-    private async Task StartDebuggingCoreAsync()
-    {
-        var project = _workspace.ActiveProject;
-        if (project is null)
-        {
-            AppendOutputLine("No project loaded. Use File > Open Project or File > New Project first.");
-            return;
-        }
-        if (!CheckStartupProjectRuns("debug"))
-            return;
-        if (!project.GenerateDebugInfo)
-        {
-            TedideMessageBox.ErrorQuery("Debug Info Required",
-                "\"Generate debug info\" is off for this project.\n" +
-                "Enable it on the Linker tab of Project Settings, then rebuild before starting a debug session.",
-                ["OK"]);
-            return;
-        }
-        if (_isDebugging)
-        {
-            AppendOutputLine("Already debugging - use Debug > Stop Debugging first.");
-            return;
-        }
-
-        // Switch to the Debug tab immediately so its locals/call stack panel is what the user sees
-        // as the session comes up, rather than whatever tab (Output/Error List/Symbols) happened
-        // to be selected before.
-        ShowDebugTab();
-
-        var buildResult = await BuildActiveProjectAsync();
-        if (buildResult is not { Succeeded: true })
-            return;
-
-        if (!File.Exists(project.ResolvedDebugInfoFile))
-        {
-            AppendOutputLine("Build succeeded but no debug info file was produced.");
-            return;
-        }
-        _dbgFile = DbgFile.Parse(File.ReadAllText(project.ResolvedDebugInfoFile));
-        _assemblyFrames.Clear(); // this build's generated .s files replace the last session's
-
-        // Application.Invoke, not AppendOutputLine directly: Process.OutputDataReceived/
-        // ErrorDataReceived (what ViceEmulator.Launch's onOutputLine ultimately wraps) fire on a
-        // thread-pool thread, not the UI thread - confirmed via a real crash this line caused
-        // ("Collection was modified; enumeration operation may not execute" inside TextView's own
-        // draw, racing OutputView._lines against the UI thread's concurrent draw-time enumeration
-        // of it). RunActiveProjectAsync's own _vice.Launch call already gets this right.
-        var viceProcess = _vice.Launch(project, line => Application.Invoke(() => AppendOutputLine(line)), enableBinaryMonitor: true);
-
-        OnUiThread(() => SetDebugStatus("Connecting to VICE..."));
-        // VICE needs a moment to start listening on its binary monitor port after the process
-        // starts - retry rather than failing on the first attempt. A fresh client per attempt: a
-        // TcpClient whose connect has failed isn't reliably reusable. And give up straight away
-        // if VICE has already exited (e.g. it rejected a ROM or command-line option) rather than
-        // spending the whole retry budget knocking on a port nothing will ever open.
-        for (var attempt = 0; attempt < 20 && _debugClient is null && !viceProcess.HasExited; attempt++)
-        {
-            var client = CreateDebugClient();
-            try
-            {
-                await client.ConnectAsync();
-                _debugClient = client;
-                Log.Debug("Debug start: connected to VICE on attempt {Attempt}", attempt + 1);
-            }
-            catch (Exception ex) when (ex is SocketException or IOException)
-            {
-                Log.Debug("Debug start: connect attempt {Attempt} failed: {Reason}", attempt + 1, ex.Message);
-                await client.DisposeAsync();
-                await Task.Delay(250);
-            }
-        }
-        if (_debugClient is null)
-        {
-            var reason = viceProcess.HasExited
-                ? $"VICE exited during startup (exit code {viceProcess.ExitCode}) - see its output above."
-                : "Could not connect to VICE's binary monitor - is VICE installed and did it launch correctly?";
-            Application.Invoke(() =>
-            {
-                AppendOutputLine(reason);
-                SetDebugStatus(null);
-            });
-            return;
-        }
-
-        _isDebugging = true;
-        // Read-only for the whole session, in every tab - editing source while the compiled binary
-        // it no longer matches is running would be misleading (BuildActiveProjectAsync above has
-        // already saved everything).
-        // Invoked: this continuation is past several awaits, so it isn't on the UI thread.
-        Application.Invoke(() => _editorPane.ReadOnly = true);
-
-        // Show the C source containing main() as the session comes up, before anything actually
-        // runs - the same _main label every C program has, resolved back to its source location
-        // the same way a checkpoint hit resolves the PC (see DbgFile.FindSourceLocationForAddress).
-        // Application.Invoke, not a direct call: by this point StartDebuggingAsync has been through
-        // several awaits (connecting to VICE), and unlike everything else in this method, OpenSymbol
-        // touches Editor.Document - TextDocument enforces single-thread ownership (VerifyAccess),
-        // and nothing guarantees this continuation resumed on the UI thread. A real crash, caught
-        // via Windows Event Log after this exact code path took the whole process down with
-        // "Call from invalid thread" during the next draw.
-        var mainSymbol = _dbgFile.Symbols.FirstOrDefault(s => s.Name == "_main" && s.Type == "lab");
-        Log.Debug("Debug start: _main at {Address}", mainSymbol?.Value);
-        if (mainSymbol is { Value: { } mainAddress }
-            && _dbgFile.FindSourceLocationForAddress(mainAddress) is { } mainLocation)
-        {
-            Log.Debug("Debug start: main() is at {File}:{Line}", mainLocation.FilePath, mainLocation.Line);
-            Application.Invoke(() =>
-            {
-                var mainPath = Path.Combine(project.Directory, mainLocation.FilePath);
-                OpenSymbol((mainPath, mainLocation.Line));
-                CenterEditorOnLine(mainPath, mainLocation.Line);
-            });
-        }
-
-        await _checkpointLock.WaitAsync();
-        try
-        {
-            Log.Debug("Debug start: setting checkpoints");
-            await SetAllEnabledCheckpointsAsync(_dbgFile, _debugClient);
-        }
-        finally
-        {
-            _checkpointLock.Release();
-        }
-
-        Log.Debug("Debug start: checkpoints set, continuing");
-        Application.Invoke(() => SetDebugStatus("Running..."));
-        await _debugClient.ContinueAsync();
-    }
-
-    /// <summary>A new, not-yet-connected monitor client with this shell's event handlers attached.</summary>
-    private ViceMonitorClient CreateDebugClient()
-    {
-        var client = new ViceMonitorClient();
-        client.CheckpointHit += OnCheckpointHit;
-        client.EventHandlerFailed += ex => Log.Error(ex, "Debug event handler failed");
-        // VICE closed (or crashed) under a live session: end it, so the editor becomes editable
-        // again and the Debug panel stops claiming a session exists. Checked on the UI thread
-        // against the *current* client, so a stale client from an earlier session does nothing.
-        client.Disconnected += () => Application.Invoke(() =>
-        {
-            if (_debugClient != client || !_isDebugging)
-                return;
-            AppendOutputLine("VICE closed the debugging connection - debug session ended.");
-            _ = EndDebugSessionAsync();
-        });
-        client.Resumed += pc => Application.Invoke(() =>
-        {
-            Log.Debug("Resumed event: PC={PC:X4}, _isStepping={IsStepping}", pc, _isStepping);
-            // Stepping resumes and re-halts the CPU just like Continue does, so it raises this same
-            // unsolicited Resumed event - without this guard, its queued "Running..." update could
-            // land after StepDebuggingAsync's own "Stopped at ..." one, clobbering the status and
-            // un-highlighting the line it had just moved to. (ShowStoppedAt also re-asserts
-            // _isStopped, for a Resumed that slips in just after _isStepping is cleared.)
-            if (_isStepping)
-                return;
-
-            _isStopped = false;
-            SetDebugLine(null);
-            SetDebugStatus("Running...");
-            _editorPane.Editor.SetNeedsDraw();
-        });
-        return client;
-    }
-
-    /// <summary>Sets a VICE checkpoint for every currently-enabled breakpoint, recording each one's
-    /// VICE-assigned checkpoint number in <see cref="_checkpointNumbers"/> so it can later be
-    /// deleted again (see <see cref="SyncCheckpointsWithViceAsync"/>). Shared between the initial
-    /// setup in <see cref="StartDebuggingAsync"/> and re-syncing after a breakpoint changes mid-session.
-    /// Callers must hold <see cref="_checkpointLock"/>.</summary>
-    private async Task SetAllEnabledCheckpointsAsync(DbgFile dbgFile, ViceMonitorClient debugClient)
-    {
-        // Snapshotted (ToList) before the first await - the UI thread can toggle a breakpoint
-        // while this loop is waiting on VICE, which would otherwise throw "Collection was modified".
-        foreach (var breakpoint in _breakpoints.Breakpoints.Where(b => b.Enabled).ToList())
-        {
-            var address = dbgFile.FindAddressForSourceLine(breakpoint.SourceFile, breakpoint.Line);
-            if (address is { } addr)
-            {
-                var info = await debugClient.SetCheckpointAsync((ushort)addr);
-                _checkpointNumbers[breakpoint] = info.Number;
-                if (breakpoint.HasCondition)
-                {
-                    try
-                    {
-                        await debugClient.SetConditionAsync(info.Number, breakpoint.Condition!.Trim());
-                    }
-                    catch (Exception ex) when (ex is ViceMonitorException or ArgumentException)
-                    {
-                        // An unconditional stop where a conditional one was asked for would be a
-                        // surprise mid-run - so the breakpoint sits this session out instead.
-                        await debugClient.DeleteCheckpointAsync(info.Number);
-                        _checkpointNumbers.Remove(breakpoint);
-                        Application.Invoke(() => AppendOutputLine(
-                            $"VICE rejected the condition \"{breakpoint.Condition}\" on {breakpoint.SourceFile}:{breakpoint.Line}, so that breakpoint is off for this session. "
-                            + "Use VICE monitor syntax, e.g. A == $05 or @cpu:$d020 == $0e."));
-                    }
-                }
-            }
-            else
-            {
-                Application.Invoke(() => AppendOutputLine(
-                    $"Could not resolve breakpoint {breakpoint.SourceFile}:{breakpoint.Line} to an address - it may be on a line with no compiled code."));
-            }
-        }
-    }
-
-    /// <summary>
-    /// Re-synchronizes VICE's actual checkpoints with the current breakpoint set - called whenever
-    /// a breakpoint is toggled/added/removed while a debug session is already running. Without
-    /// this, checkpoints are only ever set once (at <see cref="StartDebuggingAsync"/>'s own setup)
-    /// - VICE has no idea Tedide's breakpoint file changed afterward, so deleting or disabling a
-    /// breakpoint mid-session left execution still stopping there (the bug this fixes). Deletes
-    /// every checkpoint this app previously set and re-sets one for every currently-enabled
-    /// breakpoint, rather than diffing precisely - simpler, and the cost is negligible for the
-    /// handful of breakpoints a real debugging session has.
-    /// </summary>
-    private async Task SyncCheckpointsWithViceAsync()
-    {
-        if (_debugClient is not { } debugClient || _dbgFile is not { } dbgFile || !_isDebugging)
-            return;
-
-        await _checkpointLock.WaitAsync();
-        try
-        {
-            // Re-checked under the lock: a Stop Debugging that ran while this call was waiting
-            // has already deleted every checkpoint and disposed this client.
-            if (!_isDebugging || _debugClient != debugClient)
-                return;
-
-            await DeleteAllCheckpointsAsync(debugClient);
-            await SetAllEnabledCheckpointsAsync(dbgFile, debugClient);
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error re-syncing breakpoints with VICE");
-            Application.Invoke(() => AppendOutputLine($"Error updating breakpoints in the running debug session: {ex.Message}"));
-        }
-        finally
-        {
-            _checkpointLock.Release();
-        }
-    }
-
-    /// <summary>Deletes every checkpoint this app has set in VICE (<see cref="_checkpointNumbers"/>)
-    /// and forgets them. Individual failures are logged and skipped - VICE may already be gone, or
-    /// may have dropped a checkpoint on its own (e.g. a "temporary" one). Callers must hold
-    /// <see cref="_checkpointLock"/>.</summary>
-    private async Task DeleteAllCheckpointsAsync(ViceMonitorClient debugClient)
-    {
-        foreach (var number in _checkpointNumbers.Values.ToList())
-        {
-            try
-            {
-                await debugClient.DeleteCheckpointAsync(number);
-            }
-            catch (Exception ex)
-            {
-                Log.Debug(ex, "Could not delete checkpoint #{Number}", number);
-            }
-        }
-        _checkpointNumbers.Clear();
-    }
-
-    /// <summary>Builds a "Stopped [in {function}] at {where}" status string, prepending the
-    /// enclosing function name (via <see cref="_dbgFile"/>) when it resolves - e.g. code with no
-    /// debug info at all (cc65's own runtime library) has no scope info, so this falls back to
-    /// just "Stopped at {where}".</summary>
-    /// <summary>
-    /// A source path from the debug info, for display: as it is when relative (the startup project's
-    /// own files), else relative to the startup project - a library project's sources are compiled by
-    /// full path (see Cc65Toolchain.BuildCompileSteps), which made every stop in one a whole line of
-    /// C:\Users\... . "../Gfx/src/gfx.c" matches how the breakpoint list writes it.
-    /// </summary>
-    private static string DebugPath(TedideProject project, string path) =>
-        Path.IsPathRooted(path) ? Path.GetRelativePath(project.Directory, path).Replace('\\', '/') : path;
-
-    private string FunctionAwareStoppedAt(ushort? pc, string where)
-    {
-        var function = pc is { } pcValue ? _dbgFile?.FindEnclosingFunctionName(pcValue) : null;
-        return function is { } name ? $"Stopped in {name} at {where}" : $"Stopped at {where}";
-    }
-
-    /// <summary>
-    /// Fires whenever VICE stops at a checkpoint - reads registers, resolves the PC back to a
-    /// source location (<see cref="_dbgFile"/>), and jumps the editor there. Runs on
-    /// <see cref="ViceMonitorClient"/>'s own background read-loop thread, so every UI touch (and
-    /// the nested GetRegistersAsync request/response, which needs that same read loop free to
-    /// process it) is marshaled onto the UI thread via Application.Invoke - which posts and returns
-    /// immediately rather than blocking the calling thread, so this doesn't deadlock against the
-    /// read loop it was raised from.
-    /// </summary>
-    private void OnCheckpointHit(CheckpointHitEventArgs args)
-    {
-        Log.Debug("CheckpointHit event: checkpoint #{Number}", args.Checkpoint.Number);
-        Application.Invoke(async () =>
-        {
-            try
-            {
-                _isStopped = true;
-                if (_debugClient is null)
-                    return;
-
-                var registers = await _debugClient.GetRegistersAsync();
-                // Fetched here (still in the outer async continuation) rather than inside the
-                // nested Invoke below - it's pure network I/O against VICE, same as GetRegistersAsync
-                // just above, with none of the UI-thread affinity concerns that block touching
-                // Editor/TextDocument state after an await (see the nested-Invoke comment below).
-                var watchLines = await FormatWatchesAsync(_debugClient);
-                var locals = await ReadLocalsAsync(_debugClient, registers);
-                var views = await ReadDebugViewsAsync(_debugClient, registers);
-
-                // Everything below touches Editor/TextDocument state, which enforces single-thread
-                // ownership (TextDocument.VerifyAccess). Application.Invoke only guarantees the UI
-                // thread for this lambda's synchronous prefix - the await just above means this
-                // continuation is NOT guaranteed to still be on the UI thread, and Terminal.Gui
-                // doesn't restore it. Confirmed via a real crash here ("Call from invalid thread"
-                // inside OpenSymbol) - re-marshal explicitly with a nested Invoke rather than
-                // assuming the outer one's thread-affinity survives an internal await.
-                // "PC" is VICE's register name for the 6502 program counter on the main memspace -
-                // confirmed against a live VICE 3.9 instance (its ids are assigned dynamically per
-                // the binary monitor protocol docs, but this name was stable).
-                Application.Invoke(() =>
-                {
-                    ShowStoppedAt(registers, watchLines, locals, registers["PC"], $" (checkpoint #{args.Checkpoint.Number})");
-                    ShowDebugViews(views);
-                    Log.Debug("CheckpointHit done: status is now {Status}", _debugStatus);
-                });
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Error handling checkpoint hit");
-                Application.Invoke(() => AppendOutputLine($"Error handling checkpoint hit: {ex.Message}"));
-            }
-        });
-    }
-
-    /// <summary>F5, as in Visual Studio: Start Debugging, or Continue when stopped at a breakpoint
-    /// (nothing while it's running).</summary>
-    private Task StartOrContinueDebuggingAsync() =>
-        !_isDebugging ? StartDebuggingAsync()
-        : _isStopped ? ContinueDebuggingAsync()
-        : Task.CompletedTask;
-
-    private async Task ContinueDebuggingAsync()
-    {
-        if (_debugClient is null || !_isDebugging)
-            return;
-
-        _isStopped = false;
-        SetDebugLine(null);
-        SetDebugStatus("Running...");
-        _editorPane.Editor.SetNeedsDraw();
-        await _debugClient.ContinueAsync();
-    }
-
-    /// <summary>
-    /// Updates the Debug panel and editor to show where execution has stopped: registers, watches,
-    /// the source line <paramref name="pc"/> resolves to (opened, centered and highlighted), and a
-    /// "Stopped [in function] at file:line" status (in the window title), with
-    /// <paramref name="statusSuffix"/> appended (e.g. which checkpoint fired). Falls back to a bare
-    /// address when the PC has no source line. Must run on the UI thread - it touches
-    /// Editor/TextDocument state, which enforces single-thread ownership.
-    /// </summary>
-    private void ShowStoppedAt(RegisterSnapshot registers, List<string> watchLines, IReadOnlyList<LocalRow> locals, ushort? pc, string statusSuffix)
-    {
-        _isStopped = true;
-        _debugPanel.SetRegisters(registers);
-        _debugPanel.SetWatches(watchLines);
-        _debugPanel.SetLocals(locals);
-
-        var project = _workspace.ActiveProject;
-        // Project files only: a line record from cc65's runtime library can't be opened, and used
-        // to move the current-line highlight to its line number in whatever file was open.
-        var location = pc is { } pcForLookup && project is not null
-            ? _dbgFile?.FindProjectSourceLocationForAddress(pcForLookup, project.Directory)
-            : null;
-        Log.Debug("Stopped: PC={PC:X4}, location={Location}",
-            pc, location is { } loc ? $"{loc.FilePath}:{loc.Line}" : "(unresolved)");
-
-        string status;
-        if (project is not null && location is { } resolved)
-        {
-            var resolvedPath = Path.Combine(project.Directory, resolved.FilePath);
-            OpenSymbol((resolvedPath, resolved.Line));
-            CenterEditorOnLine(resolvedPath, resolved.Line);
-            SetDebugLine((resolvedPath, resolved.Line));
-            status = FunctionAwareStoppedAt(pc, $"{DebugPath(project, resolved.FilePath)}:{resolved.Line}") + statusSuffix;
-        }
-        else
-        {
-            SetDebugLine(null);
-            status = (pc is { } pcv ? $"Stopped at ${pcv:X4}" : "Stopped.") + statusSuffix;
-        }
-        SetDebugStatus(status);
-        _editorPane.Editor.SetNeedsDraw();
-    }
-
-    /// <summary>The most instructions one Step will execute looking for the next source line
-    /// before giving up and showing wherever it got to - an address with no line mapping reached by
-    /// a path Step doesn't recognize would otherwise single-step forever.</summary>
-    private const int MaxStepInstructions = 500;
-
-    /// <summary>
-    /// Steps by source line, not raw instruction: steps repeatedly until the resolved location
-    /// changes from where it started. <paramref name="stepInto"/> false (Step Over) executes each
-    /// subroutine call as a single instruction, so calls on the line run to completion. true (Step
-    /// Into) follows calls into functions that have source; a call into code with no source at
-    /// all - almost always cc65's runtime library, which the line itself calls constantly for
-    /// things like argument pushing - is run to its return rather than stopped in, so stepping
-    /// into a line with no user function calls on it behaves just like stepping over it.
-    /// </summary>
-    private async Task StepDebuggingAsync(bool stepInto)
-    {
-        if (_debugClient is not { } debugClient || _dbgFile is not { } dbgFile || !_isDebugging || !_isStopped
-            || _workspace.ActiveProject is not { } project)
-            return;
-
-        // "Has source" means source in this project - cc65's runtime library has line records too
-        // (its own .s files, and macro files at paths from the machine that built it), and Step
-        // Into must run through that code, not stop in it. See FindProjectSourceLocationForAddress.
-        (string FilePath, int Line)? SourceLocation(long address) =>
-            dbgFile.FindProjectSourceLocationForAddress(address, project.Directory);
-
-        // See the Resumed handler's own comment in StartDebuggingAsync for why this guard exists -
-        // each single-step's own Resumed event must not touch UI state that this method (still
-        // mid-loop) owns for the whole duration of the step.
-        _isStepping = true;
-        try
-        {
-            var startPc = (await debugClient.GetRegistersAsync())["PC"];
-            var startLocation = startPc is { } s ? SourceLocation(s) : null;
-            // main.c has 6 line records in HelloCBM.dbg against main.s's 22 for the same code -
-            // cl65's generated .s intermediate is tracked at far finer granularity than the
-            // original C source. Single-stepping from a C line legitimately passes through
-            // addresses that only resolve to that intermediate (no surviving .c line record there -
-            // see DbgFile.FindSourceLocationForAddress's own doc comment) before reaching the next
-            // real C statement - those must be skipped, not reported as "the next line", or Step
-            // stops one instruction early and shows the generated .s file instead of the .c one.
-            var startedInAssembly = startLocation is null || IsAssemblySourceFile(startLocation.Value.FilePath);
-
-            var reachedNewLine = false;
-            for (var i = 0; i < MaxStepInstructions && !reachedNewLine; i++)
-            {
-                // StepAsync waits for VICE to actually stop again and hands back the PC from that
-                // Stopped event - one round trip per instruction, no separate register read.
-                var pc = await debugClient.StepAsync(stepOverSubroutines: !stepInto);
-                var location = SourceLocation(pc);
-
-                if (stepInto && location is null && startLocation is not null)
-                {
-                    // Stepped from source into code with none: run it back out. Execute Until
-                    // Return stops after the *next* RTS, which is a nested call's if this routine
-                    // makes any, so keep going until the PC is somewhere with source again.
-                    while (location is null && i++ < MaxStepInstructions)
-                    {
-                        pc = await debugClient.ExecuteUntilReturnAsync();
-                        location = SourceLocation(pc);
-                    }
-                }
-
-                if (!startedInAssembly && location is { } candidate && IsAssemblySourceFile(candidate.FilePath))
-                    continue;
-
-                reachedNewLine = location is null || location != startLocation;
-            }
-
-            var registers = await debugClient.GetRegistersAsync();
-            var watchLines = await FormatWatchesAsync(debugClient);
-            var locals = await ReadLocalsAsync(debugClient, registers);
-            var views = await ReadDebugViewsAsync(debugClient, registers);
-            // Re-marshal onto the UI thread before touching Editor/TextDocument state - the awaits
-            // above leave this continuation on whatever thread completed them (Terminal.Gui
-            // installs no SynchronizationContext to bring it back).
-            Application.Invoke(() =>
-            {
-                ShowStoppedAt(registers, watchLines, locals, registers["PC"],
-                    reachedNewLine ? "" : $" (step limit of {MaxStepInstructions} instructions reached)");
-                ShowDebugViews(views);
-            });
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error while stepping");
-            Application.Invoke(() => AppendOutputLine($"Error while stepping: {ex.Message}"));
-        }
-        finally
-        {
-            _isStepping = false;
-        }
-    }
-
-    private static bool IsAssemblySourceFile(string filePath)
-    {
-        var extension = Path.GetExtension(filePath);
-        return string.Equals(extension, ".s", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(extension, ".asm", StringComparison.OrdinalIgnoreCase);
-    }
-
-    private async Task StopDebuggingAsync()
-    {
-        if (_debugClient is null)
-            return;
-
-        await EndDebugSessionAsync();
-    }
-
-    /// <summary>
-    /// Tears down a debug session, however far it got - shared by Stop Debugging and by
-    /// <see cref="StartDebuggingAsync"/>'s own failure path, where there may be no connected
-    /// client yet at all.
-    /// </summary>
-    private async Task EndDebugSessionAsync()
-    {
-        // Cleared first so any SyncCheckpointsWithViceAsync already queued behind the lock
-        // below bails out on its own re-check instead of re-arming checkpoints afterward.
-        _isDebugging = false;
-        _isStopped = false;
-
-        if (_debugClient is { } debugClient)
-        {
-            // Deleted before resuming, not just forgotten - VICE keeps its checkpoints after the
-            // connection closes, so the now-detached program would otherwise still halt at every
-            // breakpoint, dropping the user into VICE's own monitor with no debugger attached.
-            await _checkpointLock.WaitAsync();
-            try
-            {
-                await DeleteAllCheckpointsAsync(debugClient);
-            }
-            finally
-            {
-                _checkpointLock.Release();
-            }
-
-            try { await debugClient.ContinueAsync(); }
-            catch { /* VICE may already be gone - fine, we're tearing down the connection either way. */ }
-
-            await debugClient.DisposeAsync();
-        }
-
-        _debugClient = null;
-        _dbgFile = null;
-        // A watch's address was resolved against this session's own _dbgFile - stale the moment
-        // it's gone (a rebuild can shift where a symbol ends up), so watches are re-entered per
-        // session rather than carried forward, same as WatchEntry's own doc comment says.
-        _watches.Clear();
-        // Re-marshal onto the UI thread - see OnCheckpointHit's own comment on why the awaits
-        // above don't guarantee this continuation is still there.
-        Application.Invoke(() =>
-        {
-            SetDebugLine(null);
-            SetDebugStatus(null);
-            _debugPanel.SetRegisters(null);
-            _debugPanel.SetWatches([]);
-            _debugPanel.SetLocals([]);
-            _debugPanel.SetCallStack([]);
-            _disassemblyView.Show([], "Start debugging to see the code around the PC.");
-            _memoryView.Show(0, [], [], "Start debugging, then enter a symbol or $address.");
-            _memorySnapshot = null;
-            // EditorPane keeps the editor read-only anyway while no file is open.
-            _editorPane.ReadOnly = false;
-            _editorPane.Editor.SetNeedsDraw();
-        });
     }
 
     /// <summary>File > Close File (Ctrl+W): closes the tab being shown, asking about unsaved changes first.</summary>
@@ -3763,7 +2601,7 @@ public sealed class AppShell : Window
         _workspace.Close();
         _solutionExplorer.Rebuild(_workspace);
         _symbolPanel.Refresh(_workspace.ActiveProject);
-        LoadBreakpointsForActiveProject();
+        _debug.LoadBreakpointsForActiveProject();
         LoadLastOpenFileForActiveProject();
     }
 
@@ -4185,10 +3023,10 @@ public sealed class AppShell : Window
 
         // The startup project's breakpoints in the deleted files go with them.
         if (!wasStartup && _workspace.ActiveProject is { } startup
-            && _breakpoints.Breakpoints.RemoveAll(b => IsSameOrInsideDirectory(Path.GetFullPath(Path.Combine(startup.Directory, b.SourceFile)), project.Directory)) > 0)
+            && _debug.Breakpoints.Breakpoints.RemoveAll(b => IsSameOrInsideDirectory(Path.GetFullPath(Path.Combine(startup.Directory, b.SourceFile)), project.Directory)) > 0)
         {
-            _breakpoints.Save(startup.ResolvedBreakpointsFile);
-            RefreshBreakpointHighlights();
+            _debug.Breakpoints.Save(startup.ResolvedBreakpointsFile);
+            _debug.RefreshBreakpointHighlights();
         }
 
         _solutionExplorer.Rebuild(_workspace);
@@ -4212,7 +3050,7 @@ public sealed class AppShell : Window
     /// the new one. Open tabs are left as they are.</summary>
     private void OnStartupProjectChanged()
     {
-        LoadBreakpointsForActiveProject();
+        _debug.LoadBreakpointsForActiveProject();
         _symbolPanel.Refresh(_workspace.ActiveProject);
     }
 
@@ -4256,7 +3094,7 @@ public sealed class AppShell : Window
 
         _solutionExplorer.Rebuild(_workspace);
         _symbolPanel.Refresh(_workspace.ActiveProject);
-        LoadBreakpointsForActiveProject();
+        _debug.LoadBreakpointsForActiveProject();
     }
 
     /// <summary>
@@ -4317,6 +3155,30 @@ public sealed class AppShell : Window
     /// <summary>Safe to call from any thread - see <see cref="OnUiThread"/>.</summary>
     private void AppendOutputLine(string line) => OnUiThread(() => _outputView.AppendLine(line));
 
+    ViceEmulator IDebugSessionHost.Vice => _vice;
+    void IDebugSessionHost.AppendOutputLine(string line) => AppendOutputLine(line);
+    void IDebugSessionHost.OnUiThread(Action action) => OnUiThread(action);
+    void IDebugSessionHost.Fire(Task task, string what) => Fire(task, what);
+    bool IDebugSessionHost.Guard(string action, Action body) => Guard(action, body);
+    void IDebugSessionHost.OpenSymbol((string FilePath, int LineNumber) entry) => OpenSymbol(entry);
+    void IDebugSessionHost.CenterEditorOnLine(string filePath, int lineNumber) => CenterEditorOnLine(filePath, lineNumber);
+    void IDebugSessionHost.SetDebugLine((string FilePath, int Line)? location) => SetDebugLine(location);
+    void IDebugSessionHost.SetDebugStatus(string? status) => SetDebugStatus(status);
+    void IDebugSessionHost.ShowDebugTab() => ShowDebugTab();
+    Task<BuildResult?> IDebugSessionHost.BuildActiveProjectAsync() => BuildActiveProjectAsync();
+    bool IDebugSessionHost.CheckStartupProjectRuns(string action) => CheckStartupProjectRuns(action);
+
+    /// <summary>
+    /// Starts <paramref name="task"/> without waiting for it, as <c>_ = task</c> would, but logs a
+    /// failure and says so in Output instead of losing it - see <see cref="BackgroundTask"/>.
+    /// </summary>
+    private void Fire(Task task, [CallerArgumentExpression(nameof(task))] string what = "") =>
+        BackgroundTask.Watch(task, exception =>
+        {
+            Log.Error(exception, "Background task failed: {What}", what);
+            OnUiThread(() => AppendOutputLine($"Something went wrong: {exception.Message} (details in the log)"));
+        });
+
     /// <summary>
     /// Runs <paramref name="action"/> right away if already on the UI thread, otherwise posts it
     /// there via Application.Invoke. Needed by any UI update that follows an await: Terminal.Gui
@@ -4345,14 +3207,6 @@ public sealed class AppShell : Window
         _outputView.SetFocus();
     }
 
-    /// <summary>
-    /// Switches the Output/Error List pane to its "Debug" tab and gives the debug panel input
-    /// focus - used when a debug session starts, so its debugger windows are immediately
-    /// visible rather than left behind whatever tab the user had last selected. Focus moves back
-    /// to the editor as soon as execution actually stops somewhere (see <see cref="OpenSymbol"/>,
-    /// called from <see cref="OnCheckpointHit"/>/<see cref="StepDebuggingAsync"/>), so this is only
-    /// the very first thing the user sees while the session is coming up.
-    /// </summary>
     private const string AppTitle = "Tedide - CC65 IDE";
 
     /// <summary>The debug state ("Running...", "Stopped in main at main.c:24"), or null when not
@@ -4386,6 +3240,14 @@ public sealed class AppShell : Window
 
     private void ShowSolutionExplorer() => _solutionExplorer.SetFocus();
 
+    /// <summary>
+    /// Switches the Output/Error List pane to its "Debug" tab and gives the debug panel input
+    /// focus - used when a debug session starts, so its debugger windows are immediately
+    /// visible rather than left behind whatever tab the user had last selected. Focus moves back
+    /// to the editor as soon as execution actually stops somewhere (see <see cref="OpenSymbol"/>,
+    /// called when a debug session stops - see <see cref="DebugSession"/>), so this is only
+    /// the very first thing the user sees while the session is coming up.
+    /// </summary>
     private void ShowDebugTab()
     {
         _outputTabs.Value = _debugTab;

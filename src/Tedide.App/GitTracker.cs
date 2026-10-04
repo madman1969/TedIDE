@@ -69,7 +69,7 @@ internal sealed class GitTracker
             if (_refreshing)
                 _refreshAgain = true;
             else
-                _ = RefreshAsync(_source());
+                BackgroundTask.Watch(RefreshAsync(_source()), exception => Log.Error(exception, "Refreshing git status failed"));
             return false;
         });
     }
