@@ -33,6 +33,13 @@ public sealed class EditorPane : View
         public Encoding Encoding { get; set; } = encoding;
         public int CaretOffset { get; set; }
         public bool IsModified => !Document.UndoStack.IsOriginalFile;
+
+        /// <summary>Its {...} blocks - see <see cref="UpdateFolds"/>. Kept with the tab, so what was
+        /// collapsed stays collapsed when it's shown again.</summary>
+        public FoldingManager? Folds { get; set; }
+
+        /// <summary>Its text changed since <see cref="Folds"/> were last brought up to date.</summary>
+        public bool FoldsStale { get; set; } = true;
     }
 
     private readonly List<OpenDocument> _documents = [];
@@ -150,13 +157,7 @@ public sealed class EditorPane : View
             GutterOptions = GutterOptions.LineNumbers | GutterOptions.Folding,
             ReadOnly = true, // no file open yet
             Document = new TextDocument(string.Empty),
-            // Assigning a strategy is what actually makes the Folding gutter above do anything -
-            // ted's own TedApp.cs does the same. BraceFoldingStrategy is language-agnostic (any
-            // {...} spanning multiple lines folds), which covers our C sources; ca65 assembly has
-            // no brace blocks to fold, so .s/.asm/.inc files just show no fold points. Assigning
-            // this also auto-enables Editor.AutomaticFolding, and the Document setter re-runs it
-            // on every swap, so foldings stay current without any extra wiring.
-            FoldingStrategy = new BraceFoldingStrategy(),
+            // No FoldingStrategy: the folds are kept here instead - see UpdateFolds.
             // HasScrollBars uses ScrollBarVisibilityMode.Auto - scrollbars only appear once the
             // document overflows the viewport, rather than being permanently shown.
             ViewportSettings = ViewportSettingsFlags.HasScrollBars,
@@ -258,7 +259,20 @@ public sealed class EditorPane : View
         // A fresh TextDocument per load, as ted's own SetDocument() does - its undo stack starts clean.
         var document = new OpenDocument(filePath, new TextDocument(text), encoding);
         // Keep the "*" on the tab current as the file is edited, undone, and saved.
-        document.Document.TextChanged += (_, _) => RefreshTabs();
+        // Folds follow edits that could change them - once the change is complete (TextChanged),
+        // not during it (Changed): updated mid-change, the fold manager then shifted them again
+        // for the same edit, leaving every fold off by the edit's length.
+        document.Document.Changed += (_, e) =>
+        {
+            if (_foldingStrategy.ChangeMayAffectFoldings(e))
+                document.FoldsStale = true;
+        };
+        document.Document.TextChanged += (_, _) =>
+        {
+            if (document.FoldsStale && document == _active)
+                UpdateFolds(document);
+            RefreshTabs();
+        };
         document.Document.UndoStack.PropertyChanged += (_, _) => RefreshTabs();
 
         var index = _active is null ? _documents.Count : _documents.IndexOf(_active) + 1;
@@ -281,7 +295,14 @@ public sealed class EditorPane : View
 
         // ted's own SetDocument() clears any selection before swapping in a document.
         Editor.ClearSelection();
+        // The last tab's folds go first: swapping the document under them reopened them.
+        Editor.FoldingManager = null;
         Editor.Document = document.Document;
+        document.Folds ??= new FoldingManager(document.Document);
+        if (document.FoldsStale)
+            UpdateFolds(document, attach: true);
+        else
+            Editor.FoldingManager = document.Folds;
         Editor.HighlightingDefinition = HighlightingManager.Instance.GetDefinitionByExtension(System.IO.Path.GetExtension(document.Path));
         Editor.CaretOffset = Math.Clamp(document.CaretOffset, 0, document.Document.TextLength);
         Editor.ReadOnly = _readOnly;
@@ -295,6 +316,38 @@ public sealed class EditorPane : View
     }
 
     /// <summary>
+    /// What folds: any {...} spanning more than one line, which covers C; ca65 assembly has no
+    /// braces, so .s/.asm/.inc files show no fold points. Run here rather than handed to the editor
+    /// as its FoldingStrategy: the editor adds each fold to a manager it's watching, and redoes its
+    /// layout for every one - 2.4 seconds to open FarMem's 814-line farmem.c, with 119 folds.
+    /// </summary>
+    private readonly BraceFoldingStrategy _foldingStrategy = new();
+
+    /// <summary>
+    /// Brings a tab's folds up to date with its text, with the editor not watching while it happens
+    /// (0.3ms for farmem.c, against a second watched) - then hands them to the editor if
+    /// <paramref name="attach"/> is set or the tab is the one shown. Collapsed blocks stay
+    /// collapsed: the strategy's update reopened every block holding another.
+    /// </summary>
+    private void UpdateFolds(OpenDocument document, bool attach = false)
+    {
+        if (document.Folds is not { } folds)
+            return;
+        var shown = attach || document == _active;
+        if (shown && Editor.FoldingManager is not null)
+            Editor.FoldingManager = null;
+        var collapsed = folds.AllFoldings.Where(f => f.IsFolded).Select(f => (f.StartOffset, f.EndOffset)).ToHashSet();
+        _foldingStrategy.UpdateFoldings(folds, document.Document);
+        if (collapsed.Count > 0)
+            foreach (var fold in folds.AllFoldings)
+                if (!fold.IsFolded && collapsed.Contains((fold.StartOffset, fold.EndOffset)))
+                    fold.IsFolded = true;
+        document.FoldsStale = false;
+        if (shown)
+            Editor.FoldingManager = folds;
+    }
+
+    /// <summary>
     /// Collapse All Folds / Expand All Folds: folds, or unfolds, every foldable region in the shown
     /// file, nested ones included - so expanding one function afterwards still leaves its inner
     /// blocks folded, as in VS Code. A caret left inside a collapsed region moves to its first
@@ -305,8 +358,19 @@ public sealed class EditorPane : View
         if (_active is null || Editor.FoldingManager is not { } folding)
             return 0;
         var changing = folding.AllFoldings.Where(f => f.IsFolded != folded).ToList();
+        // With the editor not watching: it redoes its layout for every fold that changes (half a
+        // minute for 600 folds), and reopened some of the outer ones as it went.
+        Editor.FoldingManager = null;
         foreach (var section in changing)
             section.IsFolded = folded;
+        Editor.FoldingManager = folding;
+        // What the editor did itself for each change it saw: a caret left in a hidden line moves to
+        // the start of the outermost collapsed block holding it, the line that still shows.
+        var caret = Editor.CaretOffset;
+        if (Editor.Document is { } document && folding.IsLineHidden(document.GetLineByOffset(caret).LineNumber)
+            && folding.GetFoldingsContaining(caret).Where(f => f.IsFolded).MinBy(f => f.StartOffset) is { } outer)
+            Editor.CaretOffset = outer.StartOffset;
+        Editor.SetNeedsDraw();
         return changing.Count;
     }
 
@@ -351,6 +415,7 @@ public sealed class EditorPane : View
         }
 
         Editor.ClearSelection();
+        Editor.FoldingManager = null;
         Editor.Document = new TextDocument(string.Empty);
         Editor.ReadOnly = true;
         RefreshTabs();

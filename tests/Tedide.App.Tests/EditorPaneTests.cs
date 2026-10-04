@@ -69,6 +69,39 @@ public sealed class EditorPaneTests : IDisposable
     }
 
     [Fact]
+    public void ALargeFileWithManyBlocks_OpensQuickly_AndItsFoldsFollowEditsAndTabs()
+    {
+        // 300 functions, each with an inner block: 600 folds. Handed to the editor as its
+        // FoldingStrategy, opening a file like this took seconds - each fold redid its layout.
+        var text = string.Concat(Enumerable.Range(0, 300).Select(i => $"void f{i}(void)\n{{\n    if (1)\n    {{\n        x();\n    }}\n}}\n"));
+        var pane = new EditorPane();
+        var big = File("big.c", text);
+        var other = File("other.c", "void g(void)\n{\n}\n");
+
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        pane.Open(big);
+        Assert.True(watch.ElapsedMilliseconds < 1500, $"opening took {watch.ElapsedMilliseconds} ms");
+        var folds = pane.Editor.FoldingManager!;
+        Assert.Equal(600, folds.AllFoldings.Count());
+
+        // An edit that adds a block adds its fold.
+        pane.Editor.Document!.Insert(0, "void h(void)\n{\n}\n");
+        Assert.Equal(601, pane.Editor.FoldingManager!.AllFoldings.Count());
+
+        // What was collapsed is still collapsed after showing another tab.
+        pane.SetAllFolded(true);
+        Assert.All(pane.Editor.FoldingManager!.AllFoldings, f => Assert.True(f.IsFolded));
+        pane.Open(other);
+        Assert.Single(pane.Editor.FoldingManager!.AllFoldings);
+        pane.Open(big);
+        Assert.All(pane.Editor.FoldingManager!.AllFoldings, f => Assert.True(f.IsFolded));
+
+        // Closing every tab leaves no folds behind.
+        pane.CloseAll();
+        Assert.Null(pane.Editor.FoldingManager);
+    }
+
+    [Fact]
     public void Reload_ReplacesTheTextFromDisk_AndClearsUnsavedEdits()
     {
         var pane = new EditorPane();
