@@ -471,6 +471,27 @@ it, including the underscored assembly name. Comments and strings are left alone
 Forward** (Alt+Right) goes back again. Go To Definition, Find in Files, Go To Line and picking a
 row in the References, Error List or Symbols tabs all count as jumps.
 
+### Document Outline
+
+**View > Document Outline** (Ctrl+Alt+T) shows the file you're editing as a tree, on an **Outline**
+tab beside the Solution Explorer's.
+
+- **What it lists** - in C, macros, typedefs, structs, unions and enums with their members,
+  variables, prototypes and functions (with their parameters and return type); in ca65 assembly,
+  `.proc`, `.scope`, `.struct`, `.enum` and `.macro` blocks with what's inside them, labels with
+  their `@cheap` locals, constants and imports. Parameters and local variables are left out, as in
+  Visual Studio.
+- **How it looks** - each entry starts with a mark for its kind (`ƒ` function, `#` macro, `T` type,
+  `·` member, `=` constant, `›` label, `•` variable) and is coloured like that kind in the editor.
+  Code in an `#if` branch the target rules out is shown in the comment colour.
+- **Using it** - Enter or a double-click goes to an entry, and Alt+Left comes back. As the caret
+  moves, the entry it's in is selected. Type in the box above the tree to filter it.
+- **Right-click** - Go To, Find All References, Rename Symbol, Sort by Name (or back to file
+  order), and Collapse All / Expand All. What you collapse stays collapsed as you edit.
+
+The outline updates a moment after you stop typing, from the editor's text - no save needed - and
+only while it's on screen.
+
 ### Context help
 
 **Help > Context Help** (F1) opens the [Doc Viewer](#the-doc-viewer) at the word under the caret:
@@ -506,6 +527,7 @@ Tedide uses Visual Studio's keys where Windows Terminal lets them through.
 | Ctrl+N / Ctrl+O | New / Open Project | |
 | Ctrl+Q | Quit | Esc closes a suggestion list, menu or dialog, but never quits Tedide. |
 | Ctrl+Alt+L | Solution Explorer | |
+| Ctrl+Alt+T | Document Outline | |
 | Ctrl+Alt+V, W, C, B, G | Locals, Watch, Call Stack, Breakpoints, Registers | VS's two-key chords, such as Ctrl+Alt+V, L, need only the first key. |
 | Ctrl+Alt+M, D | Memory, Disassembly | |
 

@@ -10,7 +10,8 @@ namespace Tedide.App.Views;
 /// the selected one in the Accent colour and the only one shown. A click on a name, or Left/Right
 /// while the strip has focus, switches window. Used by <see cref="DebugPanelView"/> rather than
 /// Terminal.Gui's own <c>Tabs</c>: a <c>Tabs</c> nested inside the bottom pane's <c>Tabs</c> never
-/// gets mouse clicks - not on its headers, not on its contents.
+/// gets mouse clicks - not on its headers, not on its contents. Also, without its border, inside
+/// the left pane's frame: the Solution Explorer and the Document Outline.
 /// </summary>
 public sealed class PaneTabs : View
 {
@@ -19,9 +20,19 @@ public sealed class PaneTabs : View
 
     public int Selected { get; private set; }
 
+    /// <summary>Raised with the newly selected window's index.</summary>
+    public event Action<int>? SelectionChanged;
+
     public PaneTabs(params (string Title, View Page)[] pages)
+        : this(bordered: true, pages)
     {
-        BorderStyle = LineStyle.Single;
+    }
+
+    /// <param name="bordered">False inside a frame that already has a border of its own.</param>
+    public PaneTabs(bool bordered, params (string Title, View Page)[] pages)
+    {
+        if (bordered)
+            BorderStyle = LineStyle.Single;
         // A column clear of the border either side, and a blank row under the strip.
         Padding.Thickness = new Thickness(1, 0, 1, 0);
         _pages = pages;
@@ -49,6 +60,7 @@ public sealed class PaneTabs : View
         if (hadFocus)
             _pages[index].Page.SetFocus();
         _strip.SetNeedsDraw();
+        SelectionChanged?.Invoke(index);
     }
 
     /// <summary>Where each name lands in the strip: " Locals │ Watch " - the end is exclusive.</summary>

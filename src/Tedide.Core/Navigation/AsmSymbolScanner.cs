@@ -4,13 +4,28 @@ namespace Tedide.Core.Navigation;
 /// Finds the symbols a ca65 file defines or declares: labels (cheap <c>@locals</c> scoped between
 /// the ordinary labels around them), <c>name = value</c> constants, <c>.proc</c>, <c>.macro</c> and
 /// <c>.define</c>, <c>.struct</c>/<c>.union</c>/<c>.enum</c> with their members, <c>.scope</c>, and
-/// <c>.import</c>/<c>.global</c> declarations.
+/// <c>.import</c>/<c>.global</c> declarations. <see cref="ScanDetailed"/> also records each
+/// <c>.proc</c>, <c>.scope</c>, <c>.struct</c>, <c>.union</c>, <c>.enum</c> and <c>.macro</c> block's
+/// extent (<see cref="SymbolDetail.Body"/>), for the Document Outline.
 /// </summary>
 public static class AsmSymbolScanner
 {
-    public static List<SymbolDefinition> Scan(string path, IReadOnlyList<SourceToken> tokens)
+    public static List<SymbolDefinition> Scan(string path, IReadOnlyList<SourceToken> tokens) =>
+        ScanDetailed(path, tokens).Definitions;
+
+    /// <summary>The block directives with an end, by what ends them - see <see cref="ScanDetailed"/>.</summary>
+    private static readonly Dictionary<string, string> BlockEnds = new(StringComparer.OrdinalIgnoreCase)
+    {
+        [".endproc"] = ".proc", [".endscope"] = ".scope", [".endstruct"] = ".struct", [".endunion"] = ".union",
+        [".endenum"] = ".enum", [".endmacro"] = ".macro", [".endmac"] = ".macro",
+    };
+
+    public static CScan ScanDetailed(string path, IReadOnlyList<SourceToken> tokens)
     {
         var definitions = new List<SymbolDefinition>();
+        var details = new Dictionary<SymbolDefinition, SymbolDetail>();
+        // Open blocks: the directive that opened each (".mac" counted as ".macro"), where, and its name.
+        var blocks = new Stack<(string Directive, int Line, SymbolDefinition? Name)>();
         var cheapLocals = new List<SourceToken>();
         // Every line that starts a new cheap-local scope: an ordinary label or a .proc.
         var scopeBreaks = new List<int>();
@@ -18,8 +33,33 @@ public static class AsmSymbolScanner
         var enumDepth = 0;
         (int StartLine, List<SourceToken> Parameters)? macro = null;
 
-        void Add(SourceToken token, SymbolKind kind, SourceScope? scope = null) =>
-            definitions.Add(new SymbolDefinition(token.Text, kind, path, token.Line, token.Column, scope));
+        SymbolDefinition Add(SourceToken token, SymbolKind kind, SourceScope? scope = null)
+        {
+            var definition = new SymbolDefinition(token.Text, kind, path, token.Line, token.Column, scope);
+            definitions.Add(definition);
+            return definition;
+        }
+
+        void Open(string directive, int line, SymbolDefinition? name)
+        {
+            blocks.Push((directive, line, name));
+            if (name is not null)
+                details[name] = new SymbolDetail(Keyword: directive);
+        }
+
+        // Closes the innermost block the end directive matches, and any left open inside it.
+        void Close(string opener, int line)
+        {
+            if (!blocks.Any(b => b.Directive == opener))
+                return;
+            while (blocks.TryPop(out var block))
+            {
+                if (block.Name is { } name)
+                    details[name] = details[name] with { Body = new SourceScope(block.Line, line) };
+                if (block.Directive == opener)
+                    break;
+            }
+        }
 
         static bool IsName(List<SourceToken> line, int index) =>
             index < line.Count && line[index].Kind == TokenKind.Identifier;
@@ -71,15 +111,21 @@ public static class AsmSymbolScanner
                 continue;
             }
 
-            switch (line[i].Text.ToLowerInvariant())
+            var directive = line[i].Text.ToLowerInvariant();
+            if (BlockEnds.TryGetValue(directive, out var opener))
+                Close(opener, line[i].Line);
+
+            switch (directive)
             {
-                case ".proc" when IsName(line, i + 1):
-                    Add(line[i + 1], SymbolKind.Function);
-                    scopeBreaks.Add(line[i].Line);
+                case ".proc":
+                    Open(".proc", line[i].Line, IsName(line, i + 1) ? Add(line[i + 1], SymbolKind.Function) : null);
+                    if (IsName(line, i + 1))
+                        scopeBreaks.Add(line[i].Line);
                     break;
-                case ".macro" or ".mac" when IsName(line, i + 1):
-                    Add(line[i + 1], SymbolKind.Macro);
-                    macro = (line[i].Line, line.Skip(i + 2).Where(t => t.Kind == TokenKind.Identifier).ToList());
+                case ".macro" or ".mac":
+                    Open(".macro", line[i].Line, IsName(line, i + 1) ? Add(line[i + 1], SymbolKind.Macro) : null);
+                    if (IsName(line, i + 1))
+                        macro = (line[i].Line, line.Skip(i + 2).Where(t => t.Kind == TokenKind.Identifier).ToList());
                     break;
                 case ".endmacro" or ".endmac" when macro is { } open:
                     foreach (var parameter in open.Parameters)
@@ -90,23 +136,21 @@ public static class AsmSymbolScanner
                     Add(line[i + 1], SymbolKind.Macro);
                     break;
                 case ".struct" or ".union":
-                    if (IsName(line, i + 1))
-                        Add(line[i + 1], SymbolKind.Tag);
+                    Open(directive, line[i].Line, IsName(line, i + 1) ? Add(line[i + 1], SymbolKind.Tag) : null);
                     structDepth++;
                     break;
                 case ".endstruct" or ".endunion":
                     structDepth = Math.Max(0, structDepth - 1);
                     break;
                 case ".enum":
-                    if (IsName(line, i + 1))
-                        Add(line[i + 1], SymbolKind.Tag);
+                    Open(".enum", line[i].Line, IsName(line, i + 1) ? Add(line[i + 1], SymbolKind.Tag) : null);
                     enumDepth++;
                     break;
                 case ".endenum":
                     enumDepth = Math.Max(0, enumDepth - 1);
                     break;
-                case ".scope" when IsName(line, i + 1):
-                    Add(line[i + 1], SymbolKind.Label);
+                case ".scope":
+                    Open(".scope", line[i].Line, IsName(line, i + 1) ? Add(line[i + 1], SymbolKind.Label) : null);
                     break;
                 case ".import" or ".importzp" or ".global" or ".globalzp" or ".forceimport":
                     foreach (var name in line.Skip(i + 1).Where(t => t.Kind == TokenKind.Identifier))
@@ -133,6 +177,11 @@ public static class AsmSymbolScanner
             foreach (var parameter in unclosed.Parameters)
                 Add(parameter, SymbolKind.Parameter, new SourceScope(unclosed.StartLine, lastLine));
 
-        return definitions;
+        // Half-typed code: a block with no end runs to the end of the file.
+        foreach (var (_, line, name) in blocks)
+            if (name is not null)
+                details[name] = details[name] with { Body = new SourceScope(line, lastLine) };
+
+        return new CScan(definitions, details);
     }
 }

@@ -55,7 +55,7 @@ public sealed class FileSymbols
         CScan scan = language switch
         {
             SourceLanguage.C => CSymbolScanner.ScanDetailed(path, tokens),
-            SourceLanguage.Assembly => new CScan(AsmSymbolScanner.Scan(path, tokens), []),
+            SourceLanguage.Assembly => AsmSymbolScanner.ScanDetailed(path, tokens),
             _ => new CScan([], []),
         };
         var inactive = language == SourceLanguage.C ? PreprocessorConditions.InactiveRanges(tokens, macros) : [];

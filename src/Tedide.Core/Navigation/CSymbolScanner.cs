@@ -62,6 +62,11 @@ public static class CSymbolScanner
         public string? AggregateKey { get; } = aggregateKey;
 
         public List<(SourceToken Token, SymbolKind Kind, CType? Type)> Locals { get; } = [];
+
+        /// <summary>The function or tag this is the body of, given its extent when it closes.</summary>
+        public SymbolDefinition? Owner { get; init; }
+
+        public int StartLine { get; init; }
     }
 
     public static List<SymbolDefinition> Scan(string path, IReadOnlyList<SourceToken> tokens) =>
@@ -97,6 +102,8 @@ public static class CSymbolScanner
             var frame = frames.Pop();
             foreach (var (token, kind, type) in frame.Locals)
                 Add(token, kind, new SourceScope(token.Line, endLine), type is null ? null : new SymbolDetail(type));
+            if (frame.Owner is { } owner)
+                details[owner] = (details.GetValueOrDefault(owner) ?? new SymbolDetail()) with { Body = new SourceScope(frame.StartLine, endLine) };
         }
 
         CType? TypeOf(List<SourceToken> specifiers, List<SourceToken> declarator, SourceToken name) =>
@@ -133,11 +140,13 @@ public static class CSymbolScanner
             var isTypedef = tokens.Any(t => t.Is("typedef"));
             var isExtern = tokens.Any(t => t.Is("extern"));
             var specifiers = Specifiers(tokens);
+            // A declaration with a struct, union or enum body in it spans that body.
+            SourceScope? body = tokens.Count > 0 && tokens.Any(t => t.Is("{}")) ? new SourceScope(tokens[0].Line, tokens[^1].Line) : null;
             foreach (var (name, isFunction, segment) in Declarators(tokens))
             {
                 var type = TypeOf(specifiers, segment, name);
                 if (isTypedef)
-                    Add(name, SymbolKind.Typedef, detail: new SymbolDetail(type));
+                    Add(name, SymbolKind.Typedef, detail: new SymbolDetail(type, Body: body));
                 else if (isFunction)
                 {
                     Add(name, SymbolKind.Prototype, detail: new SymbolDetail(type, Signature: Signature(tokens, name)));
@@ -150,7 +159,7 @@ public static class CSymbolScanner
                 else if (isExtern)
                     Add(name, SymbolKind.ExternVariable, detail: new SymbolDetail(type));
                 else if (isFileScope)
-                    Add(name, SymbolKind.Variable, detail: new SymbolDetail(type));
+                    Add(name, SymbolKind.Variable, detail: new SymbolDetail(type, Body: body));
                 else
                     frames.Peek().Locals.Add((name, SymbolKind.LocalVariable, type));
             }
@@ -211,24 +220,28 @@ public static class CSymbolScanner
                     if (AggregateKeyword(statement) is { } aggregate)
                     {
                         var hasTag = statement[^1].Kind == TokenKind.Identifier && statement.Count >= 2 && statement[^2].Is(aggregate);
-                        if (hasTag)
-                            Add(statement[^1], SymbolKind.Tag);
+                        var tag = hasTag ? Add(statement[^1], SymbolKind.Tag, detail: new SymbolDetail(Keyword: aggregate)) : null;
+                        var keywordLine = statement.Last(t => t.Is(aggregate)).Line;
                         string? key = aggregate == "enum" ? null
                             : hasTag ? $"{aggregate} {statement[^1].Text}"
                             : SymbolDetail.AnonymousKey(path, token.Line, token.Column);
                         if (key is not null)
                             aggregateMarkers[(marker.Line, marker.Column)] = key;
-                        frames.Push(new Frame(aggregate == "enum" ? FrameKind.Enum : FrameKind.Aggregate, [.. statement, marker], key));
+                        frames.Push(new Frame(aggregate == "enum" ? FrameKind.Enum : FrameKind.Aggregate, [.. statement, marker], key)
+                        {
+                            Owner = tag,
+                            StartLine = keywordLine,
+                        });
                         statement.Clear();
                         break;
                     }
 
                     if (Context() is null && FunctionDefinition(statement) is { } function)
                     {
-                        Add(function.Name, SymbolKind.Function, detail: new SymbolDetail(
+                        var definition = Add(function.Name, SymbolKind.Function, detail: new SymbolDetail(
                             TypeOf(Specifiers(statement), statement[..(statement.IndexOf(function.Name) + 1)], function.Name),
                             Signature: Signature(statement, function.Name)));
-                        var frame = new Frame(FrameKind.Function, []);
+                        var frame = new Frame(FrameKind.Function, []) { Owner = definition, StartLine = statement[0].Line };
                         foreach (var (parameter, parameterType) in PrototypeParameters(statement, function.Name, aggregateMarkers))
                             frame.Locals.Add((parameter, SymbolKind.Parameter, parameterType));
                         frames.Push(frame);

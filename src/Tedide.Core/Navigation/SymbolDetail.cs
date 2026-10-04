@@ -29,7 +29,14 @@ public sealed record CallSignature(string Text, IReadOnlyList<(int Start, int Le
 /// <param name="Container">For a member, the struct or union it belongs to: "struct name" or
 /// "union name" for a tagged one, a file position for one without a tag.</param>
 /// <param name="Signature">For a function, prototype or function-like macro.</param>
-public sealed record SymbolDetail(CType? Type = null, string? Container = null, CallSignature? Signature = null)
+/// <param name="Body">The lines a function's, struct's, union's or enum's body spans, from its first
+/// line to its closing brace - or a ca65 <c>.proc</c>, <c>.scope</c>, <c>.struct</c>, <c>.enum</c> or
+/// <c>.macro</c> to its end directive. Also a typedef's or variable's whole declaration, when it has
+/// a struct or enum body. What the Document Outline nests by, and follows the caret with.</param>
+/// <param name="Keyword">What introduced a tag or block: "struct", "union", "enum", ".proc",
+/// ".scope", ".macro"...</param>
+public sealed record SymbolDetail(CType? Type = null, string? Container = null, CallSignature? Signature = null,
+    SourceScope? Body = null, string? Keyword = null)
 {
     /// <summary>Whether <paramref name="key"/> names a struct or union directly: "struct x", "union
     /// x", or an untagged one's position key.</summary>

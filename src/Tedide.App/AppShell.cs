@@ -64,6 +64,14 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
     private MenuItem _recentProjectsMenuItem = null!;
 
     private readonly SolutionExplorerTree _solutionExplorer = new();
+
+    /// <summary>View > Document Outline: the shown file's structure, on the left pane's second tab.</summary>
+    private readonly DocumentOutlineView _outline = new();
+    private readonly DocumentOutlineTracking _outlineTracking;
+
+    /// <summary>The left pane's tabs: the Solution Explorer, then the Document Outline.</summary>
+    private PaneTabs _leftTabs = null!;
+    private const int OutlineTab = 1;
     private readonly EditorPane _editorPane = new();
     private readonly FrameView _editorFrame;
     private readonly OutputView _outputView = new();
@@ -121,6 +129,7 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
         _navigation = new NavigationCommands(this, _workspace, _editorPane, _navigationHistory, _referencesView);
         _build = new BuildCommands(this, _workspace, _navigation, _vice, _outputView, _errorListView, _solutionExplorer, _symbolPanel);
         _gitIntegration = new GitIntegration(this, _workspace, _editorPane, _solutionExplorer, _navigation, _git, _gitView);
+        _outlineTracking = new DocumentOutlineTracking(_workspace, _editorPane, _outline, () => _leftTabs?.Selected == OutlineTab);
         _liveErrors = new LiveErrorChecking(this, _workspace, _editorPane, _errorListView, _navigation.DisplayPath)
         {
             Enabled = _editorSettings.CheckAsYouType,
@@ -177,7 +186,31 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
         _solutionExplorer.ProjectSettingsRequested += ShowProjectSettings;
         _solutionExplorer.RemoveProjectRequested += RemoveProject;
         _solutionExplorer.DeleteProjectRequested += DeleteProject;
-        explorerFrame.Add(_solutionExplorer);
+        _outline.NodeActivated += GoToOutlineNode;
+        _outline.FindReferencesRequested += node =>
+        {
+            GoToOutlineNode(node);
+            _navigation.FindAllReferences();
+        };
+        _outline.RenameRequested += node =>
+        {
+            GoToOutlineNode(node);
+            _navigation.RenameSymbol();
+        };
+        // Solution | Outline, as Visual Studio docks its Document Outline beside the Solution
+        // Explorer. The frame's own border serves both, and its title names the one shown.
+        _leftTabs = new PaneTabs(bordered: false, ("Solution", _solutionExplorer), ("Outline", _outline))
+        {
+            Width = Dim.Fill(),
+            Height = Dim.Fill(),
+        };
+        _leftTabs.SelectionChanged += index =>
+        {
+            explorerFrame.Title = index == OutlineTab ? "Document Outline" : "Solution Explorer";
+            if (index == OutlineTab)
+                _outlineTracking.Shown();
+        };
+        explorerFrame.Add(_leftTabs);
 
         _editorFrame = new FrameView
         {
@@ -555,16 +588,17 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
         editMenuItems.AddAt(6, new MenuItem("Navigate For_ward", "", _navigation.NavigateForward, NavigateForwardKey).WithKeyText("Alt+Right"));
         var viewMenuItems = menuBar.ViewMenu.PopoverMenu!.Root!;
         viewMenuItems.AddAt(0, new MenuItem("_Solution Explorer", "", ShowSolutionExplorer, SolutionExplorerKey));
-        viewMenuItems.AddAt(1, new MenuItem("_Output", "", ShowOutputTab, Key.Empty));
-        viewMenuItems.AddAt(2, new MenuItem("_Error List", "", () => ShowPane(_errorListView), Key.Empty));
-        viewMenuItems.AddAt(3, new MenuItem("_Git Changes", "", () => ShowPane(_gitView), Key.Empty));
-        viewMenuItems.AddAt(4, new Line());
-        viewMenuItems.AddAt(5, BuildCheckAsYouTypeMenuItem());
-        viewMenuItems.AddAt(6, BuildCodeCompletionMenuItem());
+        viewMenuItems.AddAt(1, new MenuItem("Document Ou_tline", "", ShowDocumentOutline, DocumentOutlineKey));
+        viewMenuItems.AddAt(2, new MenuItem("_Output", "", ShowOutputTab, Key.Empty));
+        viewMenuItems.AddAt(3, new MenuItem("_Error List", "", () => ShowPane(_errorListView), Key.Empty));
+        viewMenuItems.AddAt(4, new MenuItem("_Git Changes", "", () => ShowPane(_gitView), Key.Empty));
+        viewMenuItems.AddAt(5, new Line());
+        viewMenuItems.AddAt(6, BuildCheckAsYouTypeMenuItem());
+        viewMenuItems.AddAt(7, BuildCodeCompletionMenuItem());
         // No keys: Visual Studio's are Ctrl+M chords, and a terminal sends Ctrl+M as Enter.
-        viewMenuItems.AddAt(7, new Line());
-        viewMenuItems.AddAt(8, new MenuItem("Co_llapse All Folds", "", () => _editorPane.SetAllFolded(true), Key.Empty));
-        viewMenuItems.AddAt(9, new MenuItem("E_xpand All Folds", "", () => _editorPane.SetAllFolded(false), Key.Empty));
+        viewMenuItems.AddAt(8, new Line());
+        viewMenuItems.AddAt(9, new MenuItem("Co_llapse All Folds", "", () => _editorPane.SetAllFolded(true), Key.Empty));
+        viewMenuItems.AddAt(10, new MenuItem("E_xpand All Folds", "", () => _editorPane.SetAllFolded(false), Key.Empty));
         menuBar.Menus = [fileMenu, menuBar.EditMenu, menuBar.ViewMenu, buildMenu, debugMenu, gitMenu, projectMenu, themeMenu, helpMenu];
         menuBar.X = 0;
         menuBar.Y = 0;
@@ -604,6 +638,9 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
     /// Not VS's Ctrl+Alt+O for Output: Ctrl+Alt is AltGr, and on a UK keyboard AltGr+O types "ó"
     /// (confirmed live) - the same goes for the other vowels, which none of these use.</summary>
     private static readonly Key SolutionExplorerKey = Key.L.WithCtrl.WithAlt;
+
+    /// <summary>Visual Studio's own key for its Document Outline.</summary>
+    private static readonly Key DocumentOutlineKey = Key.T.WithCtrl.WithAlt;
     private static readonly Key CallStackKey = Key.C.WithCtrl.WithAlt;
     private static readonly Key BreakpointsWindowKey = Key.B.WithCtrl.WithAlt;
     private static readonly Key RegistersKey = Key.G.WithCtrl.WithAlt;
@@ -700,6 +737,8 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
             action = CloseActiveFile;
         else if (key == SolutionExplorerKey)
             action = ShowSolutionExplorer;
+        else if (key == DocumentOutlineKey)
+            action = ShowDocumentOutline;
         else if (key == LocalsKey)
             action = () => ShowDebugWindow(DebugWindow.Locals);
         else if (key == WatchKey)
@@ -1231,6 +1270,7 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
         _gitIntegration.ActiveDocumentChanged();
         _liveErrors.ActiveDocumentChanged();
         _completion.ActiveDocumentChanged();
+        _outlineTracking.ActiveDocumentChanged();
         _editorFrame.Title = _editorPane.OpenPath is { } path ? Path.GetFileName(path) : NoFileOpenTitle;
         UpdateLanguageIndicator();
         _debug.RefreshBreakpointHighlights();
@@ -1705,6 +1745,8 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
     internal RecentProjectsSettings RecentProjects => _recentProjects;
     internal DebugSession Debug => _debug;
     internal CodeCompletion Completion => _completion;
+    internal DocumentOutlineView Outline => _outline;
+    internal PaneTabs LeftTabs => _leftTabs;
     internal string OutputText => _outputView.Text;
 
     /// <summary>Safe to call from any thread - see <see cref="OnUiThread"/>.</summary>
@@ -1812,7 +1854,22 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
         _debugPanel.ShowWindow(window);
     }
 
-    private void ShowSolutionExplorer() => _solutionExplorer.SetFocus();
+    private void ShowSolutionExplorer()
+    {
+        _leftTabs.Select(0);
+        _solutionExplorer.SetFocus();
+    }
+
+    /// <summary>View > Document Outline: the left pane's Outline tab, with the focus on it.</summary>
+    internal void ShowDocumentOutline()
+    {
+        _leftTabs.Select(OutlineTab);
+        _outline.Tree.SetFocus();
+    }
+
+    /// <summary>Goes to an outline node's symbol in the editor, recorded for Navigate Backward.</summary>
+    private void GoToOutlineNode(Tedide.Core.Navigation.OutlineNode node) =>
+        _navigation.NavigateTo(node.Definition.FilePath, node.Definition.Line, node.Definition.Column, node.Definition.Name.Length);
 
     /// <summary>
     /// Switches the Output/Error List pane to its "Debug" tab and gives the debug panel input

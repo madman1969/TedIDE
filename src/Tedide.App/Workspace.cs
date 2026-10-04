@@ -54,6 +54,14 @@ public sealed class Workspace
         return linking.FirstOrDefault(p => ProjectGraph.DependsOn(Projects, active, p)) ?? linking[0];
     }
 
+    /// <summary>The macros that decide which <c>#if</c> branches count in <paramref name="path"/>: its
+    /// project's target's own and -D defines (else the startup project's).</summary>
+    public IReadOnlyList<string> MacrosFor(string? path)
+    {
+        var project = (path is null ? null : ProjectFor(path)) ?? ActiveProject;
+        return project is null ? [] : [.. project.Target.PredefinedMacros(), .. project.PreprocessorDefines.Select(d => d.Split('=', 2)[0].Trim())];
+    }
+
     private static bool IsInside(string path, string directory)
     {
         var relative = Path.GetRelativePath(directory, path);

@@ -214,13 +214,7 @@ internal sealed class CodeCompletion : IEditorCompletionProvider
         }
     }
 
-    /// <summary>The macros that decide which #if branches count: the target's own and the -D
-    /// defines of the project <paramref name="path"/> belongs to (else the startup project).</summary>
-    private IReadOnlyList<string> MacrosFor(string? path)
-    {
-        var project = (path is null ? null : _workspace.ProjectFor(path)) ?? _workspace.ActiveProject;
-        return project is null ? [] : [.. project.Target.PredefinedMacros(), .. project.PreprocessorDefines.Select(d => d.Split('=', 2)[0].Trim())];
-    }
+    private IReadOnlyList<string> MacrosFor(string? path) => _workspace.MacrosFor(path);
 
     public IReadOnlyList<CompletionItem> GetCompletions(TextDocument document, int caretOffset, string prefix)
     {
