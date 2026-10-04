@@ -27,16 +27,10 @@ public sealed class TedideSolution
         ? System.Environment.CurrentDirectory
         : (Path.GetDirectoryName(Path.GetFullPath(FilePath)) ?? System.Environment.CurrentDirectory);
 
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        WriteIndented = true,
-        Converters = { new JsonStringEnumConverter() },
-    };
-
     public static TedideSolution Load(string path)
     {
         var json = File.ReadAllText(path);
-        var solution = JsonSerializer.Deserialize<TedideSolution>(json, JsonOptions)
+        var solution = JsonSerializer.Deserialize(json, CoreJsonContext.Default.TedideSolution)
             ?? throw new InvalidDataException($"Could not parse solution file '{path}'.");
         solution.FilePath = Path.GetFullPath(path);
         solution._savedJson = solution.Serialize();
@@ -70,7 +64,7 @@ public sealed class TedideSolution
     /// writes it - see <see cref="SaveIfChanged"/>.</summary>
     private string? _savedJson;
 
-    private string Serialize() => JsonSerializer.Serialize(this, JsonOptions);
+    private string Serialize() => JsonFile.Serialize(this, CoreJsonContext.Default.TedideSolution);
 
     /// <summary>Loads every referenced project relative to this solution's directory.</summary>
     public List<TedideProject> LoadProjects()

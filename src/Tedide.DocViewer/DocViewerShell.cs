@@ -142,7 +142,7 @@ public sealed class DocViewerShell : Window
             Title = "Documentation",
             // Page names are full of underscores (The C Book's "answers/chapter_7") and a title reads
             // its first "_" as a hotkey marker - it was shown as "answers/chapter7".
-            HotKeySpecifier = new System.Text.Rune(0xFFFF),
+            HotKeySpecifier = TerminalGuiWorkarounds.NoHotKey,
             X = Pos.Right(treeFrame),
             Y = Pos.Bottom(menuBar),
             Width = Dim.Percent(_layoutSettings.ClampedContentPaneWidthPercent),

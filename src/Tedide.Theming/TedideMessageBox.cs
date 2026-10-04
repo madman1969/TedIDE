@@ -1,4 +1,3 @@
-using System.Text;
 using Terminal.Gui.App;
 using Terminal.Gui.Drawing;
 using Terminal.Gui.ViewBase;
@@ -44,7 +43,7 @@ public static class TedideMessageBox
             SchemeName = useErrorScheme ? "Error" : "Dialog",
             // A literal "_" in an error/confirmation message (e.g. a file or symbol name) would
             // otherwise be misread as a mnemonic - see the Terminal.Gui hotkey gotchas memory.
-            HotKeySpecifier = new Rune(0xFFFF),
+            HotKeySpecifier = TerminalGuiWorkarounds.NoHotKey,
         };
         dialog.TextFormatter.WordWrap = true;
         // Dialogs default to Movable|Resizable in Terminal.Gui - fixed size here, same as every

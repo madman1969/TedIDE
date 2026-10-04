@@ -20,8 +20,6 @@ public sealed class SessionStateFile
     /// Null in a file written before tabs existed, which only recorded <see cref="LastOpenFile"/>.</summary>
     public List<string>? OpenFiles { get; set; }
 
-    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
-
     /// <summary>Loads session state from <paramref name="path"/>, or an empty one if the file doesn't exist yet (a project that's never been closed/switched away from has none).</summary>
     public static SessionStateFile Load(string path)
     {
@@ -29,7 +27,7 @@ public sealed class SessionStateFile
             return new SessionStateFile();
 
         var json = File.ReadAllText(path);
-        return JsonSerializer.Deserialize<SessionStateFile>(json, JsonOptions) ?? new SessionStateFile();
+        return JsonSerializer.Deserialize(json, CoreJsonContext.Default.SessionStateFile) ?? new SessionStateFile();
     }
 
     /// <summary>Like <see cref="Load"/>, but never throws for a corrupt or unreadable file - see
@@ -37,5 +35,5 @@ public sealed class SessionStateFile
     public static SessionStateFile LoadOrRecover(string path, out string? problem) =>
         SidecarFile.LoadOrSetAside(path, Load, () => new SessionStateFile(), out problem);
 
-    public void Save(string path) => File.WriteAllText(path, JsonSerializer.Serialize(this, JsonOptions));
+    public void Save(string path) => JsonFile.Write(path, this, CoreJsonContext.Default.SessionStateFile);
 }

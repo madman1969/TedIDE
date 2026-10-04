@@ -1,5 +1,6 @@
 using System.Data;
 using Tedide.Git;
+using Tedide.Theming;
 using Terminal.Gui.App;
 using Terminal.Gui.Drawing;
 using Terminal.Gui.ViewBase;
@@ -33,7 +34,7 @@ public sealed class BlameDialog : Dialog
     {
         Title = $"Blame - {displayPath}";
         // The title echoes a file name, and a title reads its first "_" as a hotkey marker.
-        HotKeySpecifier = new System.Text.Rune(0xFFFF);
+        HotKeySpecifier = TerminalGuiWorkarounds.NoHotKey;
         Width = Dim.Percent(90);
         Height = Dim.Percent(85);
         Padding.Thickness = new Thickness(2, 1, 2, 1);
@@ -41,7 +42,7 @@ public sealed class BlameDialog : Dialog
         _lines = lines;
 
         // Commit summaries are free text - no "_" hotkey parsing.
-        _commitLabel = new Label { X = 0, Y = 0, Width = Dim.Fill(1), HotKeySpecifier = new System.Text.Rune(0xFFFF) };
+        _commitLabel = new Label { X = 0, Y = 0, Width = Dim.Fill(1), HotKeySpecifier = TerminalGuiWorkarounds.NoHotKey };
 
         _table = new TableView
         {

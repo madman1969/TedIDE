@@ -1,5 +1,4 @@
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace Tedide.Core;
 
@@ -25,12 +24,6 @@ public sealed class BreakpointsFile
 {
     public List<BreakpointEntry> Breakpoints { get; set; } = [];
 
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        WriteIndented = true,
-        Converters = { new JsonStringEnumConverter() },
-    };
-
     /// <summary>Loads breakpoints from <paramref name="path"/>, or returns an empty set if the file doesn't exist yet (a project with no breakpoints set has none).</summary>
     public static BreakpointsFile Load(string path)
     {
@@ -38,7 +31,7 @@ public sealed class BreakpointsFile
             return new BreakpointsFile();
 
         var json = File.ReadAllText(path);
-        var file = JsonSerializer.Deserialize<BreakpointsFile>(json, JsonOptions) ?? new BreakpointsFile();
+        var file = JsonSerializer.Deserialize(json, CoreJsonContext.Default.BreakpointsFile) ?? new BreakpointsFile();
         // Valid JSON can still hold nulls where the rest of the app assumes values
         // ("Breakpoints": null, a null entry, an entry with no file) - drop them here, once.
         file.Breakpoints = (file.Breakpoints ?? []).Where(b => b?.SourceFile is not null).ToList();
@@ -72,5 +65,5 @@ public sealed class BreakpointsFile
         return changed;
     }
 
-    public void Save(string path) => File.WriteAllText(path, JsonSerializer.Serialize(this, JsonOptions));
+    public void Save(string path) => JsonFile.Write(path, this, CoreJsonContext.Default.BreakpointsFile);
 }

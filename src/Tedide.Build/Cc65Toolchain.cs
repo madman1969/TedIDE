@@ -47,19 +47,7 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
     {
         try
         {
-            var startInfo = new ProcessStartInfo(Cl65Path, "--version")
-            {
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                // Kept off Tedide's own console - see RunToolAsync.
-                CreateNoWindow = true,
-                RedirectStandardInput = true,
-            };
-            using var process = Process.Start(startInfo);
-            if (process is null)
-                return false;
-            await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+            await ToolProcess.RunAsync(ToolProcess.StartInfo(Cl65Path, ["--version"]), cancellationToken: cancellationToken).ConfigureAwait(false);
             return true;
         }
         catch (Win32Exception)
@@ -283,16 +271,11 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
         string workingDirectory,
         Action<string?> capture,
         string launchFailureHint,
-        CancellationToken cancellationToken)
-    {
-        var startInfo = new ProcessStartInfo(executable);
-        foreach (var arg in arguments)
-            startInfo.ArgumentList.Add(arg);
-        return RunToolAsync(startInfo, workingDirectory, capture, launchFailureHint, cancellationToken);
-    }
+        CancellationToken cancellationToken) =>
+        RunToolAsync(ToolProcess.StartInfo(executable, arguments), workingDirectory, capture, launchFailureHint, cancellationToken);
 
     /// <summary>The same as the overload above, for a process whose command line is already set up
-    /// - see <see cref="ShellStartInfo"/>.</summary>
+    /// - see <see cref="ShellStartInfo"/>. Run the way every tool is - see <see cref="ToolProcess"/>.</summary>
     private static async Task<int?> RunToolAsync(
         ProcessStartInfo startInfo,
         string workingDirectory,
@@ -301,55 +284,16 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
         CancellationToken cancellationToken)
     {
         startInfo.WorkingDirectory = workingDirectory;
-        startInfo.RedirectStandardOutput = true;
-        startInfo.RedirectStandardError = true;
-        startInfo.UseShellExecute = false;
-        // A console child shares Tedide's own console unless told otherwise, and cmd.exe resets
-        // that console's input mode as it runs - measured: 0x0298 (VT input, mouse) became 0x028F
-        // (line input + echo, no mouse), after which every click in the editor arrived as a raw
-        // escape sequence and was typed into the file. A console of its own (hidden) and no
-        // access to Tedide's stdin keep any tool from touching it.
-        startInfo.CreateNoWindow = true;
-        startInfo.RedirectStandardInput = true;
-
-        Process? started;
         try
         {
-            started = Process.Start(startInfo)
-                ?? throw new InvalidOperationException($"Failed to start '{startInfo.FileName}'.");
+            var result = await ToolProcess.RunAsync(startInfo, onLine: capture, cancellationToken: cancellationToken).ConfigureAwait(false);
+            return result.ExitCode;
         }
         catch (Win32Exception ex)
         {
             capture($"{launchFailureHint} ({ex.Message})");
             return null;
         }
-
-        using var process = started;
-        // Nothing is ever typed to a tool: closing its input straight away means one that waits
-        // for a keypress (a "pause" in a build event) ends instead of hanging the build.
-        process.StandardInput.Close();
-        process.OutputDataReceived += (_, e) => capture(e.Data);
-        process.ErrorDataReceived += (_, e) => capture(e.Data);
-        process.BeginOutputReadLine();
-        process.BeginErrorReadLine();
-
-        try
-        {
-            await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
-        }
-        catch (OperationCanceledException)
-        {
-            // WaitForExitAsync only stops *waiting* on cancellation - cl65 itself (and the
-            // cc65/ca65/ld65 children it spawns) would otherwise keep running in the background,
-            // still writing the very .o/.lst/output files a follow-up build is about to produce.
-            try { process.Kill(entireProcessTree: true); }
-            catch (Exception ex) when (ex is InvalidOperationException or Win32Exception)
-            {
-                // Already exited on its own between the cancellation and the Kill - nothing to do.
-            }
-            throw;
-        }
-        return process.ExitCode;
     }
 
     /// <summary>

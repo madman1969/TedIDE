@@ -1,3 +1,4 @@
+using Tedide.Theming;
 using Terminal.Gui.App;
 using Terminal.Gui.Drawing;
 using Terminal.Gui.ViewBase;
@@ -52,7 +53,7 @@ public sealed class PageFindDialog : Dialog
 
         // HotKeySpecifier disabled: the "not found" message echoes the search term, and a Label
         // reads its first "_" as a hotkey marker.
-        _statusLabel = new Label { Text = string.Empty, X = 0, Y = 4, Width = Dim.Fill(1), HotKeySpecifier = new System.Text.Rune(0xFFFF) };
+        _statusLabel = new Label { Text = string.Empty, X = 0, Y = 4, Width = Dim.Fill(1), HotKeySpecifier = TerminalGuiWorkarounds.NoHotKey };
 
         var findNextButton = new Button { Text = "Find _Next", IsDefault = true, SchemeName = "Accent", X = Pos.Center() - 13, Y = Pos.AnchorEnd(1), Width = 12 };
         findNextButton.Accepting += (_, e) =>

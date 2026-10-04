@@ -1,4 +1,5 @@
 using Tedide.Git;
+using Tedide.Theming;
 using Terminal.Gui.App;
 using Terminal.Gui.Drawing;
 using Terminal.Gui.ViewBase;
@@ -51,7 +52,7 @@ public sealed class ConflictDialog : Dialog
                 RenameSymbolDialog.Wrap($"Keep Mine takes {mine}'s version of the whole file; Take Theirs takes {theirs}. " +
                     "Or Edit it - keep what you want between the <<<<<<< and >>>>>>> markers and delete the markers - then Mark Resolved."),
             X = 0, Y = 0, Width = Dim.Fill(1), Height = Dim.Fill(2),
-            HotKeySpecifier = new System.Text.Rune(0xFFFF),
+            HotKeySpecifier = TerminalGuiWorkarounds.NoHotKey,
         };
 
         // Fixed columns, not offsets from Pos.Center(): that centres each button by its own width,

@@ -5,6 +5,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Tedide.Core\Tedide.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- ThemeSchemeTests checks every theme's colors via ThemeSwitcher.SchemesFor. -->
     <InternalsVisibleTo Include="Tedide.App.Tests" />
     <InternalsVisibleTo Include="Tedide.DocViewer.Tests" />

@@ -259,16 +259,10 @@ public sealed class TedideProject
     [JsonIgnore]
     public string ResolvedSessionFile => Path.Combine(Directory, Name + ".session.json");
 
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        WriteIndented = true,
-        Converters = { new JsonStringEnumConverter() },
-    };
-
     public static TedideProject Load(string path)
     {
         var json = File.ReadAllText(path);
-        var project = JsonSerializer.Deserialize<TedideProject>(json, JsonOptions)
+        var project = JsonSerializer.Deserialize(json, CoreJsonContext.Default.TedideProject)
             ?? throw new InvalidDataException($"Could not parse project file '{path}'.");
         project.FilePath = Path.GetFullPath(path);
         project._savedJson = project.Serialize();
@@ -302,7 +296,7 @@ public sealed class TedideProject
     /// writes it - see <see cref="SaveIfChanged"/>.</summary>
     private string? _savedJson;
 
-    private string Serialize() => JsonSerializer.Serialize(this, JsonOptions);
+    private string Serialize() => JsonFile.Serialize(this, CoreJsonContext.Default.TedideProject);
 
     /// <summary>Absolute paths of all source files.</summary>
     [JsonIgnore]

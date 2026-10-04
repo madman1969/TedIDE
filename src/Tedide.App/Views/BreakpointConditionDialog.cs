@@ -1,3 +1,4 @@
+using Tedide.Theming;
 using Terminal.Gui.App;
 using Terminal.Gui.Drawing;
 using Terminal.Gui.ViewBase;
@@ -27,7 +28,7 @@ public sealed class BreakpointConditionDialog : Dialog
         Arrangement &= ~ViewArrangement.Resizable;
 
         // HotKeySpecifier disabled: the location is a file name, often with underscores.
-        var noHotKey = new System.Text.Rune(0xFFFF);
+        var noHotKey = TerminalGuiWorkarounds.NoHotKey;
         var prompt = new Label { Text = $"Stop at {location} only when:", X = 0, Y = 0, HotKeySpecifier = noHotKey };
         _conditionField = new TextField { X = 0, Y = 2, Width = Dim.Fill(1), Text = currentCondition ?? string.Empty };
         var help = new Label

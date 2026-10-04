@@ -89,12 +89,12 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
         // The title carries the debug state ("Stopped in detect_system at ..."): Terminal.Gui reads
         // its "_" as a hotkey marker, dropping it, and crashed in BorderView.TryUpdateTerminalTitle
         // when the next, shorter title came in with the old hotkey's position.
-        HotKeySpecifier = new System.Text.Rune(0xFFFF);
+        HotKeySpecifier = TerminalGuiWorkarounds.NoHotKey;
         Title = AppTitle;
         _debug = new DebugSession(this, _workspace, _editorPane, _debugPanel, _disassemblyView, _memoryView, _breakpointLineTransformer);
         _navigation = new NavigationCommands(this, _workspace, _editorPane, _navigationHistory, _referencesView);
         _build = new BuildCommands(this, _workspace, _navigation, _vice, _outputView, _errorListView, _solutionExplorer, _symbolPanel);
-        _gitIntegration = new GitIntegration(this, _workspace, _editorPane, _editorFrame, _solutionExplorer, _navigation, _git, _gitView);
+        _gitIntegration = new GitIntegration(this, _workspace, _editorPane, _solutionExplorer, _navigation, _git, _gitView);
         Width = Dim.Fill();
         Height = Dim.Fill();
 
@@ -150,7 +150,7 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
             Title = NoFileOpenTitle,
             // The title is the open file's name, and a title reads its first "_" as a hotkey
             // marker - "sound_fx.c" would show as "soundfx.c".
-            HotKeySpecifier = new System.Text.Rune(0xFFFF),
+            HotKeySpecifier = TerminalGuiWorkarounds.NoHotKey,
             X = Pos.Right(explorerFrame),
             Y = Pos.Bottom(_menuBar),
             Width = Dim.Percent(Math.Clamp(_layoutSettings.ExplorerEditorSplitPercent, 10, 90)),
@@ -502,8 +502,8 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
         editMenuItems.AddAt(2, new MenuItem("Go To _Definition", "", _navigation.GoToDefinition, GoToDefinitionKey));
         editMenuItems.AddAt(3, new MenuItem("Find All _References", "", _navigation.FindAllReferences, FindReferencesKey));
         editMenuItems.AddAt(4, new MenuItem("Re_name Symbol...", "", _navigation.RenameSymbol, RenameSymbolKey));
-        editMenuItems.AddAt(5, WithKeyText(new MenuItem("Navigate _Backward", "", _navigation.NavigateBackward, NavigateBackwardKey), "Alt+Left"));
-        editMenuItems.AddAt(6, WithKeyText(new MenuItem("Navigate For_ward", "", _navigation.NavigateForward, NavigateForwardKey), "Alt+Right"));
+        editMenuItems.AddAt(5, new MenuItem("Navigate _Backward", "", _navigation.NavigateBackward, NavigateBackwardKey).WithKeyText("Alt+Left"));
+        editMenuItems.AddAt(6, new MenuItem("Navigate For_ward", "", _navigation.NavigateForward, NavigateForwardKey).WithKeyText("Alt+Right"));
         var viewMenuItems = menuBar.ViewMenu.PopoverMenu!.Root!;
         viewMenuItems.AddAt(0, new MenuItem("_Solution Explorer", "", ShowSolutionExplorer, SolutionExplorerKey));
         viewMenuItems.AddAt(1, new MenuItem("_Output", "", ShowOutputTab, Key.Empty));
@@ -556,14 +556,6 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
     private static readonly Key WatchKey = Key.W.WithCtrl.WithAlt;
     private static readonly Key MemoryKey = Key.M.WithCtrl.WithAlt;
     private static readonly Key DisassemblyKey = Key.D.WithCtrl.WithAlt;
-
-    /// <summary>Shows <paramref name="text"/> as the item's key: Terminal.Gui spells arrow keys
-    /// "CursorLeft", where Visual Studio's menus say "Left".</summary>
-    private static MenuItem WithKeyText(MenuItem item, string text)
-    {
-        item.KeyView.Text = text;
-        return item;
-    }
 
     private List<MenuItem> BuildDebugWindowsMenuItems() =>
     [

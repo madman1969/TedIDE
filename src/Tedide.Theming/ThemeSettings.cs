@@ -1,5 +1,4 @@
-using System.Text.Json;
-using System.Text.Json.Serialization;
+using Tedide.Core;
 
 namespace Tedide.Theming;
 
@@ -12,14 +11,7 @@ public sealed class ThemeSettings
 {
     public AppTheme Theme { get; set; } = AppTheme.Vs2026Dark;
 
-    private static readonly string FilePath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Tedide", "settings.json");
-
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        WriteIndented = true,
-        Converters = { new JsonStringEnumConverter() },
-    };
+    private static readonly string FilePath = JsonFile.UserSettingsPath("settings.json");
 
     /// <summary>
     /// Loads the previously saved settings, or defaults (VS2026 Dark) if none have been saved yet
@@ -31,22 +23,7 @@ public sealed class ThemeSettings
     public void Save() => Save(FilePath);
 
     /// <summary>The path-taking forms, so tests never touch the user's real settings file.</summary>
-    internal static ThemeSettings Load(string path)
-    {
-        try
-        {
-            var json = File.ReadAllText(path);
-            return JsonSerializer.Deserialize<ThemeSettings>(json, JsonOptions) ?? new ThemeSettings();
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
-        {
-            return new ThemeSettings();
-        }
-    }
+    internal static ThemeSettings Load(string path) => JsonFile.ReadOrDefault(path, ThemingJsonContext.Default.ThemeSettings);
 
-    internal void Save(string path)
-    {
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        File.WriteAllText(path, JsonSerializer.Serialize(this, JsonOptions));
-    }
+    internal void Save(string path) => JsonFile.Write(path, this, ThemingJsonContext.Default.ThemeSettings);
 }

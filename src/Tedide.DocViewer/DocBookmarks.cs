@@ -1,4 +1,4 @@
-using System.Text.Json;
+using Tedide.Core;
 
 namespace Tedide.DocViewer;
 
@@ -16,33 +16,15 @@ public sealed class DocBookmarks
 {
     public List<Bookmark> Items { get; set; } = [];
 
-    private static readonly string FilePath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Tedide", "docviewer-bookmarks.json");
-
-    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+    private static readonly string FilePath = JsonFile.UserSettingsPath("docviewer-bookmarks.json");
 
     /// <summary>
     /// Loads the previously saved bookmarks, or an empty list if none have been saved yet or the
     /// file can't be read - a missing/corrupt settings file should never stop the app from starting.
     /// </summary>
-    public static DocBookmarks Load()
-    {
-        try
-        {
-            var json = File.ReadAllText(FilePath);
-            return JsonSerializer.Deserialize<DocBookmarks>(json, JsonOptions) ?? new DocBookmarks();
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
-        {
-            return new DocBookmarks();
-        }
-    }
+    public static DocBookmarks Load() => JsonFile.ReadOrDefault(FilePath, DocViewerJsonContext.Default.DocBookmarks);
 
-    public void Save()
-    {
-        Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
-        File.WriteAllText(FilePath, JsonSerializer.Serialize(this, JsonOptions));
-    }
+    public void Save() => JsonFile.Write(FilePath, this, DocViewerJsonContext.Default.DocBookmarks);
 
     public bool Contains(string fileName, string? anchor) =>
         Items.Any(b => b.FileName == fileName && b.Anchor == anchor);

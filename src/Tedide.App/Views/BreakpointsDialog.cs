@@ -1,6 +1,6 @@
-using Tedide.Theming;
 using System.Data;
 using Tedide.Core;
+using Tedide.Theming;
 using Terminal.Gui.App;
 using Terminal.Gui.Drawing;
 using Terminal.Gui.ViewBase;

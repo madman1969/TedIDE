@@ -47,7 +47,7 @@ public sealed class CompareDialog : Dialog
     {
         Title = title;
         // The title echoes a file name, and a title reads its first "_" as a hotkey marker.
-        HotKeySpecifier = new System.Text.Rune(0xFFFF);
+        HotKeySpecifier = TerminalGuiWorkarounds.NoHotKey;
         Width = Dim.Percent(90);
         Height = Dim.Percent(85);
         Padding.Thickness = new Thickness(2, 1, 2, 1);
@@ -58,7 +58,7 @@ public sealed class CompareDialog : Dialog
         {
             Text = $"{summary}  {hunks},  +{diff.Added} -{diff.Removed}",
             X = 0, Y = 0, Width = Dim.Fill(1),
-            HotKeySpecifier = new System.Text.Rune(0xFFFF),
+            HotKeySpecifier = TerminalGuiWorkarounds.NoHotKey,
         };
 
         foreach (var hunk in diff.Hunks)

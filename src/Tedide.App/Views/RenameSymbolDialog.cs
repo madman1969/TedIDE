@@ -1,4 +1,5 @@
 using Tedide.Core.Navigation;
+using Tedide.Theming;
 using Terminal.Gui.App;
 using Terminal.Gui.Drawing;
 using Terminal.Gui.ViewBase;
@@ -33,7 +34,7 @@ public sealed class RenameSymbolDialog : Dialog
 
         // HotKeySpecifier disabled on every label that echoes a symbol: a Label reads its first "_"
         // as a hotkey marker, so "border_flash" would show as "borderflash".
-        var noHotKey = new System.Text.Rune(0xFFFF);
+        var noHotKey = TerminalGuiWorkarounds.NoHotKey;
         var nameLabel = new Label { Text = $"New name for '{symbol}':", X = 0, Y = 0, HotKeySpecifier = noHotKey };
         _nameField = new TextField { Text = symbol, X = 0, Y = 2, Width = Dim.Fill() };
         _nameField.Accepting += (_, e) =>

@@ -1,5 +1,5 @@
 using System.Collections.ObjectModel;
-using System.Text;
+using Tedide.Theming;
 using Terminal.Gui.App;
 using Terminal.Gui.Drawing;
 using Terminal.Gui.ViewBase;
@@ -59,7 +59,7 @@ public sealed class SearchDialog : Dialog
 
         // HotKeySpecifier disabled: the label echoes the search term, and a Label reads its first
         // "_" as a hotkey marker - "get_ostype" was shown as "getostype".
-        _statusLabel = new Label { Text = string.Empty, X = 0, Y = 4, Width = Dim.Fill(), HotKeySpecifier = new Rune(0xFFFF) };
+        _statusLabel = new Label { Text = string.Empty, X = 0, Y = 4, Width = Dim.Fill(), HotKeySpecifier = TerminalGuiWorkarounds.NoHotKey };
 
         // The list draws its own border and title rather than sitting inside a FrameView: Tab only
         // moves between peers of the same SuperView, so a list nested alone in a frame was

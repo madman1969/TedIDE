@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using Tedide.Git;
+using Tedide.Theming;
 using Terminal.Gui.App;
 using Terminal.Gui.Drawing;
 using Terminal.Gui.Input;
@@ -56,7 +57,7 @@ public sealed class StashesDialog : Dialog
             BorderStyle = LineStyle.Single,
             X = 0, Y = 2, Width = Dim.Fill(1), Height = Dim.Fill(6),
             ViewportSettings = ViewportSettingsFlags.HasScrollBars,
-            KeystrokeNavigator = null,
+            KeystrokeNavigator = TerminalGuiWorkarounds.NoTypeToSearch,
         };
         _list.SetSource(new ObservableCollection<string>(stashes.Select(s => Row(s, now))));
         if (stashes.Count > 0)

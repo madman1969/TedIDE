@@ -41,7 +41,7 @@ public sealed class BranchesDialog : Dialog
         Padding.Thickness = new Thickness(2, 1, 2, 1);
         Arrangement &= ~ViewArrangement.Resizable;
         _branches = branches;
-        var noHotKey = new System.Text.Rune(0xFFFF);
+        var noHotKey = TerminalGuiWorkarounds.NoHotKey;
 
         var currentLabel = new Label
         {
@@ -57,7 +57,7 @@ public sealed class BranchesDialog : Dialog
             X = 0, Y = 2, Width = Dim.Fill(1), Height = Dim.Fill(6),
             ViewportSettings = ViewportSettingsFlags.HasScrollBars,
             // Rows start with a marker, so type-to-search finds nothing - and it would swallow keys.
-            KeystrokeNavigator = null,
+            KeystrokeNavigator = TerminalGuiWorkarounds.NoTypeToSearch,
         };
         var nameWidth = branches.Count == 0 ? 0 : branches.Max(b => b.Name.Length);
         _list.SetSource(new ObservableCollection<string>(branches.Select(b => Row(b, nameWidth))));

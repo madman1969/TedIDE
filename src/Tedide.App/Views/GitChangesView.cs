@@ -1,6 +1,6 @@
 using System.Collections.ObjectModel;
-using System.Text;
 using Tedide.Git;
+using Tedide.Theming;
 using Terminal.Gui.Drawing;
 using Terminal.Gui.Input;
 using Terminal.Gui.ViewBase;
@@ -94,7 +94,7 @@ public sealed class GitChangesView : View
     public GitChangesView()
     {
         CanFocus = true;
-        var noHotKey = new Rune(0xFFFF);
+        var noHotKey = TerminalGuiWorkarounds.NoHotKey;
         const int leftWidth = 40;
 
         var branchesButton = Button("Branches", 0, 0, () => BranchesRequested?.Invoke());
@@ -147,7 +147,7 @@ public sealed class GitChangesView : View
     private static Button Button(string text, Pos x, int y, Action action)
     {
         // No hotkeys: Alt+letters already belong to the menu bar and the pane's own tabs.
-        var button = new Button { Text = text, X = x, Y = y, HotKeySpecifier = new Rune(0xFFFF) };
+        var button = new Button { Text = text, X = x, Y = y, HotKeySpecifier = TerminalGuiWorkarounds.NoHotKey };
         button.Accepting += (_, e) =>
         {
             action();
@@ -161,7 +161,7 @@ public sealed class GitChangesView : View
         // No type-to-search: ListView's OnKeyDown runs it before the KeyDown event below, so it
         // swallowed D whenever a row matched (confirmed in a test). It's no use here anyway - every
         // row starts with its status letter.
-        list.KeystrokeNavigator = null;
+        list.KeystrokeNavigator = TerminalGuiWorkarounds.NoTypeToSearch;
         list.KeyDown += (_, key) =>
         {
             if (list.SelectedItem is not { } index || index < 0 || index >= items().Count)

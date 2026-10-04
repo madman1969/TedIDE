@@ -1,7 +1,7 @@
-using Tedide.Theming;
 using System.Collections.ObjectModel;
 using Tedide.Build;
 using Tedide.Core;
+using Tedide.Theming;
 using Terminal.Gui.App;
 using Terminal.Gui.Drawing;
 using Terminal.Gui.ViewBase;
@@ -352,7 +352,7 @@ public sealed class ProjectSettingsDialog : Dialog
                 X = 0, Y = y,
                 Value = project.References(library.FilePath!) ? CheckState.Checked : CheckState.UnChecked,
                 // The text holds a path - a "_" in it is not a hotkey marker.
-                HotKeySpecifier = new System.Text.Rune(0xFFFF),
+                HotKeySpecifier = TerminalGuiWorkarounds.NoHotKey,
             };
             referenceFields.Add((library, field));
             tab.Add(field);
@@ -717,7 +717,7 @@ public sealed class ProjectSettingsDialog : Dialog
                 + "e.g.  c1541 -format \"game,01\" d64 game.d64 -write \"$(OutputFile)\" game",
             X = 0, Y = 18, Width = Dim.Fill(1), Height = 7,
             // The text shows "$(OutputFile)" and friends literally - no "_" hotkey parsing wanted.
-            HotKeySpecifier = new System.Text.Rune(0xFFFF),
+            HotKeySpecifier = TerminalGuiWorkarounds.NoHotKey,
         };
 
         tab.Add(preLabel, preBuildField, postLabel, postBuildField, helpLabel);
@@ -755,7 +755,7 @@ public sealed class ProjectSettingsDialog : Dialog
         // HotKeySpecifier disabled so the literal "_" in "CC65_HOME" isn't parsed as a mnemonic
         // marker (which would swallow it and color the "H" instead - Label parses hotkeys same as
         // Button/Tabs titles do).
-        var homeLabel = new Label { Text = "CC65_HOME:", X = 0, Y = 0, HotKeySpecifier = new System.Text.Rune(0xFFFF) };
+        var homeLabel = new Label { Text = "CC65_HOME:", X = 0, Y = 0, HotKeySpecifier = TerminalGuiWorkarounds.NoHotKey };
         cc65HomeField = new TextField
         {
             X = 0, Y = 2, Width = Dim.Fill(12),
@@ -772,7 +772,7 @@ public sealed class ProjectSettingsDialog : Dialog
                    "Saved to Tedide's settings and applied to this process's environment on Save;\n" +
                    "leave blank to unset it (won't affect a CC65_HOME set outside Tedide).",
             X = 0, Y = 4, Width = Dim.Fill(1), Height = 4,
-            HotKeySpecifier = new System.Text.Rune(0xFFFF),
+            HotKeySpecifier = TerminalGuiWorkarounds.NoHotKey,
         };
 
         tab.Add(homeLabel, cc65HomeField, browseButton, helpLabel);

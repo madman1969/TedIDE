@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using Tedide.Core.Navigation;
+using Tedide.Theming;
 using Terminal.Gui.App;
 using Terminal.Gui.Drawing;
 using Terminal.Gui.ViewBase;
@@ -31,7 +32,7 @@ public sealed class DefinitionPickerDialog : Dialog
     {
         Title = $"Definitions of {symbol}";
         // The title echoes a symbol name, and a title reads its first "_" as a hotkey marker.
-        HotKeySpecifier = new System.Text.Rune(0xFFFF);
+        HotKeySpecifier = TerminalGuiWorkarounds.NoHotKey;
         Width = 100;
         Height = Math.Min(28, definitions.Count + 9);
         Padding.Thickness = new Thickness(2, 1, 2, 1);

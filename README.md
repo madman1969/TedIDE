@@ -820,6 +820,10 @@ Run the tests with `dotnet test Tedide.slnx`.
   - `DebugSession`: the debugger, calling back through `IDebugSessionHost`.
 
   The first three call back through `IShell`.
+- **Tools, files and Terminal.Gui** - every console tool (git, cl65, ar65, build events) runs
+  through `ToolProcess`, and every JSON file through `JsonFile` with source-generated contexts.
+  `TerminalGuiWorkarounds` holds each workaround for Terminal.Gui's behaviour, and lists the ones
+  that live elsewhere - check them all when updating the package.
 - **Threads** - `UiSynchronizationContext` makes awaits started on the UI thread resume there, so
   app code can touch views after an await. The library projects use `ConfigureAwait(false)`.
   Background work is started with `Fire`, which logs and reports a failure instead of losing it.
@@ -871,8 +875,10 @@ dotnet publish src/Tedide.DocViewer/Tedide.DocViewer.csproj -c Release -r win-x6
   unused globalization data halve the size from ~86MB.
 - `win-x64` is the only target tested. Change `-r` to another
   [RID](https://learn.microsoft.com/dotnet/core/rid-catalog) for other platforms.
-- Trimming (`-p:PublishTrimmed=true`) would get Tedide down to ~14MB, but isn't on: the JSON
-  settings classes don't use source-generated serialization, so they aren't trim-safe.
+- Trimming (`-p:PublishTrimmed=true`) builds cleanly: every JSON file goes through
+  source-generated serialization, and only Serilog warns, about configuration code Tedide doesn't
+  use. A trimmed Tedide opened a solution, switched theme and built, but it isn't the default yet,
+  since the debugger, the git dialogs and the Doc Viewer haven't been tried trimmed.
 
 ## Status
 

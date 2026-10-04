@@ -21,19 +21,17 @@ internal sealed class GitIntegration
     private readonly IShell _shell;
     private readonly Workspace _workspace;
     private readonly EditorPane _editorPane;
-    private readonly FrameView _editorFrame;
     private readonly SolutionExplorerTree _solutionExplorer;
     private readonly NavigationCommands _navigation;
     private readonly GitTracker _git;
     private readonly GitChangesView _gitView;
 
-    public GitIntegration(IShell shell, Workspace workspace, EditorPane editorPane, FrameView editorFrame,
+    public GitIntegration(IShell shell, Workspace workspace, EditorPane editorPane,
         SolutionExplorerTree solutionExplorer, NavigationCommands navigation, GitTracker git, GitChangesView gitView)
     {
         _shell = shell;
         _workspace = workspace;
         _editorPane = editorPane;
-        _editorFrame = editorFrame;
         _solutionExplorer = solutionExplorer;
         _navigation = navigation;
         _git = git;

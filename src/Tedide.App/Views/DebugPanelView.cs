@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Data;
 using Tedide.Core;
 using Tedide.Debug;
+using Tedide.Theming;
 using Terminal.Gui.ViewBase;
 using Terminal.Gui.Views;
 
@@ -121,7 +122,7 @@ public sealed class DebugPanelView : View
     private static ListView List() => new()
     {
         ViewportSettings = ViewportSettingsFlags.HasScrollBars,
-        KeystrokeNavigator = null,
+        KeystrokeNavigator = TerminalGuiWorkarounds.NoTypeToSearch,
     };
 
     /// <summary>Replaces the call stack, innermost frame first; an empty list clears it.</summary>

@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Data;
 using Tedide.Git;
+using Tedide.Theming;
 using Terminal.Gui.App;
 using Terminal.Gui.Drawing;
 using Terminal.Gui.ViewBase;
@@ -35,7 +36,7 @@ public sealed class HistoryDialog : Dialog
     {
         Title = title;
         // The title can echo a file name, and a title reads its first "_" as a hotkey marker.
-        HotKeySpecifier = new System.Text.Rune(0xFFFF);
+        HotKeySpecifier = TerminalGuiWorkarounds.NoHotKey;
         Width = Dim.Percent(90);
         Height = Dim.Percent(85);
         Padding.Thickness = new Thickness(2, 1, 2, 1);
@@ -43,7 +44,7 @@ public sealed class HistoryDialog : Dialog
         _commits = commits;
 
         // Commit subjects are free text - no "_" hotkey parsing.
-        _detail = new Label { X = 0, Y = 0, Width = Dim.Fill(1), HotKeySpecifier = new System.Text.Rune(0xFFFF) };
+        _detail = new Label { X = 0, Y = 0, Width = Dim.Fill(1), HotKeySpecifier = TerminalGuiWorkarounds.NoHotKey };
 
         _table = new TableView
         {
@@ -63,7 +64,7 @@ public sealed class HistoryDialog : Dialog
             BorderStyle = LineStyle.Single,
             X = 0, Y = Pos.Bottom(_table) + 1, Width = Dim.Fill(1), Height = Dim.Fill(2),
             ViewportSettings = ViewportSettingsFlags.HasScrollBars,
-            KeystrokeNavigator = null,
+            KeystrokeNavigator = TerminalGuiWorkarounds.NoTypeToSearch,
         };
         _table.Accepting += (_, e) =>
         {

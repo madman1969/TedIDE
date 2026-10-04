@@ -1,5 +1,6 @@
 using System.Data;
 using Tedide.Core.Debugging;
+using Tedide.Theming;
 using Terminal.Gui.Configuration;
 using Terminal.Gui.ViewBase;
 using Terminal.Gui.Views;
@@ -65,7 +66,7 @@ public sealed class MemoryView : View
         {
             Text = "Start debugging, then enter a symbol or $address.",
             X = Pos.Right(nextButton) + 2, Y = 0, Width = Dim.Fill(),
-            HotKeySpecifier = new System.Text.Rune(0xFFFF),
+            HotKeySpecifier = TerminalGuiWorkarounds.NoHotKey,
         };
 
         _table = new TableView

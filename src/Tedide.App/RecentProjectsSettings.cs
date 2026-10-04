@@ -1,4 +1,4 @@
-using System.Text.Json;
+using Tedide.Core;
 
 namespace Tedide.App;
 
@@ -16,33 +16,15 @@ public sealed class RecentProjectsSettings
 
     public List<string> Paths { get; set; } = [];
 
-    private static readonly string FilePath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Tedide", "recent.json");
-
-    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+    private static readonly string FilePath = JsonFile.UserSettingsPath("recent.json");
 
     /// <summary>
     /// Loads the previously saved list, or an empty one if none has been saved yet or the file
     /// can't be read - a missing/corrupt settings file should never stop the app from starting.
     /// </summary>
-    public static RecentProjectsSettings Load()
-    {
-        try
-        {
-            var json = File.ReadAllText(FilePath);
-            return JsonSerializer.Deserialize<RecentProjectsSettings>(json, JsonOptions) ?? new RecentProjectsSettings();
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
-        {
-            return new RecentProjectsSettings();
-        }
-    }
+    public static RecentProjectsSettings Load() => JsonFile.ReadOrDefault(FilePath, AppJsonContext.Default.RecentProjectsSettings);
 
-    public void Save()
-    {
-        Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
-        File.WriteAllText(FilePath, JsonSerializer.Serialize(this, JsonOptions));
-    }
+    public void Save() => JsonFile.Write(FilePath, this, AppJsonContext.Default.RecentProjectsSettings);
 
     /// <summary>Moves <paramref name="path"/> to the front of the list (adding it if it's new), trims to <see cref="MaxEntries"/>, and saves.</summary>
     public void Touch(string path)

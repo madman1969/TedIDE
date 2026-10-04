@@ -10,4 +10,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Tedide.Core\Tedide.Core.csproj" />
+  </ItemGroup>
+
 </Project>
