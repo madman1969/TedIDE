@@ -202,6 +202,9 @@ public sealed class EditorPane : View
         contextMenuItems.Add(new MenuItem("Find in Files...", "", () =>
             FindInFilesRequested?.Invoke(Editor.SelectedText.Split(['\r', '\n'], 2)[0])));
         contextMenuItems.Add(new Line());
+        contextMenuItems.Add(new MenuItem("Collapse All Folds", "", () => SetAllFolded(true)));
+        contextMenuItems.Add(new MenuItem("Expand All Folds", "", () => SetAllFolded(false)));
+        contextMenuItems.Add(new Line());
         contextMenuItems.Add(new MenuItem("Compare with Last Commit", "", () => CompareWithHeadRequested?.Invoke()));
         contextMenuItems.Add(new MenuItem("Blame", "", () => BlameRequested?.Invoke()));
         contextMenuItems.Add(new MenuItem("File History", "", () => FileHistoryRequested?.Invoke()));
@@ -289,6 +292,22 @@ public sealed class EditorPane : View
         // Selecting a file in the persistent Solution Explorer doesn't hand focus back the way
         // closing a modal would, so the editor takes it explicitly.
         Editor.SetFocus();
+    }
+
+    /// <summary>
+    /// Collapse All Folds / Expand All Folds: folds, or unfolds, every foldable region in the shown
+    /// file, nested ones included - so expanding one function afterwards still leaves its inner
+    /// blocks folded, as in VS Code. A caret left inside a collapsed region moves to its first
+    /// line (the editor's own FoldingChanged handling). Returns how many regions changed.
+    /// </summary>
+    public int SetAllFolded(bool folded)
+    {
+        if (_active is null || Editor.FoldingManager is not { } folding)
+            return 0;
+        var changing = folding.AllFoldings.Where(f => f.IsFolded != folded).ToList();
+        foreach (var section in changing)
+            section.IsFolded = folded;
+        return changing.Count;
     }
 
     /// <summary>Moves to the next (+1) or previous (-1) open file, wrapping round. False if

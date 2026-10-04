@@ -38,6 +38,37 @@ public sealed class EditorPaneTests : IDisposable
     }
 
     [Fact]
+    public void CollapseAndExpandAll_FoldEveryRegion_NestedOnesToo()
+    {
+        var pane = new EditorPane();
+        Assert.Equal(0, pane.SetAllFolded(true));  // nothing open
+
+        pane.Open(File("main.c", """
+            void a(void)
+            {
+                if (1)
+                {
+                    x();
+                }
+            }
+
+            void b(void)
+            {
+                y();
+            }
+            """));
+        var folding = pane.Editor.FoldingManager!;
+        Assert.Equal(3, folding.AllFoldings.Count());
+
+        Assert.Equal(3, pane.SetAllFolded(true));
+        Assert.All(folding.AllFoldings, f => Assert.True(f.IsFolded));
+        Assert.Equal(0, pane.SetAllFolded(true));  // already folded
+
+        Assert.Equal(3, pane.SetAllFolded(false));
+        Assert.All(folding.AllFoldings, f => Assert.False(f.IsFolded));
+    }
+
+    [Fact]
     public void Reload_ReplacesTheTextFromDisk_AndClearsUnsavedEdits()
     {
         var pane = new EditorPane();

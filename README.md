@@ -336,6 +336,8 @@ Each open file gets a tab above the editor.
 - Closing tabs, closing the project or quitting asks once about every unsaved tab involved.
 - Renaming a file or the project's folder keeps its tab and any unsaved edits.
 - Each project remembers its open tabs, and which one was showing.
+- Any `{...}` block over several lines folds from the gutter. **View > Collapse All Folds** and
+  **Expand All Folds**, also on the editor's right-click menu, fold or unfold every block at once.
 
 ![The Unsaved Changes prompt - "Save changes to video.c?" with Save, Discard and Cancel - shown when closing an edited tab](docs/images/editing-unsaved-prompt.png)
 

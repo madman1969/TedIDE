@@ -561,6 +561,10 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
         viewMenuItems.AddAt(4, new Line());
         viewMenuItems.AddAt(5, BuildCheckAsYouTypeMenuItem());
         viewMenuItems.AddAt(6, BuildCodeCompletionMenuItem());
+        // No keys: Visual Studio's are Ctrl+M chords, and a terminal sends Ctrl+M as Enter.
+        viewMenuItems.AddAt(7, new Line());
+        viewMenuItems.AddAt(8, new MenuItem("Co_llapse All Folds", "", () => _editorPane.SetAllFolded(true), Key.Empty));
+        viewMenuItems.AddAt(9, new MenuItem("E_xpand All Folds", "", () => _editorPane.SetAllFolded(false), Key.Empty));
         menuBar.Menus = [fileMenu, menuBar.EditMenu, menuBar.ViewMenu, buildMenu, debugMenu, gitMenu, projectMenu, themeMenu, helpMenu];
         menuBar.X = 0;
         menuBar.Y = 0;
