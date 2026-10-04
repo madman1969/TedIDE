@@ -253,7 +253,8 @@ A solution can hold any number of projects.
 - **Right-click a project** for Set as Startup Project, Build, Clean, Settings..., Remove from
   Solution (files stay on disk) and Delete Project... (sends its folder to the Recycle Bin after
   asking). A project whose folder also holds the solution or another project can't be deleted.
-- **The startup project**, shown in bold, is the one Ctrl+F5 runs and F5 debugs, and whose
+- **The startup project**, marked `▶` and shown in bold in its own colour (underlined in Amber
+  Phosphor), is the one Ctrl+F5 runs and F5 debugs, and whose
   breakpoints and symbols are shown. It's saved in the `.tsln`; without one, it's the first
   application project.
 - **Library projects** have the Library output type. `ar65` archives their object files into a
