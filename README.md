@@ -461,6 +461,7 @@ Tedide uses Visual Studio's keys where Windows Terminal lets them through.
 | Ctrl+B | Build Solution | VS's Ctrl+Shift+B arrives as Ctrl+B, so both work. |
 | F12 / Shift+F12 | Go To Definition / Find All References | |
 | F2 | Rename Symbol | |
+| Ctrl+Space | Show suggestions | They also appear by themselves after two letters, or `.` and `->`. |
 | Alt+Left / Alt+Right | Navigate Backward / Forward | VS's Ctrl+- is Windows Terminal's font size. |
 | Alt+Shift+F | Find in Files | VS's Ctrl+Shift+F is Windows Terminal's Find. |
 | Ctrl+G | Go To Line | |
@@ -469,7 +470,7 @@ Tedide uses Visual Studio's keys where Windows Terminal lets them through.
 | Ctrl+W / Ctrl+F4 | Close file | |
 | Ctrl+PgDn / Ctrl+PgUp | Next / previous file | |
 | Ctrl+N / Ctrl+O | New / Open Project | |
-| Ctrl+Q | Quit | |
+| Ctrl+Q | Quit | Esc closes a suggestion list, menu or dialog, but never quits Tedide. |
 | Ctrl+Alt+L | Solution Explorer | |
 | Ctrl+Alt+V, W, C, B, G | Locals, Watch, Call Stack, Breakpoints, Registers | VS's two-key chords, such as Ctrl+Alt+V, L, need only the first key. |
 | Ctrl+Alt+M, D | Memory, Disassembly | |
@@ -512,6 +513,10 @@ VICE remembers the last memory setup it used, so Tedide passes the right one on 
   An unrecognised custom config counts as unexpanded.
 - **C16 and Plus/4** - 16K for `c16.cfg` or no config, 32K for `c16-32k.cfg`, and 64K for
   `plus4.cfg`. A Plus/4 always gets 64K.
+
+Most machines start the program the usual way: VICE types `LOAD` and `RUN`. A CBM 610 starts up in
+lower/upper case mode, where a file name with capitals in it, such as `CBMInfo`, can't be found that
+way, so its programs are loaded straight into memory instead.
 
 ![The CBMInfo sample running in VICE's C64 emulator, listing the machine's model, CPU, clock speed, memory, video and sound details](docs/images/running-vice.png)
 
@@ -839,8 +844,10 @@ shared with the Doc Viewer.
 Tedide.slnx
 src/
   Tedide.Core/         The .tproj/.tsln model, cc65 target metadata, and parsers for lnk.map, .lbl
-                       and .dbg; Navigation/ is the C/ca65 symbol scanner
-  Tedide.Build/        Runs cl65 and parses its diagnostics, launches VICE; Opt6502/ is the optimizer
+                       and .dbg; Navigation/ is the C/ca65 symbol scanner, the in-memory symbol
+                       index, C type-following and the code completion engine
+  Tedide.Build/        Runs cl65 and parses its diagnostics, checks a file with cc65/ca65 as you type,
+                       launches VICE; Opt6502/ is the optimizer
   Tedide.Debug/        A client for VICE's binary monitor protocol, plus stepping by source line and
                        arming breakpoints, both testable without VICE
   Tedide.Git/          Runs the git command line and parses its output
@@ -888,8 +895,10 @@ samples/               The nine sample projects
   - `BuildCommands`: build, run and clean.
   - `GitIntegration`: the Git tab, blame, change bars, Compare and Blame.
   - `DebugSession`: the debugger, calling back through `IDebugSessionHost`.
+  - `LiveErrorChecking`: checking the shown file as you type.
+  - `CodeCompletion`: suggestions and signature help in the editor.
 
-  The first three call back through `IShell`.
+  The others call back through `IShell`.
 - **Tools, files and Terminal.Gui** - every console tool (git, cl65, ar65, build events) runs
   through `ToolProcess`, and every JSON file through `JsonFile` with source-generated contexts.
   `TerminalGuiWorkarounds` holds each workaround for Terminal.Gui's behaviour, and lists the ones
@@ -901,6 +910,15 @@ samples/               The nine sample projects
   `EditorMenuBar` and `EditorStatusBar`, as its reference app "ted" does. One `Editor` is reused for
   every tab; each tab keeps its own `TextDocument` (and undo history), encoding and caret, swapped
   in when the tab is selected. The menu bar's File menu is replaced with a project-aware one.
+- **Completion** - the editor asks for suggestions on every keystroke, so they come from
+  `SymbolIndex`, kept in memory: nothing is read or parsed per keystroke. The shown file is
+  re-scanned from the editor when typing pauses; other project files, and the headers they include,
+  are read in the background when they change. `CodeModel` follows `a.b->c` through the types
+  `CSymbolScanner.ScanDetailed` records, for member completion and for telling members of different
+  structs apart in navigation and Rename.
+- **Error checking** - `SourceChecker` runs cc65 or ca65 (not cl65) on a temporary copy of the
+  editor's text. `LiveErrorChecking` starts a check only after typing pauses, never runs two at
+  once, and drops a result if the text changed while it ran.
 - **Highlighting** - C uses the editor's bundled C++ definition. The cc65 file types have
   hand-written definitions in `Tedide.App/Highlighting`, mapped onto Terminal.Gui's code roles so
   each theme colours them.
@@ -963,12 +981,14 @@ In place and tested:
 - **Editing** - a tabbed editor with syntax highlighting for C, 6502/ca65 assembly, assembler
   listings, linker maps, VICE label files and linker configs, all coloured by the active theme;
   Find/Replace, Find in Files and Go To Line; Go To Definition and Find All References across C and
-  assembly; Rename Symbol; Navigate Backward/Forward; F1 context help in the Doc Viewer; and Visual
-  Studio's keys wherever Windows Terminal passes them through.
+  assembly, with struct members traced to their own struct; Rename Symbol; Navigate
+  Backward/Forward; code completion for C and ca65, with signature help; error checking as you
+  type; F1 context help in the Doc Viewer; and Visual Studio's keys wherever Windows Terminal passes
+  them through.
 - **Building and running** - per-file `cl65` builds with live output, diagnostics parsed into the
   Error List, Cancel Build and Clean Project; a symbol browser for linker maps and labels; and Run
   in the VICE emulator matching the target, with the right memory configuration for the VIC-20, C16
-  and Plus/4.
+  and Plus/4, and CBM 610 programs loaded straight into memory.
 - **Debugging** - source-level debugging against VICE's binary monitor protocol: breakpoints with
   persistent in-editor highlighting, conditions, enable/disable and a Breakpoints dialog; stepping
   by source line (Step Into runs straight through cc65's runtime library); the debug state and
@@ -986,9 +1006,14 @@ In place and tested:
 - **Themes** - nine runtime-switchable themes shared by both apps, covering syntax highlighting,
   adjusted for readability, and drawn in true colour inside Windows Terminal.
 - **Everything else** - file-based logging for crash diagnosis, standalone-executable publish tasks
-  for both apps, and about 910 unit tests across six test projects (`dotnet test Tedide.slnx`).
+  for both apps, about 1,140 unit tests across six test projects (`dotnet test Tedide.slnx`), and a
+  scripted live check of the running IDE (`scripts\Verify-Live.ps1`).
 
-Not yet implemented: a visual editor for `.cfg` linker configs (syntax highlighting only today).
+Not yet implemented:
+
+- Split views - one tab is shown at a time.
+- Staging part of a file in the Git tab - whole files only.
+- A visual editor for `.cfg` linker configs - syntax highlighting only today.
 
 Tedide is built on [Terminal.Gui v2](https://github.com/tui-cs/Terminal.Gui) (`2.4.17`) and
 [Terminal.Gui.Editor](https://github.com/tui-cs/Editor) (`2.5.7`, pinned to that Terminal.Gui
