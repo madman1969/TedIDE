@@ -19,8 +19,6 @@ namespace Tedide.App;
 internal sealed class GitIntegration
 {
     private readonly IShell _shell;
-    /// <summary>Terminal.Gui's timers, or a test's - see <see cref="GitTracker"/>.</summary>
-    private readonly Action<TimeSpan, Func<bool>> _addTimeout;
     private readonly Workspace _workspace;
     private readonly EditorPane _editorPane;
     private readonly SolutionExplorerTree _solutionExplorer;
@@ -33,7 +31,12 @@ internal sealed class GitIntegration
         Action<TimeSpan, Func<bool>>? addTimeout = null)
     {
         _shell = shell;
-        _addTimeout = addTimeout ?? ((delay, callback) => Application.AddTimeout(delay, callback));
+        // Terminal.Gui's timers, or a test's - see GitTracker.
+        addTimeout ??= (delay, callback) => Application.AddTimeout(delay, callback);
+        // A burst of caret moves (typing, holding an arrow key) runs one git blame, and a burst of
+        // edits one diff, once they pause.
+        _blame = new Debouncer(TimeSpan.FromMilliseconds(400), () => Fire(BlameCaretLineAsync(_blame!.Generation)), addTimeout);
+        _lineMarkers = new Debouncer(TimeSpan.FromMilliseconds(400), () => Fire(UpdateLineMarkersAsync(_lineMarkers!.Generation)), addTimeout);
         _workspace = workspace;
         _editorPane = editorPane;
         _solutionExplorer = solutionExplorer;
@@ -65,8 +68,8 @@ internal sealed class GitIntegration
         _gitLineMarkers = new GitLineMarkers(_editorPane.Editor);
         _editorPane.Editor.BackgroundRenderers.Add(_gitLineMarkers);
         _git.Changed += OnGitChanged;
-        _editorPane.Editor.CaretChanged += (_, _) => RequestBlame();
-        _editorPane.Editor.ContentChanged += (_, _) => RequestLineMarkers();
+        _editorPane.Editor.CaretChanged += (_, _) => _blame.Request();
+        _editorPane.Editor.ContentChanged += (_, _) => _lineMarkers.Request();
     }
 
     private void Fire(Task task, [CallerArgumentExpression(nameof(task))] string what = "") => _shell.Fire(task, what);
@@ -76,28 +79,30 @@ internal sealed class GitIntegration
     /// are worked out.</summary>
     public void ActiveDocumentChanged()
     {
-        RequestBlame();
+        _blame.Request();
         if (!EditorPane.SamePath(_editorPane.OpenPath, _lineMarkersPath))
         {
             _gitLineMarkers.Changes = new Dictionary<int, LineChangeKind>();
-            RequestLineMarkers();
+            _lineMarkers.Request();
         }
     }
 
     /// <summary>Who last changed the caret's line - see <see cref="BlameCaretLineAsync"/>.</summary>
     private string? _blameText;
 
-    private int _blameGeneration;
+    /// <summary>Blames the caret's line soon - see <see cref="BlameCaretLineAsync"/>.</summary>
+    private readonly Debouncer _blame;
 
     private CancellationTokenSource? _blameCancellation;
 
     /// <summary>Set while a fetch, pull or push runs - one at a time; the Git tab's Cancel cancels it.</summary>
     private CancellationTokenSource? _syncCancellation;
 
-    /// <summary>Git's change bars in the editor's gutter - see <see cref="RequestLineMarkers"/>.</summary>
+    /// <summary>Git's change bars in the editor's gutter - see <see cref="UpdateLineMarkersAsync"/>.</summary>
     private readonly GitLineMarkers _gitLineMarkers;
 
-    private int _lineMarkersGeneration;
+    /// <summary>Works out the change bars soon - see <see cref="UpdateLineMarkersAsync"/>.</summary>
+    private readonly Debouncer _lineMarkers;
 
     private CancellationTokenSource? _lineMarkersCancellation;
 
@@ -111,9 +116,9 @@ internal sealed class GitIntegration
         _solutionExplorer.SetGitStatus(_git.Files);
         _gitView.SetStatus(_git.Primary, _git.PrimaryStatus);
         UpdateGitAnnotation();
-        RequestBlame();
+        _blame.Request();
         if (LineMarkersGitState() != _lineMarkersGitState)
-            RequestLineMarkers();
+            _lineMarkers.Request();
     }
 
     /// <summary>
@@ -125,19 +130,6 @@ internal sealed class GitIntegration
         _editorPane.Annotation = _git.PrimaryStatus is not { } status ? ""
             : _blameText is { } blame ? $"{status.Describe()}  ·  {blame}"
             : status.Describe();
-
-    /// <summary>Blames the caret's line soon - a burst of caret moves (typing, holding an arrow
-    /// key) runs one <c>git blame</c>, once they pause.</summary>
-    private void RequestBlame()
-    {
-        var generation = ++_blameGeneration;
-        _addTimeout(TimeSpan.FromMilliseconds(400), () =>
-        {
-            if (generation == _blameGeneration)
-                Fire(BlameCaretLineAsync(generation));
-            return false;
-        });
-    }
 
     /// <summary>Phase 5a of git support: who last changed the caret's line, blamed against the
     /// editor's own text so unsaved edits read as "Not committed yet". Nothing for a file outside a
@@ -168,7 +160,7 @@ internal sealed class GitIntegration
             return;
         }
 
-        if (generation != _blameGeneration)
+        if (!_blame.IsCurrent(generation))
             return;
         _blameText = blame is null ? null : $"Ln {line}: {blame.Describe(DateTimeOffset.Now)}";
         UpdateGitAnnotation();
@@ -180,18 +172,6 @@ internal sealed class GitIntegration
         _editorPane.OpenPath is { } path
             ? $"{_git.PrimaryStatus?.Head}|{_git.Files.GetValueOrDefault(path)}|{_git.RepositoryFor(path)?.Root}"
             : "";
-
-    /// <summary>Works out the change bars soon - a burst of edits runs one diff, once they pause.</summary>
-    private void RequestLineMarkers()
-    {
-        var generation = ++_lineMarkersGeneration;
-        _addTimeout(TimeSpan.FromMilliseconds(400), () =>
-        {
-            if (generation == _lineMarkersGeneration)
-                Fire(UpdateLineMarkersAsync(generation));
-            return false;
-        });
-    }
 
     /// <summary>
     /// Git phase 2: diffs the shown file's text - unsaved edits included - against HEAD and shows
@@ -235,7 +215,7 @@ internal sealed class GitIntegration
             return;
         }
 
-        if (generation == _lineMarkersGeneration && _editorPane.IsShown(path))
+        if (_lineMarkers.IsCurrent(generation) && _editorPane.IsShown(path))
             _gitLineMarkers.Changes = diff.LineChanges(lineCount);
     }
 
@@ -500,7 +480,7 @@ internal sealed class GitIntegration
             return null;
         var root = folders[0];
         foreach (var folder in folders.Skip(1))
-            while (!AppShell.IsSameOrInsideDirectory(folder, root))
+            while (!ProjectCommands.IsSameOrInsideDirectory(folder, root))
                 root = Path.GetDirectoryName(root) ?? root;
         return root;
     }

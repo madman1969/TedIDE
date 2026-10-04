@@ -31,14 +31,13 @@ internal sealed class LiveErrorChecking
     private readonly ErrorListView _errorList;
     private readonly Func<string, string> _displayPath;
     private readonly Checker _check;
-    private readonly Action<TimeSpan, Func<bool>> _addTimeout;
     private readonly DiagnosticLineTransformer _lines = new();
 
     /// <summary>The last check's problems for each open file it has checked.</summary>
     private readonly Dictionary<string, IReadOnlyList<BuildDiagnostic>> _results = new(StringComparer.OrdinalIgnoreCase);
 
-    /// <summary>Bumped by every request; a check whose number is no longer current is stale.</summary>
-    private int _generation;
+    /// <summary>Starts a check once requests pause; a check started under an older generation is stale.</summary>
+    private readonly Debouncer _request;
     private bool _checking, _checkAgain;
 
     public LiveErrorChecking(IShell shell, Workspace workspace, EditorPane editorPane, ErrorListView errorList,
@@ -50,7 +49,8 @@ internal sealed class LiveErrorChecking
         _errorList = errorList;
         _displayPath = displayPath;
         _check = check ?? CheckWithCc65;
-        _addTimeout = addTimeout ?? ((delay, callback) => Application.AddTimeout(delay, callback));
+        _request = new Debouncer(Delay, () => _shell.Fire(CheckAsync(), "Checking for errors"),
+            addTimeout ?? ((delay, callback) => Application.AddTimeout(delay, callback)));
 
         _editorPane.Editor.ContentChanged += (_, _) => RequestCheck();
         _editorPane.Editor.CaretChanged += (_, _) => UpdateNotice();
@@ -73,7 +73,7 @@ internal sealed class LiveErrorChecking
                 RequestCheck();
                 return;
             }
-            ++_generation; // a check still running is now stale
+            _request.Cancel(); // a check still running is now stale
             foreach (var file in _results.Keys.ToList())
                 _errorList.SetLiveDiagnostics(file, null, _displayPath);
             _results.Clear();
@@ -145,13 +145,7 @@ internal sealed class LiveErrorChecking
     {
         if (!_enabled)
             return;
-        var generation = ++_generation;
-        _addTimeout(Delay, () =>
-        {
-            if (generation == _generation)
-                _shell.Fire(CheckAsync(), "Checking for errors");
-            return false;
-        });
+        _request.Request();
     }
 
     private async Task CheckAsync()
@@ -167,7 +161,7 @@ internal sealed class LiveErrorChecking
         var project = owner ?? StandInProjectFor(path, _workspace.ActiveProject);
 
         // Read here, on the UI thread - the document belongs to it.
-        var generation = _generation;
+        var generation = _request.Generation;
         var text = _editorPane.Editor.Text;
         IReadOnlyList<BuildDiagnostic>? found;
         _checking = true;
@@ -181,7 +175,7 @@ internal sealed class LiveErrorChecking
         }
 
         // A result for text that has changed since is dropped: the check after it is on its way.
-        if (generation == _generation && found is not null && _editorPane.IsOpen(path))
+        if (_request.IsCurrent(generation) && found is not null && _editorPane.IsOpen(path))
         {
             // Named in the Error List's Project column like a build's, when there's more than one.
             if (owner is not null && _workspace.Projects.Count > 1)

@@ -20,7 +20,7 @@ public sealed class NewFileDialog : Dialog
     /// <param name="targetDirectory">The folder the new file is created directly in.</param>
     /// <param name="defaultFileName">Pre-fills the file name field with this - e.g. "newfile.h"
     /// when creating a file in an "include" folder, "newfile.c" in a "src" folder or anywhere
-    /// else (see <see cref="AppShell.NewFile"/>).</param>
+    /// else (see <see cref="ProjectCommands.NewFile"/>).</param>
     public NewFileDialog(string targetDirectory, string defaultFileName = "newfile.c")
     {
         Title = "New File";

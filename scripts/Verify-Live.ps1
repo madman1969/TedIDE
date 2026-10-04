@@ -171,7 +171,8 @@ try {
 
     Step 'Open the solution from Recent Projects' {
         Send-TedideKeys -Keys '%f'
-        Send-TedideKeys -Keys '{DOWN}{DOWN}{RIGHT}{ENTER}'
+        # New Project, Open Project, Open File, then Recent Projects and Solutions.
+        Send-TedideKeys -Keys '{DOWN}{DOWN}{DOWN}{RIGHT}{ENTER}'
         Start-Sleep -Seconds 3
     }
     Step 'Edit video.c (git change bars and blame)' {

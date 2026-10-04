@@ -3,7 +3,7 @@ using Terminal.Gui.ViewBase;
 namespace Tedide.App;
 
 /// <summary>
-/// The shell services <see cref="NavigationCommands"/>, <see cref="BuildCommands"/> and
+/// The shell services <see cref="NavigationCommands"/>, <see cref="BuildCommands"/>, <see cref="ProjectCommands"/> and
 /// <see cref="GitIntegration"/> share: output, dialogs, background work, error handling, files and
 /// the bottom pane. <see cref="AppShell"/> implements it.
 /// </summary>

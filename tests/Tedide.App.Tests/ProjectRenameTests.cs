@@ -129,7 +129,7 @@ public class ProjectRenameTests : IDisposable
     [InlineData(@"C:\Games", @"C:\Games\Game", false)]
     public void IsSameOrInsideDirectory_MatchesWholeFolderNames_NotPrefixes(string path, string directory, bool expected)
     {
-        Assert.Equal(expected, AppShell.IsSameOrInsideDirectory(path, directory));
+        Assert.Equal(expected, ProjectCommands.IsSameOrInsideDirectory(path, directory));
     }
 
     private (TedideProject Project, TedideSolution? Solution) CreateProject(string name, bool solutionBeside, string? folderName = null)

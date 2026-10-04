@@ -15,10 +15,10 @@ internal static class ProjectDeletion
     {
         if (workspace.Solution is not { FilePath: { } solutionFile })
             return "Only a project in a solution can be deleted - open its .tsln first.";
-        if (AppShell.IsSameOrInsideDirectory(solutionFile, project.Directory))
+        if (ProjectCommands.IsSameOrInsideDirectory(solutionFile, project.Directory))
             return $"{project.Name}'s folder also holds the solution file ({Path.GetFileName(solutionFile)}), "
                 + "which deleting the folder would delete too. Use Remove from Solution instead.";
-        if (workspace.Projects.FirstOrDefault(p => p != project && AppShell.IsSameOrInsideDirectory(p.Directory, project.Directory)) is { } nested)
+        if (workspace.Projects.FirstOrDefault(p => p != project && ProjectCommands.IsSameOrInsideDirectory(p.Directory, project.Directory)) is { } nested)
             return $"{project.Name}'s folder also holds the {nested.Name} project, which deleting the folder would delete too.";
         return null;
     }

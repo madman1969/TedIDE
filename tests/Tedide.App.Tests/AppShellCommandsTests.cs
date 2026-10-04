@@ -55,7 +55,7 @@ public sealed class AppShellCommandsTests : IDisposable
             newProject.Target = Cc65Target.C64;
             newProject.OutputType = ProjectOutputType.Application;
         };
-        _shell.NewProject();
+        _shell.Projects.NewProject();
         _dialogs.Answer = null;
     }
 
@@ -70,7 +70,7 @@ public sealed class AppShellCommandsTests : IDisposable
         Assert.True(File.Exists(MainC));
         Assert.Equal([Solution], _shell.RecentProjects.Paths);
 
-        _shell.NewProject();  // cancelled
+        _shell.Projects.NewProject();  // cancelled
         Assert.Single(_shell.Workspace.Projects);
         return Task.CompletedTask;
     });
@@ -87,18 +87,18 @@ public sealed class AppShellCommandsTests : IDisposable
 
         // With nothing loaded.
         _dialogs.FilePicks.Enqueue([stray, strayHeader]);
-        _shell.OpenFiles();
+        _shell.Projects.OpenFiles();
         Assert.Equal([stray, strayHeader], _shell.EditorPane.OpenPaths);
         Assert.Empty(_shell.Workspace.Projects);
 
-        _shell.OpenFiles();  // cancelled
+        _shell.Projects.OpenFiles();  // cancelled
         Assert.Equal(2, _shell.EditorPane.OpenPaths.Count);
 
         // With a project open, beside its own files - and not added to it.
-        _shell.CloseAllFiles();
+        _shell.Projects.CloseAllFiles();
         NewGame();
         _dialogs.FilePicks.Enqueue([stray]);
-        _shell.OpenFiles();
+        _shell.Projects.OpenFiles();
         Assert.Equal(stray, _shell.EditorPane.OpenPath);
         Assert.DoesNotContain(Game.SourceFiles, f => f.Contains("stray"));
         // Code completion indexes the project's files in the background, and a refresh asked for
@@ -117,13 +117,13 @@ public sealed class AppShellCommandsTests : IDisposable
     public Task Opening_ReopensTheTabsAndBreakpointsLeftLastTime() => UiThread.Run(() =>
     {
         NewGame();
-        _shell.OpenFile(MainC);
-        _shell.CloseSolution();
+        _shell.Projects.OpenFile(MainC);
+        _shell.Projects.CloseSolution();
         Assert.Empty(_shell.Workspace.Projects);
         Assert.Empty(_shell.EditorPane.OpenPaths);
         new BreakpointsFile { Breakpoints = [new BreakpointEntry("src/main.c", 3)] }.Save(Path.Combine(GameDir, "Game.breakpoints.json"));
 
-        _shell.OpenProjectOrSolution(Solution);
+        _shell.Projects.OpenProjectOrSolution(Solution);
 
         Assert.Equal([MainC], _shell.EditorPane.OpenPaths);
         Assert.Single(_shell.Debug.Breakpoints.Breakpoints);
@@ -137,8 +137,8 @@ public sealed class AppShellCommandsTests : IDisposable
         var gone = Path.Combine(_dir, "Gone.tsln");
         _shell.RecentProjects.Touch(gone);
 
-        _shell.OpenProjectOrSolution(gone);
-        _shell.OpenProjectOrSolution(MainC);
+        _shell.Projects.OpenProjectOrSolution(gone);
+        _shell.Projects.OpenProjectOrSolution(MainC);
 
         Assert.Equal([$"File Not Found: '{gone}' no longer exists.", "Unsupported file: Expected a .tproj or .tsln file."], _dialogs.Errors);
         Assert.DoesNotContain(gone, _shell.RecentProjects.Paths);
@@ -156,11 +156,11 @@ public sealed class AppShellCommandsTests : IDisposable
         var other = new TedideProject { Name = "Other", Target = Cc65Target.Vic20 };
         Directory.CreateDirectory(Path.Combine(_dir, "Other"));
         other.Save(Path.Combine(_dir, "Other", "Other.tproj"));
-        _shell.OpenFile(MainC);
+        _shell.Projects.OpenFile(MainC);
         _shell.EditorPane.Editor.Document!.Insert(0, "// edited\n");
         _dialogs.QueryAnswers.Enqueue(answer);
 
-        _shell.OpenProjectOrSolution(other.FilePath!);
+        _shell.Projects.OpenProjectOrSolution(other.FilePath!);
 
         Assert.StartsWith("Unsaved Changes: Save changes to main.c?", _dialogs.Messages[^1]);
         Assert.Equal(switches ? "Other" : "Game", _shell.Workspace.ActiveProject!.Name);
@@ -192,9 +192,9 @@ public sealed class AppShellCommandsTests : IDisposable
 
         // From the folder's node under Game, and with no project named (found from the folder).
         AnswerWith<NewFileDialog>(d => d.FileName = "more.c");
-        _shell.NewFile(shared, Game);
+        _shell.Projects.NewFile(shared, Game);
         AnswerWith<NewFileDialog>(d => d.FileName = "most.c");
-        _shell.NewFile(shared);
+        _shell.Projects.NewFile(shared);
 
         Assert.Equal(["src/main.c", "../shared/util.c", "../shared/more.c", "../shared/most.c"], TedideProject.Load(Game.FilePath!).SourceFiles);
         return Task.CompletedTask;
@@ -206,11 +206,11 @@ public sealed class AppShellCommandsTests : IDisposable
         NewGame();
 
         AnswerWith<NewFileDialog>(d => d.FileName = "screen.h");
-        _shell.NewFile(Path.Combine(GameDir, "include"));
+        _shell.Projects.NewFile(Path.Combine(GameDir, "include"));
         AnswerWith<NewFileDialog>(d => d.FileName = "screen.c");
-        _shell.NewFile(Path.Combine(GameDir, "src"));
+        _shell.Projects.NewFile(Path.Combine(GameDir, "src"));
         AnswerWith<NewFileDialog>(d => d.FileName = "screen.c");
-        _shell.NewFile(Path.Combine(GameDir, "src"));
+        _shell.Projects.NewFile(Path.Combine(GameDir, "src"));
 
         Assert.Equal("#ifndef SCREEN_H\n#define SCREEN_H\n\n#endif\n", File.ReadAllText(Path.Combine(GameDir, "include", "screen.h")));
         Assert.Equal(["src/main.c", "src/screen.c"], TedideProject.Load(Game.FilePath!).SourceFiles);
@@ -229,7 +229,7 @@ public sealed class AppShellCommandsTests : IDisposable
             File.WriteAllText(Path.Combine(elsewhere, name), "// " + name);
         _dialogs.FilePicks.Enqueue([.. new[] { "sound.c", "sound.h", "main.c" }.Select(n => Path.Combine(elsewhere, n))]);
 
-        _shell.AddExistingItem(Path.Combine(GameDir, "src"));
+        _shell.Projects.AddExistingItem(Path.Combine(GameDir, "src"));
 
         Assert.True(File.Exists(Path.Combine(GameDir, "src", "sound.h")));
         Assert.Equal(["src/main.c", "src/sound.c"], TedideProject.Load(Game.FilePath!).SourceFiles);
@@ -242,12 +242,12 @@ public sealed class AppShellCommandsTests : IDisposable
     public Task RenameFile_MovesItsTab_ItsProjectEntry_AndItsBreakpoints() => UiThread.Run(() =>
     {
         NewGame();
-        _shell.OpenFile(MainC);
+        _shell.Projects.OpenFile(MainC);
         _shell.Debug.Breakpoints.Breakpoints.Add(new BreakpointEntry("src/main.c", 3));
         var renamed = Path.Combine(GameDir, "src", "game.c");
 
         AnswerWith<RenameFileDialog>(d => d.NewFileName = "game.c");
-        _shell.RenameFile(MainC);
+        _shell.Projects.RenameFile(MainC);
 
         Assert.True(File.Exists(renamed) && !File.Exists(MainC));
         Assert.Equal(["src/game.c"], TedideProject.Load(Game.FilePath!).SourceFiles);
@@ -256,7 +256,7 @@ public sealed class AppShellCommandsTests : IDisposable
 
         File.WriteAllText(MainC, "");
         AnswerWith<RenameFileDialog>(d => d.NewFileName = "main.c");
-        _shell.RenameFile(renamed);
+        _shell.Projects.RenameFile(renamed);
         Assert.Equal(["File Exists: 'main.c' already exists."], _dialogs.Errors);
         return Task.CompletedTask;
     });
@@ -265,14 +265,14 @@ public sealed class AppShellCommandsTests : IDisposable
     public Task DeleteFile_AsksFirst_ThenRemovesItEverywhere() => UiThread.Run(() =>
     {
         NewGame();
-        _shell.OpenFile(MainC);
+        _shell.Projects.OpenFile(MainC);
         _shell.Debug.Breakpoints.Breakpoints.Add(new BreakpointEntry("src/main.c", 3));
 
-        _shell.DeleteFile(MainC);  // cancelled
+        _shell.Projects.DeleteFile(MainC);  // cancelled
         Assert.True(File.Exists(MainC));
 
         _dialogs.QueryAnswers.Enqueue(0);
-        _shell.DeleteFile(MainC);
+        _shell.Projects.DeleteFile(MainC);
 
         Assert.False(File.Exists(MainC));
         Assert.Empty(TedideProject.Load(Game.FilePath!).SourceFiles);
@@ -285,18 +285,18 @@ public sealed class AppShellCommandsTests : IDisposable
     public Task SaveAll_WritesTheEditsAndTheProject_AndCloseFileAsksFirst() => UiThread.Run(() =>
     {
         NewGame();
-        _shell.OpenFile(MainC);
+        _shell.Projects.OpenFile(MainC);
         _shell.EditorPane.Editor.Document!.Insert(0, "// one\n");
         Game.ExtraArguments = ["-v"];
 
-        Assert.True(_shell.SaveAll());
+        Assert.True(_shell.Projects.SaveAll());
         Assert.StartsWith("// one", File.ReadAllText(MainC));
         Assert.Equal(["-v"], TedideProject.Load(Game.FilePath!).ExtraArguments);
 
         _shell.EditorPane.Editor.Document!.Insert(0, "// two\n");
-        Assert.False(_shell.CloseFile(MainC));  // the question was closed: nothing happens
+        Assert.False(_shell.Projects.CloseFile(MainC));  // the question was closed: nothing happens
         _dialogs.QueryAnswers.Enqueue(1);
-        Assert.True(_shell.CloseFile(MainC));    // Discard
+        Assert.True(_shell.Projects.CloseFile(MainC));    // Discard
         Assert.Empty(_shell.EditorPane.OpenPaths);
         Assert.StartsWith("// one", File.ReadAllText(MainC));
         return Task.CompletedTask;
@@ -306,11 +306,11 @@ public sealed class AppShellCommandsTests : IDisposable
     public Task SavingAReadOnlyFile_IsReported_NotThrown() => UiThread.Run(() =>
     {
         NewGame();
-        _shell.OpenFile(MainC);
+        _shell.Projects.OpenFile(MainC);
         _shell.EditorPane.Editor.Document!.Insert(0, "// edited\n");
         File.SetAttributes(MainC, FileAttributes.ReadOnly);
 
-        Assert.False(_shell.SaveActive());
+        Assert.False(_shell.Projects.SaveActive());
 
         Assert.StartsWith("Error: Saving main.c failed:", Assert.Single(_dialogs.Errors));
         return Task.CompletedTask;
@@ -327,25 +327,25 @@ public sealed class AppShellCommandsTests : IDisposable
             d.Target = Cc65Target.C64;
             d.OutputType = ProjectOutputType.Library;
         });
-        _shell.AddNewProject();
+        _shell.Projects.AddNewProject();
         Assert.Contains("Added Gfx (library) to the solution.", _shell.OutputText);
 
         var tool = new TedideProject { Name = "Tool", Target = Cc65Target.C64, SourceFiles = ["main.c"] };
         Directory.CreateDirectory(Path.Combine(_dir, "Tool"));
         tool.Save(Path.Combine(_dir, "Tool", "Tool.tproj"));
         _dialogs.FilePicks.Enqueue([tool.FilePath!]);
-        _shell.AddExistingProject();
+        _shell.Projects.AddExistingProject();
         _dialogs.FilePicks.Enqueue([MainC]);
-        _shell.AddExistingProject();
+        _shell.Projects.AddExistingProject();
         Assert.Equal(["Game", "Gfx", "Tool"], _shell.Workspace.Projects.Select(p => p.Name));
         Assert.Equal("Unsupported file: Expected a .tproj file.", Assert.Single(_dialogs.Errors));
 
-        _shell.SetStartupProject(_shell.Workspace.Projects.Single(p => p.Name == "Tool"));
+        _shell.Projects.SetStartupProject(_shell.Workspace.Projects.Single(p => p.Name == "Tool"));
         Assert.Equal("Tool", _shell.Workspace.ActiveProject!.Name);
         Assert.Contains("Tool is now the startup project.", _shell.OutputText);
 
         _dialogs.QueryAnswers.Enqueue(0);
-        _shell.RemoveProject(_shell.Workspace.Projects.Single(p => p.Name == "Gfx"));
+        _shell.Projects.RemoveProject(_shell.Workspace.Projects.Single(p => p.Name == "Gfx"));
         Assert.Equal(["Game", "Tool"], _shell.Workspace.Projects.Select(p => p.Name));
         Assert.True(Directory.Exists(Path.Combine(_dir, "Gfx")));  // its files stay
         Assert.Equal(2, TedideSolution.Load(Solution).ProjectPaths.Count);
@@ -357,7 +357,7 @@ public sealed class AppShellCommandsTests : IDisposable
     {
         NewGame();
 
-        _shell.DeleteProject(Game);
+        _shell.Projects.DeleteProject(Game);
 
         Assert.StartsWith("Can't Delete Project: Game's folder also holds the solution file", Assert.Single(_dialogs.Errors));
         Assert.True(Directory.Exists(GameDir));
@@ -368,14 +368,14 @@ public sealed class AppShellCommandsTests : IDisposable
     public Task RenamingTheProject_InSettings_MovesItsFolderTabsAndRecentEntry() => UiThread.Run(() =>
     {
         NewGame();
-        _shell.OpenFile(MainC);
+        _shell.Projects.OpenFile(MainC);
         AnswerWith<ProjectSettingsDialog>(d =>
         {
             d._nameField.Text = "Shooter";
             Assert.Null(d.Save());
         });
 
-        _shell.ShowProjectSettings(Game);
+        _shell.Projects.ShowProjectSettings(Game);
 
         var project = Assert.Single(_shell.Workspace.Projects);
         Assert.Equal("Shooter", project.Name);
@@ -408,7 +408,7 @@ public sealed class AppShellCommandsTests : IDisposable
     [Fact]
     public Task ProjectSettings_WithNoProject_SaysToOpenOne() => UiThread.Run(() =>
     {
-        _shell.ShowProjectSettings(null);
+        _shell.Projects.ShowProjectSettings(null);
 
         Assert.Contains("No project loaded.", _shell.OutputText);
         Assert.Empty(_dialogs.Shown);

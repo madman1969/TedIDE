@@ -18,8 +18,7 @@ internal sealed class DocumentOutlineTracking
     private readonly EditorPane _editorPane;
     private readonly DocumentOutlineView _view;
     private readonly Func<bool> _isShown;
-    private readonly Action<TimeSpan, Func<bool>> _addTimeout;
-    private int _generation;
+    private readonly Debouncer _refresh;
     private bool _stale = true;
 
     public DocumentOutlineTracking(Workspace workspace, EditorPane editorPane, DocumentOutlineView view, Func<bool> isShown,
@@ -29,7 +28,7 @@ internal sealed class DocumentOutlineTracking
         _editorPane = editorPane;
         _view = view;
         _isShown = isShown;
-        _addTimeout = addTimeout ?? ((delay, callback) => Application.AddTimeout(delay, callback));
+        _refresh = new Debouncer(Delay, Refresh, addTimeout ?? ((delay, callback) => Application.AddTimeout(delay, callback)));
 
         _editorPane.Editor.ContentChanged += (_, _) => RequestRefresh();
         _editorPane.Editor.CaretChanged += (_, _) => FollowCaret();
@@ -38,7 +37,7 @@ internal sealed class DocumentOutlineTracking
     /// <summary>After a tab switch, open or close: the new file's outline at once.</summary>
     public void ActiveDocumentChanged()
     {
-        _generation++;
+        _refresh.Cancel();
         Refresh();
     }
 
@@ -54,13 +53,7 @@ internal sealed class DocumentOutlineTracking
         _stale = true;
         if (!_isShown())
             return;
-        var generation = ++_generation;
-        _addTimeout(Delay, () =>
-        {
-            if (generation == _generation)
-                Refresh();
-            return false;
-        });
+        _refresh.Request();
     }
 
     internal void Refresh()

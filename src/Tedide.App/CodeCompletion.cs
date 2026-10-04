@@ -32,13 +32,13 @@ internal sealed class CodeCompletion : IEditorCompletionProvider
     private readonly IShell _shell;
     private readonly Workspace _workspace;
     private readonly EditorPane _editorPane;
-    private readonly Action<TimeSpan, Func<bool>> _addTimeout;
+    /// <summary>Re-scans the shown file once edits pause for <see cref="ReindexDelay"/>.</summary>
+    private readonly Debouncer _reindex;
     private readonly Action<Action> _post;
     private readonly Func<IReadOnlyList<string>> _libraryDirectories;
 
     /// <summary>Set by a trigger key, for the request that key causes.</summary>
     private bool _requested;
-    private int _reindexGeneration;
     private bool _refreshing, _refreshAgain;
     private bool _enabled = true;
 
@@ -51,7 +51,7 @@ internal sealed class CodeCompletion : IEditorCompletionProvider
         _shell = shell;
         _workspace = workspace;
         _editorPane = editorPane;
-        _addTimeout = addTimeout ?? ((delay, callback) => Application.AddTimeout(delay, callback));
+        _reindex = new Debouncer(ReindexDelay, ReindexShownFile, addTimeout ?? ((delay, callback) => Application.AddTimeout(delay, callback)));
         // A zero timeout, not Application.Invoke: on the UI thread Invoke runs the action at once -
         // inside the key - and the editor then closed the list it opened (confirmed live).
         _post = post ?? (action => Application.AddTimeout(TimeSpan.Zero, () =>
@@ -123,7 +123,7 @@ internal sealed class CodeCompletion : IEditorCompletionProvider
     {
         if (!_enabled)
             return;
-        RequestReindex();
+        _reindex.Request();
 
         // "." or "->" just typed: offer the members. Posted, so it runs after the editor has
         // finished with this key (which would otherwise close the list again at once).
@@ -138,18 +138,6 @@ internal sealed class CodeCompletion : IEditorCompletionProvider
                         _editorPane.Editor.NewKeyDownEvent(TriggerKeys[0]);
                 });
         }
-    }
-
-    /// <summary>Re-scans the shown file once edits pause for <see cref="ReindexDelay"/>.</summary>
-    private void RequestReindex()
-    {
-        var generation = ++_reindexGeneration;
-        _addTimeout(ReindexDelay, () =>
-        {
-            if (generation == _reindexGeneration)
-                ReindexShownFile();
-            return false;
-        });
     }
 
     /// <summary>The shown file from the editor's text - a few milliseconds even for the largest
