@@ -68,8 +68,8 @@ offline.
 
 - **Help** - F1 context help opens the bundled **Doc Viewer** at the word under the caret: the cc65
   manuals, The C Book, C64-Wiki, Wikipedia and the VICE manual, with full-text search and bookmarks.
-- **Samples** - ten samples, from a bouncing-characters demo to a C128 text editor and a
-  far-memory library for six machine setups.
+- **Samples** - nine samples, from a bouncing-characters demo to a far-memory library for six
+  machine setups.
 - **Standalone builds** - publish Tedide and the Doc Viewer as single executables that need no .NET
   runtime installed.
 
@@ -137,7 +137,6 @@ Open any of these with **File > Open Project...**:
 | `bounce` | C64 | One file: five characters bouncing around the screen. |
 | `inflate` | C64 | One file: a character-fill sprite that grows and shrinks, drawn from an off-screen buffer. |
 | `CBMInfo` | Eight Commodore targets | A system information screen built from five modules (see below). |
-| `Nano128` | C128 | The largest sample: a nano-style text editor in 80-column mode (see below). |
 | `FarMem` | C64, C128, C16/Plus/4, CBM 510/610 | A solution of twelve projects: one library for five targets, and a test program for each machine setup (see below). |
 
 ### CBMInfo
@@ -190,17 +189,6 @@ program's [Extra VICE arguments](#emulator) give VICE the hardware it needs (an 
 `Test-FarMem.ps1`, beside the solution, runs all seven in VICE after a **Build Solution** and
 reports which passed. `-Repeat 10` runs each one ten times: VICE starts programs after a random
 delay, so timing-dependent bugs only show some of the time.
-
-### Nano128
-
-A nano-style full-screen editor for the C128 in 80-column mode.
-
-- Commodore keyboards lack most of nano's Ctrl keys, so the function keys stand in: **F2** Save,
-  **F3/F4** Search, **F5/F6** Cut/Uncut line, **F7/F8** Page Up/Down, **Home** start of line and
-  **Stop** to open another file.
-- Exit really is **Ctrl+X**: a Commodore's Ctrl masks a key the same way a terminal's does.
-- Text is mixed case, using the C128's lower/upper-case character set.
-- The title bar shows free heap memory live, since each line's buffer grows and shrinks as you type.
 
 ## Projects and solutions
 
@@ -933,7 +921,7 @@ scripts/
 tools/
   Cc65DocsDbBuilder/   Builds Docs.db, the Doc Viewer's database, from the books' HTML
   Opt6502Cli/          A command-line opt6502, plus its tests in cc65's simulator
-samples/               The ten samples
+samples/               The nine samples
 ```
 
 ### Testing
