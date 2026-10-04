@@ -24,14 +24,21 @@ public sealed class NewProjectDialog : Dialog
     public Cc65Target? Target { get; internal set; }
     public ProjectOutputType OutputType { get; internal set; }
 
+    /// <summary>Whether to make the new project a git repository - see GitIntegration.CreateRepositoryAsync.</summary>
+    public bool CreateRepository { get; internal set; }
+
+    private readonly CheckBox? _repositoryBox;
+
     /// <param name="parentDirectory">Where the new project's folder goes by default - the open
     /// solution's folder when adding to it, else the current directory.</param>
     /// <param name="title">"New Project", or "Add New Project" when it joins the open solution.</param>
-    public NewProjectDialog(string? parentDirectory = null, string title = "New Project")
+    /// <param name="offerRepository">Whether to offer making it a git repository - not for a project
+    /// joining a solution, which shares the solution's.</param>
+    public NewProjectDialog(string? parentDirectory = null, string title = "New Project", bool offerRepository = true)
     {
         Title = title;
         Width = 60;
-        Height = 22;
+        Height = offerRepository ? 24 : 22;
         // A real Padding adornment (rather than hand-offsetting every child's X/Y by 1) so the
         // whole dialog gets consistent breathing room from its border - children below are
         // positioned relative to this inset content area, i.e. X = 0 is already 2 cells in.
@@ -78,6 +85,9 @@ public sealed class NewProjectDialog : Dialog
             Text = nameof(ProjectOutputType.Application),
         };
 
+        if (offerRepository)
+            _repositoryBox = new CheckBox { Text = "Create a _git repository", X = 0, Y = 16 };
+
         // The primary action: Accent-scheme so it visually pops against the dialog's normal
         // chrome, the same accent color the app uses for the menu bar's own highlighted items.
         var createButton = new Button { Text = "_Create", IsDefault = true, SchemeName = "Accent", X = Pos.Center() - 13, Y = Pos.AnchorEnd(1), Width = 12 };
@@ -91,6 +101,7 @@ public sealed class NewProjectDialog : Dialog
             }
             Target = target;
             OutputType = Enum.TryParse<ProjectOutputType>(_outputTypeField.Text, out var outputType) ? outputType : ProjectOutputType.Application;
+            CreateRepository = _repositoryBox?.Value == CheckState.Checked;
             Application.RequestStop(this);
             e.Handled = true;
         };
@@ -102,6 +113,10 @@ public sealed class NewProjectDialog : Dialog
             e.Handled = true;
         };
 
-        Add([nameLabel, _nameField, dirLabel, _directoryField, browseButton, targetLabel, _targetField, outputTypeLabel, _outputTypeField, createButton, cancelButton]);
+        // The tick box before the buttons, so Tab reaches it in reading order.
+        Add([nameLabel, _nameField, dirLabel, _directoryField, browseButton, targetLabel, _targetField, outputTypeLabel, _outputTypeField]);
+        if (_repositoryBox is not null)
+            Add(_repositoryBox);
+        Add([createButton, cancelButton]);
     }
 }

@@ -175,7 +175,8 @@ A nano-style full-screen editor for the C128 in 80-column mode.
 ### New projects
 
 **File > New Project...** asks for a name, a Commodore target and a destination folder, then
-creates the same layout as the samples:
+creates the same layout as the samples. Tick **Create a git repository** to make it a repository
+too (see [Git](#git)):
 
 ```text
 MyGame/
@@ -642,6 +643,18 @@ When a project is in a git repository, Tedide shows its state and works with it.
 `git` command line, so your config, hooks and line-ending rules apply. Without git, none of this
 appears.
 
+### Starting a repository
+
+- **Git > Create Repository...** makes the folder holding the solution and its projects a git
+  repository on a `main` branch. Its `.gitignore` leaves out build output (`bin/`, `obj/`, `.dbg`
+  and the like) and Tedide's per-user files. New Project's **Create a git repository** box does the
+  same for a new project.
+- **Git > Add Remote...** links the repository to another, such as a new GitHub repository: create
+  it on github.com, leaving it empty (no README, `.gitignore` or licence), and paste its address.
+  An existing remote of that name is pointed at the new address, after asking.
+- Then **Commit All** in the Git tab makes the first commit, and **Push** publishes the branch to
+  the remote. Git Credential Manager asks you to sign in to GitHub the first time.
+
 ### Seeing changes
 
 - **The Solution Explorer** marks changed files: `M` modified (amber), `?` untracked or `A` added
@@ -996,8 +1009,8 @@ In place and tested:
   function's parameters and local variables with their types and values), Watch, Call Stack,
   Breakpoints and Registers (with decoded status flags); Memory and Disassembly tabs; and a
   read-only editor with the current line auto-centred while a session is active.
-- **Git** - status markers in the Solution Explorer, the branch and the caret line's blame above
-  the editor, gutter change bars, Compare with Last Commit, Blame and History views, and a Git tab
+- **Git** - Create Repository and Add Remote for a new project; status markers in the Solution
+  Explorer, the branch and the caret line's blame above the editor, gutter change bars, Compare with Last Commit, Blame and History views, and a Git tab
   to stage, unstage, discard, commit or amend, stash, fetch, pull and push, manage branches and
   resolve conflicts.
 - **Tedide.DocViewer** - the cc65 manuals, The C Book, C64-Wiki, Wikipedia and the VICE manual in

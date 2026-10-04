@@ -258,7 +258,7 @@ public sealed class GitChangesView : View
         _operation = status?.Operation ?? GitOperation.None;
         var conflicts = changes.Count(f => f.IsConflicted);
         _branchText = repository is null || status is null
-            ? "Not in a git repository."
+            ? "Not in a git repository - Git > Create Repository... makes one."
             : _operation != GitOperation.None
                 ? $"{status.Describe()}: {_operation.Describe()} stopped, " + conflicts switch
                 {

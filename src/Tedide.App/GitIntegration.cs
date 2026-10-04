@@ -480,6 +480,111 @@ internal sealed class GitIntegration
         _git.RequestRefresh();
     }
 
+    /// <summary>What a new repository's .gitignore leaves out: build output, and Tedide's own
+    /// per-user files (the open tabs, breakpoints, and a damaged file's recovered copy).</summary>
+    internal static readonly string[] IgnoredFiles =
+        ["bin/", "obj/", "*.dbg", "*.lbl", "lnk.map", "*.session.json", "*.breakpoints.json", "*.corrupt"];
+
+    /// <summary>
+    /// Where a repository for the loaded solution goes: the folder holding the solution file and
+    /// every project - normally the solution's own folder, or the one above when a project sits
+    /// beside it. Null with nothing loaded.
+    /// </summary>
+    internal static string? RepositoryRootFor(Workspace workspace)
+    {
+        var folders = workspace.Projects.Select(p => p.Directory)
+            .Concat(workspace.Solution?.Directory is { } solution ? [solution] : [])
+            .Select(d => Path.TrimEndingDirectorySeparator(Path.GetFullPath(d)))
+            .ToList();
+        if (folders.Count == 0)
+            return null;
+        var root = folders[0];
+        foreach (var folder in folders.Skip(1))
+            while (!AppShell.IsSameOrInsideDirectory(folder, root))
+                root = Path.GetDirectoryName(root) ?? root;
+        return root;
+    }
+
+    /// <summary>
+    /// Git > Create Repository... (and New Project's "Create a git repository"): makes the folder
+    /// holding the solution a git repository on a "main" branch, with a .gitignore of
+    /// <see cref="IgnoredFiles"/>. Refused when it's already in one. <paramref name="ask"/> false
+    /// skips the confirmation - New Project's tick box already asked.
+    /// </summary>
+    internal async Task CreateRepositoryAsync(bool ask = true)
+    {
+        if (RepositoryRootFor(_workspace) is not { } root)
+        {
+            _shell.AppendOutputLine("No project loaded. Use File > Open Project or File > New Project first.");
+            return;
+        }
+        if (await GitRepository.FindAsync(root) is { } existing)
+        {
+            var where = string.Equals(existing.Root, root, StringComparison.OrdinalIgnoreCase)
+                ? $"{root} is already a git repository."
+                : $"{root} is already inside the git repository at {existing.Root}.";
+            _shell.Dialogs.ErrorQuery("Create Repository", RenameSymbolDialog.Wrap($"{where} Its Git tab is ready to use."), ["OK"]);
+            return;
+        }
+        if (ask && _shell.Dialogs.Query("Create Repository", RenameSymbolDialog.Wrap(
+                $"Make {root} a git repository? A .gitignore leaves out build output (bin/, obj/, .dbg and the like) "
+                + "and Tedide's per-user files."), ["Create", "Cancel"]) != 0)
+            return;
+
+        var (result, _) = await GitRepository.CreateAsync(root, IgnoredFiles);
+        if (!result.Succeeded)
+        {
+            _shell.Dialogs.ErrorQuery("Create Repository Failed", RenameSymbolDialog.Wrap(result.Explanation), ["OK"]);
+            return;
+        }
+        _shell.AppendOutputLine($"git: Created a repository in {root}. Commit All in the Git tab makes its first commit; "
+            + "Git > Add Remote... links it to GitHub.");
+        _git.ProjectsChanged();
+        _shell.ShowPane(_gitView);
+    }
+
+    /// <summary>
+    /// Git > Add Remote...: links the solution's repository to another - "origin" at an empty
+    /// GitHub repository, typically - so Push can publish to it. A remote that already exists is
+    /// pointed at the new address, after asking.
+    /// </summary>
+    internal async Task AddRemoteAsync()
+    {
+        if (_git.Primary is not { } repository)
+        {
+            _shell.Dialogs.ErrorQuery("Add Remote", "The solution isn't in a git repository yet. Git > Create Repository... makes one.", ["OK"]);
+            return;
+        }
+
+        var remotes = await repository.GetRemotesAsync();
+        var dialog = new AddRemoteDialog();
+        _shell.Dialogs.Run(dialog);
+        if (dialog.RemoteName is not { } name || dialog.Url is not { } url)
+            return;
+
+        GitResult result;
+        if (remotes.Contains(name))
+        {
+            var current = await repository.GetRemoteUrlAsync(name);
+            if (_shell.Dialogs.Query("Replace Remote", RenameSymbolDialog.Wrap(
+                    $"{name} already points at {current}. Point it at {url} instead?"), ["Replace", "Cancel"]) != 0)
+                return;
+            result = await repository.SetRemoteUrlAsync(name, url);
+        }
+        else
+        {
+            result = await repository.AddRemoteAsync(name, url);
+        }
+
+        if (!result.Succeeded)
+        {
+            _shell.Dialogs.ErrorQuery("Add Remote Failed", RenameSymbolDialog.Wrap(result.Explanation), ["OK"]);
+            return;
+        }
+        _shell.AppendOutputLine($"git: {name} is {url}. Push in the Git tab publishes the branch there.");
+        _git.RequestRefresh();
+    }
+
     /// <summary>Git tab > Fetch: learns what's new on the remote; changes no files.</summary>
     internal void FetchFromRemote() => Fire(SyncAsync("Fetching", "Fetch", (repository, token) => repository.FetchAsync(token)));
 

@@ -513,6 +513,16 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
             new("_Settings...", "", ShowProjectSettings, Key.Empty),
         });
 
+        // As in Visual Studio's Git menu: setting a repository up, then the Git tab for the rest.
+        // "G_it" - Alt+G is the bottom pane's Git tab, which would win over the menu.
+        var gitMenu = new MenuBarItem("G_it", new List<View>
+        {
+            new MenuItem("Create _Repository...", "", () => Fire(_gitIntegration.CreateRepositoryAsync()), Key.Empty),
+            new MenuItem("Add Re_mote...", "", () => Fire(_gitIntegration.AddRemoteAsync()), Key.Empty),
+            new Line(),
+            new MenuItem("Git _Changes", "", () => ShowPane(_gitView), Key.Empty),
+        });
+
         // Shared with Tedide.DocViewer (ThemeMenuBuilder, in Tedide.Theming) - same nine entries,
         // and the currently active one is marked with a leading checkmark, kept live via
         // ThemeSwitcher.Changed.
@@ -549,7 +559,7 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
         viewMenuItems.AddAt(4, new Line());
         viewMenuItems.AddAt(5, BuildCheckAsYouTypeMenuItem());
         viewMenuItems.AddAt(6, BuildCodeCompletionMenuItem());
-        menuBar.Menus = [fileMenu, menuBar.EditMenu, menuBar.ViewMenu, buildMenu, debugMenu, projectMenu, themeMenu, helpMenu];
+        menuBar.Menus = [fileMenu, menuBar.EditMenu, menuBar.ViewMenu, buildMenu, debugMenu, gitMenu, projectMenu, themeMenu, helpMenu];
         menuBar.X = 0;
         menuBar.Y = 0;
         menuBar.Width = Dim.Fill();
@@ -675,6 +685,13 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
             action = CloseActiveFile;
         else if (key == Key.Q.WithCtrl)
             action = Quit;
+        // Also on the File menu, but a menu item's key only works while its menu is open.
+        else if (key == Key.N.WithCtrl)
+            action = NewProject;
+        else if (key == Key.O.WithCtrl)
+            action = OpenProject;
+        else if (key == Key.W.WithCtrl)
+            action = CloseActiveFile;
         else if (key == SolutionExplorerKey)
             action = ShowSolutionExplorer;
         else if (key == LocalsKey)
@@ -776,6 +793,8 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
             // comment) - remember that, not the bare project, matching how opening one of the
             // bundled samples remembers its .tsln rather than the .tproj inside it.
             RememberRecentProject(_workspace.Solution!.FilePath!);
+            if (dialog.CreateRepository)
+                Fire(_gitIntegration.CreateRepositoryAsync(ask: false));
         }
     }
 
@@ -1435,7 +1454,7 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
     {
         if (_workspace.Solution is not { } solution)
             return;
-        var dialog = new NewProjectDialog(_workspace.DefaultNewProjectParent(), "Add New Project");
+        var dialog = new NewProjectDialog(_workspace.DefaultNewProjectParent(), "Add New Project", offerRepository: false);
         _dialogs.Run(dialog);
         if (dialog.Target is not { } target || string.IsNullOrWhiteSpace(dialog.ProjectName))
             return;

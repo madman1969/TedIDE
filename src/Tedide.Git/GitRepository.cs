@@ -313,6 +313,47 @@ public sealed class GitRepository
     public Task<GitResult> DeleteBranchAsync(string name, CancellationToken cancellationToken = default) =>
         GitRunner.RunAsync(Root, ["branch", "-d", name], cancellationToken: cancellationToken);
 
+    /// <summary>
+    /// Makes <paramref name="directory"/> a new repository on a "main" branch, and gives it a
+    /// .gitignore with <paramref name="ignored"/> - the lines a .gitignore already there lacks are
+    /// added to it, so nothing it says is lost. Returns git's result and, if it worked, the repository.
+    /// </summary>
+    public static async Task<(GitResult Result, GitRepository? Repository)> CreateAsync(string directory, IEnumerable<string> ignored,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await GitRunner.RunAsync(directory, ["init", "-b", "main"], cancellationToken: cancellationToken).ConfigureAwait(false);
+        if (!result.Succeeded)
+            return (result, null);
+
+        var ignoreFile = Path.Combine(directory, ".gitignore");
+        var existing = File.Exists(ignoreFile) ? await File.ReadAllLinesAsync(ignoreFile, cancellationToken).ConfigureAwait(false) : [];
+        var missing = ignored.Where(line => !existing.Contains(line, StringComparer.Ordinal)).ToList();
+        if (missing.Count > 0)
+        {
+            // Started on a line of its own, if the file doesn't already end with a newline.
+            var separator = existing.Length > 0 && !(await File.ReadAllTextAsync(ignoreFile, cancellationToken).ConfigureAwait(false)).EndsWith('\n')
+                ? "\n" : "";
+            await File.AppendAllTextAsync(ignoreFile, separator + string.Join("\n", missing) + "\n", cancellationToken).ConfigureAwait(false);
+        }
+        return (result, await FindAsync(directory, cancellationToken).ConfigureAwait(false));
+    }
+
+    /// <summary>The address remote <paramref name="name"/> points at, or null if there's no such remote.</summary>
+    public async Task<string?> GetRemoteUrlAsync(string name, CancellationToken cancellationToken = default)
+    {
+        var result = await GitRunner.RunAsync(Root, ["remote", "get-url", name], cancellationToken: cancellationToken).ConfigureAwait(false);
+        return result.Succeeded ? result.Output.Trim() : null;
+    }
+
+    /// <summary>Adds remote <paramref name="name"/> at <paramref name="url"/> - "origin" at a GitHub
+    /// repository's address, say.</summary>
+    public Task<GitResult> AddRemoteAsync(string name, string url, CancellationToken cancellationToken = default) =>
+        GitRunner.RunAsync(Root, ["remote", "add", name, url], cancellationToken: cancellationToken);
+
+    /// <summary>Points the existing remote <paramref name="name"/> at <paramref name="url"/> instead.</summary>
+    public Task<GitResult> SetRemoteUrlAsync(string name, string url, CancellationToken cancellationToken = default) =>
+        GitRunner.RunAsync(Root, ["remote", "set-url", name, url], cancellationToken: cancellationToken);
+
     /// <summary>The repository's remotes, by name ("origin").</summary>
     public async Task<IReadOnlyList<string>> GetRemotesAsync(CancellationToken cancellationToken = default)
     {
