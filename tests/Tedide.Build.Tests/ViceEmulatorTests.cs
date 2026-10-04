@@ -91,6 +91,25 @@ public class ViceEmulatorTests
         Assert.Equal("127.0.0.1:6502", args[address + 1]);
     }
 
+    [Theory]
+    [InlineData(Cc65Target.Cbm610, true)]
+    [InlineData(Cc65Target.Cbm510, false)]
+    [InlineData(Cc65Target.C64, false)]
+    [InlineData(Cc65Target.Pet, false)]
+    public void BuildArguments_LoadsACbm610ProgramStraightIntoMemory(Cc65Target target, bool injected)
+    {
+        // On a CBM 610, VICE's default autostart types the file name into BASIC, which then can't
+        // find a name with capitals in it ("CBMInfo") - see BuildArguments.
+        var project = new TedideProject { Name = "CBMInfo", Target = target };
+
+        var args = ViceEmulator.BuildArguments(project, enableBinaryMonitor: true);
+
+        var mode = args.IndexOf("-autostartprgmode");
+        Assert.Equal(injected, mode >= 0);
+        if (injected)
+            Assert.Equal("1", args[mode + 1]);
+    }
+
     [Fact]
     public void BuildArguments_AlwaysIncludesAutostartAndTheResolvedOutputFile()
     {

@@ -1,6 +1,6 @@
 {
   "Name": "CBMInfo",
-  "Target": "C64",
+  "Target": "Cbm610",
   "OutputType": "Application",
   "ProjectReferences": [],
   "OptimizationLevel": "Maximum",

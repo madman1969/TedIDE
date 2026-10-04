@@ -117,6 +117,17 @@ public sealed class ViceEmulator(string binDirectory = ViceEmulator.DefaultBinDi
     internal static List<string> BuildArguments(TedideProject project, bool enableBinaryMonitor)
     {
         var args = new List<string> { "-autostart", project.ResolvedOutputFile };
+        // The CBM 610 boots in lower/upper case, where VICE's usual autostart fails for a file
+        // name with capitals in it: it stores the program on a temporary disk as "CBMINFO", then
+        // types LOAD"CBMInfo" - and in that mode the typed capitals are different characters, so
+        // BASIC answers ?FILE NOT FOUND. Mode 1 loads the program straight into memory instead,
+        // with no disk and no typed name (confirmed against xcbm2 3.9). The CBM 510 boots in
+        // upper case, where the names match, so it keeps the default.
+        if (project.Target == Cc65Target.Cbm610)
+        {
+            args.Add("-autostartprgmode");
+            args.Add("1");
+        }
         if (enableBinaryMonitor)
         {
             // The address too, not just the switch: VICE saves BinaryMonitorServerAddress in its
