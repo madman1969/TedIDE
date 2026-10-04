@@ -113,6 +113,9 @@ Run it inside Windows Terminal for full colour. Then, from the **File** menu:
 - **New Project...** creates a project from a name, a target and a folder - see
   [New projects](#new-projects).
 - **Open Project...** opens a `.tsln` or `.tproj`, such as one of the [samples](#samples).
+- **Open File...** opens any source files, with or without a project loaded. A file outside the
+  project is edited, saved and [checked for errors](#errors-as-you-type) like the project's own,
+  but isn't built; **Add Existing Item** in the Solution Explorer puts one in the project.
 - **Recent Projects and Solutions** lists the last 10 you opened, numbered for Alt+1 to Alt+9 as in
   Visual Studio. An entry whose files have moved is dropped from the list with an error.
 - **Close Project** closes the loaded projects, asking about unsaved files first. Nothing on disk
@@ -413,6 +416,9 @@ include paths and defines. It only compiles; it never assembles, links or touche
 `obj/`. Each check takes about a tenth of a second, runs in the background, and only starts once
 you've paused, so it doesn't slow typing. Headers aren't checked on their own, but saving one
 re-checks the file you're looking at.
+
+A file from outside the project, opened with **File > Open File...**, is checked too: for the open
+project's target, or the C64 with no project loaded, finding headers in the file's own folder.
 
 To turn it off, untick **View > Check As You Type**. Tedide remembers the choice.
 

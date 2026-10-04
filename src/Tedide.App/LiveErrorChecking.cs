@@ -113,6 +113,19 @@ internal sealed class LiveErrorChecking
         return _sourceChecker.CheckAsync(project, path, text, libraryIncludes);
     }
 
+    /// <summary>
+    /// What a file outside every project (File > Open File...) is checked as: a project in the
+    /// file's own folder, so headers beside it are found, built for the open project's target and
+    /// CPU - the likeliest home for a stray file - or the C64's with nothing open.
+    /// </summary>
+    internal static TedideProject StandInProjectFor(string path, TedideProject? like) => new()
+    {
+        Name = Path.GetFileNameWithoutExtension(path),
+        Target = like?.Target ?? Cc65Target.C64,
+        EnableSuperCpu = like?.EnableSuperCpu ?? false,
+        FilePath = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(path))!, "stand-in" + TedideProject.FileExtension),
+    };
+
     /// <summary>After a tab switch, open or close: the shown file's last results at once, and a
     /// fresh check soon. Results for files no longer open are dropped.</summary>
     public void ActiveDocumentChanged()
@@ -148,8 +161,10 @@ internal sealed class LiveErrorChecking
             _checkAgain = true;
             return;
         }
-        if (_editorPane.OpenPath is not { } path || !SourceChecker.CanCheck(path) || _workspace.ProjectFor(path) is not { } project)
+        if (_editorPane.OpenPath is not { } path || !SourceChecker.CanCheck(path))
             return;
+        var owner = _workspace.ProjectFor(path);
+        var project = owner ?? StandInProjectFor(path, _workspace.ActiveProject);
 
         // Read here, on the UI thread - the document belongs to it.
         var generation = _generation;
@@ -169,8 +184,8 @@ internal sealed class LiveErrorChecking
         if (generation == _generation && found is not null && _editorPane.IsOpen(path))
         {
             // Named in the Error List's Project column like a build's, when there's more than one.
-            if (_workspace.Projects.Count > 1)
-                found = found.Select(d => d with { Project = project.Name }).ToList();
+            if (owner is not null && _workspace.Projects.Count > 1)
+                found = found.Select(d => d with { Project = owner.Name }).ToList();
             _results[path] = found;
             _errorList.SetLiveDiagnostics(path, found, _displayPath);
             ShowResults();

@@ -15,6 +15,7 @@ public sealed class LiveErrorCheckingTests : IDisposable
     private readonly string _dir = Directory.CreateTempSubdirectory("tedide-live-").FullName;
     private readonly List<(TimeSpan Delay, Func<bool> Callback)> _timers = [];
     private readonly List<string> _checkedTexts = [];
+    private readonly List<TedideProject> _checkedAs = [];
 
     /// <summary>What the next check reports; a pending one holds it until the test completes it.</summary>
     private Func<string, Task<IReadOnlyList<BuildDiagnostic>?>> _answer = _ => Task.FromResult<IReadOnlyList<BuildDiagnostic>?>([]);
@@ -44,8 +45,9 @@ public sealed class LiveErrorCheckingTests : IDisposable
         var errorList = new ErrorListView();
         var shell = new FakeShell(editor);
         var live = new LiveErrorChecking(shell, workspace, editor, errorList, path => Path.GetRelativePath(_dir, path),
-            (_, _, text) =>
+            (project, _, text) =>
             {
+                _checkedAs.Add(project);
                 _checkedTexts.Add(text);
                 return _answer(text);
             },
@@ -65,6 +67,44 @@ public sealed class LiveErrorCheckingTests : IDisposable
     }
 
     private static BuildDiagnostic Problem(string file, int line, DiagnosticSeverity severity, string message) => new(file, line, severity, message);
+
+    [Fact]
+    public Task AFileOutsideTheProject_IsCheckedToo_AsAProjectInItsOwnFolder() => UiThread.Run(async () =>
+    {
+        var elsewhere = Directory.CreateTempSubdirectory("tedide-stray-").FullName;
+        try
+        {
+            var stray = Path.Combine(elsewhere, "stray.c");
+            File.WriteAllText(stray, "int x\n");
+            _answer = _ => Task.FromResult<IReadOnlyList<BuildDiagnostic>?>([Problem(stray, 1, DiagnosticSeverity.Error, "';' expected")]);
+            var (editor, errorList, shell, _) = Make();
+
+            editor.Open(stray);
+            await FireTimersAsync(shell);
+
+            var project = Assert.Single(_checkedAs);
+            Assert.Equal(elsewhere, project.Directory, ignoreCase: true);
+            Assert.Equal(Cc65Target.C64, project.Target);  // Game's
+            Assert.Equal(1, errorList.Table!.Rows);
+        }
+        finally
+        {
+            Directory.Delete(elsewhere, recursive: true);
+        }
+    });
+
+    [Fact]
+    public void TheStandInProject_FollowsTheOpenProject_OrIsAC64()
+    {
+        var stray = Path.Combine(_dir, "..", "x", "stray.c");
+        var plus4 = new TedideProject { Target = Cc65Target.Plus4 };
+        var superCpu = new TedideProject { Target = Cc65Target.C64, EnableSuperCpu = true };
+
+        Assert.Equal(Cc65Target.C64, LiveErrorChecking.StandInProjectFor(stray, null).Target);
+        Assert.Equal(Cc65Target.Plus4, LiveErrorChecking.StandInProjectFor(stray, plus4).Target);
+        Assert.Equal("65816", LiveErrorChecking.StandInProjectFor(stray, superCpu).ResolvedCc65Cpu);
+        Assert.Equal(Path.GetDirectoryName(Path.GetFullPath(stray)), LiveErrorChecking.StandInProjectFor(stray, null).Directory);
+    }
 
     [Fact]
     public Task ABurstOfEdits_RunsOneCheck_AfterThePause() => UiThread.Run(async () =>
@@ -135,22 +175,12 @@ public sealed class LiveErrorCheckingTests : IDisposable
     });
 
     [Fact]
-    public Task OnlySourceFilesInAProject_AreChecked() => UiThread.Run(async () =>
+    public Task OnlySourceFiles_AreChecked_NotHeaders() => UiThread.Run(async () =>
     {
         var (editor, _, shell, _) = Make();
-        var outside = Path.Combine(Path.GetTempPath(), $"tedide-outside-{Guid.NewGuid():N}.c");
-        File.WriteAllText(outside, "int x;\n");
-        try
-        {
-            editor.Open(ScreenH);
-            await FireTimersAsync(shell);
-            editor.Open(outside);
-            await FireTimersAsync(shell);
-        }
-        finally
-        {
-            File.Delete(outside);
-        }
+
+        editor.Open(ScreenH);
+        await FireTimersAsync(shell);
 
         Assert.Empty(_checkedTexts);
     });

@@ -455,6 +455,8 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
         {
             new MenuItem("_New Project...", "", NewProject, Key.N.WithCtrl) { BindKeyToApplication = true },
             new MenuItem("_Open Project...", "", OpenProject, Key.O.WithCtrl) { BindKeyToApplication = true },
+            // No key: Visual Studio's Ctrl+Shift+O arrives as Ctrl+O in Windows Terminal.
+            new MenuItem("Open _File...", "", OpenFiles, Key.Empty),
             _recentProjectsMenuItem,
             new MenuItem("Close _Project", "", CloseSolution, Key.Empty),
             new Line(),
@@ -1191,6 +1193,30 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
     internal void OpenFile(string path) => Guard("Opening the file", () => _editorPane.Open(path));
 
     /// <summary>
+    /// File > Open File...: any source files, in a project or not, with or without a project open.
+    /// A file outside every project is edited, saved and checked for errors as you type like any
+    /// other (see <see cref="LiveErrorChecking.StandInProjectFor"/>), but isn't built - Add
+    /// Existing Item puts one in a project.
+    /// </summary>
+    internal void OpenFiles()
+    {
+        var dialog = new OpenDialog
+        {
+            Title = "Open File",
+            OpenMode = OpenMode.File,
+            AllowsMultipleSelection = true,
+            AllowedTypes =
+            [
+                new AllowedType("C Files", ".c", ".h"),
+                new AllowedType("Source/Header Files", SolutionExplorerTree.DisplayedExtensions),
+                new AllowedTypeAny(),
+            ],
+        };
+        foreach (var path in _dialogs.PickFiles(dialog))
+            OpenFile(path);
+    }
+
+    /// <summary>
     /// Brings everything tied to "the file in the editor" up to date after a tab switch, open,
     /// close or rename: the frame title, the status bar's language, the breakpoint highlights,
     /// and the current-debug-line highlight, which only belongs on the file execution stopped in.
@@ -1673,6 +1699,7 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
     internal EditorPane EditorPane => _editorPane;
     internal RecentProjectsSettings RecentProjects => _recentProjects;
     internal DebugSession Debug => _debug;
+    internal CodeCompletion Completion => _completion;
     internal string OutputText => _outputView.Text;
 
     /// <summary>Safe to call from any thread - see <see cref="OnUiThread"/>.</summary>

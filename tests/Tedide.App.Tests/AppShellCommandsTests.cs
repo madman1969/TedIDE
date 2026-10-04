@@ -76,6 +76,44 @@ public sealed class AppShellCommandsTests : IDisposable
     });
 
     [Fact]
+    public Task OpenFile_OpensStrayFiles_WithOrWithoutAProject() => UiThread.Run(async () =>
+    {
+        var elsewhere = Path.Combine(_dir, "elsewhere");
+        Directory.CreateDirectory(elsewhere);
+        var stray = Path.Combine(elsewhere, "stray.c");
+        var strayHeader = Path.Combine(elsewhere, "stray.h");
+        File.WriteAllText(stray, "int x;\n");
+        File.WriteAllText(strayHeader, "extern int x;\n");
+
+        // With nothing loaded.
+        _dialogs.FilePicks.Enqueue([stray, strayHeader]);
+        _shell.OpenFiles();
+        Assert.Equal([stray, strayHeader], _shell.EditorPane.OpenPaths);
+        Assert.Empty(_shell.Workspace.Projects);
+
+        _shell.OpenFiles();  // cancelled
+        Assert.Equal(2, _shell.EditorPane.OpenPaths.Count);
+
+        // With a project open, beside its own files - and not added to it.
+        _shell.CloseAllFiles();
+        NewGame();
+        _dialogs.FilePicks.Enqueue([stray]);
+        _shell.OpenFiles();
+        Assert.Equal(stray, _shell.EditorPane.OpenPath);
+        Assert.DoesNotContain(Game.SourceFiles, f => f.Contains("stray"));
+        // Code completion indexes the project's files in the background, and a refresh asked for
+        // during one runs straight after it: let them all finish before the folder is deleted.
+        Task refresh;
+        do
+        {
+            refresh = _shell.Completion.LastRefresh;
+            await refresh;
+            await Task.Yield();
+        }
+        while (refresh != _shell.Completion.LastRefresh);
+    });
+
+    [Fact]
     public Task Opening_ReopensTheTabsAndBreakpointsLeftLastTime() => UiThread.Run(() =>
     {
         NewGame();
