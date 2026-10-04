@@ -16,6 +16,8 @@ static int         s_supercpu_detected     = 0;
 
 const char *cpu_name(void)
 {
+	unsigned char cpu_type;
+	
     /* getcpu() distinguishes CPU *families* (see the CPU_xxx constants in
      * 6502.h), but every target this project supports reports CPU_6502 -
      * they're all opcode-compatible NMOS 6502 variants (6510/8502/7501/
@@ -23,7 +25,40 @@ const char *cpu_name(void)
      * I/O port the machine actually wires up, which getcpu() itself can't
      * tell apart. Confirm that's really what was detected before naming
      * the exact chip, rather than just assuming it. */
-    if (getcpu() != CPU_6502)
+     
+    cpu_type = getcpu();
+    
+    switch (cpu_type)
+    {
+		case CPU_6502:
+			return "MOS 6502";
+			
+		case CPU_65C02:
+			return "MOS 65C02";
+			
+		case CPU_65816:
+			return "MOS 65816";
+			
+		case CPU_4510:
+			return "MOS 4510";
+			
+		case CPU_65SC02:
+			return "MOS 65SC02";
+			
+		case CPU_65CE02:
+			return "MOS 65CE02";
+			
+		case CPU_HUC6280:
+			return "MOS HUC6280";
+			
+		case CPU_2A0x:
+			return "MOS 2A0x";
+			
+		case CPU_45GS02:
+			return "MOS 45GS02";
+	}
+    
+    if (cpu_type != CPU_6502)
     {
         return "Unknown 65xx-family CPU";
     }
