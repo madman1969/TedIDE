@@ -358,12 +358,18 @@ public sealed class EditorPane : View
         if (_active is null || Editor.FoldingManager is not { } folding)
             return 0;
         var changing = folding.AllFoldings.Where(f => f.IsFolded != folded).ToList();
-        // With the editor not watching: it redoes its layout for every fold that changes (half a
-        // minute for 600 folds), and reopened some of the outer ones as it went.
+        if (changing.Count == 0)
+            return 0;
+        // All but one with the editor not watching: it redoes its layout for every fold that
+        // changes (half a minute for 600 folds), and reopened some of the outer ones as it went.
         Editor.FoldingManager = null;
-        foreach (var section in changing)
+        foreach (var section in changing.Skip(1))
             section.IsFolded = folded;
         Editor.FoldingManager = folding;
+        // The last one with it watching: attaching a manager doesn't rebuild the editor's map of
+        // which lines are hidden - only a FoldingChanged does - so the markers changed but the
+        // text didn't until a fold was next toggled.
+        changing[0].IsFolded = folded;
         // What the editor did itself for each change it saw: a caret left in a hidden line moves to
         // the start of the outermost collapsed block holding it, the line that still shows.
         var caret = Editor.CaretOffset;
