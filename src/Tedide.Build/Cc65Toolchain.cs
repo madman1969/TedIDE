@@ -37,10 +37,14 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
     /// full path, else on PATH like it.</summary>
     public string Ar65Path { get; } = Ar65PathFor(cl65Path);
 
-    internal static string Ar65PathFor(string cl65Path) =>
+    internal static string Ar65PathFor(string cl65Path) => ToolBeside(cl65Path, "ar65");
+
+    /// <summary>Another cc65 tool (<paramref name="tool"/>: "ar65", "cc65", "ca65"): beside cl65
+    /// when that's a full path, with the same extension, else on PATH like it.</summary>
+    internal static string ToolBeside(string cl65Path, string tool) =>
         Path.IsPathRooted(cl65Path)
-            ? Path.Combine(Path.GetDirectoryName(cl65Path)!, "ar65" + Path.GetExtension(cl65Path))
-            : "ar65";
+            ? Path.Combine(Path.GetDirectoryName(cl65Path)!, tool + Path.GetExtension(cl65Path))
+            : tool;
 
     /// <summary>Runs `cl65 --version` to confirm the toolchain is reachable.</summary>
     public async Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)

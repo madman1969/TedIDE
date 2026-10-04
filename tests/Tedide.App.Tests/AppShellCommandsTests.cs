@@ -23,7 +23,8 @@ public sealed class AppShellCommandsTests : IDisposable
         // Whatever CC65_HOME is now, so a Project Settings save leaves this process's alone.
         new ToolchainSettings { Cc65Home = Environment.GetEnvironmentVariable("CC65_HOME") }.Save(Path.Combine(settings, "toolchain.json"));
         _shell = new AppShell(new AppShellSettings(
-            Path.Combine(settings, "recent.json"), Path.Combine(settings, "layout.json"), Path.Combine(settings, "toolchain.json")), _dialogs);
+            Path.Combine(settings, "recent.json"), Path.Combine(settings, "layout.json"), Path.Combine(settings, "toolchain.json"),
+            Path.Combine(settings, "editor.json")), _dialogs);
     }
 
     public void Dispose()
@@ -305,6 +306,17 @@ public sealed class AppShellCommandsTests : IDisposable
         Assert.True(File.Exists(project.FilePath));
         Assert.Equal(Path.Combine(project.Directory, "src", "main.c"), _shell.EditorPane.OpenPath);
         Assert.Contains(_shell.RecentProjects.Paths, p => p.Contains("Shooter", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void CheckAsYouType_IsRemembered()
+    {
+        var editorFile = Path.Combine(_dir, "settings", "editor.json");
+        Assert.True(EditorSettings.Load(editorFile).CheckAsYouType);  // on by default
+
+        _shell.SetCheckAsYouType(false);
+
+        Assert.False(EditorSettings.Load(editorFile).CheckAsYouType);
     }
 
     [Fact]

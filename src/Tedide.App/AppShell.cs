@@ -17,10 +17,10 @@ using Terminal.Gui.Views;
 namespace Tedide.App;
 
 /// <summary>The per-user settings files <see cref="AppShell"/> reads and writes.</summary>
-internal sealed record AppShellSettings(string RecentProjectsFile, string LayoutFile, string ToolchainFile)
+internal sealed record AppShellSettings(string RecentProjectsFile, string LayoutFile, string ToolchainFile, string EditorFile)
 {
     public static AppShellSettings Default { get; } =
-        new(RecentProjectsSettings.DefaultFilePath, LayoutSettings.DefaultFilePath, ToolchainSettings.DefaultFilePath);
+        new(RecentProjectsSettings.DefaultFilePath, LayoutSettings.DefaultFilePath, ToolchainSettings.DefaultFilePath, EditorSettings.DefaultFilePath);
 }
 
 /// <summary>
@@ -57,6 +57,7 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
     /// <summary>Navigate Backward/Forward (Alt+Left/Alt+Right) - see <see cref="NavigationCommands.RecordJump"/>.</summary>
     private readonly NavigationHistory _navigationHistory = new();
     private readonly LayoutSettings _layoutSettings;
+    private readonly EditorSettings _editorSettings;
 
     /// <summary>The File menu's "Recent Projects and Solutions" item - kept as a field so its
     /// SubMenu can be rebuilt in place whenever <see cref="_recentProjects"/> changes.</summary>
@@ -83,6 +84,8 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
     private readonly BuildCommands _build;
     /// <summary>The Git tab, blame, change bars, Compare and Blame - see <see cref="GitIntegration"/>.</summary>
     private readonly GitIntegration _gitIntegration;
+    /// <summary>Checking as you type - see <see cref="LiveErrorChecking"/>.</summary>
+    private readonly LiveErrorChecking _liveErrors;
     private Tabs _outputTabs = null!;
     private View _outputTab = null!;
     private View _debugTab = null!;
@@ -103,6 +106,7 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
         _dialogs = dialogs;
         _recentProjects = RecentProjectsSettings.Load(settings.RecentProjectsFile);
         _layoutSettings = LayoutSettings.Load(settings.LayoutFile);
+        _editorSettings = EditorSettings.Load(settings.EditorFile);
         _git = new GitTracker(
             () => (_workspace.Projects.Select(p => p.Directory).ToList(), _workspace.Solution?.Directory ?? _workspace.ActiveProject?.Directory),
             OnUiThread);
@@ -115,6 +119,10 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
         _navigation = new NavigationCommands(this, _workspace, _editorPane, _navigationHistory, _referencesView);
         _build = new BuildCommands(this, _workspace, _navigation, _vice, _outputView, _errorListView, _solutionExplorer, _symbolPanel);
         _gitIntegration = new GitIntegration(this, _workspace, _editorPane, _solutionExplorer, _navigation, _git, _gitView);
+        _liveErrors = new LiveErrorChecking(this, _workspace, _editorPane, _errorListView, _navigation.DisplayPath)
+        {
+            Enabled = _editorSettings.CheckAsYouType,
+        };
         Width = Dim.Fill();
         Height = Dim.Fill();
 
@@ -327,6 +335,9 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
                 _navigation.OpenSymbol((Path.Combine(project.Directory, breakpoint.SourceFile), breakpoint.Line));
         };
 
+        // Checking as you type's underlines first: the breakpoint and debug-line highlights below
+        // recolour whole lines, and should win on a line that has both.
+        _editorPane.Editor.LineTransformers.Add(_liveErrors.LineTransformer);
         // Breakpoint highlighting registered before the current-debug-line one, so the latter's
         // Accent color wins on a line that's both a breakpoint and the paused line - see
         // BreakpointLineTransformer's own doc comment for why order matters here.
@@ -530,6 +541,7 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
         viewMenuItems.AddAt(2, new MenuItem("_Error List", "", () => ShowPane(_errorListView), Key.Empty));
         viewMenuItems.AddAt(3, new MenuItem("_Git Changes", "", () => ShowPane(_gitView), Key.Empty));
         viewMenuItems.AddAt(4, new Line());
+        viewMenuItems.AddAt(5, BuildCheckAsYouTypeMenuItem());
         menuBar.Menus = [fileMenu, menuBar.EditMenu, menuBar.ViewMenu, buildMenu, debugMenu, projectMenu, themeMenu, helpMenu];
         menuBar.X = 0;
         menuBar.Y = 0;
@@ -576,6 +588,27 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
     private static readonly Key WatchKey = Key.W.WithCtrl.WithAlt;
     private static readonly Key MemoryKey = Key.M.WithCtrl.WithAlt;
     private static readonly Key DisassemblyKey = Key.D.WithCtrl.WithAlt;
+
+    /// <summary>View > Check As You Type: a check box like the editor's own toggles below it, turning
+    /// <see cref="LiveErrorChecking"/> on or off and remembering the choice.</summary>
+    private MenuItem BuildCheckAsYouTypeMenuItem()
+    {
+        var checkBox = new CheckBox
+        {
+            Title = "Check _As You Type",
+            Value = _editorSettings.CheckAsYouType ? CheckState.Checked : CheckState.UnChecked,
+            CanFocus = false,
+        };
+        checkBox.ValueChanged += (_, e) => SetCheckAsYouType(e.NewValue == CheckState.Checked);
+        return new MenuItem { CommandView = checkBox };
+    }
+
+    internal void SetCheckAsYouType(bool on)
+    {
+        _liveErrors.Enabled = on;
+        _editorSettings.CheckAsYouType = on;
+        Guard("Saving the editor settings", _editorSettings.Save);
+    }
 
     private List<MenuItem> BuildDebugWindowsMenuItems() =>
     [
@@ -1112,6 +1145,7 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
     private void OnActiveDocumentChanged()
     {
         _gitIntegration.ActiveDocumentChanged();
+        _liveErrors.ActiveDocumentChanged();
         _editorFrame.Title = _editorPane.OpenPath is { } path ? Path.GetFileName(path) : NoFileOpenTitle;
         UpdateLanguageIndicator();
         _debug.RefreshBreakpointHighlights();
@@ -1313,6 +1347,8 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
         if (_editorPane.Save(path) is { } notice)
             AppendOutputLine(notice);
         _git.RequestRefresh();
+        // A saved header changes what the shown file compiles against.
+        _liveErrors.RequestCheck();
     });
 
     /// <summary>File > Save (Ctrl+S): the file being shown, plus the loaded project/solution files.</summary>

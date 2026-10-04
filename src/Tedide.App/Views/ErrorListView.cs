@@ -17,7 +17,16 @@ namespace Tedide.App.Views;
 /// </summary>
 public sealed class ErrorListView : TableView
 {
+    /// <summary>The rows shown: <see cref="_build"/>, with a checked file's own entries replaced
+    /// by its <see cref="_live"/> ones.</summary>
     private IReadOnlyList<BuildDiagnostic> _diagnostics = [];
+
+    private IReadOnlyList<BuildDiagnostic> _build = [];
+
+    /// <summary>Checking as you type's latest results, by file - fresher than the last build's.</summary>
+    private readonly Dictionary<string, IReadOnlyList<BuildDiagnostic>> _live = new(StringComparer.OrdinalIgnoreCase);
+
+    private Func<string, string>? _displayPath;
 
     /// <summary>Raised when the user activates a row.</summary>
     public event Action<BuildDiagnostic>? DiagnosticActivated;
@@ -47,8 +56,40 @@ public sealed class ErrorListView : TableView
     /// <summary>Replaces the displayed list, e.g. with a fresh <see cref="BuildResult.Diagnostics"/> after each build (or an empty list at the start of one).</summary>
     /// <param name="displayPath">How to show a file path - the host shortens absolute ones to
     /// their project-relative form. As-is when not given.</param>
+    /// <remarks>A build is newer than any check made before it, so its list replaces theirs.</remarks>
     public void SetDiagnostics(IReadOnlyList<BuildDiagnostic> diagnostics, Func<string, string>? displayPath = null)
     {
+        _build = diagnostics;
+        _live.Clear();
+        Show(diagnostics, displayPath);
+    }
+
+    /// <summary>
+    /// Checking as you type's results for <paramref name="file"/>: they replace that file's entries
+    /// from the last build (or an earlier check) - null removes them, for a file that's been
+    /// closed. Problems it found in headers the file includes are listed too, under the header.
+    /// </summary>
+    public void SetLiveDiagnostics(string file, IReadOnlyList<BuildDiagnostic>? diagnostics, Func<string, string>? displayPath = null)
+    {
+        if (diagnostics is null)
+            _live.Remove(file);
+        else
+            _live[file] = diagnostics;
+        Show(Merge(_build, _live), displayPath ?? _displayPath);
+    }
+
+    /// <summary>The build's entries, less any for a file that's been checked since, then every
+    /// check's - each once, in the build's order first.</summary>
+    internal static IReadOnlyList<BuildDiagnostic> Merge(IReadOnlyList<BuildDiagnostic> build,
+        IReadOnlyDictionary<string, IReadOnlyList<BuildDiagnostic>> live) =>
+        build.Where(d => !live.ContainsKey(d.FilePath))
+            .Concat(live.Values.SelectMany(d => d))
+            .Distinct()
+            .ToList();
+
+    private void Show(IReadOnlyList<BuildDiagnostic> diagnostics, Func<string, string>? displayPath)
+    {
+        _displayPath = displayPath;
         _diagnostics = diagnostics;
 
         var table = new DataTable();

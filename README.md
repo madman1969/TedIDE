@@ -25,6 +25,8 @@ offline.
   build, clean, configure, remove or delete a project.
 - **Tabbed editor** - syntax highlighting for C, 6502/ca65 assembly, listings, linker maps, VICE
   label files and linker configs; per-tab undo history; open tabs remembered per project.
+- **Errors as you type** - the file you're editing is checked by cc65 or ca65 whenever you pause,
+  with problem lines underlined and listed in the Error List, without building.
 - **Code navigation** - Go To Definition, Find All References and Rename Symbol across C and
   assembly, Navigate Backward/Forward, Find/Replace, Find in Files and Go To Line.
 - **Visual Studio keys** - F5 debug, Ctrl+F5 run, Ctrl+B build, F9/F10/F12 and the Ctrl+Alt tool
@@ -334,6 +336,26 @@ The colours come from the active [theme](#themes), so every file type reads cons
 The **View** menu toggles line numbers, fold indicators, word wrap, visible tabs and scroll bars.
 
 ![The View menu: Solution Explorer, Output, Error List and Git Changes, then the editor toggles - Line Numbers, Fold Indicators, Word Wrap, Show Tabs and Scrollbars](docs/images/editing-view-menu.png)
+
+### Errors as you type
+
+Tedide checks the C or assembly file you're editing whenever you stop typing for a moment. It
+doesn't need you to save or build.
+
+- **Underlines** - lines with an error are underlined in the theme's error colour, and lines with
+  a warning in its warning colour.
+- **The message** - with the caret on an underlined line, its message replaces the branch and
+  blame text at the right of the tab row.
+- **Error List** - the problems are listed there too, replacing the last build's entries for that
+  file. Problems in a header the file includes are listed under the header.
+
+The check runs cc65 (or ca65) on a temporary copy of the editor's text, with the project's target,
+include paths and defines. It only compiles; it never assembles, links or touches your files or
+`obj/`. Each check takes about a tenth of a second, runs in the background, and only starts once
+you've paused, so it doesn't slow typing. Headers aren't checked on their own, but saving one
+re-checks the file you're looking at.
+
+To turn it off, untick **View > Check As You Type**. Tedide remembers the choice.
 
 ### Finding things
 

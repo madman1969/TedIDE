@@ -53,6 +53,27 @@ public sealed class DocumentTabStrip : View
 
     private string _annotation = "";
 
+    /// <summary>
+    /// A problem with the caret's line - "Error: ';' expected" - shown in the annotation's place,
+    /// in the theme's error or warning colours, while the caret is on that line. Empty for none.
+    /// </summary>
+    public string Notice
+    {
+        get => _notice;
+        set
+        {
+            if (_notice == value)
+                return;
+            _notice = value;
+            SetNeedsDraw();
+        }
+    }
+
+    /// <summary>Whether <see cref="Notice"/> is an error (else a warning) - which colours it gets.</summary>
+    public bool NoticeIsError { get; set; }
+
+    private string _notice = "";
+
     /// <summary>The part of <paramref name="annotation"/> that fits in <paramref name="room"/>
     /// columns, ending in "…" when cut; empty when there's too little room to be worth showing.</summary>
     internal static string Fit(string annotation, int room) =>
@@ -133,10 +154,13 @@ public sealed class DocumentTabStrip : View
     /// dimmed so it doesn't compete with the tabs.</summary>
     private void DrawAnnotation(int tabsEnd, int width)
     {
-        var text = Fit(_annotation, width - tabsEnd - 3);
+        var notice = _notice.Length > 0;
+        var text = Fit(notice ? _notice : _annotation, width - tabsEnd - 3);
         if (text.Length == 0)
             return;
-        SetAttribute(GetAttributeForRole(VisualRole.Disabled));
+        SetAttribute(notice
+            ? SchemeManager.GetScheme(NoticeIsError ? "Error" : "Warning").Normal
+            : GetAttributeForRole(VisualRole.Disabled));
         AddStr(width - text.Length - 1, 0, text);
     }
 

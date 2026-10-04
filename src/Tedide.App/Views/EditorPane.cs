@@ -45,6 +45,17 @@ public sealed class EditorPane : View
     /// against it, the same way ted wires its own menu/status bar to its one Editor.</summary>
     public Editor Editor { get; }
 
+    /// <summary>Shows a problem with the caret's line at the right of the tab row, in place of
+    /// <see cref="Annotation"/> - see <see cref="DocumentTabStrip.Notice"/>. Empty clears it.</summary>
+    public void SetNotice(string text, bool isError)
+    {
+        _tabStrip.NoticeIsError = isError;
+        _tabStrip.Notice = text;
+    }
+
+    /// <summary>The problem shown for the caret's line, or empty.</summary>
+    public string Notice => _tabStrip.Notice;
+
     /// <summary>Text shown at the right of the tab row - see <see cref="DocumentTabStrip.Annotation"/>.</summary>
     public string Annotation
     {
