@@ -13,9 +13,11 @@ namespace Tedide.App.Views;
 /// <summary>
 /// View > Document Outline, as in Visual Studio: the shown file's structure (see
 /// <see cref="DocumentOutline"/>) as a tree, with a filter box above it. Each node starts with a mark
-/// for its kind and is coloured like that kind in the editor. Enter or a double-click goes to it; the
-/// selection follows the caret; the right-click menu adds Find All References, Rename Symbol,
-/// sorting by name, and Collapse/Expand All. Collapsed nodes stay collapsed as the file is edited.
+/// for its kind and is coloured like that kind in the editor. A click goes to it, keeping the focus
+/// here to click on through; Enter or a double-click goes to it in the editor. The selection follows
+/// the caret; the right-click menu adds Find All References, Rename Symbol, sorting by position, name
+/// or kind, and Collapse/Expand All. Each file's collapsed nodes stay collapsed as it's edited and
+/// when its tab is shown again. In the filter box, Esc clears it and Down or Enter moves into the tree.
 /// </summary>
 public sealed class DocumentOutlineView : View
 {
@@ -26,30 +28,74 @@ public sealed class DocumentOutlineView : View
     private bool _contextMenuOpen;
 
     private IReadOnlyList<OutlineNode> _outline = [];
-    private bool _sortByName;
+    private OutlineSort _sort;
+    private readonly Action<Action> _post;
 
-    /// <summary>The nodes the user collapsed, by <see cref="KeyOf"/> - kept across rebuilds, which
-    /// happen after every pause in typing.</summary>
-    private readonly HashSet<string> _collapsed = [];
+    /// <summary>The file shown, whose collapsed nodes are <see cref="Collapsed"/>.</summary>
+    private string? _path;
 
-    /// <summary>A node was chosen (Enter, a double-click, or Go To).</summary>
-    public event Action<OutlineNode>? NodeActivated;
+    /// <summary>Each file's collapsed nodes, by <see cref="KeyOf"/> - kept across rebuilds, which
+    /// happen after every pause in typing, and tab switches.</summary>
+    private readonly Dictionary<string, HashSet<string>> _collapsedByFile = new(StringComparer.OrdinalIgnoreCase);
+
+    private HashSet<string> Collapsed => _collapsedByFile.TryGetValue(_path ?? "", out var set) ? set : _collapsedByFile[_path ?? ""] = [];
+
+    /// <summary>The last node gone to, and when - so a click Terminal.Gui also reports as an
+    /// activation doesn't go there twice.</summary>
+    private (OutlineNode Node, long At)? _lastActivation;
+
+    /// <summary>A node was chosen: true with a single click, which leaves the focus in the outline;
+    /// false with Enter, a double-click or Go To, which hand it to the editor.</summary>
+    public event Action<OutlineNode, bool>? NodeActivated;
 
     public event Action<OutlineNode>? FindReferencesRequested;
     public event Action<OutlineNode>? RenameRequested;
 
     public DocumentOutlineView()
+        : this(action => Application.AddTimeout(TimeSpan.Zero, () =>
+        {
+            action();
+            return false;
+        }))
     {
+    }
+
+    /// <param name="post">Runs an action once the current input event is finished - the main loop's
+    /// next pass, or straight away in a test.</param>
+    internal DocumentOutlineView(Action<Action> post)
+    {
+        _post = post;
         CanFocus = true;
         _filterField = new TextField { X = 0, Y = 0, Width = Dim.Fill() };
         _filterField.TextChanged += (_, _) => Rebuild();
+        _filterField.KeyDown += (_, key) =>
+        {
+            if (key == Key.Esc && _filterField.Text.Length > 0)
+            {
+                _filterField.Text = "";
+                key.Handled = true;
+            }
+            else if (key == Key.CursorDown || key == Key.Enter)
+            {
+                // Into the tree, on the first match - and Enter goes to it.
+                if (_tree.Objects?.FirstOrDefault() is { } first)
+                {
+                    if (_tree.SelectedObject is null || key == Key.Enter)
+                        _tree.SelectedObject = first;
+                    _tree.SetFocus();
+                    if (key == Key.Enter && _tree.SelectedObject is TreeNode { Tag: OutlineNode node })
+                        Activate(node, keepFocus: false);
+                }
+                key.Handled = true;
+            }
+        };
 
         _tree = new TreeView { X = 0, Y = 1, Width = Dim.Fill(), Height = Dim.Fill() };
         _tree.ColorGetter = node => node is TreeNode { Tag: OutlineNode outline } ? SchemeFor(outline, _tree.GetScheme()) : _tree.GetScheme();
         _tree.Accepted += (_, _) =>
         {
             if (!_contextMenuOpen && _tree.SelectedObject is TreeNode { Tag: OutlineNode node })
-                NodeActivated?.Invoke(node);
+                Activate(node, keepFocus: false);
         };
 
         _emptyLabel = new Label { X = 0, Y = 1, Width = Dim.Fill(), Text = "No outline for this file.", Visible = false };
@@ -75,12 +121,26 @@ public sealed class DocumentOutlineView : View
         };
         _tree.MouseEvent += (_, mouse) =>
         {
-            if (!mouse.Flags.HasFlag(MouseFlags.RightButtonClicked) || mouse.Position is not { } position)
+            if (mouse.Position is not { } position)
                 return;
-            if (_tree.GetObjectOnRow(position.Y) is TreeNode node)
-                _tree.SelectedObject = node;
-            ShowContextMenu(mouse.ScreenPosition);
-            mouse.Handled = true;
+            if (mouse.Flags.HasFlag(MouseFlags.RightButtonClicked))
+            {
+                if (_tree.GetObjectOnRow(position.Y) is TreeNode node)
+                    _tree.SelectedObject = node;
+                ShowContextMenu(mouse.ScreenPosition);
+                mouse.Handled = true;
+            }
+            else if (mouse.Flags.HasFlag(MouseFlags.LeftButtonClicked) && _tree.GetObjectOnRow(position.Y) is TreeNode { Tag: OutlineNode clicked } node)
+            {
+                // A click on the expand/collapse mark only toggles; anywhere else on the row goes
+                // there, as in Visual Studio. Which it was shows once the tree has handled the click.
+                var expanded = _tree.IsExpanded(node);
+                _post(() =>
+                {
+                    if (!_contextMenuOpen && _tree.IsExpanded(node) == expanded)
+                        Activate(clicked, keepFocus: true);
+                });
+            }
         };
         _tree.KeyDown += (_, key) =>
         {
@@ -92,7 +152,7 @@ public sealed class DocumentOutlineView : View
             }
         };
         // Collapsing and expanding by hand is remembered for the next rebuild.
-        _tree.ObjectCollapsed(node => _collapsed.Add(KeyOf(node)), node => _collapsed.Remove(KeyOf(node)));
+        _tree.ObjectCollapsed(node => Collapsed.Add(KeyOf(node)), node => Collapsed.Remove(KeyOf(node)));
 
         Add(_filterField, _tree, _emptyLabel);
     }
@@ -103,23 +163,31 @@ public sealed class DocumentOutlineView : View
     internal TreeView Tree => _tree;
     internal TextField FilterField => _filterField;
 
-    internal bool SortByName
+    internal OutlineSort Sort
     {
-        get => _sortByName;
+        get => _sort;
         set
         {
-            _sortByName = value;
+            _sort = value;
             Rebuild();
         }
     }
 
-    /// <summary>Shows a file's outline - null for a file it doesn't apply to, or no file.</summary>
-    public void Show(IReadOnlyList<OutlineNode>? outline)
+    /// <summary>Goes to a node - unless it was just gone to, which is the same click reported twice.</summary>
+    private void Activate(OutlineNode node, bool keepFocus)
     {
-        var fileChanged = outline is null || _outline.Count == 0 || outline.Count == 0
-            || _outline[0].Definition.FilePath != outline[0].Definition.FilePath;
-        if (fileChanged)
-            _collapsed.Clear();
+        var now = Environment.TickCount64;
+        if (_lastActivation is { } last && ReferenceEquals(last.Node, node) && now - last.At < 400)
+            return;
+        _lastActivation = (node, now);
+        NodeActivated?.Invoke(node, keepFocus);
+    }
+
+    /// <summary>Shows <paramref name="path"/>'s outline - null for a file it doesn't apply to, or no
+    /// file - with whatever was collapsed in that file before.</summary>
+    public void Show(string? path, IReadOnlyList<OutlineNode>? outline)
+    {
+        _path = path;
         _outline = outline ?? [];
         _emptyLabel.Visible = outline is null || outline.Count == 0;
         _emptyLabel.Text = outline is null ? "No outline for this file." : "Nothing to outline yet.";
@@ -131,9 +199,7 @@ public sealed class DocumentOutlineView : View
         var selectedKey = _tree.SelectedObject is { } selected ? KeyOf(selected) : null;
         var scroll = _tree.ScrollOffsetVertical;
 
-        var nodes = DocumentOutline.Filter(_outline, _filterField.Text);
-        if (_sortByName)
-            nodes = DocumentOutline.SortedByName(nodes);
+        var nodes = DocumentOutline.Sorted(DocumentOutline.Filter(_outline, _filterField.Text), _sort);
 
         _tree.ClearObjects();
         var built = nodes.Select(n => Build(n, "")).ToList();
@@ -141,7 +207,7 @@ public sealed class DocumentOutlineView : View
         _tree.ExpandAll();
         // A filter shows every match; otherwise what was collapsed stays collapsed.
         if (string.IsNullOrWhiteSpace(_filterField.Text))
-            foreach (var node in Flatten(built).Where(n => _collapsed.Contains(KeyOf(n))))
+            foreach (var node in Flatten(built).Where(n => Collapsed.Contains(KeyOf(n))))
                 _tree.Collapse(node);
 
         if (selectedKey is not null && Flatten(built).FirstOrDefault(n => KeyOf(n) == selectedKey) is { } again)
@@ -198,7 +264,7 @@ public sealed class DocumentOutlineView : View
     {
         foreach (var node in Flatten(_tree.Objects ?? []).Where(n => n.Children.Count > 0))
         {
-            _collapsed.Add(KeyOf(node));
+            Collapsed.Add(KeyOf(node));
             _tree.Collapse(node);
         }
         _tree.SetNeedsDraw();
@@ -206,7 +272,7 @@ public sealed class DocumentOutlineView : View
 
     public void ExpandAll()
     {
-        _collapsed.Clear();
+        Collapsed.Clear();
         _tree.ExpandAll();
         _tree.SetNeedsDraw();
     }
@@ -217,12 +283,14 @@ public sealed class DocumentOutlineView : View
         List<View> items = [];
         if (node is not null)
         {
-            items.Add(Item("Go To", () => NodeActivated?.Invoke(node)));
+            items.Add(Item("Go To", () => Activate(node, keepFocus: false)));
             items.Add(Item("Find All References", () => FindReferencesRequested?.Invoke(node)));
             items.Add(Item("Rename Symbol...", () => RenameRequested?.Invoke(node)));
             items.Add(new Line());
         }
-        items.Add(Item(_sortByName ? "Sort by Position" : "Sort by Name", () => SortByName = !_sortByName));
+        foreach (var (sort, text) in new[] { (OutlineSort.Position, "Sort by Position"), (OutlineSort.Name, "Sort by Name"), (OutlineSort.Kind, "Sort by Kind") })
+            items.Add(Item((sort == _sort ? "✓ " : "  ") + text, () => Sort = sort));
+        items.Add(new Line());
         items.Add(Item("Collapse All", CollapseAll));
         items.Add(Item("Expand All", ExpandAll));
         _contextMenu.Root = new Menu(items);

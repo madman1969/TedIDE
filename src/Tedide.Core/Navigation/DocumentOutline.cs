@@ -16,6 +16,14 @@ public sealed record OutlineNode(SymbolDefinition Definition, string Text, int S
     public bool Covers(int line) => line >= StartLine && line <= EndLine;
 }
 
+/// <summary>The Document Outline's orders, as in Visual Studio's.</summary>
+public enum OutlineSort
+{
+    Position,
+    Name,
+    Kind,
+}
+
 /// <summary>
 /// A file's structure for the Document Outline, built from what <see cref="FileSymbols"/> already
 /// found: each symbol nested in the one whose body holds it - members in their struct, enum constants
@@ -142,6 +150,32 @@ public static class DocumentOutline
         nodes.OrderBy(n => n.Definition.Name, StringComparer.OrdinalIgnoreCase).ThenBy(n => n.StartLine)
             .Select(n => n with { Children = SortedByName(n.Children) })
             .ToList();
+
+    /// <summary>The same nodes, each level grouped by kind - macros, types, constants, variables,
+    /// members, prototypes, functions, labels - and by name within each kind.</summary>
+    public static IReadOnlyList<OutlineNode> SortedByKind(IReadOnlyList<OutlineNode> nodes) =>
+        nodes.OrderBy(n => KindRank(n.Kind)).ThenBy(n => n.Definition.Name, StringComparer.OrdinalIgnoreCase).ThenBy(n => n.StartLine)
+            .Select(n => n with { Children = SortedByKind(n.Children) })
+            .ToList();
+
+    public static IReadOnlyList<OutlineNode> Sorted(IReadOnlyList<OutlineNode> nodes, OutlineSort sort) => sort switch
+    {
+        OutlineSort.Name => SortedByName(nodes),
+        OutlineSort.Kind => SortedByKind(nodes),
+        _ => nodes,
+    };
+
+    private static int KindRank(SymbolKind kind) => kind switch
+    {
+        SymbolKind.Macro => 0,
+        SymbolKind.Typedef or SymbolKind.Tag => 1,
+        SymbolKind.Constant or SymbolKind.EnumConstant => 2,
+        SymbolKind.Variable or SymbolKind.ExternVariable or SymbolKind.Import => 3,
+        SymbolKind.Member => 4,
+        SymbolKind.Prototype => 5,
+        SymbolKind.Function => 6,
+        _ => 7,
+    };
 
     private sealed class Entry(SymbolDefinition definition, SymbolDetail? detail, int start, int end)
     {

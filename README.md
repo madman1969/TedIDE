@@ -484,10 +484,15 @@ tab beside the Solution Explorer's.
 - **How it looks** - each entry starts with a mark for its kind (`ƒ` function, `#` macro, `T` type,
   `·` member, `=` constant, `›` label, `•` variable) and is coloured like that kind in the editor.
   Code in an `#if` branch the target rules out is shown in the comment colour.
-- **Using it** - Enter or a double-click goes to an entry, and Alt+Left comes back. As the caret
-  moves, the entry it's in is selected. Type in the box above the tree to filter it.
-- **Right-click** - Go To, Find All References, Rename Symbol, Sort by Name (or back to file
-  order), and Collapse All / Expand All. What you collapse stays collapsed as you edit.
+- **Using it** - a click goes to an entry and leaves you in the outline, to click on through;
+  Enter or a double-click goes there and into the editor. Alt+Left comes back. As the caret moves,
+  the entry it's in is selected.
+- **Filtering** - type in the box above the tree. Esc clears it, and Down or Enter moves into the
+  tree - Enter going straight to the first match.
+- **Right-click** - Go To, Find All References, Rename Symbol, Sort by Position, Name or Kind (macros,
+  types, constants, variables, members, prototypes, then functions), and Collapse All / Expand All.
+  What you collapse stays collapsed as you edit, and each file remembers its own when you switch
+  tabs.
 
 The outline updates a moment after you stop typing, from the editor's text - no save needed - and
 only while it's on screen.

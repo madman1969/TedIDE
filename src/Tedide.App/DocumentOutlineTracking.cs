@@ -74,12 +74,12 @@ internal sealed class DocumentOutlineTracking
 
         if (_editorPane.OpenPath is not { } path || SourceTokenizer.LanguageOf(path) == SourceLanguage.Other)
         {
-            _view.Show(null);
+            _view.Show(_editorPane.OpenPath, null);
             return;
         }
         var symbols = FileSymbols.Scan(path, _editorPane.Editor.Text, _workspace.MacrosFor(path).ToHashSet(StringComparer.Ordinal),
             (_, _, _) => null, DateTime.MaxValue);
-        _view.Show(DocumentOutline.Build(symbols));
+        _view.Show(path, DocumentOutline.Build(symbols));
         FollowCaret();
     }
 

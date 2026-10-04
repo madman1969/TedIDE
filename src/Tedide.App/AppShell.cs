@@ -1867,9 +1867,14 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
         _outline.Tree.SetFocus();
     }
 
-    /// <summary>Goes to an outline node's symbol in the editor, recorded for Navigate Backward.</summary>
-    private void GoToOutlineNode(Tedide.Core.Navigation.OutlineNode node) =>
+    /// <summary>Goes to an outline node's symbol in the editor, recorded for Navigate Backward -
+    /// leaving the focus in the outline after a single click, so the next click needs no switching back.</summary>
+    private void GoToOutlineNode(Tedide.Core.Navigation.OutlineNode node, bool keepFocus = false)
+    {
         _navigation.NavigateTo(node.Definition.FilePath, node.Definition.Line, node.Definition.Column, node.Definition.Name.Length);
+        if (keepFocus)
+            _outline.Tree.SetFocus();
+    }
 
     /// <summary>
     /// Switches the Output/Error List pane to its "Debug" tab and gives the debug panel input
