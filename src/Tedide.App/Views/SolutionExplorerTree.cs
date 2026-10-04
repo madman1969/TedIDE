@@ -25,6 +25,10 @@ namespace Tedide.App.Views;
 /// <see cref="DeleteFileRequested"/> carry those requests up to the host, which owns the actual
 /// filesystem/project-file changes.
 ///
+/// A project's folders outside its own (see <see cref="TedideProject.LinkedDirectories"/>: shared
+/// sources, or an include path elsewhere) are listed under it too, named by their relative path
+/// ("..\src"), so every file it builds can be found here.
+///
 /// A loaded solution is the root node, offering Add New/Existing Project and Build/Clean Solution.
 /// Each project node offers Set as Startup Project, Build, Clean, Settings, Remove from Solution
 /// and Delete Project; the startup project is drawn in bold, as in Visual Studio.
@@ -46,11 +50,17 @@ public sealed class SolutionExplorerTree : TreeView
     private readonly PopoverMenu _contextMenu;
     private bool _contextMenuOpen;
 
-    /// <summary>Raised with the target directory when "New File..." is chosen from the context menu.</summary>
-    public event Action<string>? NewFileRequested;
+    /// <summary>Raised with the target directory, and the project whose node it was listed under,
+    /// when "New File..." is chosen from the context menu.</summary>
+    public event Action<string, TedideProject?>? NewFileRequested;
 
-    /// <summary>Raised with the target directory when "Add Existing Item..." is chosen from the context menu.</summary>
-    public event Action<string>? AddExistingItemRequested;
+    /// <summary>Raised with the target directory, and the project whose node it was listed under,
+    /// when "Add Existing Item..." is chosen from the context menu.</summary>
+    public event Action<string, TedideProject?>? AddExistingItemRequested;
+
+    /// <summary>The project each folder and file node was listed under - for a folder several
+    /// projects share, which one a new file joins.</summary>
+    private readonly Dictionary<ITreeNode, TedideProject> _owners = [];
 
     /// <summary>Raised with the file path when "Rename File" is chosen from the context menu.</summary>
     public event Action<string>? RenameFileRequested;
@@ -155,6 +165,7 @@ public sealed class SolutionExplorerTree : TreeView
     {
         List<View> items = [];
 
+        var owner = _owners.GetValueOrDefault(node);
         switch (node.Tag)
         {
             case TedideSolution:
@@ -178,12 +189,12 @@ public sealed class SolutionExplorerTree : TreeView
                 }
                 break;
             case string path when Directory.Exists(path):
-                items.Add(Item("New File...", () => NewFileRequested?.Invoke(path)));
-                items.Add(Item("Add Existing Item...", () => AddExistingItemRequested?.Invoke(path)));
+                items.Add(Item("New File...", () => NewFileRequested?.Invoke(path, owner)));
+                items.Add(Item("Add Existing Item...", () => AddExistingItemRequested?.Invoke(path, owner)));
                 break;
             case string path when File.Exists(path):
-                items.Add(Item("New File...", () => NewFileRequested?.Invoke(Path.GetDirectoryName(path)!)));
-                items.Add(Item("Add Existing Item...", () => AddExistingItemRequested?.Invoke(Path.GetDirectoryName(path)!)));
+                items.Add(Item("New File...", () => NewFileRequested?.Invoke(Path.GetDirectoryName(path)!, owner)));
+                items.Add(Item("Add Existing Item...", () => AddExistingItemRequested?.Invoke(Path.GetDirectoryName(path)!, owner)));
                 items.Add(Item("Rename File", () => RenameFileRequested?.Invoke(path)));
                 items.Add(Item("Delete File", () => DeleteFileRequested?.Invoke(path)));
                 break;
@@ -280,6 +291,7 @@ public sealed class SolutionExplorerTree : TreeView
     public void Rebuild(Workspace workspace)
     {
         ClearObjects();
+        _owners.Clear();
         _startupProject = workspace.ActiveProject;
         _hasSolution = workspace.Solution is not null;
 
@@ -302,6 +314,18 @@ public sealed class SolutionExplorerTree : TreeView
             if (Directory.Exists(project.Directory))
                 AddDirectoryContents(projectNode, project.Directory);
 
+            // Folders it uses from outside its own, after its own files.
+            foreach (var linked in project.LinkedDirectories.Where(Directory.Exists).OrderBy(d => d, StringComparer.OrdinalIgnoreCase))
+            {
+                var linkedNode = new FolderNode { Text = Path.GetRelativePath(project.Directory, linked), Tag = linked };
+                AddDirectoryContents(linkedNode, linked);
+                if (linkedNode.Children.Count > 0)
+                    projectNode.Children.Add(linkedNode);
+            }
+
+            foreach (var child in projectNode.Children)
+                RecordOwner(child, project);
+
             AddGeneratedFilesNode(projectNode, project);
 
             if (solutionNode is not null)
@@ -319,6 +343,24 @@ public sealed class SolutionExplorerTree : TreeView
         ExpandAll();
         Rebuilt?.Invoke();
     }
+
+    private void RecordOwner(ITreeNode node, TedideProject project)
+    {
+        _owners[node] = project;
+        foreach (var child in node.Children)
+            RecordOwner(child, project);
+    }
+
+    /// <summary>
+    /// Every file the tree lists for <paramref name="project"/>: those in its own folder and in its
+    /// <see cref="TedideProject.LinkedDirectories"/>. Find in Files, code completion and Go To
+    /// Definition search these.
+    /// </summary>
+    public static IEnumerable<string> EnumerateProjectFiles(TedideProject project) =>
+        new[] { project.Directory }.Concat(project.LinkedDirectories)
+            .Where(Directory.Exists)
+            .SelectMany(EnumerateFiles)
+            .Distinct(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
     /// Recursively enumerates every displayed source/header/assembly file under <paramref name="directory"/>,

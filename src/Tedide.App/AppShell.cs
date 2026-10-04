@@ -163,8 +163,8 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
         _solutionExplorer.Width = Dim.Fill();
         _solutionExplorer.Height = Dim.Fill();
         _solutionExplorer.FileActivated += OpenFile;
-        _solutionExplorer.NewFileRequested += NewFile;
-        _solutionExplorer.AddExistingItemRequested += AddExistingItem;
+        _solutionExplorer.NewFileRequested += (directory, project) => NewFile(directory, project);
+        _solutionExplorer.AddExistingItemRequested += (directory, project) => AddExistingItem(directory, project);
         _solutionExplorer.RenameFileRequested += RenameFile;
         _solutionExplorer.DeleteFileRequested += DeleteFile;
         _solutionExplorer.AddNewProjectRequested += AddNewProject;
@@ -920,12 +920,13 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
     /// project is saved; headers are not, since cl65 never compiles them directly. The new file
     /// is opened in the editor once created.
     /// </summary>
-    internal void NewFile(string directory) => Guard("Creating the file", () => NewFileCore(directory));
+    /// <param name="project">The project whose Solution Explorer node the folder is under - which
+    /// one a new source joins when several share the folder. Null: <see cref="Workspace.ProjectFor"/>.</param>
+    internal void NewFile(string directory, TedideProject? project = null) => Guard("Creating the file", () => NewFileCore(directory, project));
 
-    private void NewFileCore(string directory)
+    private void NewFileCore(string directory, TedideProject? project)
     {
-        var project = _workspace.Projects.FirstOrDefault(p =>
-            IsSameOrInsideDirectory(directory, p.Directory));
+        project ??= _workspace.ProjectFor(directory);
         if (project is null)
             return;
 
@@ -1000,12 +1001,12 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
     /// message once the whole batch is done rather than interrupting it file by file. Compilable
     /// copies not already in the project are added to its SourceFiles, same as <see cref="NewFile"/>.
     /// </summary>
-    internal void AddExistingItem(string directory) => Guard("Adding the files", () => AddExistingItemCore(directory));
+    /// <param name="project">As for <see cref="NewFile"/>.</param>
+    internal void AddExistingItem(string directory, TedideProject? project = null) => Guard("Adding the files", () => AddExistingItemCore(directory, project));
 
-    private void AddExistingItemCore(string directory)
+    private void AddExistingItemCore(string directory, TedideProject? project)
     {
-        var project = _workspace.Projects.FirstOrDefault(p =>
-            IsSameOrInsideDirectory(directory, p.Directory));
+        project ??= _workspace.ProjectFor(directory);
         if (project is null)
             return;
 
@@ -1309,13 +1310,13 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
         var relativePaths = _sessionState.OpenFiles ?? (_sessionState.LastOpenFile is { } single ? [single] : []);
         foreach (var relativePath in relativePaths)
         {
-            var fullPath = Path.Combine(activeProject.Directory, relativePath);
+            var fullPath = Path.GetFullPath(Path.Combine(activeProject.Directory, relativePath));
             if (File.Exists(fullPath))
                 OpenFile(fullPath);
         }
 
         // Finish on the tab that was showing.
-        if (_sessionState.LastOpenFile is { } last && Path.Combine(activeProject.Directory, last) is var lastPath && _editorPane.IsOpen(lastPath))
+        if (_sessionState.LastOpenFile is { } last && Path.GetFullPath(Path.Combine(activeProject.Directory, last)) is var lastPath && _editorPane.IsOpen(lastPath))
             _editorPane.Open(lastPath);
     }
 

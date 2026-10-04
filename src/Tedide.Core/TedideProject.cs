@@ -147,6 +147,35 @@ public sealed class TedideProject
 
     public const string LibraryExtension = ".lib";
 
+    /// <summary>
+    /// Folders outside <see cref="Directory"/> that this project uses: those holding any of its
+    /// <see cref="SourceFiles"/>, and its <see cref="IncludePaths"/> - sources shared between
+    /// projects, say, as in samples/FarMem. A folder inside another one listed is left out, as
+    /// that one covers it. Absolute paths, whether or not they exist.
+    /// </summary>
+    [JsonIgnore]
+    public IReadOnlyList<string> LinkedDirectories
+    {
+        get
+        {
+            var own = Path.TrimEndingDirectorySeparator(Path.GetFullPath(Directory));
+            var folders = SourceFiles
+                .Select(f => Path.GetDirectoryName(Path.GetFullPath(Path.Combine(Directory, f)))!)
+                .Concat(IncludePaths.Select(i => Path.GetFullPath(Path.Combine(Directory, i))))
+                .Select(Path.TrimEndingDirectorySeparator)
+                .Where(f => !IsSameOrInside(f, own))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            return folders.Where(f => !folders.Any(other => other != f && IsSameOrInside(f, other))).ToList();
+        }
+    }
+
+    private static bool IsSameOrInside(string path, string directory)
+    {
+        var relative = Path.GetRelativePath(directory, path);
+        return relative == "." || (!relative.StartsWith("..", StringComparison.Ordinal) && !Path.IsPathRooted(relative));
+    }
+
     /// <summary>Absolute paths of the .tproj files in <see cref="ProjectReferences"/>.</summary>
     [JsonIgnore]
     public IEnumerable<string> ResolvedProjectReferences =>

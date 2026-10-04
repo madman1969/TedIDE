@@ -119,8 +119,7 @@ internal sealed class NavigationCommands(IShell shell, Workspace workspace, Edit
     private CodeNavigator CreateNavigator()
     {
         var files = _workspace.Projects
-            .Where(p => Directory.Exists(p.Directory))
-            .SelectMany(p => SolutionExplorerTree.EnumerateFiles(p.Directory))
+            .SelectMany(SolutionExplorerTree.EnumerateProjectFiles)
             .Where(f => SourceTokenizer.LanguageOf(f) != SourceLanguage.Other)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();

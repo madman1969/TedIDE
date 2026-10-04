@@ -34,13 +34,25 @@ public sealed class Workspace
         Changed?.Invoke();
     }
 
-    /// <summary>The project whose folder holds <paramref name="filePath"/> - the innermost, should
-    /// one project sit inside another's folder - or null.</summary>
-    public TedideProject? ProjectFor(string filePath) =>
-        Projects
-            .Where(p => IsInside(filePath, p.Directory))
-            .OrderByDescending(p => p.Directory.Length)
-            .FirstOrDefault();
+    /// <summary>
+    /// The project <paramref name="filePath"/> (a file or folder) belongs to: the one whose folder
+    /// holds it - the innermost, should one project sit inside another's folder - else one that
+    /// uses it from a <see cref="TedideProject.LinkedDirectories">linked folder</see>, or null.
+    /// Several projects can share a linked folder; the startup project is preferred, then a
+    /// library it links (so a shared source is seen for the target being run), then the first.
+    /// </summary>
+    public TedideProject? ProjectFor(string filePath)
+    {
+        if (Projects.Where(p => IsInside(filePath, p.Directory)).OrderByDescending(p => p.Directory.Length).FirstOrDefault() is { } owner)
+            return owner;
+
+        var linking = Projects.Where(p => p.LinkedDirectories.Any(d => IsInside(filePath, d))).ToList();
+        if (linking.Count <= 1 || ActiveProject is not { } active)
+            return linking.FirstOrDefault();
+        if (linking.Contains(active))
+            return active;
+        return linking.FirstOrDefault(p => ProjectGraph.DependsOn(Projects, active, p)) ?? linking[0];
+    }
 
     private static bool IsInside(string path, string directory)
     {

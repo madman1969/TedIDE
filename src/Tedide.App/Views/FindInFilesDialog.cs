@@ -10,7 +10,7 @@ namespace Tedide.App.Views;
 
 /// <summary>
 /// Modal "Find in Files" dialog: searches every source/header/assembly file in the loaded
-/// solution's project directories (via <see cref="SolutionExplorerTree.EnumerateFiles"/>, so it
+/// solution's project directories and their linked folders (via <see cref="SolutionExplorerTree.EnumerateProjectFiles"/>, so it
 /// covers the same .c/.h/.s/.asm/.inc set the Solution Explorer shows) for a plain-text,
 /// case-insensitive substring and lists every matching line. Accepting a result (Enter or
 /// double-click) closes the dialog with <see cref="SelectedMatch"/> set; the host is responsible
@@ -170,13 +170,14 @@ public sealed class FindInFilesDialog : Dialog
 
     private IEnumerable<Match> FindMatches(string term)
     {
+        // A folder several projects share is searched once, under the first of them.
+        var searched = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var project in _workspace.Projects)
         {
-            if (!Directory.Exists(project.Directory))
-                continue;
-
-            var files = SolutionExplorerTree.EnumerateFiles(project.Directory)
-                .OrderBy(f => f, StringComparer.OrdinalIgnoreCase);
+            var files = SolutionExplorerTree.EnumerateProjectFiles(project)
+                .Where(searched.Add)
+                .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
+                .ToList();
 
             foreach (var file in files)
             {

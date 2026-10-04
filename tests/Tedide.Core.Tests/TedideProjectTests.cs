@@ -5,6 +5,23 @@ namespace Tedide.Core.Tests;
 public class TedideProjectTests
 {
     [Fact]
+    public void LinkedDirectories_AreTheFoldersOutsideTheProjectItUses_OutermostOnly()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "linked-test");
+        var project = new TedideProject
+        {
+            FilePath = Path.Combine(root, "Lib", "Lib.tproj"),
+            SourceFiles = ["src/own.c", "../src/a.c", "../src/b.s", "../src/deep/c.c", "../test/t.c"],
+            IncludePaths = ["include", "../include", "../src"],
+        };
+
+        Assert.Equal(
+            [Path.Combine(root, "src"), Path.Combine(root, "test"), Path.Combine(root, "include")],
+            project.LinkedDirectories);
+        Assert.Empty(new TedideProject { FilePath = project.FilePath, SourceFiles = ["src/own.c"], IncludePaths = ["include"] }.LinkedDirectories);
+    }
+
+    [Fact]
     public void SaveAndLoad_RoundTripsAllFields()
     {
         var dir = Directory.CreateTempSubdirectory();

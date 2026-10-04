@@ -216,6 +216,12 @@ The Solution Explorer shows every `.c`, `.h`, `.s`, `.asm`, `.inc` and `.cfg` fi
 folder, in the folders they live in. Headers and linker configs appear even though they aren't
 compiled directly. `bin/`, `obj/`, `.git/` and `.vs/` are hidden.
 
+A project that builds sources from outside its own folder - shared code, as in the
+[FarMem](#farmem) sample - lists those folders too, named by their relative path (`..\src`), along
+with any include path outside it. Their files count as the project's for Find in Files, code
+completion, Go To Definition and errors as you type. When several projects share a folder, a file in
+it is checked as part of the startup project, or else a library the startup project links.
+
 Once a project is built, a **Generated Files** node lists the build's extra outputs, when they're
 enabled in [Project Settings](#project-settings):
 

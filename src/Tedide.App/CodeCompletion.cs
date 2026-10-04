@@ -178,7 +178,7 @@ internal sealed class CodeCompletion : IEditorCompletionProvider
             return;
         }
 
-        var directories = _workspace.Projects.Where(p => Directory.Exists(p.Directory)).Select(p => p.Directory).ToList();
+        var projects = _workspace.Projects.ToList();
         var includes = _workspace.Projects
             .SelectMany(p => p.IncludePaths.Select(i => Path.GetFullPath(Path.Combine(p.Directory, i))))
             .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
@@ -186,8 +186,8 @@ internal sealed class CodeCompletion : IEditorCompletionProvider
         _refreshing = true;
         LastRefresh = Task.Run(() =>
         {
-            var files = directories
-                .SelectMany(SolutionExplorerTree.EnumerateFiles)
+            var files = projects
+                .SelectMany(SolutionExplorerTree.EnumerateProjectFiles)
                 .Where(f => SourceTokenizer.LanguageOf(f) != SourceLanguage.Other)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();

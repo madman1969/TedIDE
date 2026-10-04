@@ -181,6 +181,26 @@ public sealed class AppShellCommandsTests : IDisposable
     });
 
     [Fact]
+    public Task NewFile_InALinkedFolder_AddsItToTheProjectWithItsRelativePath() => UiThread.Run(() =>
+    {
+        NewGame();
+        var shared = Path.Combine(_dir, "shared");
+        Directory.CreateDirectory(shared);
+        File.WriteAllText(Path.Combine(shared, "util.c"), "");
+        Game.SourceFiles.Add("../shared/util.c");
+        Game.Save();
+
+        // From the folder's node under Game, and with no project named (found from the folder).
+        AnswerWith<NewFileDialog>(d => d.FileName = "more.c");
+        _shell.NewFile(shared, Game);
+        AnswerWith<NewFileDialog>(d => d.FileName = "most.c");
+        _shell.NewFile(shared);
+
+        Assert.Equal(["src/main.c", "../shared/util.c", "../shared/more.c", "../shared/most.c"], TedideProject.Load(Game.FilePath!).SourceFiles);
+        return Task.CompletedTask;
+    });
+
+    [Fact]
     public Task NewFile_GivesAHeaderAGuard_AndAddsASourceFileToTheProject() => UiThread.Run(() =>
     {
         NewGame();
