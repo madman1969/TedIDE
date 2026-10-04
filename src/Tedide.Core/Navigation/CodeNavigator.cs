@@ -68,7 +68,8 @@ public sealed class CodeNavigator
     private readonly Dictionary<string, ParsedFile?> _parsed = new(StringComparer.OrdinalIgnoreCase);
 
     private sealed record ParsedFile(
-        string Path, SourceLanguage Language, string[] Lines, List<SourceToken> Tokens, List<SymbolDefinition> Definitions, List<SourceScope> Inactive)
+        string Path, SourceLanguage Language, string[] Lines, List<SourceToken> Tokens, IReadOnlyList<SymbolDefinition> Definitions,
+        IReadOnlyList<SourceScope> Inactive, FileSymbols Symbols)
     {
         public bool IsActive(int line) => !Inactive.Any(range => range.Contains(line));
     }
@@ -172,7 +173,12 @@ public sealed class CodeNavigator
         if (candidates.Any(IsActive))
             candidates = candidates.Where(IsActive).ToList();
         if (isMemberAccess)
+        {
             candidates = candidates.Where(d => d.Kind == SymbolKind.Member).ToList();
+            // "s->x": the x of the struct s points to, when that can be worked out.
+            if (MemberOwner(parsed, token) is { } owner && candidates.Where(d => ContainerOf(d) == owner).ToList() is { Count: > 0 } owned)
+                candidates = owned;
+        }
         if (candidates.Count == 0)
             return new DefinitionResult(token.Text, [], $"No definition found for '{token.Text}'.");
 
@@ -216,6 +222,9 @@ public sealed class CodeNavigator
         var key = LinkKey(parsed.Language, token.Text);
         var wantMembers = IsMemberAccess(parsed, token)
             || parsed.Definitions.Any(d => d.Kind == SymbolKind.Member && SamePlace(d, file, token));
+        // For a member, the struct it belongs to: uses known to be another struct's member are left
+        // out. A use whose struct can't be worked out stays in.
+        var owner = wantMembers ? MemberOwner(parsed, token) : null;
         foreach (var path in _projectFiles)
         {
             if (Parse(path) is not { } other)
@@ -229,6 +238,8 @@ public sealed class CodeNavigator
                 var isMemberUse = IsMemberAccess(other, use)
                     || other.Definitions.Any(d => d.Kind == SymbolKind.Member && SamePlace(d, path, use));
                 if (other.Language == SourceLanguage.C && isMemberUse != wantMembers)
+                    continue;
+                if (owner is not null && isMemberUse && MemberOwner(other, use) is { } useOwner && useOwner != owner)
                     continue;
                 // A local of the same name hides the symbol inside its own scope.
                 if (InnermostLocal(other, use) is not null)
@@ -313,12 +324,21 @@ public sealed class CodeNavigator
         if (!references.References.Any(r => r.IsDefinition))
             return $"'{symbol}' isn't defined in this project (it may come from cc65's own headers), so it can't be renamed here.";
 
-        // Members are matched by name alone - which struct "s->x" belongs to isn't worked out - so
-        // with several structs declaring an "x", renaming one would silently rename them all.
+        // With several structs declaring an "x", each use has to be traced to its own struct, or a
+        // rename could change another struct's x - refused unless every one can be.
         if (IsMember(parsed, line, column) && MemberDeclarations(symbol) is { Count: > 1 } declared)
-            return $"'{symbol}' is a member of {declared.Count} structs or unions "
-                + $"({string.Join(", ", declared.Take(3).Select(d => $"{Path.GetFileName(d.FilePath)}:{d.Line}"))}{(declared.Count > 3 ? ", ..." : "")}). "
-                + "Tedide can't tell which one this is yet, so renaming it would change them all.";
+        {
+            var structs = $"'{symbol}' is a member of {declared.Count} structs or unions "
+                + $"({string.Join(", ", declared.Take(3).Select(d => $"{Path.GetFileName(d.FilePath)}:{d.Line}"))}{(declared.Count > 3 ? ", ..." : "")})";
+            if (MemberOwner(parsed, SymbolAt(parsed, line, column)!.Value) is null)
+                return $"{structs}, and Tedide can't tell which one this is, so renaming it could change the wrong one.";
+            foreach (var reference in references.References)
+                if (Parse(reference.FilePath) is { Language: SourceLanguage.C } other
+                    && other.Tokens.FirstOrDefault(t => t.Line == reference.Line && t.Column == reference.Column) is var use
+                    && use != default && MemberOwner(other, use) is null)
+                    return $"{structs}, and Tedide can't tell which one {Path.GetFileName(reference.FilePath)}:{reference.Line} means, "
+                        + "so renaming it could change the wrong one.";
+        }
         return null;
     }
 
@@ -490,16 +510,66 @@ public sealed class CodeNavigator
         return null;
     }
 
-    private string? ResolveInclude(ParsedFile from, IncludedFile included)
+    private string? ResolveInclude(ParsedFile from, IncludedFile included) => ResolveIncludePath(from.Path, included.Name, included.IsSystem);
+
+    private string? ResolveIncludePath(string from, string name, bool isSystem)
     {
-        var currentDirectory = Path.GetDirectoryName(from.Path) ?? string.Empty;
-        IEnumerable<string> searched = included.IsSystem
+        var currentDirectory = Path.GetDirectoryName(from) ?? string.Empty;
+        IEnumerable<string> searched = isSystem
             ? [.. _includeDirectories, .. _libraryDirectories, currentDirectory]
             : [currentDirectory, .. _includeDirectories, .. _libraryDirectories];
         return searched
-            .Select(directory => Path.GetFullPath(Path.Combine(directory, included.Name)))
+            .Select(directory => Path.GetFullPath(Path.Combine(directory, name)))
             .FirstOrDefault(path => File.Exists(path) || _projectFiles.Contains(path, StringComparer.OrdinalIgnoreCase));
     }
+
+    /// <summary>The project's code as a <see cref="CodeModel"/>, for working out which struct a
+    /// member use belongs to: a file sees what it includes, then the rest of the project.</summary>
+    private CodeModel Model => _model ??= new CodeModel(path => Parse(path)?.Symbols, VisibleFrom);
+
+    private CodeModel? _model;
+
+    private IEnumerable<FileSymbols> VisibleFrom(string path)
+    {
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { path };
+        var pending = new Queue<string>(Parse(path)?.Symbols.Includes ?? []);
+        while (pending.TryDequeue(out var next))
+        {
+            if (!seen.Add(next) || Parse(next) is not { } included)
+                continue;
+            yield return included.Symbols;
+            foreach (var include in included.Symbols.Includes)
+                pending.Enqueue(include);
+        }
+        foreach (var project in _projectFiles)
+            if (seen.Add(project) && Parse(project) is { } other)
+                yield return other.Symbols;
+    }
+
+    /// <summary>
+    /// The struct or union a member token belongs to - from the type of what's left of its
+    /// <c>.</c>/<c>-&gt;</c>, or, on its declaration in a struct body, that struct - as its
+    /// <see cref="SymbolDetail.Container"/> key. Null where that can't be worked out.
+    /// </summary>
+    private string? MemberOwner(ParsedFile file, SourceToken token)
+    {
+        if (file.Language != SourceLanguage.C)
+            return null;
+        if (file.Definitions.FirstOrDefault(d => d.Kind == SymbolKind.Member && SamePlace(d, file.Path, token)) is { } declaration)
+            return file.Symbols.DetailOf(declaration)?.Container;
+
+        var index = file.Tokens.IndexOf(token);
+        var end = index >= 1 && file.Tokens[index - 1].Is(".") ? index - 2
+            : index >= 2 && file.Tokens[index - 1].Is(">") && file.Tokens[index - 2].Is("-") ? index - 3
+            : -1;
+        if (end < 0 || CodeModel.ChainEndingAt(file.Tokens, end) is not { } chain
+            || Model.Resolve(file.Path, token.Line, chain) is not { } type)
+            return null;
+        return Model.AggregateOf(type, file.Path);
+    }
+
+    /// <summary>The struct or union a member definition belongs to.</summary>
+    private string? ContainerOf(SymbolDefinition definition) => Parse(definition.FilePath)?.Symbols.DetailOf(definition)?.Container;
 
     private ParsedFile? Parse(string path)
     {
@@ -511,15 +581,9 @@ public sealed class CodeNavigator
         if (_readText(path) is { } text)
         {
             var tokens = SourceTokenizer.Tokenize(text, language);
-            var definitions = language switch
-            {
-                SourceLanguage.C => CSymbolScanner.Scan(path, tokens),
-                SourceLanguage.Assembly => AsmSymbolScanner.Scan(path, tokens),
-                _ => [],
-            };
+            var symbols = FileSymbols.Scan(path, text, _predefinedMacros, ResolveIncludePath, DateTime.MinValue);
             var lines = text.Split('\n').Select(l => l.TrimEnd('\r')).ToArray();
-            var inactive = language == SourceLanguage.C ? PreprocessorConditions.InactiveRanges(tokens, _predefinedMacros) : [];
-            parsed = new ParsedFile(path, language, lines, tokens, definitions, inactive);
+            parsed = new ParsedFile(path, language, lines, tokens, symbols.Definitions, symbols.Inactive, symbols);
         }
         _parsed[path] = parsed;
         return parsed;

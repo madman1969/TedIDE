@@ -14,7 +14,12 @@ public sealed class AppShellCommandsTests : IDisposable
 {
     private readonly string _dir = Directory.CreateTempSubdirectory("tedide-shell-").FullName;
     private readonly FakeDialogs _dialogs = new();
-    private readonly AppShell _shell;
+    private readonly AppShellSettings _settings;
+    private AppShell? _shellInstance;
+
+    /// <summary>Made on first use - inside the test, on its UI thread (see <see cref="UiThread"/>),
+    /// which the window takes as the thread to report on.</summary>
+    private AppShell _shell => _shellInstance ??= new AppShell(_settings, _dialogs);
 
     public AppShellCommandsTests()
     {
@@ -22,9 +27,9 @@ public sealed class AppShellCommandsTests : IDisposable
         Directory.CreateDirectory(settings);
         // Whatever CC65_HOME is now, so a Project Settings save leaves this process's alone.
         new ToolchainSettings { Cc65Home = Environment.GetEnvironmentVariable("CC65_HOME") }.Save(Path.Combine(settings, "toolchain.json"));
-        _shell = new AppShell(new AppShellSettings(
+        _settings = new AppShellSettings(
             Path.Combine(settings, "recent.json"), Path.Combine(settings, "layout.json"), Path.Combine(settings, "toolchain.json"),
-            Path.Combine(settings, "editor.json")), _dialogs);
+            Path.Combine(settings, "editor.json"));
     }
 
     public void Dispose()
@@ -57,7 +62,7 @@ public sealed class AppShellCommandsTests : IDisposable
     private void AnswerWith<T>(Action<T> answer) where T : Dialog => _dialogs.Answer = dialog => answer(Assert.IsType<T>(dialog));
 
     [Fact]
-    public void NewProject_CreatesItInASolution_AndRemembersIt()
+    public Task NewProject_CreatesItInASolution_AndRemembersIt() => UiThread.Run(() =>
     {
         NewGame();
 
@@ -67,10 +72,11 @@ public sealed class AppShellCommandsTests : IDisposable
 
         _shell.NewProject();  // cancelled
         Assert.Single(_shell.Workspace.Projects);
-    }
+        return Task.CompletedTask;
+    });
 
     [Fact]
-    public void Opening_ReopensTheTabsAndBreakpointsLeftLastTime()
+    public Task Opening_ReopensTheTabsAndBreakpointsLeftLastTime() => UiThread.Run(() =>
     {
         NewGame();
         _shell.OpenFile(MainC);
@@ -83,10 +89,11 @@ public sealed class AppShellCommandsTests : IDisposable
 
         Assert.Equal([MainC], _shell.EditorPane.OpenPaths);
         Assert.Single(_shell.Debug.Breakpoints.Breakpoints);
-    }
+        return Task.CompletedTask;
+    });
 
     [Fact]
-    public void Opening_AMissingOrUnsupportedFile_IsReported()
+    public Task Opening_AMissingOrUnsupportedFile_IsReported() => UiThread.Run(() =>
     {
         NewGame();
         var gone = Path.Combine(_dir, "Gone.tsln");
@@ -98,13 +105,14 @@ public sealed class AppShellCommandsTests : IDisposable
         Assert.Equal([$"File Not Found: '{gone}' no longer exists.", "Unsupported file: Expected a .tproj or .tsln file."], _dialogs.Errors);
         Assert.DoesNotContain(gone, _shell.RecentProjects.Paths);
         Assert.Equal("Game", _shell.Workspace.ActiveProject!.Name);
-    }
+        return Task.CompletedTask;
+    });
 
     [Theory]
     [InlineData(2, false)]  // Cancel: stays on the open project
     [InlineData(1, true)]   // Discard
     [InlineData(0, true)]   // Save
-    public void Opening_AnotherProject_AsksAboutUnsavedEdits(int answer, bool switches)
+    public Task Opening_AnotherProject_AsksAboutUnsavedEdits(int answer, bool switches) => UiThread.Run(() =>
     {
         NewGame();
         var other = new TedideProject { Name = "Other", Target = Cc65Target.Vic20 };
@@ -119,10 +127,11 @@ public sealed class AppShellCommandsTests : IDisposable
         Assert.StartsWith("Unsaved Changes: Save changes to main.c?", _dialogs.Messages[^1]);
         Assert.Equal(switches ? "Other" : "Game", _shell.Workspace.ActiveProject!.Name);
         Assert.Equal(answer == 0, File.ReadAllText(MainC).StartsWith("// edited"));
-    }
+        return Task.CompletedTask;
+    });
 
     [Fact]
-    public void TheRecentMenu_ListsWhatsThere_NumberedForAltKeys()
+    public Task TheRecentMenu_ListsWhatsThere_NumberedForAltKeys() => UiThread.Run(() =>
     {
         Assert.Equal("(No Recent Projects or Solutions)", Assert.Single(_shell.BuildRecentProjectsMenuItems()).Title);
 
@@ -130,10 +139,11 @@ public sealed class AppShellCommandsTests : IDisposable
         _shell.RecentProjects.Touch(Path.Combine(_dir, "Moved.tsln"));
 
         Assert.Equal("_1 Game.tsln", Assert.Single(_shell.BuildRecentProjectsMenuItems()).Title);
-    }
+        return Task.CompletedTask;
+    });
 
     [Fact]
-    public void NewFile_GivesAHeaderAGuard_AndAddsASourceFileToTheProject()
+    public Task NewFile_GivesAHeaderAGuard_AndAddsASourceFileToTheProject() => UiThread.Run(() =>
     {
         NewGame();
 
@@ -148,10 +158,11 @@ public sealed class AppShellCommandsTests : IDisposable
         Assert.Equal(["src/main.c", "src/screen.c"], TedideProject.Load(Game.FilePath!).SourceFiles);
         Assert.Equal(Path.Combine(GameDir, "src", "screen.c"), _shell.EditorPane.OpenPath);
         Assert.Equal(["File Exists: 'screen.c' already exists."], _dialogs.Errors);
-    }
+        return Task.CompletedTask;
+    });
 
     [Fact]
-    public void AddExistingItem_CopiesTheFilesIn_SkippingOnesAlreadyThere()
+    public Task AddExistingItem_CopiesTheFilesIn_SkippingOnesAlreadyThere() => UiThread.Run(() =>
     {
         NewGame();
         var elsewhere = Path.Combine(_dir, "elsewhere");
@@ -166,10 +177,11 @@ public sealed class AppShellCommandsTests : IDisposable
         Assert.Equal(["src/main.c", "src/sound.c"], TedideProject.Load(Game.FilePath!).SourceFiles);
         Assert.Equal("Some Files Skipped: Already exists in this folder, skipped:\nmain.c", Assert.Single(_dialogs.Errors));
         Assert.NotEqual("// main.c", File.ReadAllText(MainC));
-    }
+        return Task.CompletedTask;
+    });
 
     [Fact]
-    public void RenameFile_MovesItsTab_ItsProjectEntry_AndItsBreakpoints()
+    public Task RenameFile_MovesItsTab_ItsProjectEntry_AndItsBreakpoints() => UiThread.Run(() =>
     {
         NewGame();
         _shell.OpenFile(MainC);
@@ -188,10 +200,11 @@ public sealed class AppShellCommandsTests : IDisposable
         AnswerWith<RenameFileDialog>(d => d.NewFileName = "main.c");
         _shell.RenameFile(renamed);
         Assert.Equal(["File Exists: 'main.c' already exists."], _dialogs.Errors);
-    }
+        return Task.CompletedTask;
+    });
 
     [Fact]
-    public void DeleteFile_AsksFirst_ThenRemovesItEverywhere()
+    public Task DeleteFile_AsksFirst_ThenRemovesItEverywhere() => UiThread.Run(() =>
     {
         NewGame();
         _shell.OpenFile(MainC);
@@ -207,10 +220,11 @@ public sealed class AppShellCommandsTests : IDisposable
         Assert.Empty(TedideProject.Load(Game.FilePath!).SourceFiles);
         Assert.Empty(_shell.EditorPane.OpenPaths);
         Assert.Empty(_shell.Debug.Breakpoints.Breakpoints);
-    }
+        return Task.CompletedTask;
+    });
 
     [Fact]
-    public void SaveAll_WritesTheEditsAndTheProject_AndCloseFileAsksFirst()
+    public Task SaveAll_WritesTheEditsAndTheProject_AndCloseFileAsksFirst() => UiThread.Run(() =>
     {
         NewGame();
         _shell.OpenFile(MainC);
@@ -227,10 +241,11 @@ public sealed class AppShellCommandsTests : IDisposable
         Assert.True(_shell.CloseFile(MainC));    // Discard
         Assert.Empty(_shell.EditorPane.OpenPaths);
         Assert.StartsWith("// one", File.ReadAllText(MainC));
-    }
+        return Task.CompletedTask;
+    });
 
     [Fact]
-    public void SavingAReadOnlyFile_IsReported_NotThrown()
+    public Task SavingAReadOnlyFile_IsReported_NotThrown() => UiThread.Run(() =>
     {
         NewGame();
         _shell.OpenFile(MainC);
@@ -240,10 +255,11 @@ public sealed class AppShellCommandsTests : IDisposable
         Assert.False(_shell.SaveActive());
 
         Assert.StartsWith("Error: Saving main.c failed:", Assert.Single(_dialogs.Errors));
-    }
+        return Task.CompletedTask;
+    });
 
     [Fact]
-    public void TheSolutionsProjects_CanBeAddedMadeStartupAndRemoved()
+    public Task TheSolutionsProjects_CanBeAddedMadeStartupAndRemoved() => UiThread.Run(() =>
     {
         NewGame();
         AnswerWith<NewProjectDialog>(d =>
@@ -275,10 +291,11 @@ public sealed class AppShellCommandsTests : IDisposable
         Assert.Equal(["Game", "Tool"], _shell.Workspace.Projects.Select(p => p.Name));
         Assert.True(Directory.Exists(Path.Combine(_dir, "Gfx")));  // its files stay
         Assert.Equal(2, TedideSolution.Load(Solution).ProjectPaths.Count);
-    }
+        return Task.CompletedTask;
+    });
 
     [Fact]
-    public void DeletingTheProjectThatHoldsTheSolution_IsRefused()
+    public Task DeletingTheProjectThatHoldsTheSolution_IsRefused() => UiThread.Run(() =>
     {
         NewGame();
 
@@ -286,10 +303,11 @@ public sealed class AppShellCommandsTests : IDisposable
 
         Assert.StartsWith("Can't Delete Project: Game's folder also holds the solution file", Assert.Single(_dialogs.Errors));
         Assert.True(Directory.Exists(GameDir));
-    }
+        return Task.CompletedTask;
+    });
 
     [Fact]
-    public void RenamingTheProject_InSettings_MovesItsFolderTabsAndRecentEntry()
+    public Task RenamingTheProject_InSettings_MovesItsFolderTabsAndRecentEntry() => UiThread.Run(() =>
     {
         NewGame();
         _shell.OpenFile(MainC);
@@ -306,10 +324,19 @@ public sealed class AppShellCommandsTests : IDisposable
         Assert.True(File.Exists(project.FilePath));
         Assert.Equal(Path.Combine(project.Directory, "src", "main.c"), _shell.EditorPane.OpenPath);
         Assert.Contains(_shell.RecentProjects.Paths, p => p.Contains("Shooter", StringComparison.Ordinal));
-    }
+        return Task.CompletedTask;
+    });
 
     [Fact]
-    public void CheckAsYouType_IsRemembered()
+    public Task Esc_DoesntQuitFromTheMainWindow() => UiThread.Run(() =>
+    {
+        // Terminal.Gui quits on Esc by default; the window takes it first.
+        Assert.True(_shell.NewKeyDownEvent(Terminal.Gui.Input.Key.Esc));
+        return Task.CompletedTask;
+    });
+
+    [Fact]
+    public Task CheckAsYouType_IsRemembered() => UiThread.Run(() =>
     {
         var editorFile = Path.Combine(_dir, "settings", "editor.json");
         Assert.True(EditorSettings.Load(editorFile).CheckAsYouType);  // on by default
@@ -317,14 +344,16 @@ public sealed class AppShellCommandsTests : IDisposable
         _shell.SetCheckAsYouType(false);
 
         Assert.False(EditorSettings.Load(editorFile).CheckAsYouType);
-    }
+        return Task.CompletedTask;
+    });
 
     [Fact]
-    public void ProjectSettings_WithNoProject_SaysToOpenOne()
+    public Task ProjectSettings_WithNoProject_SaysToOpenOne() => UiThread.Run(() =>
     {
         _shell.ShowProjectSettings(null);
 
         Assert.Contains("No project loaded.", _shell.OutputText);
         Assert.Empty(_dialogs.Shown);
-    }
+        return Task.CompletedTask;
+    });
 }

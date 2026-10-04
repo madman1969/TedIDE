@@ -86,6 +86,8 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
     private readonly GitIntegration _gitIntegration;
     /// <summary>Checking as you type - see <see cref="LiveErrorChecking"/>.</summary>
     private readonly LiveErrorChecking _liveErrors;
+    /// <summary>Suggestions and signatures while typing - see <see cref="CodeCompletion"/>.</summary>
+    private readonly CodeCompletion _completion;
     private Tabs _outputTabs = null!;
     private View _outputTab = null!;
     private View _debugTab = null!;
@@ -122,6 +124,10 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
         _liveErrors = new LiveErrorChecking(this, _workspace, _editorPane, _errorListView, _navigation.DisplayPath)
         {
             Enabled = _editorSettings.CheckAsYouType,
+        };
+        _completion = new CodeCompletion(this, _workspace, _editorPane)
+        {
+            Enabled = _editorSettings.CodeCompletion,
         };
         Width = Dim.Fill();
         Height = Dim.Fill();
@@ -542,6 +548,7 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
         viewMenuItems.AddAt(3, new MenuItem("_Git Changes", "", () => ShowPane(_gitView), Key.Empty));
         viewMenuItems.AddAt(4, new Line());
         viewMenuItems.AddAt(5, BuildCheckAsYouTypeMenuItem());
+        viewMenuItems.AddAt(6, BuildCodeCompletionMenuItem());
         menuBar.Menus = [fileMenu, menuBar.EditMenu, menuBar.ViewMenu, buildMenu, debugMenu, projectMenu, themeMenu, helpMenu];
         menuBar.X = 0;
         menuBar.Y = 0;
@@ -603,6 +610,26 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
         return new MenuItem { CommandView = checkBox };
     }
 
+    /// <summary>View > Code Completion: the same, for <see cref="CodeCompletion"/>.</summary>
+    private MenuItem BuildCodeCompletionMenuItem()
+    {
+        var checkBox = new CheckBox
+        {
+            Title = "_Code Completion",
+            Value = _editorSettings.CodeCompletion ? CheckState.Checked : CheckState.UnChecked,
+            CanFocus = false,
+        };
+        checkBox.ValueChanged += (_, e) => SetCodeCompletion(e.NewValue == CheckState.Checked);
+        return new MenuItem { CommandView = checkBox };
+    }
+
+    internal void SetCodeCompletion(bool on)
+    {
+        _completion.Enabled = on;
+        _editorSettings.CodeCompletion = on;
+        Guard("Saving the editor settings", _editorSettings.Save);
+    }
+
     internal void SetCheckAsYouType(bool on)
     {
         _liveErrors.Enabled = on;
@@ -632,6 +659,13 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
     /// </summary>
     protected override bool OnKeyDown(Key key)
     {
+        // Esc never quits from the main window. It's Terminal.Gui's default quit key, so an Esc
+        // pressed to close the completion list a moment after it had closed, or out of habit,
+        // closed the whole IDE. Ctrl+Q and File > Quit still quit; menus and dialogs get their Esc
+        // before it reaches here.
+        if (key == Key.Esc)
+            return true;
+
         Action? action = null;
         if (key == Key.F5.WithShift)
             action = () => Fire(_debug.StopDebuggingAsync());
@@ -1146,6 +1180,7 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
     {
         _gitIntegration.ActiveDocumentChanged();
         _liveErrors.ActiveDocumentChanged();
+        _completion.ActiveDocumentChanged();
         _editorFrame.Title = _editorPane.OpenPath is { } path ? Path.GetFileName(path) : NoFileOpenTitle;
         UpdateLanguageIndicator();
         _debug.RefreshBreakpointHighlights();
@@ -1347,8 +1382,9 @@ public sealed class AppShell : Window, IDebugSessionHost, IShell
         if (_editorPane.Save(path) is { } notice)
             AppendOutputLine(notice);
         _git.RequestRefresh();
-        // A saved header changes what the shown file compiles against.
+        // A saved header changes what the shown file compiles against, and what it can see.
         _liveErrors.RequestCheck();
+        _completion.FileSaved();
     });
 
     /// <summary>File > Save (Ctrl+S): the file being shown, plus the loaded project/solution files.</summary>

@@ -4,13 +4,17 @@ namespace Tedide.App;
 
 /// <summary>
 /// The editor's own on/off choices that aren't the Terminal.Gui.Editor's built-in view toggles -
-/// today, View > Check As You Type (see <see cref="LiveErrorChecking"/>). A per-user preference
+/// View > Check As You Type (see <see cref="LiveErrorChecking"/>) and View > Code Completion (see
+/// <see cref="CodeCompletion"/>). A per-user preference
 /// like <see cref="LayoutSettings"/>, kept beside it.
 /// </summary>
 public sealed class EditorSettings
 {
     /// <summary>Whether the shown file is checked for errors whenever typing pauses. On by default.</summary>
     public bool CheckAsYouType { get; set; } = true;
+
+    /// <summary>Whether names are suggested as they're typed, and a call's signature shown. On by default.</summary>
+    public bool CodeCompletion { get; set; } = true;
 
     internal static readonly string DefaultFilePath = JsonFile.UserSettingsPath("editor.json");
 

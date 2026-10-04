@@ -25,6 +25,8 @@ offline.
   build, clean, configure, remove or delete a project.
 - **Tabbed editor** - syntax highlighting for C, 6502/ca65 assembly, listings, linker maps, VICE
   label files and linker configs; per-tab undo history; open tabs remembered per project.
+- **Code completion** - names, struct members after `.` and `->`, ca65 directives and instructions
+  as you type, and the signature of the call you're typing.
 - **Errors as you type** - the file you're editing is checked by cc65 or ca65 whenever you pause,
   with problem lines underlined and listed in the Error List, without building.
 - **Code navigation** - Go To Definition, Find All References and Rename Symbol across C and
@@ -337,6 +339,32 @@ The **View** menu toggles line numbers, fold indicators, word wrap, visible tabs
 
 ![The View menu: Solution Explorer, Output, Error List and Git Changes, then the editor toggles - Line Numbers, Fold Indicators, Word Wrap, Show Tabs and Scrollbars](docs/images/editing-view-menu.png)
 
+### Code completion
+
+Suggestions appear as you type, in a list under the caret. Up and Down choose, Enter or Tab inserts,
+and Esc closes the list.
+
+- **Names** - after two letters of a name, matching parameters and locals come first, then the
+  file's own functions, variables, macros, types and enum constants, then those in the headers it
+  includes, then the rest of the project, then C keywords. A cc65 header's names only appear once the
+  file includes it.
+- **Members** - straight after `.` or `->`, the members of that struct or union, followed through
+  typedefs, pointers, arrays and function results: `find_player(1)->sprite->pos.` lists `x` and `y`.
+- **Struct tags** - after `struct`, `union` or `enum`, only tag names.
+- **Assembly** - ca65 directives after a `.`, `@cheap` labels after an `@`, instructions and macros
+  at the start of a line (65C02 and 65816 ones only for those CPUs), and labels, constants,
+  `.import`s and C symbols (as `_name`) in operands.
+- **On request** - Ctrl+Space lists everything that fits, even before two letters.
+- **Signatures** - inside a call's parentheses, the function's or macro's signature replaces the
+  branch and blame text at the right of the tab row, with the argument you're typing picked out.
+
+Nothing is suggested in comments, strings, numbers or `#include` lines.
+
+Suggestions come from an index kept in memory, so a list takes well under a millisecond. The file
+you're editing is re-indexed from the editor a moment after you pause; other files, and the cc65
+headers they include, are read in the background when they change. To turn it off, untick
+**View > Code Completion**.
+
 ### Errors as you type
 
 Tedide checks the C or assembly file you're editing whenever you stop typing for a moment. It
@@ -383,6 +411,8 @@ They understand C and ca65 rather than matching text:
   `.import`s.
 - Parameters, locals and `@cheap` labels are scoped, so a local `width` is never confused with a
   global `width`.
+- A struct member is traced to its own struct through the type of what's before its `.` or `->`, so
+  F12 on `c->x` goes to `struct cursor`'s `x`, not `struct sprite`'s.
 - cc65 adds a leading underscore to C names in assembly, so `border_flash()` in C leads to
   `_border_flash` in a `.s` file, and Find All References lists both.
 - F12 on a function's definition goes to its prototype. On an `#include` or `.include` line it opens
@@ -397,8 +427,9 @@ it, including the underscored assembly name. Comments and strings are left alone
 
 - It refuses invalid names, C keywords and names already in use, including a local that would hide
   a renamed global.
-- It refuses symbols the project doesn't define, such as cc65 library functions, and struct members
-  whose name more than one struct uses.
+- It refuses symbols the project doesn't define, such as cc65 library functions.
+- Renaming a member renames only its own struct's. If several structs have a member of that name and
+  one of its uses can't be traced to a struct, it refuses rather than risk renaming the wrong one.
 - In the open file, the rename is one change that Undo reverts. Other files are rewritten on disk
   in their own encoding, and only if none has changed underneath.
 

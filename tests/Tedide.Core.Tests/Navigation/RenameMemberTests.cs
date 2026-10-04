@@ -3,9 +3,10 @@ using Tedide.Core.Navigation;
 namespace Tedide.Core.Tests.Navigation;
 
 /// <summary>
-/// Renaming a struct/union member. Members are matched by name alone - which struct "s->x" belongs
-/// to isn't worked out - so a name more than one struct declares has to be refused rather than
-/// renamed everywhere (it renamed cursor.x along with sprite.x, silently).
+/// Renaming a struct/union member. Each use is traced to its struct through the type of what's
+/// left of its "." or "->", so renaming sprite.x leaves cursor.x alone. Where a use can't be traced
+/// and several structs declare the name, the rename is refused rather than risk the wrong one -
+/// before that, it renamed cursor.x along with sprite.x, silently.
 /// </summary>
 public class RenameMemberTests
 {
@@ -27,43 +28,64 @@ public class RenameMemberTests
 
         """;
 
-    private static CodeNavigator Navigator()
+    private static CodeNavigator Navigator(string text = MainCText)
     {
-        var files = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { [MainC] = MainCText };
-        return new CodeNavigator([MainC], path => files.TryGetValue(path, out var text) ? text : null, [], [], []);
+        var files = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { [MainC] = text };
+        return new CodeNavigator([MainC], path => files.TryGetValue(path, out var found) ? found : null, [], [], []);
     }
 
-    private static (int Line, int Column) At(string needle, int offset)
+    private static (int Line, int Column) At(string needle, int offset, string text = MainCText)
     {
-        var index = MainCText.IndexOf(needle, StringComparison.Ordinal) + offset;
-        var before = MainCText[..index];
+        var index = text.IndexOf(needle, StringComparison.Ordinal) + offset;
+        var before = text[..index];
         return (before.Count(c => c == '\n') + 1, index - (before.LastIndexOf('\n') + 1) + 1);
     }
 
-    private static RenamePlan Rename(string needle, int offset, string newName)
+    private static RenamePlan Rename(string needle, int offset, string newName, string text = MainCText)
     {
-        var (line, column) = At(needle, offset);
-        return Navigator().PlanRename(MainC, line, column, newName);
+        var (line, column) = At(needle, offset, text);
+        return Navigator(text).PlanRename(MainC, line, column, newName);
     }
 
     [Fact]
-    public void WhyNotRenamable_RefusesBeforeANameIsAsked()
-    {
-        var (line, column) = At("c->x", 3);
-        Assert.Contains("member of 2 structs", Navigator().WhyNotRenamable(MainC, line, column));
-        (line, column) = At("s->frame", 3);
-        Assert.Null(Navigator().WhyNotRenamable(MainC, line, column));
-    }
-
-    [Fact]
-    public void AMemberSeveralStructsDeclare_IsRefused()
+    public void AMemberSeveralStructsDeclare_RenamesOnlyItsOwnStruct()
     {
         var plan = Rename("s->x++", 3, "px");
 
+        Assert.Null(plan.Error);
+        var renamed = RenamePlan.Apply(MainCText, plan.Edits);
+        Assert.Contains("struct sprite { unsigned char px, y, frame; };", renamed);
+        Assert.Contains("struct cursor { unsigned char x, y; };", renamed);
+        Assert.Contains("s->px++;", renamed);
+        Assert.Contains("c->x = s->y;", renamed);
+        Assert.Contains("unsigned char x;", renamed);
+    }
+
+    [Fact]
+    public void FromItsDeclaration_Too()
+    {
+        var plan = Rename("struct cursor { unsigned char x", 30, "col");
+
+        Assert.Null(plan.Error);
+        var renamed = RenamePlan.Apply(MainCText, plan.Edits);
+        Assert.Contains("struct cursor { unsigned char col, y; };", renamed);
+        Assert.Contains("c->col = s->y;", renamed);
+        Assert.Contains("s->x++;", renamed);
+    }
+
+    [Fact]
+    public void AUseThatCantBeTraced_IsRefused_WhenSeveralStructsDeclareTheName()
+    {
+        // "thing" isn't declared anywhere, so which x it has can't be worked out.
+        var text = MainCText.Replace("x = 1;", "x = 1;\n    thing->x = 2;");
+
+        var plan = Rename("s->x++", 3, "px", text);
+
         Assert.Empty(plan.Edits);
         Assert.Contains("'x' is a member of 2 structs or unions (main.c:1, main.c:2)", plan.Error);
-        // From its declaration in the struct body, too.
-        Assert.Contains("2 structs", Rename("unsigned char x, y, frame", 14, "px").Error);
+        Assert.Contains("can't tell which one main.c:12 means", plan.Error);
+        var (line, column) = At("thing->x", 7, text);
+        Assert.Contains("can't tell which one this is", Navigator(text).WhyNotRenamable(MainC, line, column));
     }
 
     [Fact]
@@ -75,6 +97,26 @@ public class RenameMemberTests
         var renamed = RenamePlan.Apply(MainCText, plan.Edits);
         Assert.Contains("unsigned char x, y, image;", renamed);
         Assert.Contains("s->image = 0;", renamed);
+    }
+
+    [Fact]
+    public void GoToDefinition_GoesToTheRightStructsMember()
+    {
+        var (line, column) = At("c->x", 3);
+
+        var definition = Assert.Single(Navigator().GoToDefinition(MainC, line, column).Definitions);
+
+        Assert.Equal(2, definition.Line);
+    }
+
+    [Fact]
+    public void FindReferences_LeavesOutOtherStructsMembers()
+    {
+        var (line, column) = At("c->x", 3);
+
+        var references = Navigator().FindReferences(MainC, line, column).References;
+
+        Assert.Equal([2, 9], references.Select(r => r.Line));
     }
 
     [Fact]

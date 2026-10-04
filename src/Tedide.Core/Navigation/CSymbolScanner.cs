@@ -6,6 +6,11 @@ namespace Tedide.Core.Navigation;
 /// function's parameters and local variables (scoped to the block that declares them). A ctags-style
 /// heuristic over the token stream rather than a real parser: no preprocessing, no type checking.
 /// It's built for cc65-era C89 and stays useful on code that's half-typed or doesn't compile yet.
+/// <para>
+/// <see cref="ScanDetailed"/> also records each symbol's type, which struct or union a member
+/// belongs to, and each function's signature - enough to follow <c>p-&gt;x.y</c> and to show a
+/// call's parameters, for code completion.
+/// </para>
 /// </summary>
 public static class CSymbolScanner
 {
@@ -25,7 +30,17 @@ public static class CSymbolScanner
         "return", "goto", "sizeof", "asm", "__asm__",
     ];
 
+    /// <summary>Words in a declaration that say how it's stored or called, not what type it is.</summary>
+    private static readonly HashSet<string> Qualifiers =
+    [
+        "const", "volatile", "static", "extern", "register", "auto", "typedef", "inline",
+        "__fastcall__", "__cdecl__", "fastcall", "cdecl", "__near__", "__far__", "near", "far",
+    ];
+
     public static bool IsKeyword(string word) => TypeKeywords.Contains(word) || StatementKeywords.Contains(word);
+
+    /// <summary>Every C keyword cc65 knows, for completion.</summary>
+    public static IEnumerable<string> Keywords => TypeKeywords.Concat(StatementKeywords);
 
     private enum FrameKind
     {
@@ -35,7 +50,7 @@ public static class CSymbolScanner
         Enum,
     }
 
-    private sealed class Frame(FrameKind kind, List<SourceToken> savedStatement)
+    private sealed class Frame(FrameKind kind, List<SourceToken> savedStatement, string? aggregateKey = null)
     {
         public FrameKind Kind { get; } = kind;
 
@@ -43,30 +58,49 @@ public static class CSymbolScanner
         /// <c>struct point</c>, ...), which carries on after the closing brace.</summary>
         public List<SourceToken> SavedStatement { get; } = savedStatement;
 
-        public List<(SourceToken Token, SymbolKind Kind)> Locals { get; } = [];
+        /// <summary>For a struct or union body, the key its members are filed under.</summary>
+        public string? AggregateKey { get; } = aggregateKey;
+
+        public List<(SourceToken Token, SymbolKind Kind, CType? Type)> Locals { get; } = [];
     }
 
-    public static List<SymbolDefinition> Scan(string path, IReadOnlyList<SourceToken> tokens)
+    public static List<SymbolDefinition> Scan(string path, IReadOnlyList<SourceToken> tokens) =>
+        ScanDetailed(path, tokens).Definitions;
+
+    public static CScan ScanDetailed(string path, IReadOnlyList<SourceToken> tokens)
     {
         var definitions = new List<SymbolDefinition>();
-        ScanDirectives(path, tokens, definitions);
+        var details = new Dictionary<SymbolDefinition, SymbolDetail>();
+        ScanDirectives(path, tokens, definitions, details);
 
         var code = tokens.Where(t => t.Directive == 0).ToList();
         var frames = new Stack<Frame>();
         var statement = new List<SourceToken>();
         var depth = 0;
+        // The "{}" marker a struct or union body leaves in its declaration, by position, so the
+        // declaration's type can name it.
+        var aggregateMarkers = new Dictionary<(int Line, int Column), string>();
 
-        void Add(SourceToken token, SymbolKind kind, SourceScope? scope = null) =>
-            definitions.Add(new SymbolDefinition(token.Text, kind, path, token.Line, token.Column, scope));
+        SymbolDefinition Add(SourceToken token, SymbolKind kind, SourceScope? scope = null, SymbolDetail? detail = null)
+        {
+            var definition = new SymbolDefinition(token.Text, kind, path, token.Line, token.Column, scope);
+            definitions.Add(definition);
+            if (detail is not null)
+                details[definition] = detail;
+            return definition;
+        }
 
         FrameKind? Context() => frames.Count == 0 ? null : frames.Peek().Kind;
 
         void CloseFrame(int endLine)
         {
             var frame = frames.Pop();
-            foreach (var (token, kind) in frame.Locals)
-                Add(token, kind, new SourceScope(token.Line, endLine));
+            foreach (var (token, kind, type) in frame.Locals)
+                Add(token, kind, new SourceScope(token.Line, endLine), type is null ? null : new SymbolDetail(type));
         }
+
+        CType? TypeOf(List<SourceToken> specifiers, List<SourceToken> declarator, SourceToken name) =>
+            BaseType(specifiers, aggregateMarkers) is { } baseName ? new CType(baseName, Indirection(declarator, name)) : null;
 
         void EndStatement()
         {
@@ -76,9 +110,13 @@ public static class CSymbolScanner
                     AddDeclarations(statement, isFileScope: true);
                     break;
                 case FrameKind.Aggregate:
-                    foreach (var (name, _) in Declarators(statement))
-                        Add(name, SymbolKind.Member);
+                {
+                    var specifiers = Specifiers(statement);
+                    var container = frames.Peek().AggregateKey;
+                    foreach (var (name, _, segment) in Declarators(statement))
+                        Add(name, SymbolKind.Member, detail: new SymbolDetail(TypeOf(specifiers, segment, name), container));
                     break;
+                }
                 case FrameKind.Enum:
                     AddEnumConstant(statement);
                     break;
@@ -94,25 +132,27 @@ public static class CSymbolScanner
         {
             var isTypedef = tokens.Any(t => t.Is("typedef"));
             var isExtern = tokens.Any(t => t.Is("extern"));
-            foreach (var (name, isFunction) in Declarators(tokens))
+            var specifiers = Specifiers(tokens);
+            foreach (var (name, isFunction, segment) in Declarators(tokens))
             {
+                var type = TypeOf(specifiers, segment, name);
                 if (isTypedef)
-                    Add(name, SymbolKind.Typedef);
+                    Add(name, SymbolKind.Typedef, detail: new SymbolDetail(type));
                 else if (isFunction)
                 {
-                    Add(name, SymbolKind.Prototype);
+                    Add(name, SymbolKind.Prototype, detail: new SymbolDetail(type, Signature: Signature(tokens, name)));
                     // A prototype's parameter names mean nothing outside it, but recording them
                     // (scoped to the prototype) stops them counting as uses of a global "width".
                     var scope = new SourceScope(name.Line, tokens[^1].Line);
-                    foreach (var parameter in PrototypeParameters(tokens, name))
-                        Add(parameter, SymbolKind.Parameter, scope);
+                    foreach (var (parameter, parameterType) in PrototypeParameters(tokens, name, aggregateMarkers))
+                        Add(parameter, SymbolKind.Parameter, scope, parameterType is null ? null : new SymbolDetail(parameterType));
                 }
                 else if (isExtern)
-                    Add(name, SymbolKind.ExternVariable);
+                    Add(name, SymbolKind.ExternVariable, detail: new SymbolDetail(type));
                 else if (isFileScope)
-                    Add(name, SymbolKind.Variable);
+                    Add(name, SymbolKind.Variable, detail: new SymbolDetail(type));
                 else
-                    frames.Peek().Locals.Add((name, SymbolKind.LocalVariable));
+                    frames.Peek().Locals.Add((name, SymbolKind.LocalVariable, type));
             }
         }
 
@@ -170,19 +210,27 @@ public static class CSymbolScanner
 
                     if (AggregateKeyword(statement) is { } aggregate)
                     {
-                        if (statement[^1].Kind == TokenKind.Identifier && statement.Count >= 2 && statement[^2].Is(aggregate))
+                        var hasTag = statement[^1].Kind == TokenKind.Identifier && statement.Count >= 2 && statement[^2].Is(aggregate);
+                        if (hasTag)
                             Add(statement[^1], SymbolKind.Tag);
-                        frames.Push(new Frame(aggregate == "enum" ? FrameKind.Enum : FrameKind.Aggregate, [.. statement, marker]));
+                        string? key = aggregate == "enum" ? null
+                            : hasTag ? $"{aggregate} {statement[^1].Text}"
+                            : SymbolDetail.AnonymousKey(path, token.Line, token.Column);
+                        if (key is not null)
+                            aggregateMarkers[(marker.Line, marker.Column)] = key;
+                        frames.Push(new Frame(aggregate == "enum" ? FrameKind.Enum : FrameKind.Aggregate, [.. statement, marker], key));
                         statement.Clear();
                         break;
                     }
 
                     if (Context() is null && FunctionDefinition(statement) is { } function)
                     {
-                        Add(function.Name, SymbolKind.Function);
+                        Add(function.Name, SymbolKind.Function, detail: new SymbolDetail(
+                            TypeOf(Specifiers(statement), statement[..(statement.IndexOf(function.Name) + 1)], function.Name),
+                            Signature: Signature(statement, function.Name)));
                         var frame = new Frame(FrameKind.Function, []);
-                        foreach (var parameter in function.Parameters)
-                            frame.Locals.Add((parameter, SymbolKind.Parameter));
+                        foreach (var (parameter, parameterType) in PrototypeParameters(statement, function.Name, aggregateMarkers))
+                            frame.Locals.Add((parameter, SymbolKind.Parameter, parameterType));
                         frames.Push(frame);
                         statement.Clear();
                         break;
@@ -220,12 +268,13 @@ public static class CSymbolScanner
         while (frames.Count > 0)
             CloseFrame(lastLine);
 
-        return definitions;
+        return new CScan(definitions, details);
     }
 
     /// <summary><c>#define NAME</c>, plus a function-like macro's own parameters, visible only on its
-    /// own (possibly continued) line.</summary>
-    private static void ScanDirectives(string path, IReadOnlyList<SourceToken> tokens, List<SymbolDefinition> definitions)
+    /// own (possibly continued) line, and its signature.</summary>
+    private static void ScanDirectives(string path, IReadOnlyList<SourceToken> tokens, List<SymbolDefinition> definitions,
+        Dictionary<SymbolDefinition, SymbolDetail> details)
     {
         foreach (var directive in tokens.Where(t => t.Directive != 0).GroupBy(t => t.Directive))
         {
@@ -234,16 +283,19 @@ public static class CSymbolScanner
                 continue;
 
             var name = line[2];
-            definitions.Add(new SymbolDefinition(name.Text, SymbolKind.Macro, path, name.Line, name.Column));
+            var macro = new SymbolDefinition(name.Text, SymbolKind.Macro, path, name.Line, name.Column);
+            definitions.Add(macro);
 
             // "#define F(a, b)" - the "(" has to touch the name, or it's an object-like macro whose
             // body happens to start with a parenthesis.
             if (line.Count > 3 && line[3].Is("(") && line[3].Column == name.EndColumn && line[3].Line == name.Line)
             {
                 var scope = new SourceScope(name.Line, line[^1].Line);
-                for (var i = 4; i < line.Count && !line[i].Is(")"); i++)
-                    if (line[i].Kind == TokenKind.Identifier)
-                        definitions.Add(new SymbolDefinition(line[i].Text, SymbolKind.Parameter, path, line[i].Line, line[i].Column, scope));
+                var close = 4;
+                for (; close < line.Count && !line[close].Is(")"); close++)
+                    if (line[close].Kind == TokenKind.Identifier)
+                        definitions.Add(new SymbolDefinition(line[close].Text, SymbolKind.Parameter, path, line[close].Line, line[close].Column, scope));
+                details[macro] = new SymbolDetail(Signature: BuildSignature(line[2..Math.Min(close + 1, line.Count)]));
             }
         }
     }
@@ -298,10 +350,11 @@ public static class CSymbolScanner
         return new FunctionSignature(statement[open - 1], parameters);
     }
 
-    /// <summary>The named parameters in the parameter list straight after a prototype's name. An
-    /// unnamed one ("int") names nothing; a lone typedef'd type is indistinguishable from a name, and
-    /// harmless either way since it's scoped to the prototype.</summary>
-    private static IEnumerable<SourceToken> PrototypeParameters(List<SourceToken> statement, SourceToken name)
+    /// <summary>The named parameters in the parameter list straight after a function's name, with
+    /// their types. An unnamed one ("int") names nothing; a lone typedef'd type is indistinguishable
+    /// from a name, and harmless either way since it's scoped to the function.</summary>
+    private static IEnumerable<(SourceToken Name, CType? Type)> PrototypeParameters(List<SourceToken> statement, SourceToken name,
+        Dictionary<(int, int), string> aggregateMarkers)
     {
         var open = statement.IndexOf(name) + 1;
         if (open < 1 || open >= statement.Count || !statement[open].Is("("))
@@ -309,18 +362,25 @@ public static class CSymbolScanner
 
         var close = MatchingClose(statement, open);
         foreach (var segment in SplitTopLevel(statement[(open + 1)..Math.Min(close, statement.Count)], ","))
-            if (DeclaratorName(segment) is { } parameter)
-                yield return parameter.Name;
+        {
+            if (DeclaratorName(segment) is not { } parameter)
+                continue;
+            var specifiers = segment[..segment.IndexOf(parameter.Name)].Where(t => !t.Is("*")).ToList();
+            var type = BaseType(specifiers, aggregateMarkers) is { } baseName ? new CType(baseName, Indirection(segment, parameter.Name)) : null;
+            yield return (parameter.Name, type);
+        }
     }
 
-    /// <summary>Every name a declaration statement declares: "int a, *b, c[3]" declares a, b and c.</summary>
-    private static IEnumerable<(SourceToken Name, bool IsFunction)> Declarators(List<SourceToken> statement)
+    /// <summary>Every name a declaration statement declares, with the tokens of its own declarator:
+    /// "int a, *b, c[3]" declares a, b and c.</summary>
+    private static IEnumerable<(SourceToken Name, bool IsFunction, List<SourceToken> Segment)> Declarators(List<SourceToken> statement)
     {
         foreach (var segment in SplitTopLevel(statement, ","))
         {
             var equals = TopLevelIndex(segment, "=");
-            if (DeclaratorName(equals >= 0 ? segment[..equals] : segment) is { } declarator)
-                yield return declarator;
+            var declarator = equals >= 0 ? segment[..equals] : segment;
+            if (DeclaratorName(declarator) is { } found)
+                yield return (found.Name, found.IsFunction, declarator);
         }
     }
 
@@ -363,6 +423,121 @@ public static class CSymbolScanner
                 name = token;
         }
         return name is { } found ? (found, false) : null;
+    }
+
+    /// <summary>The words a declaration statement's type is made of: everything in its first
+    /// declarator before the declared name, less the pointer stars that belong to that name.</summary>
+    private static List<SourceToken> Specifiers(List<SourceToken> statement)
+    {
+        var first = SplitTopLevel(statement, ",").FirstOrDefault() ?? [];
+        var equals = TopLevelIndex(first, "=");
+        var declarator = equals >= 0 ? first[..equals] : first;
+        if (DeclaratorName(declarator) is not { } name)
+            return declarator;
+        var end = declarator.IndexOf(name.Name);
+        // "(*fp)(...)": the type ends before the parenthesis that opens the declarator.
+        var paren = TopLevelIndex(declarator, "(");
+        if (paren >= 0 && paren < end)
+            end = paren;
+        return declarator[..end].Where(t => !t.Is("*")).ToList();
+    }
+
+    /// <summary>
+    /// What a type is built on: an untagged struct or union body's key, "struct tag" or "union tag",
+    /// a typedef name, or plain words such as "unsigned char" - storage and calling-convention words
+    /// left out. Null for an enum, or nothing that names a type.
+    /// </summary>
+    private static string? BaseType(List<SourceToken> specifiers, Dictionary<(int, int), string> aggregateMarkers)
+    {
+        foreach (var token in specifiers)
+            if (token.Is("{}") && aggregateMarkers.TryGetValue((token.Line, token.Column), out var key))
+                return key;
+
+        for (var i = 0; i + 1 < specifiers.Count; i++)
+            if (specifiers[i].Text is "struct" or "union" && specifiers[i + 1].Kind == TokenKind.Identifier)
+                return $"{specifiers[i].Text} {specifiers[i + 1].Text}";
+
+        if (specifiers.Any(t => t.Is("enum")))
+            return null;
+
+        var words = specifiers.Where(t => t.Kind == TokenKind.Identifier && !Qualifiers.Contains(t.Text)).Select(t => t.Text).ToList();
+        return words.Count > 0 ? string.Join(' ', words) : null;
+    }
+
+    /// <summary>How many pointer and array levels a declarator puts on its name: its stars, and its
+    /// brackets after the name.</summary>
+    private static int Indirection(List<SourceToken> declarator, SourceToken name)
+    {
+        var at = declarator.IndexOf(name);
+        if (at < 0)
+            return 0;
+        var stars = declarator.Take(at).Count(t => t.Is("*"));
+        var brackets = 0;
+        for (var i = at + 1; i < declarator.Count && declarator[i].Text is "[" or "]" or ")" ; i++)
+        {
+            if (declarator[i].Is("["))
+            {
+                brackets++;
+                i = MatchingClose(declarator, i);
+            }
+        }
+        return stars + brackets;
+    }
+
+    /// <summary>A function's signature as written, from its return type to the end of its
+    /// parameter list - storage-class words left out.</summary>
+    private static CallSignature? Signature(List<SourceToken> statement, SourceToken name)
+    {
+        var at = statement.IndexOf(name);
+        if (at < 0 || at + 1 >= statement.Count || !statement[at + 1].Is("("))
+            return null;
+        var close = MatchingClose(statement, at + 1);
+        var start = 0;
+        while (start < at && statement[start].Text is "static" or "extern" or "inline" or "typedef")
+            start++;
+        return BuildSignature(statement[start..Math.Min(close + 1, statement.Count)]);
+    }
+
+    /// <summary>Joins a declaration's tokens the way it would be written - "char *s", "f(a, b)" - and
+    /// finds where each parameter sits between the first "(" and its ")".</summary>
+    private static CallSignature BuildSignature(List<SourceToken> tokens)
+    {
+        var text = new System.Text.StringBuilder();
+        string? previous = null;
+        foreach (var token in tokens)
+        {
+            if (previous is not null && !(previous is "(" or "[" or "*" || token.Text is ")" or "]" or "," or "(" or "["))
+                text.Append(' ');
+            text.Append(token.Text);
+            previous = token.Text;
+        }
+
+        var signature = text.ToString();
+        var parameters = new List<(int, int)>();
+        var open = signature.IndexOf('(');
+        if (open >= 0)
+        {
+            var depth = 0;
+            var start = open + 1;
+            for (var i = open; i < signature.Length; i++)
+            {
+                var c = signature[i];
+                if (c is '(' or '[')
+                    depth++;
+                else if (c is ')' or ']')
+                    depth--;
+                if ((c == ',' && depth == 1) || (c == ')' && depth == 0))
+                {
+                    var parameter = signature[start..i].Trim();
+                    if (parameter.Length > 0 && parameter != "void")
+                        parameters.Add((signature.IndexOf(parameter, start, StringComparison.Ordinal), parameter.Length));
+                    start = i + 1;
+                    if (c == ')')
+                        break;
+                }
+            }
+        }
+        return new CallSignature(signature, parameters);
     }
 
     private static int TopLevelIndex(List<SourceToken> tokens, string text)

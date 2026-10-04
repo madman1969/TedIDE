@@ -56,6 +56,14 @@ public sealed class EditorPane : View
     /// <summary>The problem shown for the caret's line, or empty.</summary>
     public string Notice => _tabStrip.Notice;
 
+    /// <summary>Shows the signature of the call being typed on the tab row, its active argument
+    /// picked out - see <see cref="DocumentTabStrip.Hint"/>. Empty text clears it.</summary>
+    public void SetSignatureHint(string text, int activeStart = 0, int activeLength = 0) =>
+        _tabStrip.SetHint(text, activeStart, activeLength);
+
+    /// <summary>The signature shown, or empty.</summary>
+    public string SignatureHint => _tabStrip.Hint;
+
     /// <summary>Text shown at the right of the tab row - see <see cref="DocumentTabStrip.Annotation"/>.</summary>
     public string Annotation
     {

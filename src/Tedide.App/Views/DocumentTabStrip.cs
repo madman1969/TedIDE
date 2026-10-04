@@ -72,6 +72,24 @@ public sealed class DocumentTabStrip : View
     /// <summary>Whether <see cref="Notice"/> is an error (else a warning) - which colours it gets.</summary>
     public bool NoticeIsError { get; set; }
 
+    /// <summary>
+    /// The signature of the call being typed - "void draw(sprite_t *s, byte colour)" - shown in
+    /// place of <see cref="Notice"/> and the annotation while the caret is inside the call, with the
+    /// argument it's in picked out in the accent colour. Empty for none.
+    /// </summary>
+    public string Hint { get; private set; } = "";
+
+    private (int Start, int Length) _hintActive;
+
+    public void SetHint(string text, int activeStart, int activeLength)
+    {
+        if (Hint == text && _hintActive == (activeStart, activeLength))
+            return;
+        Hint = text;
+        _hintActive = (activeStart, activeLength);
+        SetNeedsDraw();
+    }
+
     private string _notice = "";
 
     /// <summary>The part of <paramref name="annotation"/> that fits in <paramref name="room"/>
@@ -154,6 +172,11 @@ public sealed class DocumentTabStrip : View
     /// dimmed so it doesn't compete with the tabs.</summary>
     private void DrawAnnotation(int tabsEnd, int width)
     {
+        if (Hint.Length > 0)
+        {
+            DrawHint(tabsEnd, width);
+            return;
+        }
         var notice = _notice.Length > 0;
         var text = Fit(notice ? _notice : _annotation, width - tabsEnd - 3);
         if (text.Length == 0)
@@ -162,6 +185,24 @@ public sealed class DocumentTabStrip : View
             ? SchemeManager.GetScheme(NoticeIsError ? "Error" : "Warning").Normal
             : GetAttributeForRole(VisualRole.Disabled));
         AddStr(width - text.Length - 1, 0, text);
+    }
+
+    /// <summary>The signature, right-aligned like the annotation, its active argument in the accent
+    /// colour (as far as it fits).</summary>
+    private void DrawHint(int tabsEnd, int width)
+    {
+        var text = Fit(Hint, width - tabsEnd - 3);
+        if (text.Length == 0)
+            return;
+        var x = width - text.Length - 1;
+        SetAttribute(GetAttributeForRole(VisualRole.Normal));
+        AddStr(x, 0, text);
+        var (start, length) = _hintActive;
+        if (length > 0 && start < text.Length)
+        {
+            SetAttribute(SchemeManager.GetScheme("Accent").Normal);
+            AddStr(x + start, 0, text.Substring(start, Math.Min(length, text.Length - start)));
+        }
     }
 
     protected override bool OnMouseEvent(Mouse mouse)
