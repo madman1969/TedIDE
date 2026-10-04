@@ -6,7 +6,7 @@
  * is readable. The C16 and Plus/4 (TED chip) are the odd ones out - they
  * default to a pale background instead, so COLOR_WHITE text would be
  * invisible there; use black on just those two targets. */
-#if defined(__C16__) || defined(__PLUS4__)
+#if defined(__C16__) || defined(__PLUS4__) || defined(__CBM510__)
 #define BANNER_COLOR COLOR_BLACK
 #else
 #define BANNER_COLOR COLOR_WHITE
