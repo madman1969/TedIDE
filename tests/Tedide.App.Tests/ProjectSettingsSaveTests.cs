@@ -80,6 +80,7 @@ public sealed class ProjectSettingsSaveTests : IDisposable
         dialog._postBuildField.Text = "echo done";
         dialog._cc65HomeField.Text = "  ";
         dialog._viceBinDirectoryField.Text = @"E:\vice";
+        dialog._viceArgumentsField.Text = "-reu -reusize 512";
 
         Assert.Null(dialog.Save());
 
@@ -97,9 +98,25 @@ public sealed class ProjectSettingsSaveTests : IDisposable
         Assert.Equal([Path.Combine("..", "Gfx", "Gfx.tproj")], saved.ProjectReferences);
         Assert.Equal(["echo one", "echo two"], saved.PreBuildCommands);
         Assert.Equal(["echo done"], saved.PostBuildCommands);
+        Assert.Equal(["-reu", "-reusize", "512"], saved.ViceArguments);
         var toolchain = ToolchainSettings.Load(ToolchainFile);
         Assert.Null(toolchain.Cc65Home);  // blank unsets it
         Assert.Equal(@"E:\vice", toolchain.ViceBinDirectory);
+    }
+
+    [Fact]
+    public void BlankViceArguments_AreLeftOutOfTheProjectFile()
+    {
+        _project.ViceArguments = ["-reu"];
+        _project.Save();
+        var dialog = Open();
+        Assert.Equal("-reu", dialog._viceArgumentsField.Text);
+
+        dialog._viceArgumentsField.Text = "   ";
+        Assert.Null(dialog.Save());
+
+        Assert.Null(Reloaded().ViceArguments);
+        Assert.DoesNotContain("ViceArguments", File.ReadAllText(_project.FilePath!));
     }
 
     [Fact]

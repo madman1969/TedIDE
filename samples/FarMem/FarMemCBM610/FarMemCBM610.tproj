@@ -1,0 +1,28 @@
+{
+  "Name": "FarMemCBM610",
+  "Target": "Cbm610",
+  "OutputType": "Library",
+  "ProjectReferences": [],
+  "OptimizationLevel": "Maximum",
+  "GenerateAssemblyListing": true,
+  "AddSourceAsComment": true,
+  "GenerateLinkerMap": true,
+  "GenerateDebugInfo": true,
+  "ExportLabels": true,
+  "EnableSuperCpu": false,
+  "UseOpt6502": true,
+  "Opt6502Mode": "Speed",
+  "SourceFiles": [
+    "../src/farmem.c",
+    "../src/farhw.s"
+  ],
+  "OutputFile": "bin/FarMemCBM610.lib",
+  "LinkerConfigPath": null,
+  "IncludePaths": [
+    "../include"
+  ],
+  "PreprocessorDefines": [],
+  "ExtraArguments": [],
+  "PreBuildCommands": [],
+  "PostBuildCommands": []
+}

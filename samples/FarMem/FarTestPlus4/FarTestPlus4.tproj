@@ -1,0 +1,33 @@
+{
+  "Name": "FarTestPlus4",
+  "Target": "C16",
+  "OutputType": "Application",
+  "ProjectReferences": [
+    "../FarMemC16/FarMemC16.tproj"
+  ],
+  "OptimizationLevel": "Maximum",
+  "GenerateAssemblyListing": true,
+  "AddSourceAsComment": true,
+  "GenerateLinkerMap": true,
+  "GenerateDebugInfo": true,
+  "ExportLabels": true,
+  "EnableSuperCpu": false,
+  "ViceArguments": [
+    "-ramsize",
+    "64"
+  ],
+  "UseOpt6502": true,
+  "Opt6502Mode": "Speed",
+  "SourceFiles": [
+    "../test/fartest.c"
+  ],
+  "OutputFile": "bin/FarTestPlus4.prg",
+  "LinkerConfigPath": "c16-32k.cfg",
+  "IncludePaths": [],
+  "PreprocessorDefines": [
+    "FAR_EXPECTED=FAR_EMD"
+  ],
+  "ExtraArguments": [],
+  "PreBuildCommands": [],
+  "PostBuildCommands": []
+}

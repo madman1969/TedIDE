@@ -48,6 +48,7 @@ public sealed class ProjectSettingsDialog : Dialog
     internal readonly TextField _cc65HomeField;
     internal readonly TextField _viceBinDirectoryField;
     internal readonly CheckBox _enableSuperCpuField;
+    internal readonly TextField _viceArgumentsField;
     internal readonly CheckBox _useOpt6502Field;
     internal readonly CheckBox _favourSpeedField;
     internal readonly TextView _preBuildField;
@@ -102,7 +103,7 @@ public sealed class ProjectSettingsDialog : Dialog
         var optimizerTab = BuildOptimizerTab(project, out _optimizationLevelField, out _useOpt6502Field, out _favourSpeedField, out var cpuLabel);
         var compilerTab = BuildCompilerTab(project, out _generateListingField, out _addSourceAsCommentField);
         var linkerTab = BuildLinkerTab(project, _targetField, out _generateLinkerMapField, out _exportLabelsField, out _generateDebugInfoField, out _linkerConfigPathField);
-        var superCpuTab = BuildSuperCpuTab(project, out _enableSuperCpuField);
+        var emulatorTab = BuildEmulatorTab(project, out _enableSuperCpuField, out _viceArgumentsField);
         var buildEventsTab = BuildBuildEventsTab(project, out _preBuildField, out _postBuildField);
         var cc65Tab = BuildCc65Tab(toolchain, out _cc65HomeField);
         var viceTab = BuildViceTab(toolchain, out _viceBinDirectoryField);
@@ -111,13 +112,13 @@ public sealed class ProjectSettingsDialog : Dialog
         tabs.Add(optimizerTab);
         tabs.Add(compilerTab);
         tabs.Add(linkerTab);
-        tabs.Add(superCpuTab);
+        tabs.Add(emulatorTab);
         tabs.Add(buildEventsTab);
         tabs.Add(referencesTab);
         tabs.Add(cc65Tab);
         tabs.Add(viceTab);
 
-        // The SuperCPU toggle only makes sense while Target is C64 (see BuildSuperCpuTab's own
+        // The SuperCPU toggle only makes sense while Target is C64 (see BuildEmulatorTab's own
         // comment) - kept in sync live as the Settings tab's own target dropdown changes, not just
         // set once from the project's value when this dialog opened, so switching Target away from
         // C64 (or back) during this same visit greys the checkbox out (or back in) immediately.
@@ -203,6 +204,7 @@ public sealed class ProjectSettingsDialog : Dialog
         _project.GenerateDebugInfo = _generateDebugInfoField.Value == CheckState.Checked;
         _project.LinkerConfigPath = string.IsNullOrWhiteSpace(_linkerConfigPathField.Text) ? null : _linkerConfigPathField.Text.Trim();
         _project.EnableSuperCpu = _enableSuperCpuField.Value == CheckState.Checked;
+        _project.ViceArguments = ArgumentText.Split(_viceArgumentsField.Text) is { Count: > 0 } viceArguments ? viceArguments : null;
         _project.UseOpt6502 = _useOpt6502Field.Value == CheckState.Checked;
         _project.Opt6502Mode = _favourSpeedField.Value == CheckState.Checked ? Opt6502Mode.Speed : Opt6502Mode.Size;
         _project.OutputType = Enum.TryParse<ProjectOutputType>(_outputTypeField.Text, out var outputType) ? outputType : _project.OutputType;
@@ -653,19 +655,17 @@ public sealed class ProjectSettingsDialog : Dialog
     }
 
     /// <summary>
-    /// Builds the "SuperCPU" tab: a single toggle for <see cref="TedideProject.EnableSuperCpu"/> -
-    /// whether Build/Run/Debug should launch this project in VICE's dedicated SuperCPU emulator
+    /// Builds the "Emulator" tab: how Build/Run/Debug starts VICE for this project. The toggle for
+    /// <see cref="TedideProject.EnableSuperCpu"/> - VICE's dedicated SuperCPU emulator
     /// (xscpu64.exe) instead of the plain C64 one (see
-    /// <see cref="Tedide.Build.ViceEmulator.ExecutableNameFor"/>). The SuperCPU is a C64-specific
-    /// accelerator cartridge, so the checkbox only makes sense - and starts out enabled/disabled
-    /// accordingly - while <paramref name="project"/>'s current <see cref="TedideProject.Target"/>
-    /// is C64; the constructor keeps its <see cref="View.Enabled"/> state in sync with the Settings
-    /// tab's own target dropdown afterwards, since the user can change that without closing this
-    /// dialog first.
+    /// <see cref="Tedide.Build.ViceEmulator.ExecutableNameFor"/>) - only makes sense, and starts out
+    /// enabled, while <paramref name="project"/>'s <see cref="TedideProject.Target"/> is C64; the
+    /// constructor keeps it in step with the Settings tab's target dropdown afterwards. Below it,
+    /// <see cref="TedideProject.ViceArguments"/>, for hardware such as an REU.
     /// </summary>
-    private static View BuildSuperCpuTab(TedideProject project, out CheckBox enableSuperCpuField)
+    private static View BuildEmulatorTab(TedideProject project, out CheckBox enableSuperCpuField, out TextField viceArgumentsField)
     {
-        var tab = new View { Title = " _SuperCPU ", Width = Dim.Fill(), Height = Dim.Fill() };
+        var tab = new View { Title = " E_mulator ", Width = Dim.Fill(), Height = Dim.Fill() };
         // See BuildSettingsTab's comment on this same line - every tab needs its own Padding.
         tab.Padding.Thickness = new Thickness(2, 1, 2, 1);
 
@@ -688,7 +688,20 @@ public sealed class ProjectSettingsDialog : Dialog
             X = 0, Y = 2, Width = Dim.Fill(1), Height = 4,
         };
 
-        tab.Add(enableSuperCpuField, helpLabel);
+        var viceArgumentsLabel = new Label { Text = "Extra VICE arguments (space-separated - quote any containing spaces):", X = 0, Y = 7 };
+        viceArgumentsField = new TextField { X = 0, Y = 9, Width = Dim.Fill(1), Text = ArgumentText.Join(project.ViceArguments ?? []) };
+
+        var viceArgumentsHelpLabel = new Label
+        {
+            Text = "Added after Tedide's own, so they win where both set something. For example:\n" +
+                   "  -reu -reusize 512      a 512K REU (C64, C128)\n" +
+                   "  -simmsize 4            4MB of SuperCPU RAM\n" +
+                   "  -ramsize 64            a 64K C16, or a 256K CBM 610 (-ramsize 256)",
+            X = 0, Y = 11, Width = Dim.Fill(1), Height = 4,
+            HotKeySpecifier = Tedide.Theming.TerminalGuiWorkarounds.NoHotKey,
+        };
+
+        tab.Add(enableSuperCpuField, helpLabel, viceArgumentsLabel, viceArgumentsField, viceArgumentsHelpLabel);
         return tab;
     }
 

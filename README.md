@@ -68,7 +68,8 @@ offline.
 
 - **Help** - F1 context help opens the bundled **Doc Viewer** at the word under the caret: the cc65
   manuals, The C Book, C64-Wiki, Wikipedia and the VICE manual, with full-text search and bookmarks.
-- **Samples** - nine sample projects, from a bouncing-characters demo to a C128 text editor.
+- **Samples** - ten samples, from a bouncing-characters demo to a C128 text editor and a
+  far-memory library for six machine setups.
 - **Standalone builds** - publish Tedide and the Doc Viewer as single executables that need no .NET
   runtime installed.
 
@@ -134,6 +135,7 @@ Open any of these with **File > Open Project...**:
 | `inflate` | C64 | One file: a character-fill sprite that grows and shrinks, drawn from an off-screen buffer. |
 | `CBMInfo` | Eight Commodore targets | A system information screen built from five modules (see below). |
 | `Nano128` | C128 | The largest sample: a nano-style text editor in 80-column mode (see below). |
+| `FarMem` | C64, C128, C16/Plus/4, CBM 510/610 | A solution of twelve projects: one library for five targets, and a test program for each machine setup (see below). |
 
 ### CBMInfo
 
@@ -158,6 +160,33 @@ each using a real cc65 runtime API wherever one exists:
 
 Where cc65 has no runtime API, such as for installed RAM, the value is a per-target constant. Each
 module's header comment says which of its values are detected and which are fixed.
+
+### FarMem
+
+A flat "far memory" library in the spirit of DOS/4GW: one 24-bit address space over whatever extra
+memory the machine has, with an allocator, block reads, writes, copies and fills, single bytes and
+words, and windows mapped into ordinary memory to work on with normal C pointers. cc65's pointers
+are 16 bits, so far memory is reached through these functions - `include/farmem.h` lists them.
+
+| Machine | Far memory | How |
+| --- | --- | --- |
+| C64 with a SuperCPU | Its SuperRAM, up to 16MB | 65816 block moves (`MVN`/`MVP`) |
+| C64 with an REU | The REU, up to 16MB | REU DMA, with fills in one transfer |
+| C128 | An REU if there is one, else RAM banks 1-3 | REU DMA, or cc65's `c128-ram2` driver |
+| C16 / Plus/4 (64K) | 32,000 bytes under the ROMs | cc65's `c16-ram` driver - build for the C16 target |
+| CBM 510 / 610 | RAM bank 1 (510), banks 2-4 (610) | 6509 indirect-bank copies |
+
+Machines with none of these get a block of ordinary RAM instead, so programs still run.
+
+The solution has five library projects (`FarMemC64` and so on), all built from the same `src/`
+and `include/`, and seven test programs that reference them: `FarTestC64REU`, `FarTestSuperCPU`,
+`FarTestC128`, `FarTestC128REU`, `FarTestPlus4`, `FarTestCBM510` and `FarTestCBM610`. Each test
+program's [Extra VICE arguments](#emulator) give VICE the hardware it needs (an REU, SuperCPU RAM,
+64K), so **Ctrl+F5** runs it on the right machine. It lists 17 checks with ok, FAIL or skip.
+
+`Test-FarMem.ps1`, beside the solution, runs all seven in VICE after a **Build Solution** and
+reports which passed. `-Repeat 10` runs each one ten times: VICE starts programs after a random
+delay, so timing-dependent bugs only show some of the time.
 
 ### Nano128
 
@@ -273,6 +302,7 @@ A `.tproj` file is a small JSON document describing what `cl65` needs to build a
 | `ExportLabels` | A VICE label file in `{Name}.lbl` (`-Ln`). Default `false`. |
 | `GenerateDebugInfo` | Debug info in `{Name}.dbg` (`-g`, and `--dbgfile` passed to the linker). Needed for debugging. Default `false`. |
 | `EnableSuperCpu` | C64 only: build for the SuperCPU's 65816 (`--cpu 65816`) and run in VICE's `xscpu64` instead of `x64sc`. Default `false`. |
+| `ViceArguments` | Extra VICE arguments, after Tedide's own. Left out of the file when there are none. |
 | `UseOpt6502` / `Opt6502Mode` | Run [opt6502](#opt6502) on each C file's assembly, in `Size` (default) or `Speed` mode. |
 | `OutputFile` | The built program. Defaults to `<Name>` plus the target's extension (`.prg` for the C64). Its folder is created if needed. |
 | `LinkerConfigPath` | A custom `ld65` config (`-C`), relative to the project. Blank uses the target's default. |
@@ -519,6 +549,10 @@ Most machines start the program the usual way: VICE types `LOAD` and `RUN`. A CB
 lower/upper case mode, where a file name with capitals in it, such as `CBMInfo`, can't be found that
 way, so its programs are loaded straight into memory instead.
 
+A project's **Extra VICE arguments** (the [Emulator](#emulator) tab) are added after all of these,
+so they win where both set something - `-reu -reusize 512` for an REU, say. One VICE quirk: on the
+CBM 510, any `-ramsize` stops the program from starting at all.
+
 ![The CBMInfo sample running in VICE's C64 emulator, listing the machine's model, CPU, clock speed, memory, video and sound details](docs/images/running-vice.png)
 
 ### Symbols
@@ -574,12 +608,22 @@ first, never beside the source, so a hand-written `src/foo.s` can't be overwritt
 
 ![The linker config file picker opened from Browse: CC65_HOME's cfg folder, filtered to "c64 Configs" and listing c64-asm.cfg, c64-overlay.cfg and c64.cfg](docs/images/project-settings-linker-browse.png)
 
-### SuperCPU
+### Emulator
 
 **Enable SuperCPU support** is available only for the C64. When it's on, the project is built for
 the 65816 and runs in VICE's `xscpu64`, so it needs a SuperCPU to run.
 
-![The SuperCPU tab: an "Enable SuperCPU support" checkbox and an explanation that it's only available for the C64 target](docs/images/project-settings-supercpu.png)
+**Extra VICE arguments** are passed to VICE after Tedide's own whenever this project runs or is
+debugged, for hardware the program needs:
+
+| Arguments | Gives |
+| --- | --- |
+| `-reu -reusize 512` | A 512K REU (C64, C128) |
+| `-simmsize 4` | 4MB of SuperCPU RAM |
+| `-ramsize 64` | A 64K C16 |
+| `-ramsize 256` | A 256K CBM 610 |
+
+![The Emulator tab for FarTestSuperCPU: "Enable SuperCPU support" ticked, and "-simmsize 1" in the Extra VICE arguments field, with examples for an REU, SuperCPU RAM and more RAM underneath](docs/images/project-settings-emulator.png)
 
 ### opt6502
 
@@ -883,7 +927,7 @@ scripts/
 tools/
   Cc65DocsDbBuilder/   Builds Docs.db, the Doc Viewer's database, from the books' HTML
   Opt6502Cli/          A command-line opt6502, plus its tests in cc65's simulator
-samples/               The nine sample projects
+samples/               The ten samples
 ```
 
 ### Testing
@@ -1001,7 +1045,7 @@ In place and tested:
 - **Building and running** - per-file `cl65` builds with live output, diagnostics parsed into the
   Error List, Cancel Build and Clean Project; a symbol browser for linker maps and labels; and Run
   in the VICE emulator matching the target, with the right memory configuration for the VIC-20, C16
-  and Plus/4, and CBM 610 programs loaded straight into memory.
+  and Plus/4, CBM 610 programs loaded straight into memory, and per-project extra VICE arguments.
 - **Debugging** - source-level debugging against VICE's binary monitor protocol: breakpoints with
   persistent in-editor highlighting, conditions, enable/disable and a Breakpoints dialog; stepping
   by source line (Step Into runs straight through cc65's runtime library); the debug state and

@@ -120,6 +120,18 @@ public class ViceEmulatorTests
         Assert.Equal(["-autostart", project.ResolvedOutputFile], args);
     }
 
+    [Fact]
+    public void BuildArguments_AddsTheProjectsViceArguments_AfterTedidesOwn()
+    {
+        // The project's -ramsize repeats Tedide's own, and wins by coming later.
+        var project = new TedideProject { Name = "Test", Target = Cc65Target.C16, ViceArguments = ["-ramsize", "64"] };
+
+        var args = ViceEmulator.BuildArguments(project, enableBinaryMonitor: true);
+
+        Assert.Equal(["-autostart", project.ResolvedOutputFile, "-binarymonitor", "-binarymonitoraddress", "127.0.0.1:6502",
+            "-ramsize", "16", "-ramsize", "64"], args);
+    }
+
     [Theory]
     [InlineData(null, "none")]
     [InlineData("", "none")]

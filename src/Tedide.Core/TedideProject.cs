@@ -67,6 +67,13 @@ public sealed class TedideProject
     /// ignored for every other target. Defaults to off.</summary>
     public bool EnableSuperCpu { get; set; }
 
+    /// <summary>Extra VICE command-line arguments for Build/Run/Debug, after Tedide's own so they
+    /// win where both set something - e.g. "-reu -reusize 512" for an REU, or "-simmsize 4" for
+    /// SuperCPU RAM. Null (and left out of the file) when there are none, so projects that don't
+    /// use it are saved exactly as before.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<string>? ViceArguments { get; set; }
+
     /// <summary>Whether each C file's cc65-generated assembly is run through Tedide's optimizer
     /// (Tedide.Build's Opt6502Optimizer, still called opt6502 after the program it replaced) before
     /// it's assembled - see Tedide.Build's Cc65Toolchain.BuildCompileSteps. Defaults to off.

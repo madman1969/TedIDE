@@ -156,6 +156,8 @@ public sealed class ViceEmulator(string binDirectory = ViceEmulator.DefaultBinDi
             args.Add(Plus4RamSizeFor(project.Target, project.LinkerConfigPath).ToString());
         }
 
+        // Last, so the project's own choices win: VICE takes the last of a repeated option.
+        args.AddRange(project.ViceArguments ?? []);
         return args;
     }
 

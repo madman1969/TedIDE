@@ -1,0 +1,34 @@
+{
+  "Name": "FarTestC64REU",
+  "Target": "C64",
+  "OutputType": "Application",
+  "ProjectReferences": [
+    "../FarMemC64/FarMemC64.tproj"
+  ],
+  "OptimizationLevel": "Maximum",
+  "GenerateAssemblyListing": true,
+  "AddSourceAsComment": true,
+  "GenerateLinkerMap": true,
+  "GenerateDebugInfo": true,
+  "ExportLabels": true,
+  "EnableSuperCpu": false,
+  "ViceArguments": [
+    "-reu",
+    "-reusize",
+    "512"
+  ],
+  "UseOpt6502": true,
+  "Opt6502Mode": "Speed",
+  "SourceFiles": [
+    "../test/fartest.c"
+  ],
+  "OutputFile": "bin/FarTestC64REU.prg",
+  "LinkerConfigPath": null,
+  "IncludePaths": [],
+  "PreprocessorDefines": [
+    "FAR_EXPECTED=FAR_REU"
+  ],
+  "ExtraArguments": [],
+  "PreBuildCommands": [],
+  "PostBuildCommands": []
+}
