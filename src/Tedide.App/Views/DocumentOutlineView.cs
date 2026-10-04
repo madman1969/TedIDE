@@ -66,6 +66,8 @@ public sealed class DocumentOutlineView : View
     {
         _post = post;
         CanFocus = true;
+        // The tree first: the filter box's key handler below uses it.
+        _tree = new TreeView { X = 0, Y = 1, Width = Dim.Fill(), Height = Dim.Fill() };
         _filterField = new TextField { X = 0, Y = 0, Width = Dim.Fill() };
         _filterField.TextChanged += (_, _) => Rebuild();
         _filterField.KeyDown += (_, key) =>
@@ -90,8 +92,7 @@ public sealed class DocumentOutlineView : View
             }
         };
 
-        _tree = new TreeView { X = 0, Y = 1, Width = Dim.Fill(), Height = Dim.Fill() };
-        _tree.ColorGetter = node => node is TreeNode { Tag: OutlineNode outline } ? SchemeFor(outline, _tree.GetScheme()) : _tree.GetScheme();
+        _tree.ColorGetter =node => node is TreeNode { Tag: OutlineNode outline } ? SchemeFor(outline, _tree.GetScheme()) : _tree.GetScheme();
         _tree.Accepted += (_, _) =>
         {
             if (!_contextMenuOpen && _tree.SelectedObject is TreeNode { Tag: OutlineNode node })
