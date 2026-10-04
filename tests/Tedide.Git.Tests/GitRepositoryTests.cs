@@ -88,6 +88,32 @@ public sealed class GitRepositoryTests : IDisposable
     }
 
     [Fact]
+    public async Task FindAsync_KeepsThePathItWasGiven_ThroughAJunction()
+    {
+        // git resolves a junction (or a subst drive) to the real folder; Tedide's paths use the
+        // junction, so the root must too or no file would be inside the repository.
+        var repo = await InitAsync();
+        Directory.CreateDirectory(Path.Combine(repo.Root, "src"));
+        var link = repo.Root + "-link";
+        var mklink = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("cmd.exe", $"/c mklink /J \"{link}\" \"{repo.Root}\"")
+        {
+            CreateNoWindow = true, UseShellExecute = false, RedirectStandardOutput = true,
+        })!;
+        await mklink.WaitForExitAsync();
+        try
+        {
+            var found = (await GitRepository.FindAsync(Path.Combine(link, "src")))!;
+
+            Assert.Equal(link, found.Root, ignoreCase: true);
+            Assert.True(found.Contains(Path.Combine(link, "src", "main.c")));
+        }
+        finally
+        {
+            Directory.Delete(link);
+        }
+    }
+
+    [Fact]
     public async Task BlameLineAsync_UsesTheEditorsText()
     {
         var repo = await InitAsync();
@@ -105,6 +131,19 @@ public sealed class GitRepositoryTests : IDisposable
 
         // A file git doesn't track has no blame.
         Assert.Null(await repo.BlameLineAsync(Write("new.c", "x\n"), 1, "x\n"));
+    }
+
+    [Fact]
+    public async Task BlameLineAsync_ALargeFileGitDoesntTrackHasNoBlame()
+    {
+        // git fails before reading the editor's text, so writing a large one to it breaks the pipe.
+        // That used to throw, leaving the previous file's blame on show.
+        var repo = await InitAsync();
+        Write("main.c", "x\n");
+        await repo.CommitAsync("Add main", stageAll: true);
+        var text = string.Concat(Enumerable.Repeat("a generated line of text\n", 50_000));
+
+        Assert.Null(await repo.BlameLineAsync(Write("lnk.map", text), 1, text));
     }
 
     [Fact]
@@ -129,6 +168,18 @@ public sealed class GitRepositoryTests : IDisposable
         var result = await repo.CommitAsync("Empty", stageAll: false);
         Assert.False(result.Succeeded);
         Assert.NotEmpty(result.Message);
+    }
+
+    [Fact]
+    public async Task DiffWithHeadAsync_EmptyIfNotInHead_GivesNoChangesForAFileGitDoesntHave()
+    {
+        var repo = await InitAsync();
+        Write("main.c", "x\n");
+        await repo.CommitAsync("Add main", stageAll: true);
+        var map = Write("lnk.map", "a\nb\n");
+
+        Assert.Equal(2, (await repo.DiffWithHeadAsync(map, "a\nb\n")).Added);
+        Assert.Empty((await repo.DiffWithHeadAsync(map, "a\nb\n", emptyIfNotInHead: true)).Hunks);
     }
 
     [Fact]

@@ -307,7 +307,7 @@ public sealed class ProjectSettingsDialog : Dialog
 
         var infoLabel = new Label
         {
-            Text = $"{project.SourceFiles.Count} source file(s) in {project.Directory}",
+            Text = $"{project.SourceFiles.Count} source file(s) in {ShortenPath(project.Directory, 70)}",
             X = 0, Y = 28, Width = Dim.Fill(1),
         };
 
@@ -808,5 +808,22 @@ public sealed class ProjectSettingsDialog : Dialog
 
         tab.Add(binLabel, viceBinDirectoryField, browseButton, helpLabel);
         return tab;
+    }
+
+    /// <summary>
+    /// <paramref name="path"/> in at most <paramref name="max"/> characters: the drive, "…", and as
+    /// many of the last folders as fit. A one-line label wraps a long path onto a line it doesn't
+    /// have, so the path vanished entirely.
+    /// </summary>
+    internal static string ShortenPath(string path, int max)
+    {
+        if (path.Length <= max)
+            return path;
+        var root = Path.GetPathRoot(path) ?? "";
+        var parts = path[root.Length..].Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
+        var tail = parts[^1];
+        for (var i = parts.Length - 2; i >= 0 && root.Length + 2 + parts[i].Length + 1 + tail.Length <= max; i--)
+            tail = parts[i] + Path.DirectorySeparatorChar + tail;
+        return $"{root}…{Path.DirectorySeparatorChar}{tail}";
     }
 }

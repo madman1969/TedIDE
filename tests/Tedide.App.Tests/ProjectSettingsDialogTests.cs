@@ -101,4 +101,15 @@ public class ProjectSettingsDialogTests
     {
         Assert.Equal(expected, ProjectSettingsDialog.CpuDescription(target, superCpu));
     }
+
+    [Theory]
+    [InlineData(@"C:\Projects\CBMInfo", 70, @"C:\Projects\CBMInfo")]
+    [InlineData(@"C:\Users\someone\AppData\Local\Temp\work\scratchpad\CBMInfo", 30, @"C:\…\work\scratchpad\CBMInfo")]
+    [InlineData(@"C:\Users\someone\a-very-long-folder-name-indeed\CBMInfo", 20, @"C:\…\CBMInfo")]
+    public void ShortenPath_KeepsTheDriveAndTheLastFolders(string path, int max, string expected)
+    {
+        var shortened = ProjectSettingsDialog.ShortenPath(path, max);
+        Assert.Equal(expected, shortened);
+        Assert.True(shortened.Length <= max || !shortened.Contains('…'));
+    }
 }

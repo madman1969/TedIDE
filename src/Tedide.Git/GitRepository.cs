@@ -26,10 +26,14 @@ public sealed class GitRepository
     {
         if (!Directory.Exists(directory))
             return null;
-        var result = await GitRunner.RunAsync(directory, ["rev-parse", "--show-toplevel", "--absolute-git-dir"], cancellationToken: cancellationToken);
-        return result.Succeeded && result.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) is [var root, var gitDirectory]
-            ? new GitRepository(Path.GetFullPath(root), Path.GetFullPath(gitDirectory))
-            : null;
+        // The root is worked out from the directory as given (--show-cdup is "../.." or empty), not
+        // taken from --show-toplevel: git resolves a subst drive or a junction to the real path,
+        // and then no file Tedide has open would match it.
+        var result = await GitRunner.RunAsync(directory, ["rev-parse", "--absolute-git-dir", "--show-cdup"], cancellationToken: cancellationToken);
+        if (!result.Succeeded || result.Output.Split('\n', StringSplitOptions.TrimEntries) is not [var gitDirectory, .. var rest] || gitDirectory.Length == 0)
+            return null;
+        var up = rest is [var cdup, ..] ? cdup : "";
+        return new GitRepository(Path.TrimEndingDirectorySeparator(Path.GetFullPath(Path.Combine(directory, up))), Path.GetFullPath(gitDirectory));
     }
 
     public async Task<GitStatus?> GetStatusAsync(CancellationToken cancellationToken = default)
@@ -161,12 +165,16 @@ public sealed class GitRepository
     /// <paramref name="currentText"/> - the editor's text, unsaved edits included (null for a file
     /// that's been deleted). Line endings are ignored, so a CRLF checkout of an LF commit only shows
     /// real edits. Both sides go through git's own diff (<c>--no-index</c> on two temporary files),
-    /// so it reads exactly as <c>git diff</c> would.
+    /// so it reads exactly as <c>git diff</c> would. A file HEAD doesn't have reads as all added,
+    /// or as no changes with <paramref name="emptyIfNotInHead"/>.
     /// </summary>
     public async Task<GitDiff> DiffWithHeadAsync(string file, string? currentText, string? headPath = null,
-        int contextLines = 3, CancellationToken cancellationToken = default)
+        int contextLines = 3, CancellationToken cancellationToken = default, bool emptyIfNotInHead = false)
     {
-        var head = await ReadHeadAsync(file, headPath, cancellationToken) ?? "";
+        var committed = await ReadHeadAsync(file, headPath, cancellationToken);
+        if (committed is null && emptyIfNotInHead)
+            return GitDiff.Empty;
+        var head = committed ?? "";
         var folder = Directory.CreateTempSubdirectory("tedide-diff-").FullName;
         try
         {

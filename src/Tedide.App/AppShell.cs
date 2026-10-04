@@ -495,7 +495,10 @@ public sealed class AppShell : Window
         GitDiff diff;
         try
         {
-            diff = await repository.DiffWithHeadAsync(path, text, file?.OriginalPath, contextLines: 0, cancellation.Token);
+            // A file git reports nothing about and HEAD doesn't have is ignored - a listing or a
+            // linker map - so it gets no bars rather than every line marked as added.
+            diff = await repository.DiffWithHeadAsync(path, text, file?.OriginalPath, contextLines: 0, cancellation.Token,
+                emptyIfNotInHead: file is null);
         }
         catch (OperationCanceledException)
         {
@@ -1325,7 +1328,7 @@ public sealed class AppShell : Window
             new MenuItem("_Windows", "", new Menu(BuildDebugWindowsMenuItems())),
             new Line(),
             new MenuItem("_Start Debugging", "", () => _ = StartDebuggingAsync(), Key.F5),
-            new MenuItem("Start _Without Debugging", "", () => _ = RunActiveProjectAsync(), Key.F5.WithCtrl),
+            new MenuItem("Start Wit_hout Debugging", "", () => _ = RunActiveProjectAsync(), Key.F5.WithCtrl),
             new MenuItem("_Continue", "", () => _ = ContinueDebuggingAsync(), Key.F5),
             new MenuItem("Step _Over", "", () => _ = StepDebuggingAsync(stepInto: false), Key.F10),
             // F7, not Visual Studio's F11 - Windows Terminal claims F11 for its own full-screen
@@ -1338,7 +1341,7 @@ public sealed class AppShell : Window
             new MenuItem("Breakpoint Co_ndition...", "", EditBreakpointConditionAtCursor, Key.Empty),
             new MenuItem("_Breakpoints...", "", ShowBreakpointsDialog, Key.Empty),
             new Line(),
-            new MenuItem("Add _Watch...", "", ShowAddWatchDialog, Key.Empty),
+            new MenuItem("Add W_atch...", "", ShowAddWatchDialog, Key.Empty),
             new MenuItem("C_lear Watches", "", ClearWatches, Key.Empty),
         });
 
@@ -1373,8 +1376,8 @@ public sealed class AppShell : Window
         editMenuItems.AddAt(2, new MenuItem("Go To _Definition", "", GoToDefinition, GoToDefinitionKey));
         editMenuItems.AddAt(3, new MenuItem("Find All _References", "", FindAllReferences, FindReferencesKey));
         editMenuItems.AddAt(4, new MenuItem("Re_name Symbol...", "", RenameSymbol, RenameSymbolKey));
-        editMenuItems.AddAt(5, new MenuItem("Navigate _Backward", "", NavigateBackward, NavigateBackwardKey));
-        editMenuItems.AddAt(6, new MenuItem("Navigate For_ward", "", NavigateForward, NavigateForwardKey));
+        editMenuItems.AddAt(5, WithKeyText(new MenuItem("Navigate _Backward", "", NavigateBackward, NavigateBackwardKey), "Alt+Left"));
+        editMenuItems.AddAt(6, WithKeyText(new MenuItem("Navigate For_ward", "", NavigateForward, NavigateForwardKey), "Alt+Right"));
         var viewMenuItems = menuBar.ViewMenu.PopoverMenu!.Root!;
         viewMenuItems.AddAt(0, new MenuItem("_Solution Explorer", "", ShowSolutionExplorer, SolutionExplorerKey));
         viewMenuItems.AddAt(1, new MenuItem("_Output", "", ShowOutputTab, Key.Empty));
@@ -1427,6 +1430,14 @@ public sealed class AppShell : Window
     private static readonly Key WatchKey = Key.W.WithCtrl.WithAlt;
     private static readonly Key MemoryKey = Key.M.WithCtrl.WithAlt;
     private static readonly Key DisassemblyKey = Key.D.WithCtrl.WithAlt;
+
+    /// <summary>Shows <paramref name="text"/> as the item's key: Terminal.Gui spells arrow keys
+    /// "CursorLeft", where Visual Studio's menus say "Left".</summary>
+    private static MenuItem WithKeyText(MenuItem item, string text)
+    {
+        item.KeyView.Text = text;
+        return item;
+    }
 
     private List<MenuItem> BuildDebugWindowsMenuItems() =>
     [

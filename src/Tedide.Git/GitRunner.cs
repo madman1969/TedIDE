@@ -105,9 +105,17 @@ internal static class GitRunner
         {
             var output = process.StandardOutput.ReadToEndAsync(cancellationToken);
             var error = process.StandardError.ReadToEndAsync(cancellationToken);
-            if (standardInput is not null)
-                await process.StandardInput.WriteAsync(standardInput.AsMemory(), cancellationToken);
-            process.StandardInput.Close();
+            try
+            {
+                if (standardInput is not null)
+                    await process.StandardInput.WriteAsync(standardInput.AsMemory(), cancellationToken);
+                process.StandardInput.Close();
+            }
+            catch (IOException)
+            {
+                // git stopped reading - it failed before it needed the input (blaming a file that
+                // isn't in HEAD, say). Its exit code and message say why; the broken pipe doesn't.
+            }
             try
             {
                 await process.WaitForExitAsync(cancellationToken);
