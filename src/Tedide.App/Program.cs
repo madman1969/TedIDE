@@ -20,9 +20,13 @@ AppDomain.CurrentDomain.UnhandledException += (_, e) =>
     Log.CloseAndFlush();
 };
 
-Log.Information("Tedide starting up");
+Log.Information("Tedide starting up, {Elapsed}ms after the process started",
+    (long)(DateTime.Now - System.Diagnostics.Process.GetCurrentProcess().StartTime).TotalMilliseconds);
+var startup = System.Diagnostics.Stopwatch.StartNew();
+void Mark(string step) => Log.Debug("Startup: {Step} at {Elapsed}ms", step, startup.ElapsedMilliseconds);
 
 Application.Init();
+Mark("Init");
 TerminalColors.UseTrueColorInWindowsTerminal(Application.Driver);
 // Awaits started on the UI thread come back to it - see UiSynchronizationContext.
 UiSynchronizationContext.Install();
@@ -33,10 +37,19 @@ try
     Cc65LinkerMapHighlighting.Register();
     Cc65LabelsHighlighting.Register();
     Cc65CfgHighlighting.Register();
+    Mark("Highlighting registered");
     // Theme still applies if it can't be saved; it just isn't remembered - see ThemeSwitcher.SaveFailed.
     ThemeSwitcher.SaveFailed += ex => Log.Error(ex, "Could not save the theme setting");
     ThemeSwitcher.Apply(ThemeSettings.Load().Theme, persist: false);
+    Mark("Theme applied");
     var shell = new AppShell();
+    Mark("AppShell built");
+    shell.DrawComplete += FirstDraw;
+    void FirstDraw(object? sender, Terminal.Gui.ViewBase.DrawEventArgs e)
+    {
+        shell.DrawComplete -= FirstDraw;
+        Mark("First draw");
+    }
     Application.Run(shell);
     shell.SaveLayoutSettings();
     shell.SaveSessionState();

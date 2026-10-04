@@ -21,9 +21,21 @@
       "group": "build"
     },
     {
+      "label": "build Tedide.App",
+      "type": "process",
+      "command": "dotnet",
+      "args": ["build", "${workspaceFolder}/src/Tedide.App/Tedide.App.csproj", "--no-restore"],
+      "problemMatcher": "$msCompile",
+      "presentation": {
+        "reveal": "silent",
+        "panel": "shared"
+      }
+    },
+    {
       "label": "run Tedide.App",
       "type": "shell",
-      "command": "wt.exe -w new dotnet run --project \"${workspaceFolder}\\src\\Tedide.App\\Tedide.App.csproj\"",
+      "dependsOn": "build Tedide.App",
+      "command": "wt.exe -w new -d \"${workspaceFolder}\" \"${workspaceFolder}\\src\\Tedide.App\\bin\\Debug\\net10.0\\Tedide.App.exe\"",
       "options": {
         "shell": {
           "executable": "cmd.exe",
