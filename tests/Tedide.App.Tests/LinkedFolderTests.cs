@@ -59,11 +59,11 @@ public sealed class LinkedFolderTests : IDisposable
         explorer.Rebuild(_workspace);
 
         var projects = Assert.Single(explorer.Objects!).Children.ToList();
-        var libA = projects.Single(p => p.Text.StartsWith("LibA"));
+        var libA = projects.Single(p => p.Tag == Project("LibA"));
         Assert.Equal([Path.Combine("..", "include"), Path.Combine("..", "src")], libA.Children.Select(c => c.Text));
         Assert.Equal("shared.c", Assert.Single(libA.Children[1].Children).Text);
         Assert.Equal(SharedC, libA.Children[1].Children[0].Tag);
-        var app = projects.Single(p => p.Text.StartsWith("App"));
+        var app = projects.Single(p => p.Tag == Project("App"));
         Assert.Equal("main.c", Assert.Single(Assert.Single(app.Children).Children).Text);
     }
 

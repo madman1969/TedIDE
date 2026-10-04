@@ -231,13 +231,49 @@ public sealed class SolutionExplorerTree : TreeView
     /// </summary>
     internal static Scheme FolderScheme(Scheme treeScheme) => TreeNodeSchemes.Emphasised(treeScheme);
 
-    /// <summary><paramref name="treeScheme"/> in bold, selected or not - the startup project.</summary>
-    internal static Scheme StartupScheme(Scheme treeScheme) => new(treeScheme)
+    /// <summary>What the startup project's name starts with: what Run starts. The surest of its
+    /// three marks - bold doesn't show in every theme and font, and colour alone is easy to miss.</summary>
+    internal const string StartupMarker = "▶ ";
+
+    /// <summary>
+    /// The startup project: bold, selected or not, and when not selected in a colour of the
+    /// theme's own that differs from both the files' and the folders' (see <see cref="StartupColor"/>)
+    /// - or, in a theme with no such colour, underlined.
+    /// </summary>
+    internal static Scheme StartupScheme(Scheme treeScheme)
     {
-        Normal = treeScheme.Normal with { Style = treeScheme.Normal.Style | Terminal.Gui.Drawing.TextStyle.Bold },
-        Focus = treeScheme.Focus with { Style = treeScheme.Focus.Style | Terminal.Gui.Drawing.TextStyle.Bold },
-        Active = treeScheme.Active with { Style = treeScheme.Active.Style | Terminal.Gui.Drawing.TextStyle.Bold },
-    };
+        var (color, distinct) = StartupColor(treeScheme);
+        var style = treeScheme.Normal.Style | Terminal.Gui.Drawing.TextStyle.Bold
+            | (distinct ? Terminal.Gui.Drawing.TextStyle.None : Terminal.Gui.Drawing.TextStyle.Underline);
+        return new Scheme(treeScheme)
+        {
+            Normal = new Terminal.Gui.Drawing.Attribute(color, treeScheme.Normal.Background, style),
+            Focus = treeScheme.Focus with { Style = treeScheme.Focus.Style | Terminal.Gui.Drawing.TextStyle.Bold },
+            Active = treeScheme.Active with { Style = treeScheme.Active.Style | Terminal.Gui.Drawing.TextStyle.Bold },
+        };
+    }
+
+    /// <summary>
+    /// The first of the theme's keyword, function, string, number and constant colours that, made
+    /// readable on its background, still differs from file and folder text - the keyword colour in
+    /// most themes. A single-hue theme like Amber Phosphor has none (Distinct false): its keyword
+    /// colour is used anyway.
+    /// </summary>
+    private static (Color Color, bool Distinct) StartupColor(Scheme treeScheme)
+    {
+        var background = treeScheme.Normal.Background;
+        var folder = FolderScheme(treeScheme).Normal.Foreground;
+        Color[] candidates =
+        [
+            treeScheme.CodeKeyword.Foreground, treeScheme.CodeFunctionName.Foreground, treeScheme.CodeString.Foreground,
+            treeScheme.CodeNumber.Foreground, treeScheme.CodeConstant.Foreground,
+        ];
+        var readable = candidates.Select(c => ThemeSwitcher.Readable(c, background)).ToList();
+        foreach (var color in readable)
+            if (!ThemeSwitcher.Indistinguishable(color, treeScheme.Normal.Foreground) && !ThemeSwitcher.Indistinguishable(color, folder))
+                return (color, true);
+        return (readable[0], false);
+    }
 
     private bool _hasSolution;
 
@@ -306,7 +342,8 @@ public sealed class SolutionExplorerTree : TreeView
         foreach (var project in workspace.Projects)
         {
             var kind = project.IsLibrary ? ", library" : "";
-            var projectNode = new TreeNode { Text = $"{project.Name} ({project.Target.ToCl65Id()}{kind})", Tag = project };
+            var marker = project == _startupProject ? StartupMarker : "";
+            var projectNode = new TreeNode { Text = $"{marker}{project.Name} ({project.Target.ToCl65Id()}{kind})", Tag = project };
 
             // Show every source/header file in the project directory tree, not just the ones
             // passed to cl65 (SourceFiles) - headers are included via #include, never compiled

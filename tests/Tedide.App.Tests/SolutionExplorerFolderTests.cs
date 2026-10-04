@@ -34,6 +34,39 @@ public sealed class SolutionExplorerFolderTests : IDisposable
         Assert.True(ThemeSwitcher.ContrastRatio(folder.Normal.Foreground, folder.Normal.Background) >= ThemeSwitcher.TextContrast);
     }
 
+    [Theory]
+    [MemberData(nameof(AllThemes))]
+    public void StartupScheme_StandsOutFromFilesAndFolders_AndStaysReadable(AppTheme theme)
+    {
+        var tree = ThemeSwitcher.SchemesFor(theme)["Base"];
+        var startup = SolutionExplorerTree.StartupScheme(tree).Normal;
+
+        // A colour of its own, or - in a single-hue theme - an underline.
+        var ownColour = !ThemeSwitcher.Indistinguishable(startup.Foreground, tree.Normal.Foreground)
+            && !ThemeSwitcher.Indistinguishable(startup.Foreground, SolutionExplorerTree.FolderScheme(tree).Normal.Foreground);
+        Assert.True(ownColour != startup.Style.HasFlag(Terminal.Gui.Drawing.TextStyle.Underline), $"{theme}: {startup}");
+        Assert.True(ThemeSwitcher.ContrastRatio(startup.Foreground, startup.Background) >= ThemeSwitcher.TextContrast);
+        Assert.True(startup.Style.HasFlag(Terminal.Gui.Drawing.TextStyle.Bold));
+        if (theme != AppTheme.AmberPhosphor)
+            Assert.True(ownColour, $"{theme} has colours enough");
+    }
+
+    [Fact]
+    public void OnlyTheStartupProject_IsMarked()
+    {
+        var workspace = new Workspace();
+        var game = workspace.NewProject(Path.Combine(_directory, "Game"), "Game", Cc65Target.C64);
+        var tool = workspace.AddNewProject(Path.Combine(_directory, "Tool"), "Tool", Cc65Target.C64, ProjectOutputType.Application);
+        var explorer = new SolutionExplorerTree();
+
+        explorer.Rebuild(workspace);
+        Assert.Equal(["\u25B6 Game (c64)", "Tool (c64)"], Assert.Single(explorer.Objects!).Children.Select(p => p.Text));
+
+        workspace.SetStartupProject(tool);
+        explorer.Rebuild(workspace);
+        Assert.Equal(["Game (c64)", "\u25B6 Tool (c64)"], Assert.Single(explorer.Objects!).Children.Select(p => p.Text));
+    }
+
     [Fact]
     public void FolderScheme_LeavesTheSelectedRowLookAlone()
     {

@@ -258,7 +258,7 @@ public static class ThemeSwitcher
     /// Solarized's accent blue on its gray text is close in RGB yet obviously a different color
     /// (ΔE about 38), while Amber Phosphor's light amber on amber really is hard to see (about 19).
     /// </summary>
-    internal static bool Indistinguishable(Color a, Color b) => DeltaE(a, b) < 20;
+    public static bool Indistinguishable(Color a, Color b) => DeltaE(a, b) < 20;
 
     /// <summary>sRGB to CIELAB (D65 white point).</summary>
     private static (double L, double A, double B) ToLab(Color c)
