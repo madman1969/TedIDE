@@ -28,7 +28,7 @@ namespace Tedide.App;
 /// bar's row/column indicator come wired to the editor already; the default File menu is replaced
 /// with our own project-aware one (New/Open Project instead of a single-file New/Open).
 /// </summary>
-public sealed class AppShell : Window, IDebugSessionHost
+public sealed class AppShell : Window, IDebugSessionHost, IShell
 {
     private readonly Workspace _workspace = new();
 
@@ -37,32 +37,15 @@ public sealed class AppShell : Window, IDebugSessionHost
     private readonly GitChangesView _gitView = new();
     private View _gitTab = null!;
 
-    /// <summary>Who last changed the caret's line - see <see cref="BlameCaretLineAsync"/>.</summary>
-    private string? _blameText;
-    private int _blameGeneration;
-    private CancellationTokenSource? _blameCancellation;
 
-    /// <summary>Set while a fetch, pull or push runs - one at a time; the Git tab's Cancel cancels it.</summary>
-    private CancellationTokenSource? _syncCancellation;
 
-    /// <summary>Git's change bars in the editor's gutter - see <see cref="RequestLineMarkers"/>.</summary>
-    private readonly GitLineMarkers _gitLineMarkers;
-    private int _lineMarkersGeneration;
-    private CancellationTokenSource? _lineMarkersCancellation;
-    /// <summary>The file the bars are for, and the git state they were worked out against - a git
-    /// refresh only recomputes them when that changes.</summary>
-    private string? _lineMarkersPath, _lineMarkersGitState;
-    private readonly Cc65Toolchain _toolchain = new();
-    /// <summary>Non-null only while a build is running - see <see cref="BuildActiveProjectAsync"/>
-    /// and <see cref="CancelBuild"/>.</summary>
-    private volatile CancellationTokenSource? _buildCancellation;
     // Not inline-initialized (unlike its siblings below) - its BinDirectory depends on
     // ToolchainSettings, applied in the constructor via ApplyToolchainSettings (also reapplied
     // after every ProjectSettingsDialog save - see ShowProjectSettings).
     private readonly ViceEmulator _vice = new();
     private readonly RecentProjectsSettings _recentProjects = RecentProjectsSettings.Load();
 
-    /// <summary>Navigate Backward/Forward (Alt+Left/Alt+Right) - see <see cref="RecordJump"/>.</summary>
+    /// <summary>Navigate Backward/Forward (Alt+Left/Alt+Right) - see <see cref="NavigationCommands.RecordJump"/>.</summary>
     private readonly NavigationHistory _navigationHistory = new();
     private readonly LayoutSettings _layoutSettings = LayoutSettings.Load();
 
@@ -85,6 +68,12 @@ public sealed class AppShell : Window, IDebugSessionHost
     private SessionStateFile _sessionState = new();
     /// <summary>Breakpoints and the VICE debug session - see <see cref="DebugSession"/>.</summary>
     private readonly DebugSession _debug;
+    /// <summary>Find, Go To, references, rename and Navigate Backward/Forward - see <see cref="NavigationCommands"/>.</summary>
+    private readonly NavigationCommands _navigation;
+    /// <summary>Build, Run and Clean - see <see cref="BuildCommands"/>.</summary>
+    private readonly BuildCommands _build;
+    /// <summary>The Git tab, blame, change bars, Compare and Blame - see <see cref="GitIntegration"/>.</summary>
+    private readonly GitIntegration _gitIntegration;
     private Tabs _outputTabs = null!;
     private View _outputTab = null!;
     private View _debugTab = null!;
@@ -103,6 +92,9 @@ public sealed class AppShell : Window, IDebugSessionHost
         HotKeySpecifier = new System.Text.Rune(0xFFFF);
         Title = AppTitle;
         _debug = new DebugSession(this, _workspace, _editorPane, _debugPanel, _disassemblyView, _memoryView, _breakpointLineTransformer);
+        _navigation = new NavigationCommands(this, _workspace, _editorPane, _navigationHistory, _referencesView);
+        _build = new BuildCommands(this, _workspace, _navigation, _vice, _outputView, _errorListView, _solutionExplorer, _symbolPanel);
+        _gitIntegration = new GitIntegration(this, _workspace, _editorPane, _editorFrame, _solutionExplorer, _navigation, _git, _gitView);
         Width = Dim.Fill();
         Height = Dim.Fill();
 
@@ -143,11 +135,11 @@ public sealed class AppShell : Window, IDebugSessionHost
         _solutionExplorer.DeleteFileRequested += DeleteFile;
         _solutionExplorer.AddNewProjectRequested += AddNewProject;
         _solutionExplorer.AddExistingProjectRequested += AddExistingProject;
-        _solutionExplorer.BuildSolutionRequested += () => Fire(BuildSolutionAsync());
-        _solutionExplorer.CleanSolutionRequested += CleanSolution;
+        _solutionExplorer.BuildSolutionRequested += () => Fire(_build.BuildSolutionAsync());
+        _solutionExplorer.CleanSolutionRequested += _build.CleanSolution;
         _solutionExplorer.SetStartupProjectRequested += SetStartupProject;
-        _solutionExplorer.BuildProjectRequested += project => Fire(BuildProjectsAsync([project]));
-        _solutionExplorer.CleanProjectRequested += project => CleanProjects([project]);
+        _solutionExplorer.BuildProjectRequested += project => Fire(_build.BuildProjectsAsync([project]));
+        _solutionExplorer.CleanProjectRequested += project => _build.CleanProjects([project]);
         _solutionExplorer.ProjectSettingsRequested += ShowProjectSettings;
         _solutionExplorer.RemoveProjectRequested += RemoveProject;
         _solutionExplorer.DeleteProjectRequested += DeleteProject;
@@ -180,20 +172,20 @@ public sealed class AppShell : Window, IDebugSessionHost
             Arrangement = ViewArrangement.LeftResizable | ViewArrangement.BottomResizable,
             CanFocus = true,
         };
-        _editorPane.FindInFilesRequested += ShowFindInFiles;
-        _editorPane.GoToDefinitionRequested += GoToDefinition;
-        _editorPane.FindReferencesRequested += FindAllReferences;
-        _editorPane.RenameSymbolRequested += RenameSymbol;
-        _editorPane.CompareWithHeadRequested += CompareActiveWithHead;
+        _editorPane.FindInFilesRequested += _navigation.ShowFindInFiles;
+        _editorPane.GoToDefinitionRequested += _navigation.GoToDefinition;
+        _editorPane.FindReferencesRequested += _navigation.FindAllReferences;
+        _editorPane.RenameSymbolRequested += _navigation.RenameSymbol;
+        _editorPane.CompareWithHeadRequested += _gitIntegration.CompareActiveWithHead;
         _editorPane.FileHistoryRequested += () =>
         {
             if (_editorPane.OpenPath is { } path)
-                Fire(ShowHistoryAsync(path));
+                Fire(_gitIntegration.ShowHistoryAsync(path));
         };
         _editorPane.BlameRequested += () =>
         {
             if (_editorPane.OpenPath is { } path)
-                Fire(ShowBlameAsync(path));
+                Fire(_gitIntegration.ShowBlameAsync(path));
         };
         _editorPane.ActiveDocumentChanged += OnActiveDocumentChanged;
         _editorPane.CloseRequested += path => CloseFile(path);
@@ -253,7 +245,7 @@ public sealed class AppShell : Window, IDebugSessionHost
         var errorListTab = new View { Title = " _Error List ", Width = Dim.Fill(), Height = Dim.Fill() };
         _errorListView.Width = Dim.Fill();
         _errorListView.Height = Dim.Fill();
-        _errorListView.DiagnosticActivated += OpenDiagnostic;
+        _errorListView.DiagnosticActivated += _navigation.OpenDiagnostic;
         errorListTab.Add(_errorListView);
 
         var symbolsTab = new View { Title = " _Symbols ", Width = Dim.Fill(), Height = Dim.Fill() };
@@ -261,15 +253,15 @@ public sealed class AppShell : Window, IDebugSessionHost
         _symbolPanel.Height = Dim.Fill();
         _symbolPanel.LineActivated += entry =>
         {
-            RecordJump();
-            OpenSymbol(entry);
+            _navigation.RecordJump();
+            _navigation.OpenSymbol(entry);
         };
         symbolsTab.Add(_symbolPanel);
 
         _referencesTab = new View { Title = " _References ", Width = Dim.Fill(), Height = Dim.Fill() };
         _referencesView.Width = Dim.Fill();
         _referencesView.Height = Dim.Fill();
-        _referencesView.ReferenceActivated += reference => NavigateTo(reference.FilePath, reference.Line, reference.Column, reference.Length);
+        _referencesView.ReferenceActivated += reference => _navigation.NavigateTo(reference.FilePath, reference.Line, reference.Column, reference.Length);
         _referencesTab.Add(_referencesView);
 
         _debugTab = new View { Title = " _Debug ", Width = Dim.Fill(), Height = Dim.Fill() };
@@ -305,34 +297,14 @@ public sealed class AppShell : Window, IDebugSessionHost
         _gitTab = new View { Title = " _Git ", Width = Dim.Fill(), Height = Dim.Fill() };
         _gitView.Width = Dim.Fill();
         _gitView.Height = Dim.Fill();
-        _gitView.StageRequested += StageFiles;
-        _gitView.UnstageRequested += UnstageFiles;
-        _gitView.DiscardRequested += DiscardFile;
-        _gitView.OpenRequested += OpenFile;
-        _gitView.CompareRequested += file => Fire(CompareWithHeadAsync(file.Path, file.OriginalPath));
-        _gitView.BlameRequested += file => Fire(ShowBlameAsync(file.Path));
-        _gitView.CommitRequested += Commit;
-        _gitView.RefreshRequested += () => _git.RequestRefresh();
-        _gitView.FetchRequested += FetchFromRemote;
-        _gitView.BranchesRequested += () => Fire(ShowBranchesAsync());
-        _gitView.AmendToggled += amending => Fire(LoadAmendMessageAsync(amending));
-        _gitView.StashesRequested += () => Fire(ShowStashesAsync());
-        _gitView.HistoryRequested += () => Fire(ShowHistoryAsync(null));
-        _gitView.FileHistoryRequested += file => Fire(ShowHistoryAsync(file.Path));
-        _gitView.ConflictRequested += ResolveConflict;
-        _gitView.ContinueRequested += ContinueOperation;
-        _gitView.AbortRequested += AbortOperation;
-        _gitView.PullRequested += PullFromRemote;
-        _gitView.PushRequested += () => Fire(PushToRemoteAsync());
-        _gitView.CancelRequested += () => _syncCancellation?.Cancel();
         _gitTab.Add(_gitView);
         _outputTabs.Add(_gitTab);
 
-        _debugPanel.FrameActivated += frame => OpenSymbol((frame.FilePath!, frame.Line));
+        _debugPanel.FrameActivated += frame => _navigation.OpenSymbol((frame.FilePath!, frame.Line));
         _debugPanel.BreakpointActivated += breakpoint =>
         {
             if (_workspace.ActiveProject is { } project)
-                OpenSymbol((Path.Combine(project.Directory, breakpoint.SourceFile), breakpoint.Line));
+                _navigation.OpenSymbol((Path.Combine(project.Directory, breakpoint.SourceFile), breakpoint.Line));
         };
 
         // Breakpoint highlighting registered before the current-debug-line one, so the latter's
@@ -343,838 +315,14 @@ public sealed class AppShell : Window, IDebugSessionHost
         // doc comment for why LineTransformers (not BackgroundRenderers) is the right extension
         // point for this.
         _editorPane.Editor.LineTransformers.Add(_debugLineTransformer);
-        _gitLineMarkers = new GitLineMarkers(_editorPane.Editor);
-        _editorPane.Editor.BackgroundRenderers.Add(_gitLineMarkers);
 
         Add([_menuBar, explorerFrame, _editorFrame, _outputTabs, _statusBar]);
 
-        _git.Changed += OnGitChanged;
         _workspace.Changed += () => _git.ProjectsChanged();
         _solutionExplorer.Rebuilt += () => _git.RequestRefresh();
-        _editorPane.Editor.CaretChanged += (_, _) => RequestBlame();
-        _editorPane.Editor.ContentChanged += (_, _) => RequestLineMarkers();
         _git.Start();
     }
 
-    /// <summary>New git status: the Solution Explorer's markers, the Git tab, the branch and blame.</summary>
-    private void OnGitChanged()
-    {
-        _solutionExplorer.SetGitStatus(_git.Files);
-        _gitView.SetStatus(_git.Primary, _git.PrimaryStatus);
-        UpdateGitAnnotation();
-        RequestBlame();
-        if (LineMarkersGitState() != _lineMarkersGitState)
-            RequestLineMarkers();
-    }
-
-    /// <summary>
-    /// "main ↑2 · Ln 12: aross, 3 days ago: Add tabs" at the right of the editor's tab row - the
-    /// branch, then who last changed the caret's line. Empty outside a repository. Not the status
-    /// bar: it's full at ordinary window widths, leaving the text cut to "main ·" (confirmed live).
-    /// </summary>
-    private void UpdateGitAnnotation() =>
-        _editorPane.Annotation = _git.PrimaryStatus is not { } status ? ""
-            : _blameText is { } blame ? $"{status.Describe()}  ·  {blame}"
-            : status.Describe();
-
-    /// <summary>Blames the caret's line soon - a burst of caret moves (typing, holding an arrow
-    /// key) runs one <c>git blame</c>, once they pause.</summary>
-    private void RequestBlame()
-    {
-        var generation = ++_blameGeneration;
-        Application.AddTimeout(TimeSpan.FromMilliseconds(400), () =>
-        {
-            if (generation == _blameGeneration)
-                Fire(BlameCaretLineAsync(generation));
-            return false;
-        });
-    }
-
-    /// <summary>Phase 5a of git support: who last changed the caret's line, blamed against the
-    /// editor's own text so unsaved edits read as "Not committed yet". Nothing for a file outside a
-    /// repository or one git doesn't track.</summary>
-    private async Task BlameCaretLineAsync(int generation)
-    {
-        _blameCancellation?.Cancel();
-        if (_editorPane.OpenPath is not { } path || _git.RepositoryFor(path) is not { } repository
-            || _git.Files.TryGetValue(path, out var file) && file.IsUntracked)
-        {
-            _blameText = null;
-            UpdateGitAnnotation();
-            return;
-        }
-
-        // Read here, on the UI thread - the document belongs to it.
-        var line = _editorPane.CaretPosition.Line;
-        var text = _editorPane.Editor.Text;
-        var cancellation = new CancellationTokenSource();
-        _blameCancellation = cancellation;
-        GitBlameLine? blame;
-        try
-        {
-            blame = await repository.BlameLineAsync(path, line, text, cancellation.Token);
-        }
-        catch (OperationCanceledException)
-        {
-            return;
-        }
-
-        OnUiThread(() =>
-        {
-            if (generation != _blameGeneration)
-                return;
-            _blameText = blame is null ? null : $"Ln {line}: {blame.Describe(DateTimeOffset.Now)}";
-            UpdateGitAnnotation();
-        });
-    }
-
-    /// <summary>What the shown file's change bars depend on besides its text: HEAD, and the file's
-    /// own git status (a commit, a discard or a checkout changes one of them).</summary>
-    private string LineMarkersGitState() =>
-        _editorPane.OpenPath is { } path
-            ? $"{_git.PrimaryStatus?.Head}|{_git.Files.GetValueOrDefault(path)}|{_git.RepositoryFor(path)?.Root}"
-            : "";
-
-    /// <summary>Works out the change bars soon - a burst of edits runs one diff, once they pause.</summary>
-    private void RequestLineMarkers()
-    {
-        var generation = ++_lineMarkersGeneration;
-        Application.AddTimeout(TimeSpan.FromMilliseconds(400), () =>
-        {
-            if (generation == _lineMarkersGeneration)
-                Fire(UpdateLineMarkersAsync(generation));
-            return false;
-        });
-    }
-
-    /// <summary>
-    /// Git phase 2: diffs the shown file's text - unsaved edits included - against HEAD and shows
-    /// the result as bars in the gutter (see <see cref="GitLineMarkers"/>). None for a file outside
-    /// a repository or one git doesn't track yet, as in VS Code.
-    /// </summary>
-    private async Task UpdateLineMarkersAsync(int generation)
-    {
-        _lineMarkersCancellation?.Cancel();
-        var path = _editorPane.OpenPath;
-        _lineMarkersPath = path;
-        _lineMarkersGitState = LineMarkersGitState();
-        var file = path is null ? null : _git.Files.GetValueOrDefault(path);
-        if (path is null || _git.RepositoryFor(path) is not { } repository || file is { IsUntracked: true })
-        {
-            _gitLineMarkers.Changes = new Dictionary<int, LineChangeKind>();
-            return;
-        }
-
-        // Read here, on the UI thread - the document belongs to it.
-        var text = _editorPane.Editor.Text;
-        var lineCount = _editorPane.Editor.Document!.LineCount;
-        var cancellation = new CancellationTokenSource();
-        _lineMarkersCancellation = cancellation;
-        GitDiff diff;
-        try
-        {
-            // A file git reports nothing about and HEAD doesn't have is ignored - a listing or a
-            // linker map - so it gets no bars rather than every line marked as added.
-            diff = await repository.DiffWithHeadAsync(path, text, file?.OriginalPath, contextLines: 0, cancellation.Token,
-                emptyIfNotInHead: file is null);
-        }
-        catch (OperationCanceledException)
-        {
-            return;
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            // Never worth an error dialog: the bars just stay as they were.
-            Log.Warning(ex, "Working out git change markers for {Path} failed", path);
-            return;
-        }
-
-        OnUiThread(() =>
-        {
-            if (generation == _lineMarkersGeneration && _editorPane.IsShown(path))
-                _gitLineMarkers.Changes = diff.LineChanges(lineCount);
-        });
-    }
-
-    /// <summary>
-    /// Runs a git operation on the solution's repository in the background, then refreshes. A
-    /// failure is shown in git's own words. <paramref name="after"/> runs on the UI thread when it
-    /// worked, <paramref name="afterAnyway"/> whether or not - for operations that change files
-    /// even when they fail (a rebase stopping on new conflicts).
-    /// </summary>
-    private async Task RunGitAsync(string what, Func<GitRepository, Task<GitResult>> operation, Action? after = null,
-        Action? afterAnyway = null)
-    {
-        if (_git.Primary is not { } repository)
-            return;
-        GitResult result;
-        try
-        {
-            result = await operation(repository);
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            result = new GitResult(1, "", ex.Message);
-        }
-        OnUiThread(() =>
-        {
-            afterAnyway?.Invoke();
-            if (result.Succeeded)
-                after?.Invoke();
-            else
-                TedideMessageBox.ErrorQuery($"{what} Failed", RenameSymbolDialog.Wrap(result.Explanation), ["OK"]);
-            _git.RequestRefresh();
-        });
-    }
-
-    /// <summary>
-    /// Before staging or committing: saves the open files with unsaved edits, so what git takes is
-    /// what's on screen. Not <see cref="SaveAll"/> - that also rewrites the .tproj/.tsln files,
-    /// which then showed up as changed themselves (confirmed live).
-    /// </summary>
-    private bool SaveOpenFiles() => _editorPane.ModifiedPaths.All(SaveFile);
-
-    /// <summary>Git tab > Space or Stage All.</summary>
-    private void StageFiles(IReadOnlyList<GitFileStatus> files)
-    {
-        if (files.Count == 0 || !SaveOpenFiles())
-            return;
-        Fire(RunGitAsync("Staging", repository => repository.StageAsync(files.Select(f => f.Path))));
-    }
-
-    /// <summary>Git tab > Space on a staged file, or Unstage All. The files themselves don't change.</summary>
-    private void UnstageFiles(IReadOnlyList<GitFileStatus> files)
-    {
-        if (files.Count == 0)
-            return;
-        var hasCommits = _git.PrimaryStatus?.HasCommits ?? true;
-        Fire(RunGitAsync("Unstaging", repository => repository.UnstageAsync(files.Select(f => f.Path), hasCommits)));
-    }
-
-    /// <summary>
-    /// Git tab > Delete: throws away a file's unstaged changes after asking - a file git doesn't
-    /// track yet is deleted. An open tab follows: reloaded from disk, or closed for a deleted file,
-    /// its unsaved edits going too (the question says so).
-    /// </summary>
-    private void DiscardFile(GitFileStatus file)
-    {
-        var name = Path.GetFileName(file.Path);
-        var unsaved = _editorPane.IsModifiedFile(file.Path) ? " Its unsaved edits in the editor go too." : "";
-        var question = file.IsUntracked
-            ? $"Delete {name}? git doesn't track it, so this can't be undone.{unsaved}"
-            : $"Discard the changes to {name}? This can't be undone.{unsaved}";
-        if (TedideMessageBox.Query("Discard Changes", RenameSymbolDialog.Wrap(question), ["Discard", "Cancel"]) != 0)
-            return;
-        Fire(RunGitAsync("Discarding", repository => repository.DiscardAsync([file]), () =>
-        {
-            if (file.IsUntracked)
-                _editorPane.Close(file.Path);
-            else
-                Guard($"Reloading {name}", () => _editorPane.Reload(file.Path));
-        }));
-    }
-
-    /// <summary>Git tab > Commit Staged / Commit All. Saves open files first (see <see cref="SaveOpenFiles"/>),
-    /// then reports the new commit in Output.</summary>
-    private void Commit(string message, bool stageAll, bool amend)
-    {
-        if (amend)
-        {
-            if (_git.PrimaryStatus is { HasCommits: false })
-            {
-                TedideMessageBox.ErrorQuery("Amend", "There's no commit yet to amend.", ["OK"]);
-                return;
-            }
-            // The last commit is already on the remote when the branch isn't ahead of it.
-            if (_git.PrimaryStatus is { Upstream: { } upstream, Ahead: 0 } && TedideMessageBox.Query("Amend Pushed Commit",
-                    RenameSymbolDialog.Wrap($"The last commit is already pushed to {upstream}. Amending replaces it, so the next push will be rejected - " +
-                        "it would need a force push, which Tedide never does. Amend anyway?"), ["Amend", "Cancel"]) != 0)
-                return;
-        }
-        else if (string.IsNullOrWhiteSpace(message))
-        {
-            TedideMessageBox.ErrorQuery("Commit", "Write a commit message first.", ["OK"]);
-            return;
-        }
-        if (!SaveOpenFiles())
-            return;
-        string? head = null;
-        Fire(RunGitAsync(amend ? "Amend" : "Commit", async repository =>
-        {
-            var result = await repository.CommitAsync(message.Trim(), stageAll, amend);
-            if (result.Succeeded)
-                head = await repository.DescribeHeadAsync();
-            return result;
-        }, () =>
-        {
-            _gitView.ClearMessage();
-            AppendOutputLine($"{(amend ? "Amended" : "Committed")} {head}");
-        }));
-    }
-
-    /// <summary>The message Amend last commit loaded into the commit box, to recognise it unedited.</summary>
-    private string? _amendMessage;
-
-    /// <summary>
-    /// Amend last commit ticked: an empty commit box gets the last commit's message to edit.
-    /// Cleared: that message goes again, unless it's been edited.
-    /// </summary>
-    private async Task LoadAmendMessageAsync(bool amending)
-    {
-        if (!amending)
-        {
-            if (_amendMessage is not null && _gitView.Message == _amendMessage)
-                _gitView.Message = "";
-            _amendMessage = null;
-            return;
-        }
-        if (_gitView.Message.Trim().Length > 0 || _git.Primary is not { } repository)
-            return;
-        var message = await repository.GetLastCommitMessageAsync();
-        OnUiThread(() =>
-        {
-            if (message is null || !_gitView.IsAmending || _gitView.Message.Trim().Length > 0)
-                return;
-            _gitView.Message = message;
-            _amendMessage = message;
-        });
-    }
-
-    /// <summary>
-    /// Git tab > Stashes: <see cref="StashesDialog"/>, then stash every change away, or pop, apply
-    /// or drop a stash. Open files are saved first so git takes what's on screen, and the editor
-    /// follows the files afterwards - even when a pop stops on conflicts, which keeps the stash.
-    /// Dropping reopens the list.
-    /// </summary>
-    private async Task ShowStashesAsync()
-    {
-        if (_syncCancellation is not null || _git.Primary is not { } repository)
-            return;
-        var stashes = await repository.GetStashesAsync();
-        OnUiThread(() =>
-        {
-            var changes = _git.Files.Values.Count(f => repository.Contains(f.Path)) + _editorPane.ModifiedPaths.Count(p => !_git.Files.ContainsKey(p));
-            var dialog = new StashesDialog(stashes, changes);
-            Application.Run(dialog);
-            if (dialog.Choice is not { } choice)
-                return;
-            if (choice.Action == StashAction.Drop)
-            {
-                var stash = choice.Stash!;
-                if (TedideMessageBox.Query("Drop Stash", RenameSymbolDialog.Wrap($"Delete {stash.Name} ({stash.Description})? Its changes are lost - this can't be undone."),
-                        ["Drop", "Cancel"]) == 0)
-                    Fire(RunGitAsync("Dropping the Stash", r => r.DropStashAsync(stash), () =>
-                    {
-                        AppendOutputLine($"git: Dropped {stash.Name}.");
-                        Fire(ShowStashesAsync());
-                    }));
-                return;
-            }
-            if (!SaveOpenFiles())
-                return;
-            var projectFiles = ProjectFileContents();
-            var (what, operation) = choice.Action switch
-            {
-                StashAction.Stash => ("Stashing", (Func<GitRepository, Task<GitResult>>)(r => r.StashAsync(choice.Message))),
-                StashAction.Pop => ("Popping the Stash", r => r.UnstashAsync(choice.Stash!, drop: true)),
-                _ => ("Applying the Stash", r => r.UnstashAsync(choice.Stash!, drop: false)),
-            };
-            GitResult? outcome = null;
-            Fire(RunGitAsync(what, async r => outcome = await operation(r), () =>
-            {
-                var report = outcome?.Message ?? "";
-                AppendOutputLine(choice.Action switch
-                {
-                    StashAction.Stash when report.Contains("No local changes to save", StringComparison.Ordinal) => "git: Nothing to stash.",
-                    StashAction.Stash => "git: Changes stashed.",
-                    StashAction.Pop => $"git: Popped {choice.Stash!.Name}.",
-                    _ => $"git: Applied {choice.Stash!.Name} (kept).",
-                });
-            }, () => FollowWorkingTree(projectFiles)));
-        });
-    }
-
-    /// <summary>
-    /// Git phase 6: runs a fetch, pull or push on the solution's repository in the background -
-    /// one at a time, cancellable from the Git tab, with no time limit (signing in through Git
-    /// Credential Manager's window or the browser can take a while). git's own report goes to
-    /// Output; a failure is also shown, common ones put plainly (see <see cref="GitResult.Explanation"/>).
-    /// <paramref name="after"/> runs on the UI thread when it worked.
-    /// </summary>
-    private async Task SyncAsync(string activity, string title, Func<GitRepository, CancellationToken, Task<GitResult>> operation,
-        Action? after = null, Action? afterAnyway = null)
-    {
-        if (_syncCancellation is not null || _git.Primary is not { } repository)
-            return;
-        var cancellation = new CancellationTokenSource();
-        _syncCancellation = cancellation;
-        _gitView.SetActivity($"{activity}...");
-        AppendOutputLine($"git: {activity} {Path.GetFileName(repository.Root)}...");
-
-        GitResult? result;
-        try
-        {
-            result = await operation(repository, cancellation.Token);
-        }
-        catch (OperationCanceledException)
-        {
-            result = null;
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            result = new GitResult(1, "", ex.Message);
-        }
-
-        OnUiThread(() =>
-        {
-            _syncCancellation = null;
-            _gitView.SetActivity(null);
-            afterAnyway?.Invoke();
-            if (result is null)
-                AppendOutputLine($"git: {title} cancelled.");
-            else
-            {
-                foreach (var line in $"{result.Output}\n{result.Error}".Split('\n'))
-                {
-                    if (line.Trim().Length > 0)
-                        AppendOutputLine($"  {line.TrimEnd('\r')}");
-                }
-                AppendOutputLine(result.Succeeded ? $"git: {title} done." : $"git: {title} failed.");
-                if (result.Succeeded)
-                    after?.Invoke();
-                else
-                    TedideMessageBox.ErrorQuery($"{title} Failed", RenameSymbolDialog.Wrap(result.Explanation), ["OK"]);
-            }
-            _git.RequestRefresh();
-        });
-    }
-
-    /// <summary>Git tab > Fetch: learns what's new on the remote; changes no files.</summary>
-    private void FetchFromRemote() => Fire(SyncAsync("Fetching", "Fetch", (repository, token) => repository.FetchAsync(token)));
-
-    /// <summary>
-    /// Git tab > Pull. Saves open files with unsaved edits first, as Commit does, so git sees
-    /// what's on screen; afterwards the editor follows the files on disk (see
-    /// <see cref="FollowWorkingTree"/>) - even when the pull stops on conflicts, so the conflict
-    /// markers show; the files show "!" in the Git tab.
-    /// </summary>
-    private void PullFromRemote()
-    {
-        if (_syncCancellation is not null || !SaveOpenFiles())
-            return;
-        var projectFiles = ProjectFileContents();
-        Fire(SyncAsync("Pulling", "Pull", (repository, token) => repository.PullAsync(token),
-            afterAnyway: () => FollowWorkingTree(projectFiles)));
-    }
-
-    /// <summary>After a pull: open files without unsaved edits follow what's now on disk.</summary>
-    private void ReloadFilesChangedOnDisk()
-    {
-        foreach (var path in _editorPane.OpenPaths)
-        {
-            if (_editorPane.IsModifiedFile(path))
-                continue;
-            if (!File.Exists(path))
-                _editorPane.Close(path);
-            else
-                Guard($"Reloading {Path.GetFileName(path)}", () =>
-                {
-                    if (SourceFileText.Read(path).Text != _editorPane.TextOf(path))
-                        _editorPane.Reload(path);
-                });
-        }
-    }
-
-    /// <summary>
-    /// Git tab > Push. A branch already on a remote is pushed to it; one that isn't is published -
-    /// to origin, else the only remote - after asking. Never forced: a rejection says to pull first.
-    /// </summary>
-    private async Task PushToRemoteAsync()
-    {
-        if (_syncCancellation is not null || _git.Primary is not { } repository || _git.PrimaryStatus is not { } status)
-            return;
-        if (status.Branch is not { } branch)
-        {
-            TedideMessageBox.ErrorQuery("Push", "HEAD isn't on a branch (it's detached), so there's nothing to push. Check out a branch first.", ["OK"]);
-            return;
-        }
-        if (status.Upstream is not null)
-        {
-            Fire(SyncAsync("Pushing", "Push", (r, token) => r.PushAsync(cancellationToken: token)));
-            return;
-        }
-
-        var remotes = await repository.GetRemotesAsync();
-        OnUiThread(() =>
-        {
-            var remote = remotes.Contains("origin") ? "origin" : remotes.Count == 1 ? remotes[0] : null;
-            if (remote is null)
-            {
-                TedideMessageBox.ErrorQuery("Push", RenameSymbolDialog.Wrap(remotes.Count == 0
-                    ? "This repository has no remote to push to. Add one with git remote add origin <url> first."
-                    : $"{branch} isn't on a remote yet, and there's no origin to publish it to (remotes: {string.Join(", ", remotes)})."), ["OK"]);
-                return;
-            }
-            var question = $"{branch} isn't on {remote} yet. Publish it there, and push to it from now on?";
-            if (TedideMessageBox.Query("Publish Branch", RenameSymbolDialog.Wrap(question), ["Publish", "Cancel"]) == 0)
-                Fire(SyncAsync("Pushing", "Push", (r, token) => r.PushAsync(remote, branch, token)));
-        });
-    }
-
-    /// <summary>
-    /// Git tab > Branches: lists the branches in <see cref="BranchesDialog"/> and does what's
-    /// chosen there - switch, create (and switch to), or delete. Deleting reopens the list.
-    /// </summary>
-    private async Task ShowBranchesAsync()
-    {
-        if (_syncCancellation is not null || _git.Primary is not { } repository)
-            return;
-        var branches = await repository.GetBranchesAsync();
-        OnUiThread(() =>
-        {
-            var dialog = new BranchesDialog(branches, _git.PrimaryStatus?.Branch);
-            Application.Run(dialog);
-            switch (dialog.Choice)
-            {
-                case (BranchAction.Switch, { IsCurrent: false } branch, _):
-                    ChangeBranch("Switching Branch", r => r.SwitchAsync(branch), branch.LocalName);
-                    break;
-                case (BranchAction.Create, _, { } name):
-                    ChangeBranch("Creating the Branch", r => r.CreateBranchAsync(name), name);
-                    break;
-                case (BranchAction.Delete, { } branch, _):
-                    Fire(RunGitAsync("Deleting the Branch", r => r.DeleteBranchAsync(branch.Name), () =>
-                    {
-                        AppendOutputLine($"git: Deleted branch {branch.Name}.");
-                        Fire(ShowBranchesAsync());
-                    }));
-                    break;
-            }
-        });
-    }
-
-    /// <summary>
-    /// Switches (or creates and switches) branch. Open files with unsaved edits are saved first, so
-    /// git carries them over - or refuses, if they clash with the other branch. Afterwards the
-    /// editor and Solution Explorer follow the files now on disk; if the branch has different
-    /// project or solution files, the solution is reopened from them.
-    /// </summary>
-    private void ChangeBranch(string what, Func<GitRepository, Task<GitResult>> operation, string branch)
-    {
-        if (!SaveOpenFiles())
-            return;
-        var projectFiles = ProjectFileContents();
-        Fire(RunGitAsync(what, operation, () =>
-        {
-            AppendOutputLine($"git: Switched to {branch}.");
-            FollowWorkingTree(projectFiles);
-        }));
-    }
-
-    /// <summary>
-    /// After git changed files under the editor (a switch, pull, continue or abort): if the
-    /// loaded solution's or projects' files are no longer what <paramref name="projectFiles"/>
-    /// recorded, the solution is reopened from them; otherwise open files without unsaved edits
-    /// follow what's on disk and the Solution Explorer is rebuilt.
-    /// </summary>
-    private void FollowWorkingTree(List<KeyValuePair<string, string?>> projectFiles)
-    {
-        var reopen = _workspace.Solution?.FilePath ?? _workspace.ActiveProject?.FilePath;
-        if (reopen is not null && !ProjectFileContents().SequenceEqual(projectFiles))
-            OpenProjectOrSolution(reopen);
-        else
-        {
-            ReloadFilesChangedOnDisk();
-            _solutionExplorer.Rebuild(_workspace);
-        }
-    }
-
-    /// <summary>
-    /// Git tab > History (all commits) or File History / H (one file's): <see cref="HistoryDialog"/>,
-    /// and from it a commit's change to a file in a <see cref="CompareDialog"/> - closing that comes
-    /// back to the history at the same commit.
-    /// </summary>
-    private async Task ShowHistoryAsync(string? file)
-    {
-        if ((file is null ? _git.Primary : _git.RepositoryFor(file)) is not { } repository)
-        {
-            TedideMessageBox.ErrorQuery("History", file is null ? "The solution isn't in a git repository." : $"{Path.GetFileName(file)} isn't in a git repository.", ["OK"]);
-            return;
-        }
-        var commits = await repository.GetLogAsync(file);
-        OnUiThread(() => ShowHistory(repository, file, commits, 0));
-    }
-
-    private void ShowHistory(GitRepository repository, string? file, IReadOnlyList<GitCommit> commits, int selected)
-    {
-        if (commits.Count == 0)
-        {
-            TedideMessageBox.Query("History", file is null ? "There are no commits yet." : $"git has no history for {Path.GetFileName(file)} - it isn't committed yet.", ["OK"]);
-            return;
-        }
-        var title = file is null ? $"History - {Path.GetFileName(repository.Root)}" : $"History - {DisplayPath(file)}";
-        var dialog = new HistoryDialog(title, commits, selected);
-        Application.Run(dialog);
-        if (dialog.Choice is { } choice)
-            Fire(ShowCommitChangeAsync(repository, choice.Commit, choice.File, () => ShowHistory(repository, file, commits, dialog.SelectedIndex)));
-    }
-
-    /// <summary>One commit's change to one file, read-only - its line numbers are the file's as of
-    /// that commit, so there's no Go to Line. <paramref name="back"/> returns to the history.</summary>
-    private async Task ShowCommitChangeAsync(GitRepository repository, GitCommit commit, GitCommitFile file, Action back)
-    {
-        GitDiff diff;
-        try
-        {
-            diff = await repository.GetCommitDiffAsync(commit, file);
-        }
-        catch (IOException ex)
-        {
-            OnUiThread(() =>
-            {
-                TedideMessageBox.ErrorQuery("History", RenameSymbolDialog.Wrap(ex.Message), ["OK"]);
-                back();
-            });
-            return;
-        }
-        OnUiThread(() =>
-        {
-            if (diff.IsBinary || diff.Hunks.Count == 0)
-                TedideMessageBox.Query("History", RenameSymbolDialog.Wrap(diff.IsBinary
-                    ? $"{file.Path} is a binary file; {commit.ShortHash} changed it."
-                    : $"{commit.ShortHash} didn't change any lines of {file.Path} (a rename or a mode change)."), ["OK"]);
-            else
-                Application.Run(new CompareDialog($"{commit.ShortHash} {commit.Subject} - {file.Path}",
-                    $"{commit.ShortHash} by {commit.Author}, {GitBlameLine.Ago(DateTimeOffset.Now - commit.When)}:", diff, canGoToLine: false));
-            back();
-        });
-    }
-
-    /// <summary>
-    /// Git tab > Enter on a conflicted file: <see cref="ConflictDialog"/>, then keep one side, open
-    /// the file at its first conflict, or mark it resolved (asking first if markers remain).
-    /// </summary>
-    private void ResolveConflict(GitFileStatus file)
-    {
-        var path = file.Path;
-        var operation = _git.PrimaryStatus?.Operation ?? GitOperation.None;
-        string text;
-        try
-        {
-            text = _editorPane.TextOf(path) ?? (File.Exists(path) ? File.ReadAllText(path) : "");
-        }
-        catch (Exception ex) when (IsFileError(ex))
-        {
-            TedideMessageBox.ErrorQuery("Resolve Conflict", RenameSymbolDialog.Wrap(ex.Message), ["OK"]);
-            return;
-        }
-        var dialog = new ConflictDialog(DisplayPath(path), operation, ConflictDialog.CountSections(text));
-        Application.Run(dialog);
-        switch (dialog.Choice)
-        {
-            case ConflictChoice.Edit:
-                var lines = text.Split('\n');
-                var first = Array.FindIndex(lines, l => l.StartsWith("<<<<<<<", StringComparison.Ordinal));
-                if (File.Exists(path))
-                    NavigateTo(path, first < 0 ? 1 : first + 1, 1);
-                break;
-            case ConflictChoice.KeepMine or ConflictChoice.TakeTheirs:
-                if (!SaveOpenFiles())
-                    return;
-                var keepMine = dialog.Choice == ConflictChoice.KeepMine;
-                Fire(RunGitAsync("Resolving the Conflict", r => r.ResolveWithAsync(path, keepMine, operation), () =>
-                {
-                    AppendOutputLine($"git: {DisplayPath(path)} resolved - {(keepMine ? "kept mine" : "took theirs")}.");
-                    Guard($"Reloading {Path.GetFileName(path)}", () => _editorPane.Reload(path));
-                }));
-                break;
-            case ConflictChoice.MarkResolved:
-                if (!SaveOpenFiles())
-                    return;
-                var left = File.Exists(path) ? ConflictDialog.CountSections(File.ReadAllText(path)) : 0;
-                if (left > 0 && TedideMessageBox.Query("Mark Resolved", RenameSymbolDialog.Wrap(
-                        $"{Path.GetFileName(path)} still has {(left == 1 ? "a conflict section" : $"{left} conflict sections")} (<<<<<<< markers). Mark it resolved anyway?"),
-                        ["Mark Resolved", "Cancel"]) != 0)
-                    return;
-                Fire(RunGitAsync("Marking Resolved", r => r.StageAsync([path]),
-                    () => AppendOutputLine($"git: {DisplayPath(path)} marked resolved.")));
-                break;
-        }
-    }
-
-    /// <summary>
-    /// Git tab > Continue: finishes the stopped merge (committing, with the message box's text if
-    /// any), rebase, cherry-pick or revert - once no file is still conflicted. A rebase can stop
-    /// again on the next commit's conflicts, so the editor follows the files either way.
-    /// </summary>
-    private void ContinueOperation(GitOperation operation, string message)
-    {
-        var conflicted = _git.Files.Values.Count(f => f.IsConflicted && _git.Primary?.Contains(f.Path) == true);
-        if (conflicted > 0)
-        {
-            TedideMessageBox.ErrorQuery($"Continue {operation.Describe()}", RenameSymbolDialog.Wrap(
-                $"{(conflicted == 1 ? "1 file still has" : $"{conflicted} files still have")} conflicts (marked ! in the Git tab). Press Enter on each to resolve it first."), ["OK"]);
-            return;
-        }
-        if (!SaveOpenFiles())
-            return;
-        var projectFiles = ProjectFileContents();
-        Fire(RunGitAsync($"Continuing the {operation.Describe()}", r => r.ContinueAsync(operation, operation == GitOperation.Merge ? message : null),
-            () =>
-            {
-                _gitView.ClearMessage();
-                AppendOutputLine($"git: {operation.Describe()} continued.");
-            },
-            () => FollowWorkingTree(projectFiles)));
-    }
-
-    /// <summary>Git tab > Abort: after asking, abandons the stopped operation - the branch and
-    /// files go back to how they were before it started.</summary>
-    private void AbortOperation(GitOperation operation)
-    {
-        var question = $"Abort the {operation.Describe()}? The branch and its files go back to how they were before it started, and any conflicts you've resolved are lost.";
-        if (TedideMessageBox.Query($"Abort {operation.Describe()}", RenameSymbolDialog.Wrap(question), ["Abort", "Cancel"]) != 0)
-            return;
-        var projectFiles = ProjectFileContents();
-        Fire(RunGitAsync($"Aborting the {operation.Describe()}", r => r.AbortAsync(operation),
-            () => AppendOutputLine($"git: {operation.Describe()} aborted."),
-            () => FollowWorkingTree(projectFiles)));
-    }
-
-    /// <summary>The loaded solution's and projects' files as they are on disk (null for one that's
-    /// gone), to tell whether a branch switch changed them.</summary>
-    private List<KeyValuePair<string, string?>> ProjectFileContents() =>
-        _workspace.Projects.Select(p => p.FilePath)
-            .Prepend(_workspace.Solution?.FilePath)
-            .OfType<string>()
-            .Select(path =>
-            {
-                try
-                {
-                    return KeyValuePair.Create(path, File.Exists(path) ? File.ReadAllText(path) : null);
-                }
-                catch (Exception ex) when (IsFileError(ex))
-                {
-                    return KeyValuePair.Create(path, (string?)null);
-                }
-            })
-            .ToList();
-
-    /// <summary>Editor right-click > Compare with Last Commit, for the file shown.</summary>
-    private void CompareActiveWithHead()
-    {
-        if (_editorPane.OpenPath is { } path)
-            Fire(CompareWithHeadAsync(path));
-    }
-
-    /// <summary>
-    /// Git phase 3: shows what changed in <paramref name="path"/> since the last commit, in a
-    /// <see cref="CompareDialog"/> - an open file's unsaved edits included, a renamed file compared
-    /// with where it was. Going to a line from there opens the file at it.
-    /// </summary>
-    private async Task CompareWithHeadAsync(string path, string? headPath = null)
-    {
-        var name = Path.GetFileName(path);
-        if (_git.RepositoryFor(path) is not { } repository)
-        {
-            TedideMessageBox.ErrorQuery("Compare with Last Commit", $"{name} isn't in a git repository.", ["OK"]);
-            return;
-        }
-        // Read here, on the UI thread - the document belongs to it.
-        headPath ??= _git.Files.GetValueOrDefault(path)?.OriginalPath;
-        var unsaved = _editorPane.IsModifiedFile(path);
-        string? text;
-        try
-        {
-            text = _editorPane.TextOf(path) ?? (File.Exists(path) ? await File.ReadAllTextAsync(path) : null);
-        }
-        catch (Exception ex) when (IsFileError(ex))
-        {
-            OnUiThread(() => TedideMessageBox.ErrorQuery("Compare with Last Commit", RenameSymbolDialog.Wrap(ex.Message), ["OK"]));
-            return;
-        }
-
-        GitDiff diff;
-        try
-        {
-            diff = await repository.DiffWithHeadAsync(path, text, headPath);
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            Log.Warning(ex, "Comparing {Path} with HEAD failed", path);
-            OnUiThread(() => TedideMessageBox.ErrorQuery("Compare with Last Commit", RenameSymbolDialog.Wrap(ex.Message), ["OK"]));
-            return;
-        }
-
-        OnUiThread(() =>
-        {
-            if (diff.IsBinary || diff.Hunks.Count == 0)
-            {
-                TedideMessageBox.Query("Compare with Last Commit",
-                    diff.IsBinary ? $"{name} is a binary file, and has changed." : $"{name} hasn't changed since the last commit.", ["OK"]);
-                return;
-            }
-            var dialog = new CompareDialog(DisplayPath(path), diff, unsaved);
-            Application.Run(dialog);
-            if (dialog.GoToLine is not { } line || !File.Exists(path) && !_editorPane.IsOpen(path))
-                return;
-            if (!_editorPane.IsShown(path))
-                OpenFile(path);
-            if (_editorPane.IsShown(path))
-                NavigateTo(path, Math.Min(line, _editorPane.Editor.Document!.LineCount), 1);
-        });
-    }
-
-    /// <summary>
-    /// Git phase 5b: who last changed every line of <paramref name="path"/>, in a
-    /// <see cref="BlameDialog"/> opened at the caret's line - an open file's unsaved edits included,
-    /// as "not committed yet". Going to a line from there opens the file at it.
-    /// </summary>
-    private async Task ShowBlameAsync(string path)
-    {
-        const string title = "Blame";
-        var name = Path.GetFileName(path);
-        if (_git.RepositoryFor(path) is not { } repository)
-        {
-            TedideMessageBox.ErrorQuery(title, $"{name} isn't in a git repository.", ["OK"]);
-            return;
-        }
-        if (_git.Files.GetValueOrDefault(path) is { IsUntracked: true })
-        {
-            TedideMessageBox.ErrorQuery(title, $"git doesn't track {name} yet, so it has no history to show.", ["OK"]);
-            return;
-        }
-        // Read here, on the UI thread - the document belongs to it.
-        var caretLine = _editorPane.IsShown(path) ? _editorPane.CaretPosition.Line : 1;
-        IReadOnlyList<GitBlameFileLine>? lines;
-        try
-        {
-            var text = _editorPane.TextOf(path) ?? await File.ReadAllTextAsync(path);
-            lines = await repository.BlameFileAsync(path, text);
-        }
-        catch (Exception ex) when (IsFileError(ex))
-        {
-            OnUiThread(() => TedideMessageBox.ErrorQuery(title, RenameSymbolDialog.Wrap(ex.Message), ["OK"]));
-            return;
-        }
-
-        OnUiThread(() =>
-        {
-            if (lines is null)
-            {
-                TedideMessageBox.ErrorQuery(title, $"git couldn't blame {name}.", ["OK"]);
-                return;
-            }
-            var dialog = new BlameDialog(DisplayPath(path), lines, caretLine);
-            Application.Run(dialog);
-            if (dialog.GoToLine is not { } line)
-                return;
-            if (!_editorPane.IsShown(path))
-                OpenFile(path);
-            if (_editorPane.IsShown(path))
-                NavigateTo(path, Math.Min(line, _editorPane.Editor.Document!.LineCount), 1);
-        });
-    }
 
     private const string NoFileOpenTitle = "(no file open)";
 
@@ -1290,11 +438,11 @@ public sealed class AppShell : Window, IDebugSessionHost
 
         var buildMenu = new MenuBarItem("_Build", new List<MenuItem>
         {
-            new("Build _Solution", "", () => Fire(BuildSolutionAsync()), BuildSolutionKey),
-            new("_Build Project", "", () => Fire(BuildActiveProjectAsync()), Key.Empty),
-            new("C_ancel Build", "", CancelBuild, Key.Empty),
-            new("_Clean Project", "", CleanActiveProject, Key.Empty),
-            new("Clea_n Solution", "", CleanSolution, Key.Empty),
+            new("Build _Solution", "", () => Fire(_build.BuildSolutionAsync()), BuildSolutionKey),
+            new("_Build Project", "", () => Fire(_build.BuildActiveProjectAsync()), Key.Empty),
+            new("C_ancel Build", "", _build.CancelBuild, Key.Empty),
+            new("_Clean Project", "", _build.CleanActiveProject, Key.Empty),
+            new("Clea_n Solution", "", _build.CleanSolution, Key.Empty),
         });
 
         // Visual Studio's keys, except Step Into (below). The keys shown here are only labels:
@@ -1306,7 +454,7 @@ public sealed class AppShell : Window, IDebugSessionHost
             new MenuItem("_Windows", "", new Menu(BuildDebugWindowsMenuItems())),
             new Line(),
             new MenuItem("_Start Debugging", "", () => Fire(_debug.StartDebuggingAsync()), Key.F5),
-            new MenuItem("Start Wit_hout Debugging", "", () => Fire(RunActiveProjectAsync()), Key.F5.WithCtrl),
+            new MenuItem("Start Wit_hout Debugging", "", () => Fire(_build.RunActiveProjectAsync()), Key.F5.WithCtrl),
             new MenuItem("_Continue", "", () => Fire(_debug.ContinueDebuggingAsync()), Key.F5),
             new MenuItem("Step _Over", "", () => Fire(_debug.StepDebuggingAsync(stepInto: false)), Key.F10),
             // F7, not Visual Studio's F11 - Windows Terminal claims F11 for its own full-screen
@@ -1335,7 +483,7 @@ public sealed class AppShell : Window, IDebugSessionHost
 
         var helpMenu = new MenuBarItem("_Help", new List<MenuItem>
         {
-            new("_Context Help", "", ShowContextHelp, ContextHelpKey),
+            new("_Context Help", "", _navigation.ShowContextHelp, ContextHelpKey),
             new("_About Tedide...", "", ShowAbout, Key.Empty),
         });
 
@@ -1349,13 +497,13 @@ public sealed class AppShell : Window, IDebugSessionHost
         // constructed with), so AddAt(0, ...) inserts it before Find the same way the library adds
         // its own items via Add().
         var editMenuItems = menuBar.EditMenu.PopoverMenu!.Root!;
-        editMenuItems.AddAt(0, new MenuItem("_Find in Files...", "", () => ShowFindInFiles(), FindInFilesKey));
-        editMenuItems.AddAt(1, new MenuItem("_Go To Line...", "", ShowGoToLine, Key.G.WithCtrl));
-        editMenuItems.AddAt(2, new MenuItem("Go To _Definition", "", GoToDefinition, GoToDefinitionKey));
-        editMenuItems.AddAt(3, new MenuItem("Find All _References", "", FindAllReferences, FindReferencesKey));
-        editMenuItems.AddAt(4, new MenuItem("Re_name Symbol...", "", RenameSymbol, RenameSymbolKey));
-        editMenuItems.AddAt(5, WithKeyText(new MenuItem("Navigate _Backward", "", NavigateBackward, NavigateBackwardKey), "Alt+Left"));
-        editMenuItems.AddAt(6, WithKeyText(new MenuItem("Navigate For_ward", "", NavigateForward, NavigateForwardKey), "Alt+Right"));
+        editMenuItems.AddAt(0, new MenuItem("_Find in Files...", "", () => _navigation.ShowFindInFiles(), FindInFilesKey));
+        editMenuItems.AddAt(1, new MenuItem("_Go To Line...", "", _navigation.ShowGoToLine, Key.G.WithCtrl));
+        editMenuItems.AddAt(2, new MenuItem("Go To _Definition", "", _navigation.GoToDefinition, GoToDefinitionKey));
+        editMenuItems.AddAt(3, new MenuItem("Find All _References", "", _navigation.FindAllReferences, FindReferencesKey));
+        editMenuItems.AddAt(4, new MenuItem("Re_name Symbol...", "", _navigation.RenameSymbol, RenameSymbolKey));
+        editMenuItems.AddAt(5, WithKeyText(new MenuItem("Navigate _Backward", "", _navigation.NavigateBackward, NavigateBackwardKey), "Alt+Left"));
+        editMenuItems.AddAt(6, WithKeyText(new MenuItem("Navigate For_ward", "", _navigation.NavigateForward, NavigateForwardKey), "Alt+Right"));
         var viewMenuItems = menuBar.ViewMenu.PopoverMenu!.Root!;
         viewMenuItems.AddAt(0, new MenuItem("_Solution Explorer", "", ShowSolutionExplorer, SolutionExplorerKey));
         viewMenuItems.AddAt(1, new MenuItem("_Output", "", ShowOutputTab, Key.Empty));
@@ -1389,7 +537,7 @@ public sealed class AppShell : Window, IDebugSessionHost
     private static readonly Key NavigateBackwardKey = Key.CursorLeft.WithAlt;
     private static readonly Key NavigateForwardKey = Key.CursorRight.WithAlt;
 
-    /// <summary>F1, as in Visual Studio - see <see cref="ShowContextHelp"/>.</summary>
+    /// <summary>F1, as in Visual Studio - see <see cref="NavigationCommands.ShowContextHelp"/>.</summary>
     private static readonly Key ContextHelpKey = Key.F1;
 
     /// <summary>Build Solution: Visual Studio's Ctrl+Shift+B arrives as Ctrl+B in Windows Terminal
@@ -1465,19 +613,19 @@ public sealed class AppShell : Window, IDebugSessionHost
         else if (key == DisassemblyKey)
             action = () => ShowPane(_disassemblyView);
         else if (key == FindInFilesKey)
-            action = () => ShowFindInFiles();
+            action = () => _navigation.ShowFindInFiles();
         else if (key == GoToDefinitionKey)
-            action = GoToDefinition;
+            action = _navigation.GoToDefinition;
         else if (key == FindReferencesKey)
-            action = FindAllReferences;
+            action = _navigation.FindAllReferences;
         else if (key == RenameSymbolKey)
-            action = RenameSymbol;
+            action = _navigation.RenameSymbol;
         else if (key == NavigateBackwardKey)
-            action = NavigateBackward;
+            action = _navigation.NavigateBackward;
         else if (key == NavigateForwardKey)
-            action = NavigateForward;
+            action = _navigation.NavigateForward;
         else if (key == ContextHelpKey)
-            action = ShowContextHelp;
+            action = _navigation.ShowContextHelp;
         else if (key == Key.PageDown.WithCtrl)
             action = () => _editorPane.CycleDocument(1);
         else if (key == Key.PageUp.WithCtrl)
@@ -1509,8 +657,8 @@ public sealed class AppShell : Window, IDebugSessionHost
         // Visual Studio's keys: F5 starts debugging, or continues once stopped; Ctrl+F5 runs
         // without the debugger; Ctrl+B (VS's Ctrl+Shift+B - see BuildSolutionKey) builds.
         statusBar.Add(new Shortcut(Key.F5, "Debug", () => Fire(_debug.StartOrContinueDebuggingAsync())));
-        statusBar.Add(new Shortcut(Key.F5.WithCtrl, "Run", () => Fire(RunActiveProjectAsync())));
-        statusBar.Add(new Shortcut(BuildSolutionKey, "Build", () => Fire(BuildSolutionAsync())));
+        statusBar.Add(new Shortcut(Key.F5.WithCtrl, "Run", () => Fire(_build.RunActiveProjectAsync())));
+        statusBar.Add(new Shortcut(BuildSolutionKey, "Build", () => Fire(_build.BuildSolutionAsync())));
         // A plain MenuItem's Key only acts as a hotkey while its menu is already open - a Shortcut
         // is what actually makes a key global. Ctrl+S Save had that gap (menu-only, never worked
         // while the editor had focus) until it was reported and fixed here alongside F9/Ctrl+G.
@@ -1521,7 +669,7 @@ public sealed class AppShell : Window, IDebugSessionHost
         statusBar.Add(new Shortcut(Key.F10, "Step", () => Fire(_debug.StepDebuggingAsync(stepInto: false))));
         statusBar.Add(new Shortcut(Key.F7, "Into", () => Fire(_debug.StepDebuggingAsync(stepInto: true))));
         statusBar.Add(new Shortcut(Key.S.WithCtrl, "Save", () => SaveActive()));
-        statusBar.Add(new Shortcut(Key.G.WithCtrl, "Go To", ShowGoToLine));
+        statusBar.Add(new Shortcut(Key.G.WithCtrl, "Go To", _navigation.ShowGoToLine));
         statusBar.X = 0;
         statusBar.Y = Pos.AnchorEnd(1);
         statusBar.Width = Dim.Fill();
@@ -1953,13 +1101,7 @@ public sealed class AppShell : Window, IDebugSessionHost
     /// </summary>
     private void OnActiveDocumentChanged()
     {
-        RequestBlame();
-        if (!EditorPane.SamePath(_editorPane.OpenPath, _lineMarkersPath))
-        {
-            // The last file's bars mustn't show on this one while its own are worked out.
-            _gitLineMarkers.Changes = new Dictionary<int, LineChangeKind>();
-            RequestLineMarkers();
-        }
+        _gitIntegration.ActiveDocumentChanged();
         _editorFrame.Title = _editorPane.OpenPath is { } path ? Path.GetFileName(path) : NoFileOpenTitle;
         UpdateLanguageIndicator();
         _debug.RefreshBreakpointHighlights();
@@ -1986,504 +1128,6 @@ public sealed class AppShell : Window, IDebugSessionHost
     private void ShowAbout()
     {
         Application.Run(new AboutDialog());
-    }
-
-    /// <summary>
-    /// Opens the Find in Files dialog, searching every loaded project's directory tree. If the
-    /// user activates a result, opens its file in a tab (or switches to it) and moves the caret to
-    /// the matched line.
-    /// </summary>
-    /// <param name="initialSearchText">Pre-populates (and immediately searches for) this text -
-    /// e.g. the editor's current selection, via <see cref="EditorPane.FindInFilesRequested"/>.
-    /// Empty for the Edit menu/Ctrl+Shift+F path, which starts with a blank search field.</param>
-    private void ShowFindInFiles(string initialSearchText = "")
-    {
-        if (_workspace.Projects.Count == 0)
-        {
-            AppendOutputLine("No project loaded. Use File > Open Project or File > New Project first.");
-            return;
-        }
-
-        var dialog = new FindInFilesDialog(_workspace, initialSearchText);
-        Application.Run(dialog);
-        if (dialog.SelectedMatch is { } match)
-            OpenMatch(match);
-    }
-
-    /// <summary>
-    /// Prompts for a line number (pre-filled with the caret's current line) and moves the caret
-    /// to the start of that line, scrolling it into view - same CaretOffset-assignment mechanism
-    /// as <see cref="OpenMatch"/>, just without a column.
-    /// </summary>
-    private void ShowGoToLine()
-    {
-        var document = _editorPane.Editor.Document;
-        if (_editorPane.OpenPath is null || document is null)
-            return;
-
-        var currentLineNumber = document.GetLineByOffset(_editorPane.Editor.CaretOffset).LineNumber;
-        var dialog = new GoToLineDialog(currentLineNumber, document.LineCount);
-        Application.Run(dialog);
-        if (dialog.LineNumber is { } lineNumber)
-        {
-            RecordJump();
-            _editorPane.Editor.CaretOffset = document.GetLineByNumber(lineNumber).Offset;
-            _editorPane.Editor.SetFocus();
-        }
-    }
-
-    /// <summary>
-    /// Opens a Find in Files match's file (unless it's already the open file) and moves the
-    /// caret to the start of the matched line/column, scrolling it into view.
-    /// </summary>
-    private void OpenMatch(FindInFilesDialog.Match match) => NavigateTo(match.FilePath, match.LineNumber, match.ColumnNumber);
-
-    /// <summary>
-    /// Opens <paramref name="filePath"/> (unless it's already the open file - prompting to save the
-    /// current one first, same as <see cref="OpenFile"/>) and moves the caret to the 1-based line and
-    /// column, scrolling it into view. Shared by Find in Files, Go To Definition and the References tab.
-    /// </summary>
-    /// <param name="highlightLength">When non-zero, that many characters from the column are
-    /// selected, so the symbol a reference or definition points at stands out - the same
-    /// SelectRange highlighting <see cref="OpenDiagnostic"/> gives a whole line.</param>
-    private void NavigateTo(string filePath, int lineNumber, int columnNumber, int highlightLength = 0, bool recordJump = true)
-    {
-        if (recordJump)
-            RecordJump();
-        if (!_editorPane.IsShown(filePath))
-        {
-            OpenFile(filePath);
-            if (!_editorPane.IsShown(filePath))
-                return; // User cancelled replacing the currently open (modified) file.
-        }
-
-        var document = _editorPane.Editor.Document;
-        if (document is null || lineNumber < 1 || lineNumber > document.LineCount)
-            return;
-
-        var line = document.GetLineByNumber(lineNumber);
-        var column = Math.Clamp(columnNumber - 1, 0, line.Length);
-        // Clamped to the line, in case the file has changed since the references were found.
-        var length = Math.Min(highlightLength, line.Length - column);
-        if (length > 0)
-            _editorPane.Editor.SelectRange(line.Offset + column, length);
-        else
-            _editorPane.Editor.CaretOffset = line.Offset + column;
-        _editorPane.Editor.SetFocus();
-    }
-
-    /// <summary>
-    /// A <see cref="CodeNavigator"/> over every loaded project's sources, reading the open file's
-    /// unsaved text from the editor so positions match the screen. cc65's own headers are searched
-    /// too, for a definition the project doesn't have, and the active project's target macros and
-    /// -D defines decide which <c>#if</c> branches count.
-    /// </summary>
-    private CodeNavigator CreateNavigator()
-    {
-        var files = _workspace.Projects
-            .Where(p => Directory.Exists(p.Directory))
-            .SelectMany(p => SolutionExplorerTree.EnumerateFiles(p.Directory))
-            .Where(f => SourceTokenizer.LanguageOf(f) != SourceLanguage.Other)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
-        var includeDirectories = _workspace.Projects
-            .SelectMany(p => p.IncludePaths.Select(i => Path.GetFullPath(Path.Combine(p.Directory, i))))
-            .ToList();
-        // Every open tab's current text, unsaved edits included, so positions match the editor.
-        var openTexts = _editorPane.OpenPaths.ToDictionary(p => p, p => _editorPane.TextOf(p)!, StringComparer.OrdinalIgnoreCase);
-        // The macros of the project the shown file belongs to - its target may not be the startup project's.
-        var macroProject = (_editorPane.OpenPath is { } shown ? _workspace.ProjectFor(shown) : null) ?? _workspace.ActiveProject;
-        IEnumerable<string> macros = macroProject is { } project
-            ? project.Target.PredefinedMacros().Concat(project.PreprocessorDefines.Select(d => d.Split('=', 2)[0].Trim()))
-            : [];
-
-        return new CodeNavigator(
-            files,
-            path => openTexts.TryGetValue(path, out var text) ? text : CodeNavigator.ReadFromDisk(path),
-            includeDirectories,
-            CodeNavigator.Cc65LibraryDirectories(Environment.GetEnvironmentVariable("CC65_HOME"), Environment.GetEnvironmentVariable("PATH")),
-            macros);
-    }
-
-    /// <summary>A path relative to the loaded project containing it, or as-is if it's outside them
-    /// all (e.g. one of cc65's own headers).</summary>
-    private string DisplayPath(string path)
-    {
-        foreach (var project in _workspace.Projects)
-        {
-            var relative = Path.GetRelativePath(project.Directory, path);
-            if (!relative.StartsWith("..", StringComparison.Ordinal) && !Path.IsPathRooted(relative))
-                return relative;
-        }
-        return path;
-    }
-
-    /// <summary>
-    /// Edit > Go To Definition (F12): jumps to where the symbol at the caret is defined - straight
-    /// there when there's one candidate, via <see cref="DefinitionPickerDialog"/> when there are
-    /// several. On a definition already, it goes to the declaration (e.g. the header's prototype),
-    /// and on an #include line it opens that file.
-    /// </summary>
-    private void GoToDefinition() => Guard("Going to the definition", GoToDefinitionCore);
-
-    private void GoToDefinitionCore()
-    {
-        if (_editorPane.OpenPath is not { } path)
-            return;
-
-        var (line, column) = _editorPane.CaretPosition;
-        var result = CreateNavigator().GoToDefinition(path, line, column);
-        if (result.Definitions.Count == 0)
-        {
-            ReportNavigation(result.Message ?? "No definition found.");
-            return;
-        }
-
-        var target = result.Definitions[0];
-        if (result.Definitions.Count > 1)
-        {
-            var dialog = new DefinitionPickerDialog(result.Symbol ?? string.Empty, result.Definitions, SourceLineOf, DisplayPath);
-            Application.Run(dialog);
-            if (dialog.SelectedDefinition is not { } chosen)
-                return;
-            target = chosen;
-        }
-        else if (result.Message is { } note)
-        {
-            ReportNavigation(note);
-        }
-
-        NavigateTo(target.FilePath, target.Line, target.Column, target.Kind == SymbolKind.File ? 0 : target.Name.Length);
-    }
-
-    /// <summary>Remembers where the caret is, before a jump moves it, for Navigate Backward. Called
-    /// by every jump: Go To Definition, the References and Error List tabs, Find in Files, Go To
-    /// Line and the Symbols tab - not by the debugger following execution.</summary>
-    private void RecordJump()
-    {
-        if (_editorPane.OpenPath is { } path)
-        {
-            var (line, column) = _editorPane.CaretPosition;
-            _navigationHistory.RecordJump(new CaretLocation(path, line, column));
-        }
-    }
-
-    private CaretLocation? CurrentCaretLocation()
-    {
-        if (_editorPane.OpenPath is not { } path)
-            return null;
-        var (line, column) = _editorPane.CaretPosition;
-        return new CaretLocation(path, line, column);
-    }
-
-    /// <summary>Edit > Navigate Backward (Alt+Left): back to where the caret was before the last jump.</summary>
-    private void NavigateBackward() => Guard("Navigating backward", () =>
-    {
-        if (_navigationHistory.GoBack(CurrentCaretLocation()) is { } target)
-            GoToHistoryLocation(target);
-        else
-            ReportNavigation("Nothing to navigate back to.");
-    });
-
-    /// <summary>Edit > Navigate Forward (Alt+Right): undoes a Navigate Backward.</summary>
-    private void NavigateForward() => Guard("Navigating forward", () =>
-    {
-        if (_navigationHistory.GoForward(CurrentCaretLocation()) is { } target)
-            GoToHistoryLocation(target);
-        else
-            ReportNavigation("Nothing to navigate forward to.");
-    });
-
-    private void GoToHistoryLocation(CaretLocation target)
-    {
-        if (!File.Exists(target.FilePath))
-        {
-            _navigationHistory.RemoveFile(target.FilePath);
-            ReportNavigation($"{Path.GetFileName(target.FilePath)} no longer exists.");
-            return;
-        }
-        NavigateTo(target.FilePath, target.Line, target.Column, recordJump: false);
-    }
-
-    /// <summary>
-    /// Help > Context Help (F1): opens the Doc Viewer at the word under the caret - the section
-    /// whose heading names it, or a search for it - or at its first page if there's no word.
-    /// </summary>
-    private void ShowContextHelp() => Guard("Opening the Doc Viewer", () =>
-    {
-        string? topic = null;
-        if (_editorPane.OpenPath is not null && _editorPane.Editor.Document is { } document)
-        {
-            var (line, column) = _editorPane.CaretPosition;
-            var lineText = document.GetText(document.GetLineByNumber(line));
-            topic = ContextHelp.WordAt(lineText, column);
-        }
-
-        var candidates = ContextHelp.CandidatePaths(AppContext.BaseDirectory, Environment.GetEnvironmentVariable(ContextHelp.DocViewerPathVariable));
-        if (ContextHelp.FindDocViewer(candidates) is not { } docViewer)
-        {
-            TedideMessageBox.ErrorQuery("Doc Viewer not found",
-                $"{ContextHelp.DocViewerFileName} wasn't found. Looked in:\n\n{string.Join('\n', candidates)}\n\n"
-                + $"Publish it beside Tedide, or set {ContextHelp.DocViewerPathVariable} to its full path.", ["OK"]);
-            return;
-        }
-
-        var insideWindowsTerminal = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WT_SESSION"));
-        using var _ = System.Diagnostics.Process.Start(ContextHelp.CreateStartInfo(docViewer, topic, insideWindowsTerminal));
-        AppendOutputLine(topic is null ? "Opened the Doc Viewer." : $"Opened the Doc Viewer at '{topic}'.");
-    });
-
-    /// <summary>The source line a definition sits on, for <see cref="DefinitionPickerDialog"/>'s list.</summary>
-    private static string SourceLineOf(SymbolDefinition definition)
-    {
-        var lines = (CodeNavigator.ReadFromDisk(definition.FilePath) ?? string.Empty).Split('\n');
-        return definition.Line - 1 < lines.Length ? lines[definition.Line - 1].TrimEnd('\r') : string.Empty;
-    }
-
-    /// <summary>
-    /// Edit > Find All References (Shift+F12): lists every use of the symbol at the caret across the
-    /// loaded projects in the References tab - C and assembly alike, skipping comments, strings and
-    /// same-named locals - with its definition rows highlighted.
-    /// </summary>
-    private void FindAllReferences() => Guard("Finding references", FindAllReferencesCore);
-
-    private void FindAllReferencesCore()
-    {
-        if (_editorPane.OpenPath is not { } path)
-            return;
-
-        var (line, column) = _editorPane.CaretPosition;
-        var result = CreateNavigator().FindReferences(path, line, column);
-        if (result.Symbol is null)
-        {
-            ReportNavigation(result.Message ?? "No symbol at the cursor.");
-            return;
-        }
-
-        _referencesView.SetReferences(result.References, DisplayPath);
-        var fileCount = result.References.Select(r => r.FilePath).Distinct(StringComparer.OrdinalIgnoreCase).Count();
-        AppendOutputLine($"Find All References: '{result.Symbol}' - {result.References.Count} reference(s) in {fileCount} file(s).");
-        _outputTabs.Value = _referencesTab;
-        _referencesView.SetFocus();
-    }
-
-    /// <summary>
-    /// Edit > Rename Symbol (F2): renames the symbol at the caret everywhere Find All References
-    /// finds it, after <see cref="RenameSymbolDialog"/> has checked the new name. Each file open in
-    /// a tab is changed in the editor as one undoable step and left unsaved; every other file is
-    /// rewritten on disk in its own encoding. Everything is worked out and checked before anything
-    /// is changed, so a file that's changed underneath stops the rename before anything is touched.
-    /// </summary>
-    private void RenameSymbol() => Guard("Renaming the symbol", RenameSymbolCore);
-
-    private void RenameSymbolCore()
-    {
-        if (_editorPane.OpenPath is not { } path)
-            return;
-
-        var (line, column) = _editorPane.CaretPosition;
-        var navigator = CreateNavigator();
-        var references = navigator.FindReferences(path, line, column);
-        if (references.Symbol is not { } symbol)
-        {
-            ReportNavigation(references.Message ?? "No symbol at the cursor.");
-            return;
-        }
-
-        // Refused up front when no new name could help, rather than after one has been typed.
-        if (navigator.WhyNotRenamable(path, line, column) is { } blocker)
-        {
-            TedideMessageBox.ErrorQuery("Can't Rename", RenameSymbolDialog.Wrap(blocker), ["OK"]);
-            return;
-        }
-
-        var fileCount = references.References.Select(r => r.FilePath).Distinct(StringComparer.OrdinalIgnoreCase).Count();
-        var dialog = new RenameSymbolDialog(symbol, references.References.Count, fileCount, name => navigator.PlanRename(path, line, column, name));
-        Application.Run(dialog);
-        if (dialog.Plan is not { } plan)
-            return;
-
-        var byFile = plan.Edits.GroupBy(e => e.FilePath, StringComparer.OrdinalIgnoreCase).ToList();
-        var openFiles = byFile.Where(g => _editorPane.IsOpen(g.Key)).ToList();
-        // Files that aren't open are worked out in full before any is written.
-        var closedFiles = byFile
-            .Where(g => !_editorPane.IsOpen(g.Key))
-            .Select(group =>
-            {
-                var (text, encoding) = SourceFileText.Read(group.Key);
-                return (Path: group.Key, Text: RenamePlan.Apply(text, group), Encoding: encoding);
-            })
-            .ToList();
-        // Likewise every open file is checked before any is changed.
-        var located = openFiles.Select(g => (Path: g.Key, Edits: LocateEdits(_editorPane.DocumentOf(g.Key)!, g.Key, g.ToList()))).ToList();
-
-        foreach (var file in closedFiles)
-            SourceFileText.Write(file.Path, file.Text, file.Encoding);
-        foreach (var (openPath, edits) in located)
-            ApplyEditsToOpenFile(openPath, edits);
-
-        // Every listed position may have moved.
-        _referencesView.SetReferences([], DisplayPath);
-        var newName = plan.Edits.FirstOrDefault(e => e.FilePath == path)?.NewText ?? plan.Edits[0].NewText;
-        AppendOutputLine($"Renamed '{symbol}' to '{newName}': {plan.Edits.Count} change(s) in {plan.FileCount} file(s)"
-            + (located.Count > 0 ? $" - {located.Count} open file(s) changed in the editor and not yet saved." : "."));
-    }
-
-    /// <summary>A rename's edits for one open file as document offsets, last first, after checking
-    /// each spot still holds the old name (it's the same text the plan was made from, so it should).</summary>
-    private static List<(TextEdit Edit, int Offset)> LocateEdits(TextDocument document, string path, IReadOnlyList<TextEdit> edits)
-    {
-        var located = edits
-            .Select(e => (Edit: e, Offset: document.GetLineByNumber(e.Line).Offset + e.Column - 1))
-            .OrderByDescending(x => x.Offset)
-            .ToList();
-        if (located.Any(x => document.GetText(x.Offset, x.Edit.OldText.Length) != x.Edit.OldText))
-            throw new InvalidDataException($"{Path.GetFileName(path)} changed while the rename was being worked out.");
-        return located;
-    }
-
-    /// <summary>Applies a rename's located edits to an open file's document as a single undo step,
-    /// keeping the caret on the same code when it's the file being shown.</summary>
-    private void ApplyEditsToOpenFile(string path, List<(TextEdit Edit, int Offset)> located)
-    {
-        var document = _editorPane.DocumentOf(path)!;
-        var isShown = _editorPane.IsShown(path);
-        var editor = _editorPane.Editor;
-        var caret = isShown ? editor.CaretOffset : 0;
-        if (isShown)
-            editor.ClearSelection();
-        document.UndoStack.StartUndoGroup();
-        try
-        {
-            foreach (var (edit, offset) in located)
-            {
-                document.Replace(offset, edit.OldText.Length, edit.NewText);
-                // Keep the caret on the same code: shifted by renames before it, and at the start
-                // of the renamed word if it was inside one.
-                if (offset + edit.OldText.Length <= caret)
-                    caret += edit.NewText.Length - edit.OldText.Length;
-                else if (offset < caret)
-                    caret = offset;
-            }
-        }
-        finally
-        {
-            document.UndoStack.EndUndoGroup();
-        }
-        if (isShown)
-        {
-            editor.CaretOffset = Math.Clamp(caret, 0, document.TextLength);
-            editor.SetFocus();
-        }
-    }
-
-    /// <summary>Go To Definition/Find All References feedback ("No symbol at the cursor.", ...),
-    /// written to the Output tab, which is brought forward so the message isn't missed.</summary>
-    private void ReportNavigation(string message)
-    {
-        AppendOutputLine(message);
-        _outputTabs.Value = _outputTab;
-    }
-
-    /// <summary>
-    /// Opens a build diagnostic's file (unless it's already the open file) and highlights its
-    /// line by selecting the whole line's text, scrolling it into view - the diagnostic has no
-    /// column, unlike a Find in Files <see cref="FindInFilesDialog.Match"/>, so there's nothing
-    /// more specific to place the caret at.
-    /// </summary>
-    private void OpenDiagnostic(BuildDiagnostic diagnostic)
-    {
-        var project = _workspace.ActiveProject;
-        if (project is null)
-            return;
-
-        var filePath = Path.IsPathRooted(diagnostic.FilePath)
-            ? diagnostic.FilePath
-            : Path.Combine(project.Directory, diagnostic.FilePath);
-        if (!File.Exists(filePath))
-            return;
-
-        RecordJump();
-        if (!_editorPane.IsShown(filePath))
-        {
-            OpenFile(filePath);
-            if (!_editorPane.IsShown(filePath))
-                return; // User cancelled replacing the currently open (modified) file.
-        }
-
-        var document = _editorPane.Editor.Document;
-        if (document is null || diagnostic.Line < 1 || diagnostic.Line > document.LineCount)
-            return;
-
-        var line = document.GetLineByNumber(diagnostic.Line);
-        // SelectRange's second argument is a length, not an end offset - passing EndOffset here
-        // (Offset + Length) previously selected roughly twice as far as intended, spilling into
-        // one or more following lines instead of highlighting just this one.
-        _editorPane.Editor.SelectRange(line.Offset, line.Length);
-        _editorPane.Editor.SetFocus();
-    }
-
-    /// <summary>
-    /// Opens a symbol panel entry's source file (lnk.map or .lbl - both plain text, unaffected by
-    /// this being a structured panel over them, see <see cref="SymbolPanelView"/>) and moves the
-    /// caret to its line, the same way <see cref="OpenMatch"/> does for a Find in Files result.
-    /// </summary>
-    private void OpenSymbol((string FilePath, int LineNumber) entry)
-    {
-        if (!File.Exists(entry.FilePath))
-            return;
-
-        if (!_editorPane.IsShown(entry.FilePath))
-        {
-            OpenFile(entry.FilePath);
-            if (!_editorPane.IsShown(entry.FilePath))
-                return; // User cancelled replacing the currently open (modified) file.
-        }
-
-        var document = _editorPane.Editor.Document;
-        if (document is null || entry.LineNumber < 1 || entry.LineNumber > document.LineCount)
-            return;
-
-        var line = document.GetLineByNumber(entry.LineNumber);
-        _editorPane.Editor.CaretOffset = line.Offset;
-        _editorPane.Editor.SetFocus();
-    }
-
-    /// <summary>
-    /// Scrolls the editor's viewport so the given 1-based line sits vertically centered, rather
-    /// than just barely visible (the default behavior of CaretOffset's own EnsureCaretVisible,
-    /// which merely clamps to the nearest edge) - used only for the currently-executing line
-    /// during a debug session (checkpoint hit, step, or the initial jump to main()), so nearby
-    /// code above and below stays visible without the user needing to scroll manually. Not used
-    /// for other navigation (Find in Files, Go To Line, Symbol panel) - minimal-scroll there is
-    /// the expected, less disruptive behavior.
-    /// </summary>
-    /// <remarks>
-    /// Ignores folding: the fold-aware visible-row mapping (<c>Editor.GetVisibleLineNumbers</c>)
-    /// is internal to Terminal.Gui.Editor, not accessible from here - centering by raw line number
-    /// is a reasonable simplification since debug sessions don't typically have folds active.
-    /// </remarks>
-    /// <param name="filePath">The absolute path <see cref="OpenSymbol"/> was just asked to show -
-    /// checked against <see cref="EditorPane.OpenPath"/> before centering, since OpenSymbol is a
-    /// no-op when that file doesn't exist locally (e.g. stepping into cc65's own runtime library,
-    /// whose original build-machine source path isn't present on disk) - without this check,
-    /// centering would jump whatever file *is* still open to this unrelated line number instead.</param>
-    private void CenterEditorOnLine(string filePath, int lineNumber)
-    {
-        if (!_editorPane.IsShown(filePath))
-            return;
-
-        var editor = _editorPane.Editor;
-        if (editor.Document is not { } document)
-            return;
-
-        var viewport = editor.Viewport;
-        if (viewport.Height <= 0)
-            return;
-
-        var maxY = Math.Max(0, document.LineCount - viewport.Height);
-        var targetY = Math.Clamp(lineNumber - 1 - viewport.Height / 2, 0, maxY);
-        editor.Viewport = viewport with { Y = targetY };
     }
 
     /// <summary>Records whichever file is currently open (if any) as the active project's "last
@@ -2520,7 +1164,7 @@ public sealed class AppShell : Window, IDebugSessionHost
     /// Called alongside <see cref="DebugSession.LoadBreakpointsForActiveProject"/> at
     /// every point the active project itself changes (open/new/close) - deliberately not also at
     /// Project Settings save, since that keeps the same project active and already has its own
-    /// reopen-after-rename handling (see <see cref="RenameProjectFolder"/>).</summary>
+    /// reopen-after-rename handling (see <see cref="RenameProject"/>).</summary>
     private void LoadLastOpenFileForActiveProject()
     {
         string? problem = null;
@@ -2702,233 +1346,6 @@ public sealed class AppShell : Window, IDebugSessionHost
         || (ex is ArgumentException && ex is not ArgumentNullException and not ArgumentOutOfRangeException);
 
     /// <summary>
-    /// Build > Build Project: builds the startup project, after any libraries it references.
-    /// Returns null (having already reported why) if none is loaded, another build is still
-    /// running, or the build was cancelled via <see cref="CancelBuild"/> - callers (Run, Start
-    /// Debugging) treat that the same as a failed build and stop there.
-    /// </summary>
-    private Task<BuildResult?> BuildActiveProjectAsync() =>
-        BuildProjectsAsync(_workspace.ActiveProject is { } project ? [project] : []);
-
-    /// <summary>Build > Build Solution: every project, each after the libraries it references.</summary>
-    private Task<BuildResult?> BuildSolutionAsync() => BuildProjectsAsync(_workspace.Projects.ToList());
-
-    /// <summary>
-    /// Builds <paramref name="roots"/> and every library they reference, in dependency order (see
-    /// <see cref="ProjectGraph.BuildOrder"/>). A project whose library failed is skipped rather
-    /// than linked against a stale or missing .lib; the others still build. The result succeeds
-    /// only if every project did, and carries every project's diagnostics, with absolute paths.
-    /// </summary>
-    private async Task<BuildResult?> BuildProjectsAsync(IReadOnlyList<TedideProject> roots)
-    {
-        if (roots.Count == 0)
-        {
-            AppendOutputLine("No project loaded. Use File > Open Project or File > New Project first.");
-            return null;
-        }
-        // Two builds at once would have two sets of cl65 processes writing the same obj/ files.
-        if (_buildCancellation is not null)
-        {
-            AppendOutputLine("A build is already running - wait for it, or use Build > Cancel Build.");
-            return null;
-        }
-
-        // Building what's on disk after a failed save would silently build stale source - and
-        // before this check, the save's exception simply vanished into this un-awaited task, so
-        // Building from a read-only file did nothing at all with no explanation.
-        if (!SaveAll())
-            return null;
-        _outputView.Clear();
-        _errorListView.SetDiagnostics([]);
-
-        var solution = _workspace.Projects.ToList();
-        IReadOnlyList<TedideProject> order;
-        try
-        {
-            order = ProjectGraph.BuildOrder(solution, roots);
-        }
-        catch (InvalidDataException ex)
-        {
-            // A bad reference (missing, not a library, or a cycle) - nothing is built.
-            var diagnostic = new BuildDiagnostic("", 0, DiagnosticSeverity.Error, ex.Message);
-            AppendOutputLine($"------ Build FAILED: {ex.Message} ------");
-            _errorListView.SetDiagnostics([diagnostic]);
-            return new BuildResult(false, 1, [], [diagnostic], TimeSpan.Zero);
-        }
-
-        var cancellation = new CancellationTokenSource();
-        _buildCancellation = cancellation;
-        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-        var outputLines = new List<string>();
-        var diagnostics = new List<BuildDiagnostic>();
-        var failed = new HashSet<TedideProject>();
-        var succeeded = 0;
-        var skipped = 0;
-        try
-        {
-            foreach (var project in order)
-            {
-                var libraries = ProjectGraph.LinkedLibraries(solution, project);
-                if (libraries.FirstOrDefault(failed.Contains) is { } failedLibrary)
-                {
-                    AppendOutputLine($"------ Skipped {project.Name}: {failedLibrary.Name} didn't build ------");
-                    failed.Add(project);
-                    skipped++;
-                    continue;
-                }
-
-                AppendOutputLine($"------ Build started: {project.Name} ({project.Target.ToCl65Id()}{(project.IsLibrary ? ", library" : "")}) ------");
-                var result = await _toolchain.BuildAsync(project, AppendOutputLine, cancellation.Token, libraries);
-                outputLines.AddRange(result.RawOutputLines);
-                // Each project's tools report paths relative to its own folder.
-                diagnostics.AddRange(result.Diagnostics.Select(d => d with
-                {
-                    FilePath = d.FilePath.Length == 0 || Path.IsPathRooted(d.FilePath) ? d.FilePath : Path.GetFullPath(Path.Combine(project.Directory, d.FilePath)),
-                    // Shown in the Error List's Project column - only worth one with several projects.
-                    Project = solution.Count > 1 ? project.Name : null,
-                }));
-
-                if (result.Succeeded)
-                {
-                    succeeded++;
-                    AppendOutputLine($"------ {project.Name}: build succeeded in {result.Duration.TotalSeconds:0.0}s ------");
-                    if (new FileInfo(project.ResolvedOutputFile) is { Exists: true } outputFile)
-                        AppendOutputLine($"{Path.GetFileName(project.ResolvedOutputFile)}: {outputFile.Length} bytes");
-                }
-                else
-                {
-                    failed.Add(project);
-                    AppendOutputLine($"------ {project.Name}: build FAILED ({result.Errors.Count()} error(s)) in {result.Duration.TotalSeconds:0.0}s ------");
-                }
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            // Cc65Toolchain has already killed the cl65 process tree; what it left in obj/ is
-            // partial, but the next build simply overwrites it.
-            AppendOutputLine("------ Build cancelled ------");
-            return null;
-        }
-        finally
-        {
-            _buildCancellation = null;
-            cancellation.Dispose();
-        }
-
-        if (order.Count > 1)
-            AppendOutputLine($"========== Build: {succeeded} succeeded, {failed.Count - skipped} failed, {skipped} skipped ==========");
-
-        // Past the await, so not on the UI thread - see OnUiThread.
-        OnUiThread(() =>
-        {
-            _errorListView.SetDiagnostics(diagnostics, DisplayPath);
-            // Refreshes the Solution Explorer's "Generated Files" node - e.g. newly-written
-            // assembler listings (see SolutionExplorerTree.AddGeneratedFilesNode) only appear once
-            // the tree is rebuilt after this build actually wrote them.
-            _solutionExplorer.Rebuild(_workspace);
-            _symbolPanel.Refresh(_workspace.ActiveProject);
-        });
-
-        return new BuildResult(failed.Count == 0, failed.Count == 0 ? 0 : 1, outputLines, diagnostics, stopwatch.Elapsed);
-    }
-
-    /// <summary>Build > Cancel Build: stops the running build, if any (see <see cref="BuildActiveProjectAsync"/>).</summary>
-    private void CancelBuild()
-    {
-        if (_buildCancellation is not { } cancellation)
-        {
-            AppendOutputLine("No build is running.");
-            return;
-        }
-
-        try
-        {
-            cancellation.Cancel();
-        }
-        catch (ObjectDisposedException)
-        {
-            // The build finished on its own between the check above and here - nothing left to cancel.
-        }
-    }
-
-    /// <summary>Builds the active project, then launches it in the VICE emulator matching its target if the build succeeded.</summary>
-    private async Task RunActiveProjectAsync()
-    {
-        ShowOutputTab();
-        if (!CheckStartupProjectRuns("run"))
-            return;
-
-        var result = await BuildActiveProjectAsync();
-        if (result is null)
-            return;
-
-        if (!result.Succeeded)
-        {
-            AppendOutputLine("Not launching emulator - build failed.");
-            return;
-        }
-
-        var project = _workspace.ActiveProject!;
-        try
-        {
-            _vice.Launch(project, onOutputLine: line => Application.Invoke(() => AppendOutputLine(line)));
-            AppendOutputLine($"------ Launched {ViceEmulator.ExecutableNameFor(project.Target, project.EnableSuperCpu)} ------");
-        }
-        catch (Exception ex) when (ex is NotSupportedException or FileNotFoundException or InvalidOperationException)
-        {
-            AppendOutputLine($"Could not launch emulator: {ex.Message}");
-        }
-    }
-
-    /// <summary>
-    /// False, having said why, if the startup project is a library - there's nothing to
-    /// <paramref name="action"/>. A library only becomes code that runs inside a program.
-    /// </summary>
-    private bool CheckStartupProjectRuns(string action)
-    {
-        if (_workspace.ActiveProject is not { IsLibrary: true } library)
-            return true;
-        AppendOutputLine($"{library.Name} is a library, so there's nothing to {action}. Right-click an application in the "
-            + "Solution Explorer and choose Set as Startup Project.");
-        return false;
-    }
-
-    /// <summary>Build > Clean Project: deletes the startup project's build artifacts (object files
-    /// and its output) without rebuilding.</summary>
-    private void CleanActiveProject() => CleanProjects(_workspace.ActiveProject is { } project ? [project] : []);
-
-    /// <summary>Build > Clean Solution: <see cref="CleanActiveProject"/> for every project.</summary>
-    private void CleanSolution() => CleanProjects(_workspace.Projects.ToList());
-
-    private void CleanProjects(IReadOnlyList<TedideProject> projects) => Guard("Cleaning", () => CleanProjectsCore(projects));
-
-    private void CleanProjectsCore(IReadOnlyList<TedideProject> projects)
-    {
-        if (projects.Count == 0)
-        {
-            AppendOutputLine("No project loaded. Use File > Open Project or File > New Project first.");
-            return;
-        }
-
-        var total = 0;
-        foreach (var project in projects)
-        {
-            var removed = _toolchain.Clean(project);
-            AppendOutputLine($"------ Clean: {project.Name} ------");
-            if (removed.Count == 0)
-                AppendOutputLine("Nothing to clean.");
-            foreach (var path in removed)
-                AppendOutputLine($"Deleted {Path.GetFileName(path)}");
-            total += removed.Count;
-        }
-        AppendOutputLine($"------ Clean complete: {total} file(s) removed ------");
-
-        // Drops (or shrinks) the Solution Explorer's "Generated Files" node if the assembler
-        // listings it was showing are among the files just deleted.
-        _solutionExplorer.Rebuild(_workspace);
-    }
-
-    /// <summary>
     /// Solution Explorer > Add New Project: scaffolds a project (an application or a library) in
     /// its own folder beside the solution file, and adds it to the solution.
     /// </summary>
@@ -3059,7 +1476,7 @@ public sealed class AppShell : Window, IDebugSessionHost
     /// file, extra cl65 arguments) and Optimizer tab (cc65 optimization preset). Rebuilds the
     /// Solution Explorer afterward since its project node label includes the name and target,
     /// which the dialog may have just changed. If the name changed, also renames the project's
-    /// folder (and its .tproj file) on disk to match - see <see cref="RenameProjectFolder"/>.
+    /// folder (and its .tproj file) on disk to match - see <see cref="RenameProject"/>.
     /// </summary>
     private void ShowProjectSettings() => ShowProjectSettings(_workspace.ActiveProject);
 
@@ -3155,18 +1572,29 @@ public sealed class AppShell : Window, IDebugSessionHost
     /// <summary>Safe to call from any thread - see <see cref="OnUiThread"/>.</summary>
     private void AppendOutputLine(string line) => OnUiThread(() => _outputView.AppendLine(line));
 
+    void IShell.AppendOutputLine(string line) => AppendOutputLine(line);
+    void IShell.Fire(Task task, string what) => Fire(task, what);
+    bool IShell.Guard(string action, Action body) => Guard(action, body);
+    void IShell.OpenFile(string path) => OpenFile(path);
+    bool IShell.SaveFile(string path) => SaveFile(path);
+    bool IShell.SaveAll() => SaveAll();
+    void IShell.OpenProjectOrSolution(string path) => OpenProjectOrSolution(path);
+    void IShell.ShowOutputTab() => ShowOutputTab();
+    void IShell.BringOutputForward() => _outputTabs.Value = _outputTab;
+    void IShell.ShowPane(View content) => ShowPane(content);
+
     ViceEmulator IDebugSessionHost.Vice => _vice;
     void IDebugSessionHost.AppendOutputLine(string line) => AppendOutputLine(line);
     void IDebugSessionHost.OnUiThread(Action action) => OnUiThread(action);
     void IDebugSessionHost.Fire(Task task, string what) => Fire(task, what);
     bool IDebugSessionHost.Guard(string action, Action body) => Guard(action, body);
-    void IDebugSessionHost.OpenSymbol((string FilePath, int LineNumber) entry) => OpenSymbol(entry);
-    void IDebugSessionHost.CenterEditorOnLine(string filePath, int lineNumber) => CenterEditorOnLine(filePath, lineNumber);
+    void IDebugSessionHost.OpenSymbol((string FilePath, int LineNumber) entry) => _navigation.OpenSymbol(entry);
+    void IDebugSessionHost.CenterEditorOnLine(string filePath, int lineNumber) => _navigation.CenterEditorOnLine(filePath, lineNumber);
     void IDebugSessionHost.SetDebugLine((string FilePath, int Line)? location) => SetDebugLine(location);
     void IDebugSessionHost.SetDebugStatus(string? status) => SetDebugStatus(status);
     void IDebugSessionHost.ShowDebugTab() => ShowDebugTab();
-    Task<BuildResult?> IDebugSessionHost.BuildActiveProjectAsync() => BuildActiveProjectAsync();
-    bool IDebugSessionHost.CheckStartupProjectRuns(string action) => CheckStartupProjectRuns(action);
+    Task<BuildResult?> IDebugSessionHost.BuildActiveProjectAsync() => _build.BuildActiveProjectAsync();
+    bool IDebugSessionHost.CheckStartupProjectRuns(string action) => _build.CheckStartupProjectRuns(action);
 
     /// <summary>
     /// Starts <paramref name="task"/> without waiting for it, as <c>_ = task</c> would, but logs a
@@ -3181,12 +1609,10 @@ public sealed class AppShell : Window, IDebugSessionHost
 
     /// <summary>
     /// Runs <paramref name="action"/> right away if already on the UI thread, otherwise posts it
-    /// there via Application.Invoke. Needed by any UI update that follows an await: Terminal.Gui
-    /// 2.x installs no SynchronizationContext, so an async method started from a menu or key
-    /// handler carries on after its first await on whichever thread-pool thread completed the
-    /// awaited task, not the UI thread - where touching a view races its draw (confirmed crashes:
-    /// "Collection was modified" in OutputView, "Call from invalid thread" in TextDocument).
-    /// Posted work runs in order, after anything already queued.
+    /// there via Application.Invoke. Awaits started on the UI thread come back to it by themselves
+    /// (see <see cref="UiSynchronizationContext"/>); this is for callbacks that arrive on other
+    /// threads - a process's output, a failed background task. Posted work runs in order, after
+    /// anything already queued.
     /// </summary>
     private static void OnUiThread(Action action)
     {
@@ -3244,7 +1670,7 @@ public sealed class AppShell : Window, IDebugSessionHost
     /// Switches the Output/Error List pane to its "Debug" tab and gives the debug panel input
     /// focus - used when a debug session starts, so its debugger windows are immediately
     /// visible rather than left behind whatever tab the user had last selected. Focus moves back
-    /// to the editor as soon as execution actually stops somewhere (see <see cref="OpenSymbol"/>,
+    /// to the editor as soon as execution actually stops somewhere (see <see cref="NavigationCommands.OpenSymbol"/>,
     /// called when a debug session stops - see <see cref="DebugSession"/>), so this is only
     /// the very first thing the user sees while the session is coming up.
     /// </summary>

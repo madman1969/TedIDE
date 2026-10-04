@@ -334,11 +334,8 @@ internal sealed class DebugSession
         return false;
     }
 
-    /// <summary>Reads every watch's current value from VICE and formats it for display - pure data
-    /// fetching (no UI touched), so unlike the callers around it this needs no re-marshaling onto
-    /// the UI thread; see <see cref="RefreshWatchesIfStoppedAsync"/> and the nested-Invoke call
-    /// sites in <see cref="OnCheckpointHit"/>/<see cref="StepDebuggingAsync"/> for where the result
-    /// actually reaches <see cref="_debugPanel"/>.</summary>
+    /// <summary>Reads every watch's current value from VICE and formats it for display; the
+    /// callers put the result on <see cref="_debugPanel"/>.</summary>
     private async Task<List<string>> FormatWatchesAsync(ViceMonitorClient debugClient)
     {
         // A snapshot, not _watches itself - the awaits below give the UI thread a chance to add
@@ -456,7 +453,7 @@ internal sealed class DebugSession
             return;
 
         var watchLines = await FormatWatchesAsync(debugClient);
-        Application.Invoke(() => _debugPanel.SetWatches(watchLines));
+        _debugPanel.SetWatches(watchLines);
     }
 
     /// <summary>What the Memory and Disassembly tabs and the call stack show for one stop - read
@@ -619,19 +616,21 @@ internal sealed class DebugSession
             return;
         }
 
-        Fire(Task.Run(async () =>
+        Fire(ReadMemoryNowAsync(debugClient, address));
+    }
+
+    private async Task ReadMemoryNowAsync(ViceMonitorClient debugClient, ushort address)
+    {
+        try
         {
-            try
-            {
-                var bytes = await debugClient.GetMemoryAsync(address, (ushort)Math.Min(0xFFFF, address + MemoryView.ByteCount - 1));
-                _memorySnapshot = bytes;
-                _host.OnUiThread(() => _memoryView.Show(address, bytes, [], "As of this stop."));
-            }
-            catch (Exception ex)
-            {
-                _host.OnUiThread(() => _memoryView.SetStatus($"Could not read memory: {ex.Message}"));
-            }
-        }));
+            var bytes = await debugClient.GetMemoryAsync(address, (ushort)Math.Min(0xFFFF, address + MemoryView.ByteCount - 1));
+            _memorySnapshot = bytes;
+            _memoryView.Show(address, bytes, [], "As of this stop.");
+        }
+        catch (Exception ex)
+        {
+            _memoryView.SetStatus($"Could not read memory: {ex.Message}");
+        }
     }
 
     /// <summary>Opens the project source line an address belongs to - for a Disassembly row.</summary>
@@ -663,7 +662,7 @@ internal sealed class DebugSession
         catch (Exception ex)
         {
             Log.Error(ex, "Error starting debug session");
-            Application.Invoke(() => _host.AppendOutputLine($"Could not start debugging: {ex.Message}"));
+            _host.AppendOutputLine($"Could not start debugging: {ex.Message}");
             await EndDebugSessionAsync();
         }
     }
@@ -717,7 +716,7 @@ internal sealed class DebugSession
         // of it). RunActiveProjectAsync's own _host.Vice.Launch call already gets this right.
         var viceProcess = _host.Vice.Launch(project, line => Application.Invoke(() => _host.AppendOutputLine(line)), enableBinaryMonitor: true);
 
-        _host.OnUiThread(() => _host.SetDebugStatus("Connecting to VICE..."));
+        _host.SetDebugStatus("Connecting to VICE...");
         // VICE needs a moment to start listening on its binary monitor port after the process
         // starts - retry rather than failing on the first attempt. A fresh client per attempt: a
         // TcpClient whose connect has failed isn't reliably reusable. And give up straight away
@@ -744,11 +743,8 @@ internal sealed class DebugSession
             var reason = viceProcess.HasExited
                 ? $"VICE exited during startup (exit code {viceProcess.ExitCode}) - see its output above."
                 : "Could not connect to VICE's binary monitor - is VICE installed and did it launch correctly?";
-            Application.Invoke(() =>
-            {
-                _host.AppendOutputLine(reason);
-                _host.SetDebugStatus(null);
-            });
+            _host.AppendOutputLine(reason);
+            _host.SetDebugStatus(null);
             return;
         }
 
@@ -756,30 +752,20 @@ internal sealed class DebugSession
         // Read-only for the whole session, in every tab - editing source while the compiled binary
         // it no longer matches is running would be misleading (BuildActiveProjectAsync above has
         // already saved everything).
-        // Invoked: this continuation is past several awaits, so it isn't on the UI thread.
-        Application.Invoke(() => _editorPane.ReadOnly = true);
+        _editorPane.ReadOnly = true;
 
         // Show the C source containing main() as the session comes up, before anything actually
         // runs - the same _main label every C program has, resolved back to its source location
         // the same way a checkpoint hit resolves the PC (see DbgFile.FindSourceLocationForAddress).
-        // Application.Invoke, not a direct call: by this point StartDebuggingAsync has been through
-        // several awaits (connecting to VICE), and unlike everything else in this method, OpenSymbol
-        // touches Editor.Document - TextDocument enforces single-thread ownership (VerifyAccess),
-        // and nothing guarantees this continuation resumed on the UI thread. A real crash, caught
-        // via Windows Event Log after this exact code path took the whole process down with
-        // "Call from invalid thread" during the next draw.
         var mainSymbol = _dbgFile.Symbols.FirstOrDefault(s => s.Name == "_main" && s.Type == "lab");
         Log.Debug("Debug start: _main at {Address}", mainSymbol?.Value);
         if (mainSymbol is { Value: { } mainAddress }
             && _dbgFile.FindSourceLocationForAddress(mainAddress) is { } mainLocation)
         {
             Log.Debug("Debug start: main() is at {File}:{Line}", mainLocation.FilePath, mainLocation.Line);
-            Application.Invoke(() =>
-            {
-                var mainPath = Path.Combine(project.Directory, mainLocation.FilePath);
-                _host.OpenSymbol((mainPath, mainLocation.Line));
-                _host.CenterEditorOnLine(mainPath, mainLocation.Line);
-            });
+            var mainPath = Path.Combine(project.Directory, mainLocation.FilePath);
+            _host.OpenSymbol((mainPath, mainLocation.Line));
+            _host.CenterEditorOnLine(mainPath, mainLocation.Line);
         }
 
         Log.Debug("Debug start: setting checkpoints");
@@ -788,7 +774,7 @@ internal sealed class DebugSession
             b => dbgFile.FindAddressForSourceLine(b.SourceFile, b.Line), _host.AppendOutputLine);
 
         Log.Debug("Debug start: checkpoints set, continuing");
-        Application.Invoke(() => _host.SetDebugStatus("Running..."));
+        _host.SetDebugStatus("Running...");
         await _debugClient.ContinueAsync();
     }
 
@@ -873,12 +859,11 @@ internal sealed class DebugSession
 
     /// <summary>
     /// Fires whenever VICE stops at a checkpoint - reads registers, resolves the PC back to a
-    /// source location (<see cref="_dbgFile"/>), and jumps the editor there. Runs on
-    /// <see cref="ViceMonitorClient"/>'s own background read-loop thread, so every UI touch (and
-    /// the nested GetRegistersAsync request/response, which needs that same read loop free to
-    /// process it) is marshaled onto the UI thread via Application.Invoke - which posts and returns
-    /// immediately rather than blocking the calling thread, so this doesn't deadlock against the
-    /// read loop it was raised from.
+    /// source location (<see cref="_dbgFile"/>), and jumps the editor there. Raised on
+    /// <see cref="ViceMonitorClient"/>'s read-loop thread, so the work is posted to the UI thread
+    /// with Application.Invoke, which returns at once - the read loop must stay free to answer the
+    /// register and memory requests that follow. Once there, the awaits come back to the UI thread
+    /// (see <see cref="UiSynchronizationContext"/>).
     /// </summary>
     private void OnCheckpointHit(CheckpointHitEventArgs args)
     {
@@ -892,35 +877,21 @@ internal sealed class DebugSession
                     return;
 
                 var registers = await _debugClient.GetRegistersAsync();
-                // Fetched here (still in the outer async continuation) rather than inside the
-                // nested Invoke below - it's pure network I/O against VICE, same as GetRegistersAsync
-                // just above, with none of the UI-thread affinity concerns that block touching
-                // Editor/TextDocument state after an await (see the nested-Invoke comment below).
                 var watchLines = await FormatWatchesAsync(_debugClient);
                 var locals = await ReadLocalsAsync(_debugClient, registers);
                 var views = await ReadDebugViewsAsync(_debugClient, registers);
 
-                // Everything below touches Editor/TextDocument state, which enforces single-thread
-                // ownership (TextDocument.VerifyAccess). Application.Invoke only guarantees the UI
-                // thread for this lambda's synchronous prefix - the await just above means this
-                // continuation is NOT guaranteed to still be on the UI thread, and Terminal.Gui
-                // doesn't restore it. Confirmed via a real crash here ("Call from invalid thread"
-                // inside OpenSymbol) - re-marshal explicitly with a nested Invoke rather than
-                // assuming the outer one's thread-affinity survives an internal await.
                 // "PC" is VICE's register name for the 6502 program counter on the main memspace -
                 // confirmed against a live VICE 3.9 instance (its ids are assigned dynamically per
                 // the binary monitor protocol docs, but this name was stable).
-                Application.Invoke(() =>
-                {
-                    ShowStoppedAt(registers, watchLines, locals, registers["PC"], $" (checkpoint #{args.Checkpoint.Number})");
-                    ShowDebugViews(views);
-                    Log.Debug("CheckpointHit done");
-                });
+                ShowStoppedAt(registers, watchLines, locals, registers["PC"], $" (checkpoint #{args.Checkpoint.Number})");
+                ShowDebugViews(views);
+                Log.Debug("CheckpointHit done");
             }
             catch (Exception ex)
             {
                 Log.Error(ex, "Error handling checkpoint hit");
-                Application.Invoke(() => _host.AppendOutputLine($"Error handling checkpoint hit: {ex.Message}"));
+                _host.AppendOutputLine($"Error handling checkpoint hit: {ex.Message}");
             }
         });
     }
@@ -1009,14 +980,9 @@ internal sealed class DebugSession
             var watchLines = await FormatWatchesAsync(debugClient);
             var locals = await ReadLocalsAsync(debugClient, registers);
             var views = await ReadDebugViewsAsync(debugClient, registers);
-            // Back onto the UI thread before touching Editor/TextDocument state: the awaits above
-            // leave this continuation on whatever thread completed them.
-            Application.Invoke(() =>
-            {
-                ShowStoppedAt(registers, watchLines, locals, registers["PC"],
-                    step.ReachedNewLine ? "" : $" (step limit of {SourceStepper.MaxInstructions} instructions reached)");
-                ShowDebugViews(views);
-            });
+            ShowStoppedAt(registers, watchLines, locals, registers["PC"],
+                step.ReachedNewLine ? "" : $" (step limit of {SourceStepper.MaxInstructions} instructions reached)");
+            ShowDebugViews(views);
         }
         catch (Exception ex)
         {
@@ -1068,22 +1034,17 @@ internal sealed class DebugSession
         // it's gone (a rebuild can shift where a symbol ends up), so watches are re-entered per
         // session rather than carried forward, same as WatchEntry's own doc comment says.
         _watches.Clear();
-        // Re-marshal onto the UI thread - see OnCheckpointHit's own comment on why the awaits
-        // above don't guarantee this continuation is still there.
-        Application.Invoke(() =>
-        {
-            _host.SetDebugLine(null);
-            _host.SetDebugStatus(null);
-            _debugPanel.SetRegisters(null);
-            _debugPanel.SetWatches([]);
-            _debugPanel.SetLocals([]);
-            _debugPanel.SetCallStack([]);
-            _disassemblyView.Show([], "Start debugging to see the code around the PC.");
-            _memoryView.Show(0, [], [], "Start debugging, then enter a symbol or $address.");
-            _memorySnapshot = null;
-            // EditorPane keeps the editor read-only anyway while no file is open.
-            _editorPane.ReadOnly = false;
-            _editorPane.Editor.SetNeedsDraw();
-        });
+        _host.SetDebugLine(null);
+        _host.SetDebugStatus(null);
+        _debugPanel.SetRegisters(null);
+        _debugPanel.SetWatches([]);
+        _debugPanel.SetLocals([]);
+        _debugPanel.SetCallStack([]);
+        _disassemblyView.Show([], "Start debugging to see the code around the PC.");
+        _memoryView.Show(0, [], [], "Start debugging, then enter a symbol or $address.");
+        _memorySnapshot = null;
+        // EditorPane keeps the editor read-only anyway while no file is open.
+        _editorPane.ReadOnly = false;
+        _editorPane.Editor.SetNeedsDraw();
     }
 }

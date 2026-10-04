@@ -59,7 +59,7 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
             using var process = Process.Start(startInfo);
             if (process is null)
                 return false;
-            await process.WaitForExitAsync(cancellationToken);
+            await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
             return true;
         }
         catch (Win32Exception)
@@ -114,7 +114,7 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
             return new BuildResult(succeeded, exitCode, lines, Cc65DiagnosticParser.ParseAll(lines), stopwatch.Elapsed);
         }
 
-        if (await RunBuildEventsAsync(project, "prebuild", project.PreBuildCommands, Capture, cancellationToken) is { } preBuildFailure)
+        if (await RunBuildEventsAsync(project, "prebuild", project.PreBuildCommands, Capture, cancellationToken).ConfigureAwait(false) is { } preBuildFailure)
             return Finish(false, preBuildFailure);
 
         // Every source file is compiled even after an earlier one fails, so a single build shows
@@ -151,7 +151,7 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
                 else
                 {
                     exitCode = await RunToolAsync(Cl65Path, step.Arguments, project.Directory, Capture,
-                        $"Could not launch '{Cl65Path}'. Is cc65 installed and on PATH?", cancellationToken);
+                        $"Could not launch '{Cl65Path}'. Is cc65 installed and on PATH?", cancellationToken).ConfigureAwait(false);
                 }
 
                 if (exitCode is null)
@@ -180,7 +180,7 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
             // project doesn't linger in the .lib.
             File.Delete(project.ResolvedOutputFile);
             var exitCode = await RunToolAsync(Ar65Path, BuildArchiveArguments(project, objectFiles), project.Directory, Capture,
-                $"ar65: Error: Could not launch '{Ar65Path}'. Is cc65 installed and on PATH?", cancellationToken);
+                $"ar65: Error: Could not launch '{Ar65Path}'. Is cc65 installed and on PATH?", cancellationToken).ConfigureAwait(false);
             if (exitCode is null)
                 return Finish(false, -1);
             lastExitCode = exitCode.Value;
@@ -188,7 +188,7 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
         else if (!compileFailed)
         {
             var exitCode = await RunToolAsync(Cl65Path, BuildLinkArguments(project, objectFiles, libraries), project.Directory, Capture,
-                $"Could not launch '{Cl65Path}'. Is cc65 installed and on PATH?", cancellationToken);
+                $"Could not launch '{Cl65Path}'. Is cc65 installed and on PATH?", cancellationToken).ConfigureAwait(false);
             if (exitCode is null)
             {
                 return Finish(false, -1);
@@ -197,7 +197,7 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
         }
 
         var linked = !compileFailed && lastExitCode == 0 && Cc65DiagnosticParser.ParseAll(lines).All(d => d.Severity != DiagnosticSeverity.Error);
-        if (linked && await RunBuildEventsAsync(project, "postbuild", project.PostBuildCommands, Capture, cancellationToken) is { } postBuildFailure)
+        if (linked && await RunBuildEventsAsync(project, "postbuild", project.PostBuildCommands, Capture, cancellationToken).ConfigureAwait(false) is { } postBuildFailure)
             return Finish(false, postBuildFailure);
 
         return Finish(linked, lastExitCode);
@@ -218,7 +218,7 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
             var expanded = BuildEvents.Expand(project, command.Trim());
             capture($"{kind}> {expanded}");
             var exitCode = await RunToolAsync(ShellStartInfo(expanded), project.Directory, capture,
-                $"{kind}: Error: Could not start the shell to run '{expanded}'", cancellationToken);
+                $"{kind}: Error: Could not start the shell to run '{expanded}'", cancellationToken).ConfigureAwait(false);
             if (exitCode is not 0)
             {
                 if (exitCode is not null)
@@ -335,7 +335,7 @@ public sealed class Cc65Toolchain(string cl65Path = "cl65")
 
         try
         {
-            await process.WaitForExitAsync(cancellationToken);
+            await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {

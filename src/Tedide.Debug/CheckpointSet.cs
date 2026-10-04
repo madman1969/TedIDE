@@ -22,10 +22,10 @@ public sealed class CheckpointSet
     public async Task ArmAsync(IDebugTarget target, IEnumerable<BreakpointEntry> breakpoints,
         Func<BreakpointEntry, long?> resolveAddress, Action<string> report)
     {
-        await _lock.WaitAsync();
+        await _lock.WaitAsync().ConfigureAwait(false);
         try
         {
-            await SetAllAsync(target, breakpoints, resolveAddress, report);
+            await SetAllAsync(target, breakpoints, resolveAddress, report).ConfigureAwait(false);
         }
         finally
         {
@@ -44,13 +44,13 @@ public sealed class CheckpointSet
     public async Task ResyncAsync(IDebugTarget target, IEnumerable<BreakpointEntry> breakpoints,
         Func<BreakpointEntry, long?> resolveAddress, Action<string> report, Func<bool> stillCurrent)
     {
-        await _lock.WaitAsync();
+        await _lock.WaitAsync().ConfigureAwait(false);
         try
         {
             if (!stillCurrent())
                 return;
-            await DeleteAllAsync(target);
-            await SetAllAsync(target, breakpoints, resolveAddress, report);
+            await DeleteAllAsync(target).ConfigureAwait(false);
+            await SetAllAsync(target, breakpoints, resolveAddress, report).ConfigureAwait(false);
         }
         finally
         {
@@ -62,10 +62,10 @@ public sealed class CheckpointSet
     /// connection closes, so a detached program would otherwise still halt at each one.</summary>
     public async Task ClearAsync(IDebugTarget target)
     {
-        await _lock.WaitAsync();
+        await _lock.WaitAsync().ConfigureAwait(false);
         try
         {
-            await DeleteAllAsync(target);
+            await DeleteAllAsync(target).ConfigureAwait(false);
         }
         finally
         {
@@ -85,19 +85,19 @@ public sealed class CheckpointSet
                 continue;
             }
 
-            var number = await target.SetBreakpointAsync((ushort)address);
+            var number = await target.SetBreakpointAsync((ushort)address).ConfigureAwait(false);
             _numbers[breakpoint] = number;
             if (!breakpoint.HasCondition)
                 continue;
             try
             {
-                await target.SetConditionAsync(number, breakpoint.Condition!.Trim());
+                await target.SetConditionAsync(number, breakpoint.Condition!.Trim()).ConfigureAwait(false);
             }
             catch (Exception ex) when (ex is ViceMonitorException or ArgumentException)
             {
                 // An unconditional stop where a conditional one was asked for would be a surprise
                 // mid-run - so the breakpoint sits this session out instead.
-                await target.DeleteCheckpointAsync(number);
+                await target.DeleteCheckpointAsync(number).ConfigureAwait(false);
                 _numbers.Remove(breakpoint);
                 report($"VICE rejected the condition \"{breakpoint.Condition}\" on {breakpoint.SourceFile}:{breakpoint.Line}, so that breakpoint is off for this session. "
                     + "Use VICE monitor syntax, e.g. A == $05 or @cpu:$d020 == $0e.");
@@ -113,7 +113,7 @@ public sealed class CheckpointSet
         {
             try
             {
-                await target.DeleteCheckpointAsync(number);
+                await target.DeleteCheckpointAsync(number).ConfigureAwait(false);
             }
             catch (Exception)
             {

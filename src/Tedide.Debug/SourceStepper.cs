@@ -36,7 +36,7 @@ public static class SourceStepper
         var pc = startPc;
         for (var i = 0; i < maxInstructions; i++)
         {
-            pc = await target.StepAsync(stepOverSubroutines: !stepInto, cancellationToken);
+            pc = await target.StepAsync(stepOverSubroutines: !stepInto, cancellationToken).ConfigureAwait(false);
             var location = sourceLocation(pc);
 
             if (stepInto && location is null && startLocation is not null)
@@ -46,7 +46,7 @@ public static class SourceStepper
                 // so keep going until the PC is somewhere with source again.
                 while (location is null && i++ < maxInstructions)
                 {
-                    pc = await target.ExecuteUntilReturnAsync(cancellationToken);
+                    pc = await target.ExecuteUntilReturnAsync(cancellationToken).ConfigureAwait(false);
                     location = sourceLocation(pc);
                 }
             }

@@ -812,9 +812,17 @@ Run the tests with `dotnet test Tedide.slnx`.
 
 ### Implementation notes
 
-- **The shell** - `AppShell` builds the window and wires everything together. The debugger is in
-  `DebugSession`, which calls back through `IDebugSessionHost`. Background work is started with
-  `Fire`, which logs and reports a failure instead of losing it.
+- **The shell** - `AppShell` builds the window, the menus and the project and file commands, and
+  wires everything together. The rest is in classes of their own:
+  - `NavigationCommands`: Find in Files, Go To, definitions, references, rename and back/forward.
+  - `BuildCommands`: build, run and clean.
+  - `GitIntegration`: the Git tab, blame, change bars, Compare and Blame.
+  - `DebugSession`: the debugger, calling back through `IDebugSessionHost`.
+
+  The first three call back through `IShell`.
+- **Threads** - `UiSynchronizationContext` makes awaits started on the UI thread resume there, so
+  app code can touch views after an await. The library projects use `ConfigureAwait(false)`.
+  Background work is started with `Fire`, which logs and reports a failure instead of losing it.
 - **Editor** - Tedide uses [Terminal.Gui.Editor](https://github.com/tui-cs/Editor)'s `Editor`,
   `EditorMenuBar` and `EditorStatusBar`, as its reference app "ted" does. One `Editor` is reused for
   every tab; each tab keeps its own `TextDocument` (and undo history), encoding and caret, swapped

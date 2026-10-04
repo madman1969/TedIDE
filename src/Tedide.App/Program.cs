@@ -24,6 +24,8 @@ Log.Information("Tedide starting up");
 
 Application.Init();
 TerminalColors.UseTrueColorInWindowsTerminal(Application.Driver);
+// Awaits started on the UI thread come back to it - see UiSynchronizationContext.
+UiSynchronizationContext.Install();
 try
 {
     Cc65AssemblyHighlighting.Register();

@@ -29,7 +29,7 @@ public sealed class GitRepository
         // The root is worked out from the directory as given (--show-cdup is "../.." or empty), not
         // taken from --show-toplevel: git resolves a subst drive or a junction to the real path,
         // and then no file Tedide has open would match it.
-        var result = await GitRunner.RunAsync(directory, ["rev-parse", "--absolute-git-dir", "--show-cdup"], cancellationToken: cancellationToken);
+        var result = await GitRunner.RunAsync(directory, ["rev-parse", "--absolute-git-dir", "--show-cdup"], cancellationToken: cancellationToken).ConfigureAwait(false);
         if (!result.Succeeded || result.Output.Split('\n', StringSplitOptions.TrimEntries) is not [var gitDirectory, .. var rest] || gitDirectory.Length == 0)
             return null;
         var up = rest is [var cdup, ..] ? cdup : "";
@@ -39,7 +39,7 @@ public sealed class GitRepository
     public async Task<GitStatus?> GetStatusAsync(CancellationToken cancellationToken = default)
     {
         var result = await GitRunner.RunAsync(Root, ["status", "--porcelain=v2", "--branch", "-z", "--untracked-files=all"],
-            cancellationToken: cancellationToken);
+            cancellationToken: cancellationToken).ConfigureAwait(false);
         return result.Succeeded ? GitStatus.Parse(result.Output, Root) with { Operation = GetOperation() } : null;
     }
 
@@ -64,10 +64,10 @@ public sealed class GitRepository
         // Brings the conflict back first, from the resolve-undo record git keeps: once a file's
         // resolved its two sides are gone from the index, and choosing again took the resolved
         // version whatever the side (caught by a test).
-        await GitRunner.RunAsync(Root, ["checkout", "-m", "--", Relative(file)], cancellationToken: cancellationToken);
-        var taken = await GitRunner.RunAsync(Root, ["checkout", side, "--", Relative(file)], cancellationToken: cancellationToken);
+        await GitRunner.RunAsync(Root, ["checkout", "-m", "--", Relative(file)], cancellationToken: cancellationToken).ConfigureAwait(false);
+        var taken = await GitRunner.RunAsync(Root, ["checkout", side, "--", Relative(file)], cancellationToken: cancellationToken).ConfigureAwait(false);
         return taken.Succeeded
-            ? await GitRunner.RunAsync(Root, ["add", "--", Relative(file)], cancellationToken: cancellationToken)
+            ? await GitRunner.RunAsync(Root, ["add", "--", Relative(file)], cancellationToken: cancellationToken).ConfigureAwait(false)
             : taken;
     }
 
@@ -109,7 +109,7 @@ public sealed class GitRepository
     {
         string[] arguments = ["log", $"-n{limit}", "--format=%x1e%H%x1f%an%x1f%at%x1f%s", "--name-status", "-M", "--diff-merges=first-parent"];
         var result = await GitRunner.RunAsync(Root, file is null ? arguments : [.. arguments, "--follow", "--", Relative(file)],
-            cancellationToken: cancellationToken);
+            cancellationToken: cancellationToken).ConfigureAwait(false);
         return result.Succeeded ? GitCommit.ParseLog(result.Output) : [];
     }
 
@@ -120,7 +120,7 @@ public sealed class GitRepository
         string[] paths = file.OldPath is { } old ? [old, file.Path] : [file.Path];
         var result = await GitRunner.RunAsync(Root,
             ["show", "--format=", "--no-color", "--no-ext-diff", "-M", "--diff-merges=first-parent", "-U3", commit.Hash, "--", .. paths],
-            cancellationToken: cancellationToken);
+            cancellationToken: cancellationToken).ConfigureAwait(false);
         return result.Succeeded ? GitDiff.Parse(result.Output) : throw new IOException(result.Message);
     }
 
@@ -133,7 +133,7 @@ public sealed class GitRepository
     public async Task<GitBlameLine?> BlameLineAsync(string file, int line, string currentText, CancellationToken cancellationToken = default)
     {
         var result = await GitRunner.RunAsync(Root, ["blame", "--porcelain", "-L", $"{line},{line}", "--contents", "-", "--", Relative(file)],
-            currentText, cancellationToken);
+            currentText, cancellationToken).ConfigureAwait(false);
         return result.Succeeded ? GitBlameLine.Parse(result.Output) : null;
     }
 
@@ -145,7 +145,7 @@ public sealed class GitRepository
     public async Task<IReadOnlyList<GitBlameFileLine>?> BlameFileAsync(string file, string currentText, CancellationToken cancellationToken = default)
     {
         var result = await GitRunner.RunAsync(Root, ["blame", "--line-porcelain", "--contents", "-", "--", Relative(file)],
-            currentText, cancellationToken);
+            currentText, cancellationToken).ConfigureAwait(false);
         return result.Succeeded ? GitBlameLine.ParseFile(result.Output) : null;
     }
 
@@ -156,7 +156,7 @@ public sealed class GitRepository
     /// </summary>
     public async Task<string?> ReadHeadAsync(string file, string? headPath = null, CancellationToken cancellationToken = default)
     {
-        var result = await GitRunner.RunAsync(Root, ["show", $"HEAD:{Relative(headPath ?? file)}"], cancellationToken: cancellationToken);
+        var result = await GitRunner.RunAsync(Root, ["show", $"HEAD:{Relative(headPath ?? file)}"], cancellationToken: cancellationToken).ConfigureAwait(false);
         return result.Succeeded ? result.Output : null;
     }
 
@@ -171,7 +171,7 @@ public sealed class GitRepository
     public async Task<GitDiff> DiffWithHeadAsync(string file, string? currentText, string? headPath = null,
         int contextLines = 3, CancellationToken cancellationToken = default, bool emptyIfNotInHead = false)
     {
-        var committed = await ReadHeadAsync(file, headPath, cancellationToken);
+        var committed = await ReadHeadAsync(file, headPath, cancellationToken).ConfigureAwait(false);
         if (committed is null && emptyIfNotInHead)
             return GitDiff.Empty;
         var head = committed ?? "";
@@ -181,12 +181,12 @@ public sealed class GitRepository
             var name = Path.GetFileName(file);
             var oldFile = Path.Combine(folder, "HEAD-" + name);
             var newFile = Path.Combine(folder, name);
-            await File.WriteAllTextAsync(oldFile, Normalize(head), cancellationToken);
-            await File.WriteAllTextAsync(newFile, Normalize(currentText ?? ""), cancellationToken);
+            await File.WriteAllTextAsync(oldFile, Normalize(head), cancellationToken).ConfigureAwait(false);
+            await File.WriteAllTextAsync(newFile, Normalize(currentText ?? ""), cancellationToken).ConfigureAwait(false);
             // Exit code 1 just means "they differ".
             var result = await GitRunner.RunAsync(folder,
                 ["diff", "--no-index", "--no-color", "--no-ext-diff", $"-U{contextLines}", "--", oldFile, newFile],
-                cancellationToken: cancellationToken);
+                cancellationToken: cancellationToken).ConfigureAwait(false);
             return result.ExitCode is 0 or 1
                 ? GitDiff.Parse(result.Output)
                 : throw new IOException(result.Message);
@@ -223,7 +223,7 @@ public sealed class GitRepository
         var tracked = all.Where(f => !f.IsUntracked).Select(f => Relative(f.Path)).ToList();
         return tracked.Count == 0
             ? new GitResult(0, "", "")
-            : await GitRunner.RunAsync(Root, ["restore", "--", .. tracked], cancellationToken: cancellationToken);
+            : await GitRunner.RunAsync(Root, ["restore", "--", .. tracked], cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -237,19 +237,19 @@ public sealed class GitRepository
     {
         if (stageAll)
         {
-            var staged = await GitRunner.RunAsync(Root, ["add", "-A"], cancellationToken: cancellationToken);
+            var staged = await GitRunner.RunAsync(Root, ["add", "-A"], cancellationToken: cancellationToken).ConfigureAwait(false);
             if (!staged.Succeeded)
                 return staged;
         }
         if (amend && string.IsNullOrWhiteSpace(message))
-            return await GitRunner.RunAsync(Root, ["commit", "--amend", "--no-edit"], cancellationToken: cancellationToken);
-        return await GitRunner.RunAsync(Root, amend ? ["commit", "--amend", "-F", "-"] : ["commit", "-F", "-"], message, cancellationToken);
+            return await GitRunner.RunAsync(Root, ["commit", "--amend", "--no-edit"], cancellationToken: cancellationToken).ConfigureAwait(false);
+        return await GitRunner.RunAsync(Root, amend ? ["commit", "--amend", "-F", "-"] : ["commit", "-F", "-"], message, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>HEAD's full commit message - for editing it when amending. Null before the first commit.</summary>
     public async Task<string?> GetLastCommitMessageAsync(CancellationToken cancellationToken = default)
     {
-        var result = await GitRunner.RunAsync(Root, ["log", "-1", "--format=%B"], cancellationToken: cancellationToken);
+        var result = await GitRunner.RunAsync(Root, ["log", "-1", "--format=%B"], cancellationToken: cancellationToken).ConfigureAwait(false);
         return result.Succeeded ? result.Output.TrimEnd() : null;
     }
 
@@ -266,7 +266,7 @@ public sealed class GitRepository
     /// <summary>The stashes, newest first.</summary>
     public async Task<IReadOnlyList<GitStash>> GetStashesAsync(CancellationToken cancellationToken = default)
     {
-        var result = await GitRunner.RunAsync(Root, ["stash", "list", "--format=%gd%x1f%gs%x1f%ct"], cancellationToken: cancellationToken);
+        var result = await GitRunner.RunAsync(Root, ["stash", "list", "--format=%gd%x1f%gs%x1f%ct"], cancellationToken: cancellationToken).ConfigureAwait(false);
         return result.Succeeded ? GitStash.Parse(result.Output) : [];
     }
 
@@ -290,7 +290,7 @@ public sealed class GitRepository
     {
         var result = await GitRunner.RunAsync(Root,
             ["for-each-ref", "--format=%(refname)%09%(refname:short)%09%(upstream:short)%09%(HEAD)%09%(symref)", "refs/heads", "refs/remotes"],
-            cancellationToken: cancellationToken);
+            cancellationToken: cancellationToken).ConfigureAwait(false);
         return result.Succeeded ? GitBranch.Parse(result.Output) : [];
     }
 
@@ -316,7 +316,7 @@ public sealed class GitRepository
     /// <summary>The repository's remotes, by name ("origin").</summary>
     public async Task<IReadOnlyList<string>> GetRemotesAsync(CancellationToken cancellationToken = default)
     {
-        var result = await GitRunner.RunAsync(Root, ["remote"], cancellationToken: cancellationToken);
+        var result = await GitRunner.RunAsync(Root, ["remote"], cancellationToken: cancellationToken).ConfigureAwait(false);
         return result.Succeeded
             ? result.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             : [];
@@ -335,10 +335,10 @@ public sealed class GitRepository
     /// </summary>
     public async Task<GitResult> PullAsync(CancellationToken cancellationToken = default)
     {
-        var configured = await GitRunner.RunAsync(Root, ["config", "--get-regexp", @"^pull\.(rebase|ff)$"], cancellationToken: cancellationToken);
+        var configured = await GitRunner.RunAsync(Root, ["config", "--get-regexp", @"^pull\.(rebase|ff)$"], cancellationToken: cancellationToken).ConfigureAwait(false);
         var hasPreference = configured.Succeeded && configured.Output.Trim().Length > 0;
         return await GitRunner.RunAsync(Root, hasPreference ? ["pull", "--no-edit"] : ["pull", "--no-edit", "--no-rebase"],
-            cancellationToken: cancellationToken);
+            cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -353,7 +353,7 @@ public sealed class GitRepository
     /// <summary>The short hash and subject of HEAD - "a1b2c3d Add tabs" - for reporting a commit.</summary>
     public async Task<string?> DescribeHeadAsync(CancellationToken cancellationToken = default)
     {
-        var result = await GitRunner.RunAsync(Root, ["log", "-1", "--format=%h %s"], cancellationToken: cancellationToken);
+        var result = await GitRunner.RunAsync(Root, ["log", "-1", "--format=%h %s"], cancellationToken: cancellationToken).ConfigureAwait(false);
         return result.Succeeded ? result.Output.Trim() : null;
     }
 

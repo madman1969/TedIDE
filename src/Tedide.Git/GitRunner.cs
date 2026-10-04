@@ -108,7 +108,7 @@ internal static class GitRunner
             try
             {
                 if (standardInput is not null)
-                    await process.StandardInput.WriteAsync(standardInput.AsMemory(), cancellationToken);
+                    await process.StandardInput.WriteAsync(standardInput.AsMemory(), cancellationToken).ConfigureAwait(false);
                 process.StandardInput.Close();
             }
             catch (IOException)
@@ -118,7 +118,7 @@ internal static class GitRunner
             }
             try
             {
-                await process.WaitForExitAsync(cancellationToken);
+                await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
@@ -126,7 +126,7 @@ internal static class GitRunner
                 catch (Exception ex) when (ex is InvalidOperationException or Win32Exception) { }
                 throw;
             }
-            return new GitResult(process.ExitCode, await output, await error);
+            return new GitResult(process.ExitCode, await output.ConfigureAwait(false), await error.ConfigureAwait(false));
         }
     }
 }

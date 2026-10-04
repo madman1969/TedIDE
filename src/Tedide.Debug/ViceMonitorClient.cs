@@ -60,14 +60,14 @@ public sealed class ViceMonitorClient : IAsyncDisposable, IDebugTarget
 
     public async Task ConnectAsync(string host = "127.0.0.1", int port = 6502, CancellationToken cancellationToken = default)
     {
-        await _tcpClient.ConnectAsync(host, port, cancellationToken);
+        await _tcpClient.ConnectAsync(host, port, cancellationToken).ConfigureAwait(false);
         _stream = _tcpClient.GetStream();
         _readLoop = Task.Run(() => ReadLoopAsync(_stream), CancellationToken.None);
     }
 
     public async Task<bool> PingAsync(CancellationToken cancellationToken = default)
     {
-        var (_, errorCode, _) = await SendAsync(ViceMonitorCommand.Ping, ReadOnlyMemory<byte>.Empty, cancellationToken, throwOnError: false);
+        var (_, errorCode, _) = await SendAsync(ViceMonitorCommand.Ping, ReadOnlyMemory<byte>.Empty, cancellationToken, throwOnError: false).ConfigureAwait(false);
         return errorCode == 0;
     }
 
@@ -78,12 +78,12 @@ public sealed class ViceMonitorClient : IAsyncDisposable, IDebugTarget
         CancellationToken cancellationToken = default)
     {
         var body = ViceMonitorProtocol.EncodeCheckpointSetBody(startAddress, endAddress ?? startAddress, stopWhenHit, enabled, operation, temporary);
-        var (_, _, responseBody) = await SendAsync(ViceMonitorCommand.CheckpointSet, body, cancellationToken);
+        var (_, _, responseBody) = await SendAsync(ViceMonitorCommand.CheckpointSet, body, cancellationToken).ConfigureAwait(false);
         return ViceMonitorProtocol.DecodeCheckpointInfoBody(responseBody);
     }
 
     async Task<uint> IDebugTarget.SetBreakpointAsync(ushort address, CancellationToken cancellationToken) =>
-        (await SetCheckpointAsync(address, cancellationToken: cancellationToken)).Number;
+        (await SetCheckpointAsync(address, cancellationToken: cancellationToken).ConfigureAwait(false)).Number;
 
     /// <summary>Makes an existing checkpoint conditional: it only stops when <paramref name="condition"/>
     /// (VICE monitor syntax, e.g. <c>A == $05</c>) holds. Throws <see cref="ViceMonitorException"/>
@@ -91,19 +91,19 @@ public sealed class ViceMonitorClient : IAsyncDisposable, IDebugTarget
     public async Task SetConditionAsync(uint checkpointNumber, string condition, CancellationToken cancellationToken = default)
     {
         var body = ViceMonitorProtocol.EncodeConditionSetBody(checkpointNumber, condition);
-        await SendAsync(ViceMonitorCommand.ConditionSet, body, cancellationToken);
+        await SendAsync(ViceMonitorCommand.ConditionSet, body, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task DeleteCheckpointAsync(uint checkpointNumber, CancellationToken cancellationToken = default)
     {
         var body = ViceMonitorProtocol.EncodeCheckpointDeleteBody(checkpointNumber);
-        await SendAsync(ViceMonitorCommand.CheckpointDelete, body, cancellationToken);
+        await SendAsync(ViceMonitorCommand.CheckpointDelete, body, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<IReadOnlyList<RegisterDescriptor>> GetAvailableRegistersAsync(CancellationToken cancellationToken = default)
     {
         var body = ViceMonitorProtocol.EncodeRegistersAvailableBody();
-        var (_, _, responseBody) = await SendAsync(ViceMonitorCommand.RegistersAvailable, body, cancellationToken);
+        var (_, _, responseBody) = await SendAsync(ViceMonitorCommand.RegistersAvailable, body, cancellationToken).ConfigureAwait(false);
         return ViceMonitorProtocol.DecodeRegistersAvailableBody(responseBody);
     }
 
@@ -112,9 +112,9 @@ public sealed class ViceMonitorClient : IAsyncDisposable, IDebugTarget
     /// call and reused for the rest of this connection rather than re-requested every time.</summary>
     public async Task<RegisterSnapshot> GetRegistersAsync(CancellationToken cancellationToken = default)
     {
-        var descriptors = _registerDescriptors ??= await GetAvailableRegistersAsync(cancellationToken);
+        var descriptors = _registerDescriptors ??= await GetAvailableRegistersAsync(cancellationToken).ConfigureAwait(false);
         var body = ViceMonitorProtocol.EncodeRegistersGetBody();
-        var (_, _, responseBody) = await SendAsync(ViceMonitorCommand.RegistersGet, body, cancellationToken);
+        var (_, _, responseBody) = await SendAsync(ViceMonitorCommand.RegistersGet, body, cancellationToken).ConfigureAwait(false);
         var valuesById = ViceMonitorProtocol.DecodeRegistersGetBody(responseBody);
 
         var valuesByName = new Dictionary<string, ushort>();
@@ -129,7 +129,7 @@ public sealed class ViceMonitorClient : IAsyncDisposable, IDebugTarget
     public async Task<byte[]> GetMemoryAsync(ushort startAddress, ushort endAddress, CancellationToken cancellationToken = default)
     {
         var body = ViceMonitorProtocol.EncodeMemoryGetBody(startAddress, endAddress);
-        var (_, _, responseBody) = await SendAsync(ViceMonitorCommand.MemoryGet, body, cancellationToken);
+        var (_, _, responseBody) = await SendAsync(ViceMonitorCommand.MemoryGet, body, cancellationToken).ConfigureAwait(false);
         return ViceMonitorProtocol.DecodeMemoryGetBody(responseBody);
     }
 
@@ -137,7 +137,7 @@ public sealed class ViceMonitorClient : IAsyncDisposable, IDebugTarget
     {
         var endAddress = (ushort)(startAddress + data.Length - 1);
         var body = ViceMonitorProtocol.EncodeMemorySetBody(startAddress, endAddress, data.Span);
-        await SendAsync(ViceMonitorCommand.MemorySet, body, cancellationToken);
+        await SendAsync(ViceMonitorCommand.MemorySet, body, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Executes one instruction (or a whole subroutine call as one, if
@@ -173,8 +173,8 @@ public sealed class ViceMonitorClient : IAsyncDisposable, IDebugTarget
 
         try
         {
-            await SendAsync(command, body, cancellationToken);
-            return await stop.Task.WaitAsync(cancellationToken);
+            await SendAsync(command, body, cancellationToken).ConfigureAwait(false);
+            return await stop.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
         }
         finally
         {
@@ -184,7 +184,7 @@ public sealed class ViceMonitorClient : IAsyncDisposable, IDebugTarget
 
     /// <summary>Resumes emulation until the next checkpoint (or the user pausing it again) - VICE's binary monitor protocol calls this "exit monitor" (0xaa), not a separate "continue" command.</summary>
     public async Task ContinueAsync(CancellationToken cancellationToken = default) =>
-        await SendAsync(ViceMonitorCommand.ExitMonitor, ReadOnlyMemory<byte>.Empty, cancellationToken);
+        await SendAsync(ViceMonitorCommand.ExitMonitor, ReadOnlyMemory<byte>.Empty, cancellationToken).ConfigureAwait(false);
 
     /// <summary>
     /// Sends one request and awaits its reply. Throws <see cref="ViceMonitorException"/> if VICE
@@ -210,10 +210,10 @@ public sealed class ViceMonitorClient : IAsyncDisposable, IDebugTarget
                 throw new IOException(closed.Message, closed);
 
             var request = ViceMonitorProtocol.EncodeRequest(requestId, command, body.Span);
-            await _writeLock.WaitAsync(cancellationToken);
+            await _writeLock.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
-                await _stream.WriteAsync(request, cancellationToken);
+                await _stream.WriteAsync(request, cancellationToken).ConfigureAwait(false);
             }
             finally
             {
@@ -223,7 +223,7 @@ public sealed class ViceMonitorClient : IAsyncDisposable, IDebugTarget
             (byte ResponseType, byte ErrorCode, byte[] Body) response;
             await using (cancellationToken.Register(() => completion.TrySetCanceled(cancellationToken)))
             {
-                response = await completion.Task;
+                response = await completion.Task.ConfigureAwait(false);
             }
 
             if (throwOnError && response.ErrorCode != 0)
@@ -247,12 +247,12 @@ public sealed class ViceMonitorClient : IAsyncDisposable, IDebugTarget
             {
                 // ReadExactlyAsync throws EndOfStreamException (an IOException) if VICE closes the
                 // connection mid-frame - handled below like any other closed connection.
-                await stream.ReadExactlyAsync(headerBuffer);
+                await stream.ReadExactlyAsync(headerBuffer).ConfigureAwait(false);
                 var header = ViceMonitorProtocol.DecodeResponseHeader(headerBuffer);
 
                 var bodyBuffer = header.BodyLength == 0 ? [] : new byte[header.BodyLength];
                 if (header.BodyLength > 0)
-                    await stream.ReadExactlyAsync(bodyBuffer);
+                    await stream.ReadExactlyAsync(bodyBuffer).ConfigureAwait(false);
 
                 Dispatch(header, bodyBuffer);
             }
@@ -333,7 +333,7 @@ public sealed class ViceMonitorClient : IAsyncDisposable, IDebugTarget
         if (_readLoop is not null)
         {
             _stream?.Close();
-            try { await _readLoop; } catch { /* already handled inside ReadLoopAsync */ }
+            try { await _readLoop.ConfigureAwait(false); } catch { /* already handled inside ReadLoopAsync */ }
         }
         _tcpClient.Dispose();
         _writeLock.Dispose();
