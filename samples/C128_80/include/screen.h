@@ -10,6 +10,9 @@ void screen_init(void);
  * start of every stage, since each stage clears the screen first. */
 void screen_banner(void);
 
+/* Prints the "Any key: next demo   Q: quit" prompt on the bottom row. */
+void screen_prompt(void);
+
 /* Restores 40-column mode and the cursor on the way out. */
 void screen_shutdown(void);
 

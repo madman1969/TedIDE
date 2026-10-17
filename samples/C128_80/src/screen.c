@@ -15,6 +15,12 @@ void screen_banner(void)
     cputsxy(0, 0, "Tedide C128 Demo - 80-column (VDC) feature tour");
 }
 
+void screen_prompt(void)
+{
+    textcolor(COLOR_WHITE);
+    cputsxy(0, 23, "Any key: next demo   Q: quit");
+}
+
 void screen_shutdown(void)
 {
     textcolor(COLOR_WHITE);

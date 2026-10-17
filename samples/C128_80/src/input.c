@@ -17,3 +17,8 @@ unsigned char input_wait_continue(void)
 {
     return is_quit_key(cgetc());
 }
+
+unsigned char input_wait_next(void)
+{
+    return input_wait_continue() ? DEMO_QUIT : DEMO_NEXT;
+}

@@ -131,7 +131,7 @@ Open any of these with **File > Open Project...**:
 | --- | --- | --- |
 | `HelloCBM` | Every Commodore target | Several `.c`, `.h` and `.s` files, and per-target conditional compilation, so one project builds for every machine. |
 | `HelloPlus4` | Plus/4 | TED chip features the C64 lacks: the 121-colour palette, TED sound and noise, and the `fast()`/`slow()` clock switch. |
-| `C128_80` | C128 | The VDC chip's 80-column text mode: a column ruler, two side-by-side text columns, and a live switch to 40 columns and back. |
+| `C128_80` | C128 | The VDC chip's 80-column mode and graphics: a column ruler, side-by-side text columns, the 16 RGBI colours drawn with hardware block fill, blink/underline/reverse/alternate-charset attributes, a redefined and animated character set, hardware smooth scrolling, a 640x200 bitmap through the TGI driver, and a live switch to 40 columns and back. |
 | `Plus4colours` | Plus/4 | One file: a grid of all 128 TED hue and luminance combinations. |
 | `bounce` | C64 | One file: five characters bouncing around the screen. |
 | `inflate` | C64 | One file: a character-fill sprite that grows and shrinks, drawn from an off-screen buffer. |

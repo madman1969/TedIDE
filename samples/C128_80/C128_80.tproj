@@ -18,7 +18,13 @@
     "src/ruler.c",
     "src/columns.c",
     "src/contrast.c",
-    "src/input.c"
+    "src/input.c",
+    "src/vdc.c",
+    "src/colours.c",
+    "src/attributes.c",
+    "src/charset.c",
+    "src/effects.c",
+    "src/bitmap.c"
   ],
   "OutputFile": "bin/C128_80.prg",
   "LinkerConfigPath": null,
