@@ -1,33 +1,29 @@
 #include <conio.h>
 #include <ctype.h>
-#include <c64.h>
 #include "farmem.h"
-#include "charset.h"
+#include "screen.h"
 #include "world.h"
 #include "view.h"
 
-#define SCREEN       ((unsigned char*)CHARSET_SCREEN)
-#define SCREEN_COLS  40
+/* The screen and its colours, wherever this machine has them (screen.h). */
+#define SCREEN       ((unsigned char*)SCREEN_CHARS)
+#define COLOURS      ((unsigned char*)SCREEN_COLOURS)
 
 #define OVERVIEW_TOP   3
 #define OVERVIEW_ROWS  16
 
-/* The character (drawn in charset.c) and colour for each tile. Not static: blit.s reads them
- * too. */
+/* The character for each tile, drawn by screen_c64.c or screen_plus4.c. Not static: blit.s
+ * reads it, and the tiles' colours (view_tile_colour, also in those files), too. */
 const unsigned char view_tile_char[TILE_COUNT] = {
-    CHARSET_FIRST_TILE + TILE_DEEP, CHARSET_FIRST_TILE + TILE_SEA, CHARSET_FIRST_TILE + TILE_BEACH,
-    CHARSET_FIRST_TILE + TILE_GRASS, CHARSET_FIRST_TILE + TILE_FOREST, CHARSET_FIRST_TILE + TILE_HILLS,
-    CHARSET_FIRST_TILE + TILE_MOUNTAIN, CHARSET_FIRST_TILE + TILE_SNOW, CHARSET_FIRST_TILE + TILE_TOWN,
-};
-const unsigned char view_tile_colour[TILE_COUNT] = {
-    COLOR_BLUE, COLOR_LIGHTBLUE, COLOR_YELLOW, COLOR_GREEN, COLOR_GREEN,
-    COLOR_BROWN, COLOR_GRAY2, COLOR_WHITE, COLOR_LIGHTRED,
+    SCREEN_FIRST_TILE + TILE_DEEP, SCREEN_FIRST_TILE + TILE_SEA, SCREEN_FIRST_TILE + TILE_BEACH,
+    SCREEN_FIRST_TILE + TILE_GRASS, SCREEN_FIRST_TILE + TILE_FOREST, SCREEN_FIRST_TILE + TILE_HILLS,
+    SCREEN_FIRST_TILE + TILE_MOUNTAIN, SCREEN_FIRST_TILE + TILE_SNOW, SCREEN_FIRST_TILE + TILE_TOWN,
 };
 static const char* const tile_name[TILE_COUNT] = {
     "deep sea", "sea", "beach", "grass", "forest", "hills", "mountain", "snow", "town",
 };
 
-#define CURSOR_CHAR    CHARSET_CURSOR
+#define CURSOR_CHAR    SCREEN_CURSOR
 #define CURSOR_OFFSET  (CURSOR_Y * SCREEN_COLS + CURSOR_X)
 
 /* Where each view row's 40 tiles are, split into low and high bytes for blit.s, which draws
@@ -61,7 +57,7 @@ static void put_tile(unsigned char x, unsigned char y, unsigned char tile)
 {
     unsigned offset = y * SCREEN_COLS + x;
     SCREEN[offset] = view_tile_char[tile];
-    COLOR_RAM[offset] = view_tile_colour[tile];
+    COLOURS[offset] = view_tile_colour[tile];
 }
 
 void view_init(void)
@@ -72,7 +68,7 @@ void view_init(void)
     bordercolor(COLOR_BLACK);
     bgcolor(COLOR_BLACK);
     cursor(0);
-    charset_init();     /* also clears the screen */
+    screen_init();      /* also clears the screen */
 
     /* In the C64's uppercase character set, a capital letter in a C string shows as a
      * graphics character, so the backend name ("REU") is shown in lowercase. */
@@ -86,7 +82,7 @@ void view_init(void)
 
 void view_done(void)
 {
-    charset_done();
+    screen_done();
     textcolor(COLOR_LIGHTBLUE);
     bordercolor(COLOR_LIGHTBLUE);
     bgcolor(COLOR_BLUE);
@@ -158,7 +154,7 @@ unsigned char view_draw(unsigned left, unsigned top)
     view_blit();
 
     SCREEN[CURSOR_OFFSET] = CURSOR_CHAR;
-    COLOR_RAM[CURSOR_OFFSET] = COLOR_WHITE;
+    COLOURS[CURSOR_OFFSET] = COLOR_WHITE;
 
     return cache[(top + CURSOR_Y) % VIEW_HEIGHT][left + CURSOR_X - cache_left];
 }
@@ -243,7 +239,7 @@ void view_overview_mark(unsigned x, unsigned y)
     unsigned offset = (OVERVIEW_TOP + y / view_overview_step()) * SCREEN_COLS
         + (unsigned)((unsigned long)x * SCREEN_COLS / world_width());
     SCREEN[offset] = CURSOR_CHAR;
-    COLOR_RAM[offset] = COLOR_WHITE;
+    COLOURS[offset] = COLOR_WHITE;
 }
 
 void view_progress(unsigned char percent)

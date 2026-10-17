@@ -137,7 +137,7 @@ Open any of these with **File > Open Project...**:
 | `inflate` | C64 | One file: a character-fill sprite that grows and shrinks, drawn from an off-screen buffer. |
 | `CBMInfo` | Eight Commodore targets | A system information screen built from five modules (see below). |
 | `FarMem` | C64, C128, C16/Plus/4, CBM 510/610 | A solution of twelve projects: one library for five targets, and a test program for each machine setup (see below). |
-| `WorldMap` | C64 | A scrolling 512x256 world map - 128K, twice the C64's memory - kept in far memory with `FarMem` (see below). |
+| `WorldMap` | C64, Plus/4 | A scrolling 512x256 world map - 128K, twice the machine's memory - kept in far memory with `FarMem` (see below). |
 
 ### CBMInfo
 
@@ -182,7 +182,7 @@ are 16 bits, so far memory is reached through these functions - `include/farmem.
 
 Machines with none of these get a block of ordinary RAM instead, so programs still run.
 
-The solution has five library projects (`FarMemC64` and so on), all built from the same `src/`
+The solution has six library projects (`FarMemC64`, `FarMemPlus4` and so on), all built from the same `src/`
 and `include/`, and ten test programs that reference them: `FarTestC64REU`, `FarTestSuperCPU`,
 `FarTestC128`, `FarTestC128REU`, `FarTestPlus4`, `FarTestPlus4Csory`, `FarTestPlus4Hannes`,
 `FarTestPlus4Hannes1M`, `FarTestCBM510` and `FarTestCBM610`. Each test program's
@@ -195,9 +195,10 @@ delay, so timing-dependent bugs only show some of the time.
 
 ### WorldMap
 
-A world map bigger than the machine it runs on, to show FarMem at work. With a 512K REU it's
-512x256 cells, one byte each: 128K, twice the C64's whole address space. With less far memory
-the map shrinks to fit, down to 64x32 in ordinary RAM.
+A world map bigger than the machine it runs on, to show FarMem at work, for the C64 and the
+Plus/4. With a 512K REU on a C64, or a Hannes 1MB or Csory 256K board on a Plus/4, it's 512x256
+cells, one byte each: 128K, twice the machine's whole address space. With less far memory the map
+shrinks to fit, down to 64x32 in ordinary RAM.
 
 - **Generating** a new world draws an overview of it as it goes, row by row. The full-size map
   takes about 15 seconds on a real C64; VICE's warp mode (Alt+W) does it in a moment. The two
@@ -207,13 +208,16 @@ the map shrinks to fit, down to 64x32 in ordinary RAM.
   video chip's raster beam (`blit.s`), so it never tears. Use the joystick in port 2 or the cursor
   keys; hold fire, or use W/A/S/D, to move faster.
 - **Tiles** are hand-drawn characters - waves, sand, grass, trees, hills, peaks and houses
-  (`charset.c`). The screen and character set move into the RAM under the KERNAL ROM, the only
-  free space the video chip can read them from with this program loaded.
+  (`tiles.c`). On the C64 the screen and character set move into the RAM under the KERNAL ROM,
+  the only free space the video chip can read them from with this program loaded
+  (`screen_c64.c`). The Plus/4's TED reads characters from any RAM, so only the character set
+  moves there, and the tiles get colours from its 121 (`screen_plus4.c`).
 - **Editing**: T, F and G turn the cell under the cursor into a town, forest or grass, with
   `far_poke`. M shows the whole world with your position marked, N makes a new one, Q quits.
 
-`WorldMap.tsln` includes `FarMem/FarMemC64` beside the program, which references it, and the
-project's Extra VICE arguments give VICE a 512K REU.
+`WorldMap.tsln` has two projects built from the same sources, apart from the screen file:
+`WorldMapC64`, which references `FarMem/FarMemC64` and gives VICE a 512K REU, and
+`WorldMapPlus4`, which references `FarMem/FarMemPlus4` and gives VICE a Hannes 1MB board.
 
 ## Projects and solutions
 

@@ -4,6 +4,7 @@
     "FarMemC64/FarMemC64.tproj",
     "FarMemC128/FarMemC128.tproj",
     "FarMemC16/FarMemC16.tproj",
+    "FarMemPlus4/FarMemPlus4.tproj",
     "FarMemCBM510/FarMemCBM510.tproj",
     "FarMemCBM610/FarMemCBM610.tproj",
     "FarTestC64REU/FarTestC64REU.tproj",

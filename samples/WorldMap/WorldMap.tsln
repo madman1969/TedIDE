@@ -1,8 +1,10 @@
 {
   "Name": "WorldMap",
   "ProjectPaths": [
-    "WorldMap.tproj",
-    "../FarMem/FarMemC64/FarMemC64.tproj"
+    "WorldMapC64/WorldMapC64.tproj",
+    "WorldMapPlus4/WorldMapPlus4.tproj",
+    "../FarMem/FarMemC64/FarMemC64.tproj",
+    "../FarMem/FarMemPlus4/FarMemPlus4.tproj"
   ],
-  "StartupProject": "WorldMap.tproj"
+  "StartupProject": "WorldMapPlus4\\WorldMapPlus4.tproj"
 }

@@ -1,9 +1,9 @@
 {
-  "Name": "WorldMap",
+  "Name": "WorldMapC64",
   "Target": "C64",
   "OutputType": "Application",
   "ProjectReferences": [
-    "..\\FarMem\\FarMemC64\\FarMemC64.tproj"
+    "../../FarMem/FarMemC64/FarMemC64.tproj"
   ],
   "OptimizationLevel": "Maximum",
   "GenerateAssemblyListing": true,
@@ -20,17 +20,18 @@
   "UseOpt6502": true,
   "Opt6502Mode": "Speed",
   "SourceFiles": [
-    "src/main.c",
-    "src/world.c",
-    "src/view.c",
-    "src/terrain.s",
-    "src/blit.s",
-    "src/charset.c"
+    "../src/main.c",
+    "../src/world.c",
+    "../src/view.c",
+    "../src/tiles.c",
+    "../src/screen_c64.c",
+    "../src/terrain.s",
+    "../src/blit.s"
   ],
-  "OutputFile": "bin/WorldMap.prg",
+  "OutputFile": "bin/WorldMapC64.prg",
   "LinkerConfigPath": null,
   "IncludePaths": [
-    "include"
+    "../include"
   ],
   "PreprocessorDefines": [],
   "ExtraArguments": [],

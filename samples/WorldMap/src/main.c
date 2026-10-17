@@ -1,7 +1,9 @@
 /*
- * Tedide sample: a scrolling world map far bigger than the C64's memory, kept in far memory
- * with the FarMem library (../FarMem). With a 512K REU the map is 512x256 cells - 128K, twice
- * the machine's whole address space; with less far memory it shrinks to fit.
+ * Tedide sample: a scrolling world map far bigger than the machine's memory, kept in far memory
+ * with the FarMem library (../FarMem). With a 512K REU on a C64, or a Hannes 1MB or Csory 256K
+ * board on a Plus/4, the map is 512x256 cells - 128K, twice the machine's whole address space;
+ * with less far memory it shrinks to fit. WorldMapC64 and WorldMapPlus4 build it for each
+ * machine from the same sources, apart from screen_c64.c or screen_plus4.c.
  *
  * Joystick (port 2) or cursor keys scroll the map; hold fire, or use W/A/S/D, to move faster.
  * T, F and G change the cell under the cursor to a town, forest or grass, M shows the whole
@@ -12,7 +14,8 @@
  *   terrain.s/.h   - the generator's two per-row loops, in assembly for speed
  *   view.c/.h      - draws the map, the status bar and the overview
  *   blit.s         - draws the map view onto the screen without tearing, in assembly
- *   charset.c/.h   - the hand-drawn tile characters, and moving the screen to show them
+ *   tiles.c        - the hand-drawn tile characters
+ *   screen_c64.c, screen_plus4.c - each machine's screen, colours and character set
  */
 #include <stdlib.h>
 #include <conio.h>
