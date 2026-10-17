@@ -80,6 +80,7 @@ VideoSystem detect_video_system(void)
 #endif
 }
 
+/* The display name for each VideoSystem value. */
 const char *video_name(VideoSystem video)
 {
     switch (video)
@@ -102,6 +103,7 @@ void video_get_text_size(unsigned *cols, unsigned *rows)
 {
     unsigned char c, r;
 
+    /* screensize() reports in bytes; widen them for the SystemInfo fields. */
     screensize(&c, &r);
     *cols = c;
     *rows = r;
@@ -136,7 +138,7 @@ unsigned video_colour_count(void)
 #elif defined(__VIC20__)
     return 8;
 #elif defined(__PLUS4__) || defined(__C16__)
-    return 121; /* TED: 16 luminance x 8 hue combinations minus overlaps. */
+    return 121; /* TED: 16 hues x 8 luminance levels, minus 7 duplicate blacks. */
 #else
     return 1; /* PET/CBM610: monochrome. */
 #endif

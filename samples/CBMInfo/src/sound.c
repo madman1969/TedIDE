@@ -1,5 +1,6 @@
 #include <sound.h>
 
+/* Both functions pick their answer at compile time, by target - see sound.h. */
 const char *sound_chip_name(void)
 {
 #if defined(__C64__) || defined(__C128__) || defined(__CBM510__) || defined(__CBM610__)

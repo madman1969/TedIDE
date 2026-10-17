@@ -25,9 +25,10 @@ const char *cpu_name(void)
      * I/O port the machine actually wires up, which getcpu() itself can't
      * tell apart. Confirm that's really what was detected before naming
      * the exact chip, rather than just assuming it. */
-     
+
     cpu_type = getcpu();
-    
+
+    /* The other families, should one ever be reported. */
     switch (cpu_type)
     {
 		case CPU_6502:
@@ -63,6 +64,7 @@ const char *cpu_name(void)
         return "Unknown 65xx-family CPU";
     }
 
+    /* A plain 6502 core: name the model this machine is built around. */
 #if defined(__C64__)
     return "MOS 6510";
 #elif defined(__C128__)
@@ -172,6 +174,7 @@ unsigned cpu_speed_khz(void)
         return s_fast_khz;
     }
 
+    /* Otherwise, the machine's normal clock speed. */
 #if defined(__C128__)
     /* No accelerator with a known exact rate was engaged above, but the
      * C128's own native switch is still genuinely dynamic on its own -

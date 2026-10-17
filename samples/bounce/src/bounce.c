@@ -5,6 +5,8 @@
  */
 #include <main.h>
 
+/* One bouncing character: its position, its direction of travel on each
+ * axis (+1 or -1), and the character to draw. */
 typedef struct {
     int x, y;
     int dx, dy;
@@ -20,11 +22,13 @@ int main(void)
     int d;
     int i;
 
+    /* Ask conio for the screen size, so this works on 22-, 40- and 80-column machines. */
     screensize(&w, &h);
     clrscr();
     textcolor(COLOR_BLACK);
 
-    /* Initialise sprites */
+    /* Initialise sprites: spread out from the centre of the screen, each
+     * heading off in one of the four diagonal directions. */
     for (i = 0; i < NUM_CHARS; i++) {
         s[i].x = (w / 2) + (i * 2);
         s[i].y = (h / 2) + (i * 1);
@@ -37,8 +41,9 @@ int main(void)
     {
         for (i = 0; i < NUM_CHARS; i++)
         {
+            /* Each character gets its own colour, 0-7. */
         	textcolor(COLOR_BLACK + i);
-        	
+
             /* Erase old position */
             gotoxy(s[i].x, s[i].y);
             cputc(' ');
@@ -60,7 +65,7 @@ int main(void)
             cputc(s[i].symbol);
         }
 
-        /* Delay */
+        /* Delay: a short busy-wait so the movement is visible. */
         for (d = 0; d < 300; d++);
     }
 

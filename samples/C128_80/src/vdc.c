@@ -4,6 +4,8 @@
 #define VDC_STATUS_READY   0x80
 #define VDC_STATUS_VBLANK  0x20
 
+/* Selects a VDC register through $D600 and waits until the chip is ready for
+ * it to be read or written through $D601. */
 static void select_reg(unsigned char reg)
 {
     VDC.ctrl = reg;
@@ -23,6 +25,8 @@ void vdc_write_reg(unsigned char reg, unsigned char value)
     VDC.data = value;
 }
 
+/* Points the next register 31 access at addr in VDC RAM. Each access then
+ * moves it on by one byte, so runs of bytes need only one set_address. */
 static void set_address(unsigned addr)
 {
     vdc_write_reg(VDC_REG_ADDR_HI, addr >> 8);
@@ -59,6 +63,8 @@ void vdc_fill(unsigned addr, unsigned char value, unsigned count)
 
     /* Bit 7 of register 24 clear selects fill rather than copy. */
     vdc_write_reg(VDC_REG_VSCROLL, vdc_read_reg(VDC_REG_VSCROLL) & ~VDC_VSCROLL_COPY);
+    /* Write the first byte, then have the VDC repeat it, at most 255 more
+     * at a time. */
     vdc_poke(addr, value);
     --count;
 
@@ -85,6 +91,7 @@ unsigned vdc_charset_base(void)
     return (unsigned)(vdc_read_reg(VDC_REG_CHARSET) & 0xE0) << 8;
 }
 
+/* A text cell's offset from the start of screen or attribute RAM. */
 static unsigned cell_offset(unsigned char x, unsigned char y)
 {
     return y * VDC_COLUMNS + x;
@@ -112,6 +119,7 @@ unsigned char vdc_text_charset(void)
 
 void vdc_wait_vblank(void)
 {
+    /* Wait out any blank already in progress, then for the next to begin. */
     while (VDC.ctrl & VDC_STATUS_VBLANK)
         ;
     while (!(VDC.ctrl & VDC_STATUS_VBLANK))

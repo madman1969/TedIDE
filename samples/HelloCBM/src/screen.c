@@ -5,7 +5,7 @@
  * VIC-I, the monochrome PET/CBM610) boots into a dark screen, so white text
  * is readable. The C16 and Plus/4 (TED chip) are the odd ones out - they
  * default to a pale background instead, so COLOR_WHITE text would be
- * invisible there; use black on just those two targets. */
+ * invisible there; use black on those two targets, and on the CBM 510. */
 #if defined(__C16__) || defined(__PLUS4__) || defined(__CBM510__)
 #define BANNER_COLOR COLOR_BLACK
 #else
@@ -29,6 +29,7 @@ void screen_shutdown(void)
 
 void screen_put_char(unsigned char x, unsigned char y, char c, unsigned char color)
 {
+    /* conio has no "print in this colour" call: set the colour, then print. */
     textcolor(color);
     cputcxy(x, y, c);
 }

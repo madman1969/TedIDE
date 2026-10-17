@@ -34,27 +34,33 @@ void main(void)
 }
 
 /*
-  Update the sprite
+  Update the sprite: it stays anchored at the top-left corner, growing one
+  row and column per frame until it fills the screen, then shrinking
+  back to nothing, and so on.
 */
 void update_sprite(Screen *scrn, Sprite* sprite)
 {
+  // Growing (+1) or shrinking (-1), remembered between calls ...
   static int xinc = 1;
   static int yinc = 1;
 
   // Anchor sprite at 0,0 ...
   sprite->xoffset = sprite->yoffset = 0;
   
-  if (sprite->width > scrn->width)
+  // Turn around at either end of the range - before the step below, so
+  // the sprite never grows past the screen (and the buffer) ...
+  if (sprite->width >= scrn->width)
     xinc = -1;
   else if (sprite->width < 1)
     xinc = 1;
   
-  if (sprite->height > scrn->height)
+  if (sprite->height >= scrn->height)
     yinc = -1;  
   else if (sprite->height < 1)
     yinc = 1;
 
-  // Assign random character ...
+  // Assign random character: 0x41-0x5A, written straight to screen memory as
+  // screen codes, are the PETSCII graphics characters rather than letters ...
   sprite->c = 0x41 + rand() % 26; 
   
   // Adjust sprite width & height by increment ...
@@ -73,7 +79,7 @@ void draw_sprite(Screen *scrn, Sprite *sprite)
   // For each row of the sprite ...
   for (inc = sprite->yoffset; inc < sprite->yoffset + sprite->height; inc++)
   {
-    // Draw row ...
+    // Draw row: find where it starts in the buffer, then fill it ...
     p = scrn->screen + ((inc * scrn->width) + sprite->xoffset);
     memset(p, sprite->c, sprite->width);
   }
@@ -110,7 +116,7 @@ void build_screen(Screen *scrn)
 */
 void clear_screen(Screen *scrn)
 {
-  // Fill screen buffer with spaces ...
+  // Fill screen buffer with spaces (0x20 is the space screen code) ...
   memset(scrn->screen, 0x20, scrn->size);  
 }
 
@@ -127,6 +133,7 @@ void free_screen(Screen *scrn)
 */
 void draw_screen(Screen *scrn)
 {
-  // Copy the screen buffer to the screen
+  // Copy the screen buffer to the screen: one memcpy straight into screen
+  // memory, so the whole frame appears at once
   memcpy((void *)SCRNBASE, scrn->screen, scrn->size);
 }

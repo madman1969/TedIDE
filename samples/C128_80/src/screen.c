@@ -4,6 +4,7 @@
 
 void screen_init(void)
 {
+    /* Send conio's output to the VDC's 80-column screen. */
     videomode(VIDEOMODE_80COL);
     clrscr();
     cursor(0);
@@ -23,6 +24,7 @@ void screen_prompt(void)
 
 void screen_shutdown(void)
 {
+    /* Leave the machine in 40-column mode, as BASIC normally starts. */
     textcolor(COLOR_WHITE);
     videomode(VIDEOMODE_40COL);
     clrscr();

@@ -2,6 +2,7 @@
 #include "columns.h"
 #include "input.h"
 
+/* Two lists whose rows belong together - a menu and what each entry does. */
 static const char* const left_column[] = {
     "MENU",
     "1) New Game",
@@ -28,6 +29,7 @@ unsigned char columns_demo(void)
     cputsxy(0, 4, "Two independent columns, 40 characters apart - only");
     cputsxy(0, 5, "possible without overlap because the screen is 80 wide:");
 
+    /* Each row's two halves, at column 0 and column 40. */
     for (i = 0; i < ROW_COUNT; i++)
     {
         cputsxy(0, 7 + i, left_column[i]);

@@ -34,16 +34,19 @@ unsigned char speed_demo(void)
     cputsxy(0, 4, "TED lets the CPU run at double its normal clock speed -");
     cputsxy(0, 5, "timing the same busy loop at both speeds:");
 
+    /* Time the loop at normal speed... */
     slow_ticks = clock();
     busy_loop();
     slow_ticks = clock() - slow_ticks;
 
+    /* ...then again at double speed, switching back to normal afterwards. */
     fast();
     fast_ticks = clock();
     busy_loop();
     fast_ticks = clock() - fast_ticks;
     slow();
 
+    /* The fast run should take roughly half as many jiffies (clock ticks). */
     gotoxy(0, 7);
     cprintf("normal speed: %lu jiffies\r\n", (unsigned long)slow_ticks);
     cprintf("fast  speed:  %lu jiffies\r\n", (unsigned long)fast_ticks);

@@ -35,8 +35,11 @@ void detect_system(SystemInfo *info)
 
 int main(void)
 {
+    /* static gives the struct a fixed address, which cc65 reaches faster
+     * than a local on its software stack. */
     static SystemInfo sys;
 
+    /* Gather everything first, then print it as one labelled list. */
     detect_system(&sys);
 
     clrscr();
@@ -46,6 +49,8 @@ int main(void)
 
     printf("Model              : %s\n", sys.model);
     printf("CPU                : %s\n", sys.cpu);
+    /* kHz shown as MHz with three decimals, e.g. 1020 -> "1.020" - cc65's
+     * printf has no floating point. */
     printf("Clock Speed        : %u.%03u MHz\n", sys.cpu_khz / 1000, sys.cpu_khz % 1000);
     printf("SuperCPU Enabled   : %s\n", sys.supercpu_enabled ? "YES" : "NO");
     printf("Supports Fast Mode : %s\n", sys.fast_mode_supported ? "YES" : "NO");

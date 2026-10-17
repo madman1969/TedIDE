@@ -29,6 +29,7 @@ static void show_swatch(unsigned char hue, unsigned char luma)
 
     bordercolor(rawcolor);
     bgcolor(rawcolor);
+    /* White text on the darker shades, black on the lighter ones. */
     textcolor(luma < 4 ? COLOR_WHITE : COLOR_BLACK);
 
     gotoxy(0, SWATCH_ROW);
@@ -43,8 +44,10 @@ unsigned char palette_demo(void)
     cputsxy(0, 4, "The TED chip's 121-color palette:");
     cputsxy(0, 5, "16 hues x 8 luminance levels (black stays black)");
 
+    /* Every hue at every luminance, stopping early if Q is pressed. */
     for (hue = 0; hue < 16 && !quit; hue++)
     {
+        /* Black looks the same at every luminance, so it's shown once. */
         unsigned char luma_count = (hue == 0) ? 1 : 8;
         for (luma = 0; luma < luma_count && !quit; luma++)
         {
@@ -54,6 +57,7 @@ unsigned char palette_demo(void)
         }
     }
 
+    /* Back to white on black for the rest of the tour. */
     bordercolor(COLOR_BLACK);
     bgcolor(COLOR_BLACK);
     textcolor(COLOR_WHITE);

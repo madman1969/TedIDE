@@ -25,6 +25,9 @@ static unsigned int freq_to_reg(unsigned int hz)
     return (unsigned int)(1024UL - (111840UL / hz));
 }
 
+/* Starts voice 1 playing a square-wave tone at hz. The 10-bit frequency is
+ * split across two registers: the low 8 bits in $FF0E, and the top 2 bits in
+ * bits 0-1 of $FF12, whose other bits (bitmap address etc.) are kept. */
 static void voice1_tone(unsigned int hz, unsigned char volume)
 {
     unsigned int reg = freq_to_reg(hz);
@@ -33,6 +36,8 @@ static void voice1_tone(unsigned int hz, unsigned char volume)
     TED.snd_ctrl = (unsigned char)(SND_VOICE1_ON | (volume & 0x0F));
 }
 
+/* Starts voice 2 in noise mode. Its frequency register still sets how fast
+ * the noise changes; 0x0C0 gives a low rumble. */
 static void voice2_noise(unsigned char volume)
 {
     TED.snd2_freq_lo = 0xC0;
@@ -40,11 +45,13 @@ static void voice2_noise(unsigned char volume)
     TED.snd_ctrl = (unsigned char)(SND_VOICE2_ON | SND_NOISE_ON | (volume & 0x0F));
 }
 
+/* Turns both voices off and the volume down to 0. */
 static void silence(void)
 {
     TED.snd_ctrl = 0;
 }
 
+/* C4, E4, G4, C5 - a C major arpeggio. */
 static const unsigned int arpeggio_hz[] = { 262, 330, 392, 523 };
 #define ARPEGGIO_NOTES (sizeof(arpeggio_hz) / sizeof(arpeggio_hz[0]))
 
@@ -56,6 +63,7 @@ unsigned char sound_demo(void)
     cputsxy(0, 4, "TED sound: voice 1 (tone) plays a C major arpeggio,");
     cputsxy(0, 5, "then voice 2's dedicated noise generator fires once.");
 
+    /* Each note plays for one long delay; Q stops the sound at once. */
     for (i = 0; i < ARPEGGIO_NOTES; i++)
     {
         voice1_tone(arpeggio_hz[i], VOLUME_MAX);
@@ -66,6 +74,7 @@ unsigned char sound_demo(void)
             return 1;
         }
     }
+    /* A short gap, then one burst of noise. */
     silence();
     delay_short();
 

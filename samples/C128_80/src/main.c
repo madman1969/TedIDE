@@ -27,6 +27,8 @@
 #include "contrast.h"
 #include "input.h"
 
+/* Every demo has the same shape - no arguments, returns a DEMO_ value from
+ * input.h - so they can sit in one table and be run in turn. */
 typedef unsigned char (*demo_fn)(void);
 
 static const demo_fn demos[] = {
@@ -35,6 +37,8 @@ static const demo_fn demos[] = {
 };
 #define DEMO_COUNT (sizeof(demos) / sizeof(demos[0]))
 
+/* Runs one demo on a fresh screen and, unless it already waited for its own
+ * key, prompts and waits for one. Returns 1 if Q was pressed. */
 static unsigned char run_stage(demo_fn demo)
 {
     unsigned char result;
@@ -59,6 +63,7 @@ int main(void)
 
     screen_init();
 
+    /* Loop through the demos, starting again after the last, until Q. */
     while (!quit)
     {
         for (i = 0; i < DEMO_COUNT && !quit; i++)

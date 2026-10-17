@@ -4,6 +4,7 @@
 #include "delay.h"
 #include "border.h"
 
+/* The character bounces back and forth along one row, between these columns. */
 #define ROW      12
 #define MIN_COL  0
 #define MAX_COL  39
@@ -18,6 +19,8 @@
 #define ANIMATION_COLOR_CYCLING 1
 #endif
 
+/* The animation's state, kept between calls: the current column, the
+ * direction of travel (+1 right, -1 left) and the current colour. */
 static unsigned char pos   = MIN_COL;
 static signed char   step  = 1;
 #if ANIMATION_COLOR_CYCLING
@@ -28,8 +31,11 @@ static unsigned char color = COLOR_WHITE;
 
 void animation_step(void)
 {
+    /* Erase the character at its old position. */
     screen_put_char(pos, ROW, ' ', COLOR_BLACK);
 
+    /* Turn around at either end, picking the next colour as it does -
+     * (color % 15) + 1 cycles through 1-15, skipping 0 (black). */
     if (pos == MAX_COL)
     {
         step = -1;
@@ -46,6 +52,8 @@ void animation_step(void)
     }
     pos = (unsigned char)(pos + step);
 
+    /* Draw it at the new position, wait a moment so the movement is
+     * visible, and step the border colour (border.s) for good measure. */
     screen_put_char(pos, ROW, '*', color);
     delay_short();
     border_flash();

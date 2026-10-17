@@ -48,6 +48,9 @@ const char *machine_model(void)
 #endif
 }
 
+/* Every target here is a 6502-family machine: a 16-bit address bus (64K at
+ * once - the C128 and CBM-II reach more RAM by bank switching, not a wider
+ * bus) and 8-bit registers. */
 unsigned machine_address_bits(void)
 {
     return 16;

@@ -18,6 +18,7 @@ int main(void)
 {
     screen_init();
 
+    /* One animation step per pass, until Q is pressed. */
     while (!input_quit_requested())
     {
         animation_step();

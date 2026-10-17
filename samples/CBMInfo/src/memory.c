@@ -1,6 +1,7 @@
 #include <memory.h>
 #include <stdlib.h>
 
+/* Each machine's standard RAM fitting - see memory.h for why this can't be measured. */
 unsigned long memory_installed_bytes(void)
 {
 #if defined(__C64__) || defined(__PLUS4__)

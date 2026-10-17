@@ -6,6 +6,7 @@ void ruler_draw(unsigned char row)
 {
     unsigned char columns, rows, x;
 
+    /* One digit per column - the last digit of its column number. */
     screensize(&columns, &rows);
     for (x = 0; x < columns; x++)
         cputcxy(x, row, '0' + (x % 10));
@@ -19,6 +20,7 @@ unsigned char ruler_demo(void)
     cputsxy(0, 4, "screensize() reports the real width below - a ruler");
     cputsxy(0, 5, "spanning every column proves it's genuinely there:");
 
+    /* Print the size conio reports, then prove it with a full-width ruler. */
     screensize(&columns, &rows);
     gotoxy(0, 7);
     cprintf("Screen: %ux%u", columns, rows);

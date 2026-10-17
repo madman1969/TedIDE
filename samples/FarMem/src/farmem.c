@@ -29,7 +29,9 @@
 #  define CBM_FIRST_BANK 2      /* the program runs in bank 1 */
 #endif
 
-/* farhw.s */
+/* farhw.s - the assembly routines take their arguments from these variables rather than the C
+** stack: the near (ordinary memory) address, the far source and destination, the length, and
+** extra REU control bits. */
 extern void* far_hw_near;
 extern unsigned long far_hw_src;
 extern unsigned long far_hw_dst;
@@ -37,6 +39,7 @@ extern unsigned far_hw_len;
 extern unsigned char far_hw_ctrl;
 #if HAS_REU
 void __fastcall__ reu_go (unsigned char command);
+/* REU command register values that start a transfer: C64 to REU (stash) or REU to C64 (fetch). */
 #  define REU_STASH 0x80
 #  define REU_FETCH 0x81
 #endif
@@ -50,18 +53,18 @@ void cbm_stash (void);
 
 #define BOUNCE_SIZE 256
 
-static unsigned char backend;
-static unsigned long size;
+static unsigned char backend;               /* a FAR_ value, chosen by far_init */
+static unsigned long size;                  /* bytes of far memory */
 static unsigned char* near_base;            /* FAR_NEAR's block */
 static unsigned char bounce[BOUNCE_SIZE];   /* far-to-far copies and fills */
 #if HAS_SCPU
 static unsigned long scpu_base;             /* far offset 0 as a 65816 address */
 #endif
 #if HAS_EMD
-static struct em_copy request;
+static struct em_copy request;              /* reused for every extended memory driver call */
 #endif
 #if HAS_CBM
-static unsigned char cbm_banks;
+static unsigned char cbm_banks;             /* how many RAM banks far_init found */
 #endif
 
 /* ------------------------------------------------------------------------
@@ -73,6 +76,7 @@ static unsigned char cbm_banks;
 #if HAS_REU || HAS_SCPU
 static unsigned to_bank_end (unsigned long a, unsigned len)
 {
+    /* 0 - low is the distance to the next 64K boundary (0 meaning a whole bank). */
     unsigned low = (unsigned) a;
     if (low != 0 && (unsigned) (0 - low) < len) {
         return 0 - low;
@@ -95,6 +99,8 @@ static unsigned cbm_locate (unsigned long a)
 }
 #endif
 
+/* Copies len bytes from far memory at src into ordinary memory at dst, with whichever backend
+** far_init chose - in several pieces where the hardware can't cross a bank in one go. */
 static void hw_read (void* dst, farptr src, unsigned len)
 {
 #if HAS_REU || HAS_SCPU || HAS_CBM
@@ -108,6 +114,7 @@ static void hw_read (void* dst, farptr src, unsigned len)
         break;
 #if HAS_EMD
     case FAR_EMD:
+        /* cc65's driver API addresses its memory as 256-byte pages plus an offset. */
         request.buf = d;
         request.offs = (unsigned char) src;
         request.page = (unsigned) (src >> 8);
@@ -131,6 +138,7 @@ static void hw_read (void* dst, farptr src, unsigned len)
 #endif
 #if HAS_SCPU
     case FAR_SCPU:
+        /* Far offsets become 24-bit 65816 addresses; ordinary memory is bank 0. */
         src += scpu_base;
         while (len) {
             n = to_bank_end (src, len);
@@ -163,6 +171,7 @@ static void hw_read (void* dst, farptr src, unsigned len)
     }
 }
 
+/* The reverse of hw_read: copies len bytes from ordinary memory at src into far memory at dst. */
 static void hw_write (farptr dst, const void* src, unsigned len)
 {
 #if HAS_REU || HAS_SCPU || HAS_CBM
@@ -273,9 +282,12 @@ static void scpu_copy (unsigned long dst, unsigned long src, unsigned long len, 
 }
 #endif
 
+/* Copies len bytes within far memory, like memmove. */
 static void hw_copy (farptr dst, farptr src, unsigned long len)
 {
     unsigned n;
+    /* Copying upwards over an overlap would overwrite the source before it's read, so that case
+    ** is done from the top down. */
     unsigned char backward = dst > src && dst < src + len;
 
     if (backend == FAR_NEAR) {
@@ -310,6 +322,7 @@ static void hw_copy (farptr dst, farptr src, unsigned long len)
     }
 }
 
+/* Sets len bytes of far memory at dst to value, like memset. */
 static void hw_fill (farptr dst, unsigned char value, unsigned long len)
 {
     unsigned n;
@@ -327,7 +340,7 @@ static void hw_fill (farptr dst, unsigned char value, unsigned long len)
             far_hw_near = bounce;
             far_hw_src = dst;
             far_hw_len = n;
-            far_hw_ctrl = 0x80;
+            far_hw_ctrl = 0x80;     /* address control: hold the C64 address still */
             reu_go (REU_STASH);
             far_hw_ctrl = 0;
             dst += n;
@@ -346,6 +359,7 @@ static void hw_fill (farptr dst, unsigned char value, unsigned long len)
         return;
     }
 #endif
+    /* Everything else: a buffer full of the value, written out as many times as it takes. */
     memset (bounce, value, BOUNCE_SIZE);
     while (len) {
         n = len > BOUNCE_SIZE ? BOUNCE_SIZE : (unsigned) len;
@@ -362,17 +376,18 @@ static void hw_fill (farptr dst, unsigned char value, unsigned long len)
 */
 
 typedef struct {
-    farptr base;
+    farptr base;            /* the far address the window's first byte came from */
     unsigned len;           /* 0: unused */
-    unsigned char dirty;
-    unsigned char age;
+    unsigned char dirty;    /* changed since it was read, so it must be written back */
+    unsigned char age;      /* the tick it was last used on, for choosing which to replace */
 } window;
 
 static window windows[FAR_WINDOWS];
 static unsigned char window_data[FAR_WINDOWS][FAR_WINDOW_SIZE];
-static unsigned char tick;
-static unsigned char last_hit;
+static unsigned char tick;                  /* counts up on every far_map */
+static unsigned char last_hit;              /* the window far_map returned last */
 
+/* Copies window i back to far memory if it has been changed. */
 static void write_back (unsigned char i)
 {
     if (windows[i].dirty) {
@@ -401,6 +416,7 @@ void* far_map (farptr p, unsigned len, unsigned char mode)
     unsigned char victim;
     window* w = &windows[last_hit];
 
+    /* The range must fit in one window and lie inside far memory. */
     if (len == 0 || len > FAR_WINDOW_SIZE || p + len > size) {
         return 0;
     }
@@ -425,6 +441,7 @@ void* far_map (farptr p, unsigned len, unsigned char mode)
                 victim = i;
                 break;
             }
+            /* Ages are compared as distances back from tick, so the counter can wrap. */
             if ((unsigned char) (tick - windows[i].age) > (unsigned char) (tick - windows[victim].age)) {
                 victim = i;
             }
@@ -432,6 +449,7 @@ void* far_map (farptr p, unsigned len, unsigned char mode)
         w = &windows[victim];
         write_back (victim);
         w->len = 0;
+        /* Read a whole window's worth (less at the end of far memory), so nearby accesses hit. */
         len = (size - p) < FAR_WINDOW_SIZE ? (unsigned) (size - p) : FAR_WINDOW_SIZE;
         /* No two windows may hold the same byte, or one's changes would hide the other's. */
         sync_range (p, len, 1);
@@ -442,12 +460,16 @@ void* far_map (farptr p, unsigned len, unsigned char mode)
         last_hit = victim;
     }
 
+    /* Mark it as just used, and as changed if the caller is going to write to it. */
     w->age = ++tick;
     if (mode == FAR_WRITE) {
         w->dirty = 1;
     }
     return window_data[last_hit] + (unsigned) (p - w->base);
 }
+
+/* The single-byte and word accessors below map just the bytes they need; a bad address reads
+** as 0 and writes nowhere. */
 
 void far_commit (void)
 {
@@ -486,7 +508,8 @@ void far_pokew (farptr p, unsigned value)
 }
 
 /* ------------------------------------------------------------------------
-** Block transfers.
+** Block transfers. Each first brings the window cache into line: a read needs any changed window
+** it overlaps written back first; a write also drops those windows, as they'd now be stale.
 */
 
 void far_read (void* dst, farptr src, unsigned len)
@@ -532,9 +555,10 @@ void far_fill (farptr dst, unsigned char value, unsigned long len)
 #define HEADER 4UL
 #define USED   1UL
 
-static unsigned long heap_end;
-static farptr rover;
+static unsigned long heap_end;              /* the end of the last block */
+static farptr rover;                        /* where the next search starts */
 
+/* Reads and writes the 4-byte header at the start of a block. */
 static unsigned long header_at (farptr block)
 {
     unsigned long h;
@@ -559,6 +583,7 @@ static unsigned long merge_following (farptr block, unsigned long bsize)
         if (h & USED) {
             break;
         }
+        /* The rover can't be left pointing into the middle of the merged block. */
         if (next == rover) {
             rover = block;
         }
@@ -581,8 +606,11 @@ farptr far_alloc (unsigned long n)
     if (n == 0 || n > size) {
         return FAR_NULL;
     }
+    /* The block's whole size: the request plus its header, rounded up to a multiple of 4 so
+    ** bit 0 of every size is free for the in-use flag. */
     need = (n + HEADER + 3) & ~3UL;
 
+    /* Walk the chain from the rover to the end, then from 0 back up to the rover. */
     start = rover;
     block = rover;
     for (;;) {
@@ -603,13 +631,15 @@ farptr far_alloc (unsigned long n)
         if (!(h & USED)) {
             h = merge_following (block, h);
             if (h >= need) {
+                /* Big enough. Split off the rest as a new free block, unless it would be too
+                ** small to hold anything. */
                 if (h - need >= HEADER + 4) {
                     set_header (block + need, h - need);
                     h = need;
                 }
                 set_header (block, h | USED);
                 rover = block;
-                return block + HEADER;
+                return block + HEADER;          /* the caller's bytes start after the header */
             }
         }
         block += h & ~USED;
@@ -622,6 +652,7 @@ void far_free (farptr p)
     farptr block = p - HEADER;
     unsigned long h;
 
+    /* Ignore pointers that can't be blocks, and blocks already free. */
     if (p < HEADER || p >= heap_end) {
         return;
     }
@@ -629,11 +660,13 @@ void far_free (farptr p)
     if (!(h & USED)) {
         return;
     }
+    /* Clear the in-use bit, and merge any free blocks after it straight away. */
     h &= ~USED;
     set_header (block, h);
     merge_following (block, h);
 }
 
+/* Walks the whole chain, merging free neighbours, and returns the largest free block's usable size. */
 unsigned long far_maxavail (void)
 {
     farptr block;
@@ -685,7 +718,9 @@ static unsigned char cbm_count_banks (void)
     unsigned char b;
 
     far_hw_len = 1;
+    /* Bank 15 is the system bank (I/O and ROMs), so banks up to 14 are tried. */
     for (count = 0; CBM_FIRST_BANK + count < 15 && count < sizeof marks; ++count) {
+        /* Mark $0100 of the next bank, then check that bank and every one below it. */
         far_hw_src = ((unsigned long) (CBM_FIRST_BANK + count) << 16) | 0x0100;
         marks[count] = 0xA5 ^ count;
         far_hw_near = &marks[count];
@@ -693,7 +728,7 @@ static unsigned char cbm_count_banks (void)
         for (i = 0; i <= count; ++i) {
             far_hw_src = ((unsigned long) (CBM_FIRST_BANK + i) << 16) | 0x0100;
             far_hw_near = &b;
-            b = ~marks[i];
+            b = ~marks[i];      /* so a fetch that changes nothing can't pass */
             cbm_fetch ();
             if (b != marks[i]) {
                 return count;
@@ -709,12 +744,14 @@ unsigned char far_init (void)
     unsigned pages = 0;
     unsigned avail;
 
+    /* Already set up: nothing to do. */
     if (backend != FAR_NONE) {
         return backend;
     }
     memset (windows, 0, sizeof windows);
     far_hw_ctrl = 0;
 
+    /* Try each kind of expansion this machine can have, fastest first. */
 #if defined(__C64__)
     if ((pages = try_driver (c64_65816_emd)) != 0) {
         backend = FAR_SCPU;
@@ -743,7 +780,7 @@ unsigned char far_init (void)
 #endif
 
     if (backend != FAR_NONE) {
-        size = (unsigned long) pages << 8;
+        size = (unsigned long) pages << 8;      /* 256 bytes per page */
     } else {
         /* No expansion: half of what's left of the C heap stands in, so the program still runs. */
         avail = _heapmaxavail () / 2;
@@ -767,6 +804,7 @@ void far_done (void)
     if (backend == FAR_NONE) {
         return;
     }
+    /* Save any changed windows, release whatever far_init took, and reset everything. */
     far_commit ();
     if (backend == FAR_NEAR) {
         free (near_base);
@@ -788,6 +826,7 @@ unsigned char far_backend (void)
 
 const char* far_backend_name (void)
 {
+    /* Only the backends this target can have are listed. */
     switch (backend) {
     case FAR_NEAR:    return "ordinary RAM";
 #if defined(__C64__) || defined(__C128__)

@@ -15,11 +15,15 @@
 #include "speed.h"
 #include "input.h"
 
+/* Every demo has the same shape - no arguments, returns 1 if Q was pressed -
+ * so they can sit in one table and be run in turn. */
 typedef unsigned char (*demo_fn)(void);
 
 static const demo_fn demos[] = { palette_demo, sound_demo, speed_demo };
 #define DEMO_COUNT (sizeof(demos) / sizeof(demos[0]))
 
+/* Runs one demo on a fresh screen, then waits for a key before the next.
+ * Returns 1 if Q was pressed at any point. */
 static unsigned char run_stage(demo_fn demo)
 {
     unsigned char quit;
@@ -45,6 +49,7 @@ int main(void)
 
     screen_init();
 
+    /* Loop through the demos, starting again after the last, until Q. */
     while (!quit)
     {
         for (i = 0; i < DEMO_COUNT && !quit; i++)

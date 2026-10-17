@@ -53,6 +53,7 @@ unsigned char far_init (void);
 /* Writes back any changed windows and releases the driver. */
 void far_done (void);
 
+/* The backend far_init chose (a FAR_ value), and a short name for it to show the user. */
 unsigned char far_backend (void);
 const char* far_backend_name (void);
 
@@ -60,7 +61,8 @@ const char* far_backend_name (void);
 unsigned long far_size (void);
 unsigned long far_maxavail (void);
 
-/* Allocates size bytes of far memory (FAR_NULL if there isn't a free block that big). */
+/* Allocates size bytes of far memory (FAR_NULL if there isn't a free block that big), and frees
+** a block far_alloc returned. */
 farptr far_alloc (unsigned long size);
 void far_free (farptr p);
 
@@ -72,7 +74,8 @@ void far_write (farptr dst, const void* src, unsigned len);
 void far_copy (farptr dst, farptr src, unsigned long len);
 void far_fill (farptr dst, unsigned char value, unsigned long len);
 
-/* Single bytes and words, through the window cache. */
+/* Single bytes and words, through the window cache. Words are little-endian, as the 6502 stores
+** them. */
 unsigned char far_peek (farptr p);
 void far_poke (farptr p, unsigned char value);
 unsigned far_peekw (farptr p);

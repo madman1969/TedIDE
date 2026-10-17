@@ -23,11 +23,13 @@ static unsigned char check_no;
 static unsigned char first_failure;
 static char number[12];
 
+/* Prints v in decimal. */
 static void put_number (unsigned long v)
 {
     cputs (ultoa (v, number, 10));
 }
 
+/* Numbers and prints one check's result, remembering the first that failed. */
 static void check (unsigned char ok, const char* what)
 {
     ++check_no;
@@ -39,6 +41,7 @@ static void check (unsigned char ok, const char* what)
     }
 }
 
+/* Counts a check that can't run on this machine, so the numbers stay the same everywhere. */
 static void skip (const char* what)
 {
     ++check_no;
@@ -60,6 +63,7 @@ static void report (unsigned char code)
 #endif
 }
 
+/* Fills b with a repeatable pattern that differs for each seed, so misplaced bytes show up. */
 static void pattern (unsigned char* b, unsigned len, unsigned char seed)
 {
     unsigned i;
@@ -68,6 +72,7 @@ static void pattern (unsigned char* b, unsigned len, unsigned char seed)
     }
 }
 
+/* Whether every one of len bytes at b equals value. */
 static unsigned char all (const unsigned char* b, unsigned len, unsigned char value)
 {
     unsigned i;
@@ -111,6 +116,8 @@ static void test_large (void)
     }
     check (ok, "70000 bytes written and read");
 
+    /* Fill b, then copy most of a over it 1000 bytes in: the copied part and the untouched
+    ** start and end must each still hold what they should. */
     far_fill (b, 0xEE, 70000UL);
     far_copy (b + 1000, a, 68000UL);
     /* a + 65000 is 200 bytes into the piece written at a + 64800. */
@@ -135,6 +142,7 @@ int main (void)
     unsigned char* w;
     unsigned long before;
 
+    /* Set up far memory and show what was found. */
     clrscr ();
     cputs ("farmem test\r\n");
     backend = far_init ();
@@ -152,6 +160,7 @@ int main (void)
     /* Each test project names the backend its VICE setup should give (Preprocessor defines). */
     check (backend == FAR_EXPECTED, "the expected backend");
 #endif
+    /* The free space before any allocations, to check the allocator gives it all back. */
     before = far_maxavail ();
 
     /* 1. Reading and writing across page boundaries. */
@@ -198,6 +207,7 @@ int main (void)
     memset (w, 0x77, 100);
     far_read (buf2, a + 10, 100);
     ok = all (buf2, 100, 0x77);
+    /* A block write over part of the window must show up when it's mapped again. */
     far_write (a + 50, buf, 10);
     w = far_map (a + 10, 100, FAR_READ);
     check (ok && w[39] == 0x77 && w[40] == 0 && w[49] == 9, "mapped windows stay in step");
@@ -213,6 +223,7 @@ int main (void)
         }
     }
     check (ok, "alloc 5 blocks");
+    /* Free two blocks with neighbours still in use, and allocate into the gap. */
     far_free (blocks[1]);
     far_free (blocks[3]);
     blocks[1] = far_alloc (330);
@@ -236,6 +247,7 @@ int main (void)
     /* 7. Large blocks. */
     test_large ();
 
+    /* Report the result on screen and to VICE, then tidy up. */
     cputs (first_failure ? "\r\nFAILED\r\n" : "\r\nALL PASSED\r\n");
     report (first_failure ? 0x80 | first_failure : 0);
     far_done ();
