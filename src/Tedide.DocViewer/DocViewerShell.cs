@@ -1,3 +1,4 @@
+using Tedide.Logging;
 using Tedide.Theming;
 using Terminal.Gui.App;
 using Terminal.Gui.Configuration;
@@ -244,6 +245,7 @@ public sealed class DocViewerShell : Window
     /// <summary>Displays a page (optionally scrolled to one of its headings) without touching
     /// <see cref="_history"/> - the single rendering path every navigation action (tree selection,
     /// a followed link, Back/Forward, a bookmark, a search result) ultimately calls.</summary>
+    [Log]
     private void ShowDoc(PageEntry entry, string? anchor = null)
     {
         _currentEntry = entry;
@@ -296,6 +298,7 @@ public sealed class DocViewerShell : Window
     /// word (see <see cref="TopicLookup"/>), or, if none does, the search dialog already searching
     /// for it.
     /// </summary>
+    [Log]
     public void ShowTopic(string word)
     {
         // Called as the app starts: make sure the window has its size before a page is laid out in it.

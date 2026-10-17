@@ -5,14 +5,15 @@
     <ProjectReference Include="..\Tedide.Build\Tedide.Build.csproj" />
     <ProjectReference Include="..\Tedide.Debug\Tedide.Debug.csproj" />
     <ProjectReference Include="..\Tedide.Git\Tedide.Git.csproj" />
+    <!-- Serilog (via AppLog) and the [Log] aspect, which weaves start/finish/elapsed Debug log
+         lines into the slower operations. -->
+    <ProjectReference Include="..\Tedide.Logging\Tedide.Logging.csproj" />
     <ProjectReference Include="..\Tedide.Theming\Tedide.Theming.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Terminal.Gui" Version="2.4.17" />
     <PackageReference Include="Terminal.Gui.Editor" Version="2.5.7" />
-    <PackageReference Include="Serilog" Version="4.2.0" />
-    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
     <!-- Decodes the embedded avatar.jpg into pixel data for AboutDialog's ImageView - Terminal.Gui
          deliberately has no image-decoding dependency of its own, so the caller supplies one.
          Windows-only, matching this app's existing platform assumption (see ViceEmulator, the
@@ -22,6 +23,13 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Resources\avatar.jpg" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Several shipped libraries' licences (BSD-2 in particular) require their notices to travel
+         with binary copies. ExcludeFromSingleFile keeps it a readable file beside the single-file
+         exe rather than bundled inside it. -->
+    <None Include="..\..\THIRD-PARTY-NOTICES.md" Link="THIRD-PARTY-NOTICES.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
   </ItemGroup>
 
   <ItemGroup>

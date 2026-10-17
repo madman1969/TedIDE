@@ -939,6 +939,7 @@ src/
                        arming breakpoints, both testable without VICE
   Tedide.Git/          Runs the git command line and parses its output
   Tedide.Theming/      The nine themes, shared by both apps
+  Tedide.Logging/      Logging shared by both apps: the Serilog log files and the Metalama [Log] aspect
   Tedide.App/          The Terminal.Gui IDE: menus, Solution Explorer, editor, panes and dialogs
   Tedide.DocViewer/    The Doc Viewer
 tests/
@@ -1025,9 +1026,18 @@ samples/               The nine samples
 
 ### Logs
 
-Tedide logs to `%LocalAppData%\Tedide\logs\tedide-<date>.log`, one file per day, kept 14 days. It
-records debugger activity and the full stack trace of any crash. A Terminal.Gui app that crashes
-otherwise just vanishes, so check here first.
+Tedide logs to `%LocalAppData%\Tedide\logs\tedide-<date>.log`, and the Doc Viewer to
+`docviewer-<date>.log` in the same folder, one file per day, kept 14 days. They record debugger
+activity, how long the slower operations take, and the full stack trace of any crash. A
+Terminal.Gui app that crashes otherwise just vanishes, so check here first.
+
+The timings come from `[Log]`, a [Metalama](https://metalama.net/) aspect in `Tedide.Logging`
+(Metalama is MIT-licensed and does its work at compile time). Put `[Log]` on a method and the
+build adds Debug lines for when it starts and when it finishes, fails or is cancelled, with the
+time taken; an async method is timed until its task completes. It's on the startup stages (`Startup` in each app), build, run and
+clean, starting and ending a debug session, git refreshes, opening projects and files, and
+showing a Doc Viewer page. Keep it off anything called per keystroke or per draw, which would
+flood the log. The library projects don't log, so `[Log]` is only used in the two apps.
 
 ### Publishing a standalone executable
 
@@ -1106,3 +1116,10 @@ Tedide is built on [Terminal.Gui v2](https://github.com/tui-cs/Terminal.Gui) (`2
 [Terminal.Gui.Editor](https://github.com/tui-cs/Editor) (`2.5.7`, pinned to that Terminal.Gui
 version), the only mature .NET terminal UI framework with the widgets an IDE needs. Both are
 evolving quickly, so expect API changes if you update either package.
+
+## Licence
+
+Tedide is MIT-licensed - see [LICENSE](LICENSE). The libraries it ships with, the cc65 code in
+its optimizer and the books bundled in the Doc Viewer are each under their own licence: see
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md), which is also copied next to both executables.
+Keep it up to date when adding or updating a package.

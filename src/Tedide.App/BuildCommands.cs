@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Serilog;
+using Tedide.Logging;
 using Tedide.App.Views;
 using Tedide.Build;
 using Tedide.Core;
@@ -50,6 +51,7 @@ internal sealed class BuildCommands(IShell shell, Workspace workspace, Navigatio
     /// than linked against a stale or missing .lib; the others still build. The result succeeds
     /// only if every project did, and carries every project's diagnostics, with absolute paths.
     /// </summary>
+    [Log]
     public async Task<BuildResult?> BuildProjectsAsync(IReadOnlyList<TedideProject> roots)
     {
         if (roots.Count == 0)
@@ -179,6 +181,7 @@ internal sealed class BuildCommands(IShell shell, Workspace workspace, Navigatio
     }
 
     /// <summary>Builds the active project, then launches it in the VICE emulator matching its target if the build succeeded.</summary>
+    [Log]
     public async Task RunActiveProjectAsync()
     {
         _shell.ShowOutputTab();
@@ -229,6 +232,7 @@ internal sealed class BuildCommands(IShell shell, Workspace workspace, Navigatio
 
     public void CleanProjects(IReadOnlyList<TedideProject> projects) => _shell.Guard("Cleaning", () => CleanProjectsCore(projects));
 
+    [Log]
     private void CleanProjectsCore(IReadOnlyList<TedideProject> projects)
     {
         if (projects.Count == 0)

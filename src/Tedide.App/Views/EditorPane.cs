@@ -1,4 +1,5 @@
 using System.Text;
+using Tedide.Logging;
 using Tedide.Core;
 using Terminal.Gui.App;
 using Terminal.Gui.Editor;
@@ -241,6 +242,7 @@ public sealed class EditorPane : View
     /// loads it into a new tab just after the current one. A file that can't be read throws
     /// before anything changes.
     /// </summary>
+    [Log]
     public void Open(string filePath)
     {
         filePath = Normalize(filePath);

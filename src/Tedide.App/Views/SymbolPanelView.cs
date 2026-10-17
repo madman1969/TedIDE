@@ -1,4 +1,5 @@
 using System.Data;
+using Tedide.Logging;
 using Tedide.Core;
 using Terminal.Gui.App;
 using Terminal.Gui.ViewBase;
@@ -49,6 +50,7 @@ public sealed class SymbolPanelView : View
     /// <see cref="TedideProject.GenerateLinkerMap"/>/<see cref="TedideProject.ExportLabels"/>) and
     /// replaces the displayed rows. Passing null (no project loaded) clears the panel.
     /// </summary>
+    [Log]
     public void Refresh(TedideProject? project)
     {
         var rows = new List<SymbolRow>();

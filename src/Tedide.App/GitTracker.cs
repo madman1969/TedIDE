@@ -1,4 +1,5 @@
 using Serilog;
+using Tedide.Logging;
 using Tedide.Git;
 using Terminal.Gui.App;
 
@@ -86,6 +87,7 @@ internal sealed class GitTracker
         });
     }
 
+    [Log]
     private async Task RefreshAsync((IReadOnlyList<string> Directories, string? PrimaryDirectory) projects)
     {
         _refreshing = true;

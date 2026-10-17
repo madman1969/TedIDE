@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using Serilog;
+using Tedide.Logging;
 using Tedide.App.Views;
 using Tedide.Build;
 using Tedide.Core;
@@ -677,6 +678,7 @@ internal sealed class DebugSession
         }
     }
 
+    [Log]
     private async Task StartDebuggingCoreAsync()
     {
         var project = _workspace.ActiveProject;
@@ -1025,6 +1027,7 @@ internal sealed class DebugSession
     /// <see cref="StartDebuggingAsync"/>'s own failure path, where there may be no connected
     /// client yet at all.
     /// </summary>
+    [Log]
     private async Task EndDebugSessionAsync()
     {
         // Cleared first so any SyncCheckpointsWithViceAsync already queued behind the lock

@@ -6,6 +6,7 @@
     <Project Path="src/Tedide.Debug/Tedide.Debug.csproj" />
     <Project Path="src/Tedide.DocViewer/Tedide.DocViewer.csproj" />
     <Project Path="src/Tedide.Git/Tedide.Git.csproj" />
+    <Project Path="src/Tedide.Logging/Tedide.Logging.csproj" />
     <Project Path="src/Tedide.Theming/Tedide.Theming.csproj" />
   </Folder>
   <Folder Name="/tests/">

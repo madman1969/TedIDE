@@ -4,6 +4,9 @@
     <!-- Shared with Tedide.App - the same nine color themes and the same per-user settings.json,
          so this viewer opens in whatever theme was last selected in either app. -->
     <ProjectReference Include="..\Tedide.Theming\Tedide.Theming.csproj" />
+    <!-- File logging plus an unhandled-exception hook (AppLog), and the [Log] aspect - shared with
+         Tedide.App. See Program.cs for why a TUI app needs this to leave any trace of a crash. -->
+    <ProjectReference Include="..\Tedide.Logging\Tedide.Logging.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -17,10 +20,6 @@
          package/version as Tedide.App.csproj's AboutDialog, which this project otherwise has no
          dependency on. -->
     <PackageReference Include="System.Drawing.Common" Version="9.0.0" />
-    <!-- File logging plus an unhandled-exception hook, same versions as Tedide.App.csproj - see
-         Program.cs for why a TUI app needs this to leave any trace of a crash at all. -->
-    <PackageReference Include="Serilog" Version="4.2.0" />
-    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -29,6 +28,12 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Resources\avatar.jpg" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Same as Tedide.App.csproj: shipped libraries' licences require their notices beside the
+         binaries, and Docs.db's books are listed there too. -->
+    <None Include="..\..\THIRD-PARTY-NOTICES.md" Link="THIRD-PARTY-NOTICES.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
   </ItemGroup>
 
   <ItemGroup>

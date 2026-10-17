@@ -1,54 +1,25 @@
 using Serilog;
 using Terminal.Gui.App;
 using Tedide.App;
-using Tedide.App.Highlighting;
-using Tedide.Theming;
+using Tedide.Logging;
 
-var logDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Tedide", "logs");
-Log.Logger = new LoggerConfiguration()
-    .MinimumLevel.Debug()
-    .WriteTo.File(Path.Combine(logDirectory, "tedide-.log"), rollingInterval: RollingInterval.Day, retainedFileCountLimit: 14)
-    .CreateLogger();
-
-// Unhandled exceptions on a Terminal.Gui app otherwise vanish with the console window - the only
-// trace is Windows' own Event Log (Application log, ".NET Runtime" source), which isn't somewhere
-// most users would think to look. IsTerminating is always true for this event (this handler can't
-// prevent the crash, only record it before the process goes down).
-AppDomain.CurrentDomain.UnhandledException += (_, e) =>
-{
-    Log.Fatal(e.ExceptionObject as Exception, "Unhandled exception - process is terminating (IsTerminating={IsTerminating})", e.IsTerminating);
-    Log.CloseAndFlush();
-};
-
+AppLog.Start("tedide");
 Log.Information("Tedide starting up, {Elapsed}ms after the process started",
     (long)(DateTime.Now - System.Diagnostics.Process.GetCurrentProcess().StartTime).TotalMilliseconds);
+// Each stage logs its own duration ([Log] on Startup's methods); this is the total to first draw.
 var startup = System.Diagnostics.Stopwatch.StartNew();
-void Mark(string step) => Log.Debug("Startup: {Step} at {Elapsed}ms", step, startup.ElapsedMilliseconds);
 
-Application.Init();
-Mark("Init");
-TerminalColors.UseTrueColorInWindowsTerminal(Application.Driver);
-// Awaits started on the UI thread come back to it - see UiSynchronizationContext.
-UiSynchronizationContext.Install();
+Startup.InitTerminal();
 try
 {
-    Cc65AssemblyHighlighting.Register();
-    Cc65ListingHighlighting.Register();
-    Cc65LinkerMapHighlighting.Register();
-    Cc65LabelsHighlighting.Register();
-    Cc65CfgHighlighting.Register();
-    Mark("Highlighting registered");
-    // Theme still applies if it can't be saved; it just isn't remembered - see ThemeSwitcher.SaveFailed.
-    ThemeSwitcher.SaveFailed += ex => Log.Error(ex, "Could not save the theme setting");
-    ThemeSwitcher.Apply(ThemeSettings.Load().Theme, persist: false);
-    Mark("Theme applied");
-    var shell = new AppShell();
-    Mark("AppShell built");
+    Startup.RegisterHighlighting();
+    Startup.ApplyTheme();
+    var shell = Startup.CreateShell();
     shell.DrawComplete += FirstDraw;
     void FirstDraw(object? sender, Terminal.Gui.ViewBase.DrawEventArgs e)
     {
         shell.DrawComplete -= FirstDraw;
-        Mark("First draw");
+        Log.Debug("Startup: first draw at {Elapsed}ms", startup.ElapsedMilliseconds);
     }
     Application.Run(shell);
     shell.SaveLayoutSettings();

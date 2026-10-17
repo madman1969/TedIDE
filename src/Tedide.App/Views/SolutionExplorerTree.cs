@@ -1,4 +1,5 @@
 using System.Drawing;
+using Tedide.Logging;
 using Tedide.Core;
 using Tedide.Git;
 using Terminal.Gui.Configuration;
@@ -324,6 +325,7 @@ public sealed class SolutionExplorerTree : TreeView
             ApplyGitMarkers(child);
     }
 
+    [Log]
     public void Rebuild(Workspace workspace)
     {
         ClearObjects();

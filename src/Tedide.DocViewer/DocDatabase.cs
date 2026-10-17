@@ -1,4 +1,5 @@
 using Microsoft.Data.Sqlite;
+using Tedide.Logging;
 
 namespace Tedide.DocViewer;
 
@@ -35,6 +36,7 @@ public sealed class DocDatabase : IDisposable
 
     /// <summary>Every book, its categories and their pages, in the order
     /// <c>tools/Cc65DocsDbBuilder</c> wrote them.</summary>
+    [Log]
     public IReadOnlyList<BookNode> LoadCatalog()
     {
         using var command = _connection.CreateCommand();

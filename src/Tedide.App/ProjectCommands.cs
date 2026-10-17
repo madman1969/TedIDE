@@ -1,3 +1,4 @@
+using Tedide.Logging;
 using Tedide.App.Views;
 using Tedide.Build;
 using Tedide.Core;
@@ -83,6 +84,7 @@ internal sealed class ProjectCommands(IShell shell, Workspace workspace, EditorP
     /// </summary>
     internal void OpenProjectOrSolution(string path) => _shell.Guard("Opening the project", () => OpenProjectOrSolutionCore(path));
 
+    [Log]
     private void OpenProjectOrSolutionCore(string path)
     {
         if (!File.Exists(path))

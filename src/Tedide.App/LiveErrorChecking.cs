@@ -1,3 +1,4 @@
+using Tedide.Logging;
 using Tedide.App.Views;
 using Tedide.Build;
 using Tedide.Core;
@@ -148,6 +149,7 @@ internal sealed class LiveErrorChecking
         _request.Request();
     }
 
+    [Log]
     private async Task CheckAsync()
     {
         if (_checking)
