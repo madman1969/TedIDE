@@ -44,7 +44,7 @@ Each machine has its own library project in this solution, all built from the sa
 | --- | --- | --- |
 | C64 | `FarMemC64` | SuperCPU SuperRAM, else an REU, else ordinary RAM |
 | C128 | `FarMemC128` | An REU, else RAM banks 1-3 (cc65's `c128-ram2` driver) |
-| C16 (also for a 64K Plus/4) | `FarMemC16` | The RAM under the ROMs (cc65's `c16-ram` driver), about 32,000 bytes |
+| C16 (also for a Plus/4) | `FarMemC16` | A Hannes or Csory RAM expansion (up to 725,760 bytes), else the RAM under the ROMs (cc65's `c16-ram` driver), 32,000 bytes |
 | CBM 510 | `FarMemCBM510` | RAM bank 1 |
 | CBM 610 | `FarMemCBM610` | RAM banks 2-4 |
 
@@ -62,9 +62,21 @@ paths, and its `.lib` is linked in. You don't need to add anything else.
 Outside Tedide, add `src/farmem.c` and `src/farhw.s` to your `cl65` command line with
 `-I include`.
 
-**C16 and Plus/4:** build for the **C16** target, not Plus/4. Only the C16 build uses the RAM
-under the ROMs, and a Plus/4 build falls back to ordinary RAM. The machine needs 64K. Your program
-must also stay below `$8000`, because the driver uses the RAM above it. To do that, use
+**C16 and Plus/4:** FarMem looks for a RAM expansion board first:
+
+| Board | Far memory |
+| --- | --- |
+| Hannes 1MB | 725,760 bytes |
+| Csory 256K | 245,760 bytes |
+| Hannes 256K | 145,152 bytes |
+
+Both boards swap banks of their RAM into the CPU's view from `$4000` up, so only part of each bank
+is usable and FarMem keeps the code that switches them, and a 256-byte buffer, below `$4000`. Any
+build finds a board, the Plus/4 target's included.
+
+Without a board, only a **C16**-target build uses the 32,000 bytes of RAM under the ROMs; a
+Plus/4-target build falls back to ordinary RAM. That needs a 64K machine, and your program must
+stay below `$8000`, because the driver uses the RAM above it. To do that, use
 [FarTestPlus4/c16-32k.cfg](FarTestPlus4/c16-32k.cfg) as your project's custom linker config.
 
 ## Starting and stopping
@@ -103,6 +115,7 @@ int main (void)
 | `FAR_SCPU` | SuperCPU SuperRAM, by 65816 block moves |
 | `FAR_EMD` | A cc65 extended memory driver (C128 RAM banks, C16 RAM under the ROMs) |
 | `FAR_CBMBANK` | CBM-II RAM banks, by 6509 indirect access |
+| `FAR_RAMEXP` | A Plus/4 or C16 RAM expansion (Hannes or Csory board), by bank switching |
 
 If your program needs real extra memory, check for `FAR_NEAR` and say so, rather than running with
 a few kilobytes.
@@ -295,6 +308,7 @@ Emulator tab of Project Settings. The test projects use these:
 | C64 or C128 with an REU | `-reu -reusize 512` |
 | C64 with a SuperCPU | Tick **Enable SuperCPU support**, and add `-simmsize 1` |
 | C16 with 64K | `-ramsize 64` |
+| Plus/4 or C16 with a Hannes 1MB, Hannes 256K or Csory 256K board | `-ramsize 64 -memoryexphack 3`, `2` or `1` |
 | CBM 610 with 256K | `-ramsize 256` |
 
 A plain C128 or CBM 510 needs nothing extra.

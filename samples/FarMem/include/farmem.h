@@ -10,7 +10,8 @@
 ** Backends, picked by far_init():
 **   C64            SuperCPU SuperRAM (65816 long moves), else an REU (DMA), else ordinary RAM
 **   C128           an REU (DMA), else RAM banks 1-3 (cc65's c128-ram2 driver)
-**   C16 / Plus/4   the 64K machine's RAM under the ROMs (cc65's c16-ram driver; build for c16)
+**   C16 / Plus/4   a Hannes (256K, 1MB) or Csory (256K) RAM expansion, else the 64K machine's
+**                  RAM under the ROMs (cc65's c16-ram driver; build for c16)
 **   CBM 510        RAM bank 1 (6509 indirect access)
 **   CBM 610        RAM banks 2-4 (6509 indirect access)
 ** Where there is no extra memory, a block of ordinary RAM stands in, so programs still run.
@@ -32,6 +33,7 @@ typedef unsigned long farptr;
 #define FAR_SCPU     3  /* SuperCPU SuperRAM, by 65816 block moves */
 #define FAR_EMD      4  /* a cc65 extended memory driver (C128 banks, C16 hidden RAM) */
 #define FAR_CBMBANK  5  /* CBM-II RAM banks, by 6509 indirect access */
+#define FAR_RAMEXP   6  /* a Plus/4 or C16 RAM expansion (Hannes or Csory), by bank switching */
 
 /* far_map modes. */
 #define FAR_READ   0    /* the window is only read */

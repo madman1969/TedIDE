@@ -11,6 +11,9 @@
     "FarTestC128/FarTestC128.tproj",
     "FarTestC128REU/FarTestC128REU.tproj",
     "FarTestPlus4/FarTestPlus4.tproj",
+    "FarTestPlus4Csory/FarTestPlus4Csory.tproj",
+    "FarTestPlus4Hannes/FarTestPlus4Hannes.tproj",
+    "FarTestPlus4Hannes1M/FarTestPlus4Hannes1M.tproj",
     "FarTestCBM510/FarTestCBM510.tproj",
     "FarTestCBM610/FarTestCBM610.tproj"
   ],

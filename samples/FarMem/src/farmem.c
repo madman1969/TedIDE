@@ -16,9 +16,12 @@
 #  include <c128.h>
 #  define HAS_REU   1
 #  define HAS_EMD   1
-#elif defined(__C16__) && !defined(__PLUS4__)
-#  include <c16.h>
-#  define HAS_EMD   1
+#elif defined(__C16__) || defined(__PLUS4__)
+#  define HAS_TEDX  1           /* Hannes and Csory RAM expansions */
+#  if !defined(__PLUS4__)
+#    include <c16.h>
+#    define HAS_EMD 1           /* cc65's c16-ram driver; its Plus/4 target has none */
+#  endif
 #elif defined(__CBM510__)
 #  include <cbm510.h>
 #  define HAS_CBM   1
@@ -50,6 +53,12 @@ void __fastcall__ scpu_move (unsigned char backward);
 void cbm_fetch (void);
 void cbm_stash (void);
 #endif
+#if HAS_TEDX
+void __fastcall__ tedx_copy (unsigned char stash);
+unsigned char __fastcall__ tedx_count (unsigned char banks);
+extern unsigned char tedx_select[16];       /* the register value for each bank */
+extern unsigned char far_low_buf[256];      /* below $4000, where the boards never remap */
+#endif
 
 #define BOUNCE_SIZE 256
 
@@ -65,6 +74,10 @@ static struct em_copy request;              /* reused for every extended memory 
 #endif
 #if HAS_CBM
 static unsigned char cbm_banks;             /* how many RAM banks far_init found */
+#endif
+#if HAS_TEDX
+static unsigned char tedx_pages;            /* the pages of each bank used, from $4000 */
+static const char* tedx_name;               /* which board far_init found */
 #endif
 
 /* ------------------------------------------------------------------------
@@ -99,11 +112,27 @@ static unsigned cbm_locate (unsigned long a)
 }
 #endif
 
+#if HAS_TEDX
+/* Points far_hw_src at far address a - tedx_pages pages per bank, from $4000 in the CPU's window,
+** with the bank's register value in the third byte - and returns how many bytes are left in that
+** bank, at most the 256 far_low_buf holds. */
+static unsigned tedx_locate (unsigned long a)
+{
+    unsigned page = (unsigned) (a >> 8);
+    unsigned char bank = page / tedx_pages;
+    unsigned char inbank = page % tedx_pages;
+    unsigned left = ((unsigned) (tedx_pages - inbank) << 8) - (unsigned char) a;
+    far_hw_src = ((unsigned long) tedx_select[bank] << 16)
+        | ((unsigned) (0x40 + inbank) << 8) | (unsigned char) a;
+    return left < 256 ? left : 256;
+}
+#endif
+
 /* Copies len bytes from far memory at src into ordinary memory at dst, with whichever backend
 ** far_init chose - in several pieces where the hardware can't cross a bank in one go. */
 static void hw_read (void* dst, farptr src, unsigned len)
 {
-#if HAS_REU || HAS_SCPU || HAS_CBM
+#if HAS_REU || HAS_SCPU || HAS_CBM || HAS_TEDX
     unsigned n;
 #endif
     unsigned char* d = dst;
@@ -168,13 +197,30 @@ static void hw_read (void* dst, farptr src, unsigned len)
         }
         break;
 #endif
+#if HAS_TEDX
+    case FAR_RAMEXP:
+        /* Through far_low_buf, as wherever d is may be remapped while the bank is in. */
+        while (len) {
+            n = tedx_locate (src);
+            if (n > len) {
+                n = len;
+            }
+            far_hw_len = n;
+            tedx_copy (0);
+            memcpy (d, far_low_buf, n);
+            d += n;
+            src += n;
+            len -= n;
+        }
+        break;
+#endif
     }
 }
 
 /* The reverse of hw_read: copies len bytes from ordinary memory at src into far memory at dst. */
 static void hw_write (farptr dst, const void* src, unsigned len)
 {
-#if HAS_REU || HAS_SCPU || HAS_CBM
+#if HAS_REU || HAS_SCPU || HAS_CBM || HAS_TEDX
     unsigned n;
 #endif
     const unsigned char* s = src;
@@ -231,6 +277,22 @@ static void hw_write (farptr dst, const void* src, unsigned len)
             far_hw_near = (void*) s;
             far_hw_len = n;
             cbm_stash ();
+            s += n;
+            dst += n;
+            len -= n;
+        }
+        break;
+#endif
+#if HAS_TEDX
+    case FAR_RAMEXP:
+        while (len) {
+            n = tedx_locate (dst);
+            if (n > len) {
+                n = len;
+            }
+            memcpy (far_low_buf, s, n);
+            far_hw_len = n;
+            tedx_copy (1);
             s += n;
             dst += n;
             len -= n;
@@ -739,6 +801,51 @@ static unsigned char cbm_count_banks (void)
 }
 #endif
 
+#if HAS_TEDX
+/* Looks for a Hannes board, then a Csory one, and sets up tedx_select, the register and the
+** pages per bank for whichever is there. Returns the pages found, or 0 if neither is. */
+static unsigned tedx_detect (void)
+{
+    unsigned char i;
+    unsigned char bank;
+    unsigned char banks;
+
+    /* Hannes ($FD16): bits 0-1 pick the bank and, on the 1MB board, the inverse of bits 2-3 its
+    ** top two bits. Bank 3 is the machine's own RAM, so the others are 0-2, then 4-15. Bit 7
+    ** keeps $1000-$3FFF the machine's own, so only $4000 up switches; below the I/O at $FD00,
+    ** that's 189 pages a bank. On the 256K board, banks past 2 repeat 0-2, which tedx_count
+    ** sees. */
+    for (i = 0; i < 15; ++i) {
+        bank = i < 3 ? i : i + 1;
+        tedx_select[i] = 0x80 | (bank & 3) | ((3 - (bank >> 2)) << 2);
+    }
+    far_hw_dst = 0xFD16;
+    far_hw_ctrl = 0x8F;                     /* bank 3 */
+    banks = tedx_count (15);
+    if (banks) {
+        tedx_pages = 189;
+        tedx_name = banks > 3 ? "Hannes 1MB" : "Hannes 256K";
+        return banks * 189;
+    }
+
+    /* Csory ($FD15): bits 6-7 pick which 16K of the address space to remap, bits 0-3 which of
+    ** the board's 16 blocks to put there. It starts with block 15 at $C000, standing in for the
+    ** machine's own RAM there, so blocks 0-14 are put at $4000 one at a time. */
+    for (i = 0; i < 15; ++i) {
+        tedx_select[i] = 0x40 | i;
+    }
+    far_hw_dst = 0xFD15;
+    far_hw_ctrl = 0xCF;                     /* block 15 at $C000 */
+    banks = tedx_count (15);
+    if (banks) {
+        tedx_pages = 64;
+        tedx_name = "Csory 256K";
+        return banks * 64;
+    }
+    return 0;
+}
+#endif
+
 unsigned char far_init (void)
 {
     unsigned pages = 0;
@@ -767,10 +874,15 @@ unsigned char far_init (void)
     } else if ((pages = try_driver (c128_ram2_emd)) != 0) {
         backend = FAR_EMD;
     }
-#elif HAS_EMD
-    if ((pages = try_driver (c16_ram_emd)) != 0) {
+#elif HAS_TEDX
+    if ((pages = tedx_detect ()) != 0) {
+        backend = FAR_RAMEXP;
+    }
+#  if HAS_EMD
+    else if ((pages = try_driver (c16_ram_emd)) != 0) {
         backend = FAR_EMD;
     }
+#  endif
 #elif HAS_CBM
     cbm_banks = cbm_count_banks ();
     if (cbm_banks) {
@@ -810,7 +922,8 @@ void far_done (void)
         free (near_base);
     }
 #if HAS_REU || HAS_EMD || HAS_SCPU
-    else if (backend != FAR_CBMBANK) {
+    /* The backends that came from a cc65 driver. */
+    else if (backend == FAR_REU || backend == FAR_EMD || backend == FAR_SCPU) {
         em_uninstall ();
     }
 #endif
@@ -842,6 +955,9 @@ const char* far_backend_name (void)
 #endif
 #if HAS_CBM
     case FAR_CBMBANK: return "RAM banks";
+#endif
+#if HAS_TEDX
+    case FAR_RAMEXP:  return tedx_name;
 #endif
     }
     return "none";

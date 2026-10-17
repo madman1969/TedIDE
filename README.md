@@ -176,18 +176,20 @@ are 16 bits, so far memory is reached through these functions - `include/farmem.
 | C64 with a SuperCPU | Its SuperRAM, up to 16MB | 65816 block moves (`MVN`/`MVP`) |
 | C64 with an REU | The REU, up to 16MB | REU DMA, with fills in one transfer |
 | C128 | An REU if there is one, else RAM banks 1-3 | REU DMA, or cc65's `c128-ram2` driver |
+| C16 / Plus/4 with a Hannes or Csory board | Up to 725,760 bytes (Hannes 1MB) | Bank switching, from `$4000` up |
 | C16 / Plus/4 (64K) | 32,000 bytes under the ROMs | cc65's `c16-ram` driver - build for the C16 target |
 | CBM 510 / 610 | RAM bank 1 (510), banks 2-4 (610) | 6509 indirect-bank copies |
 
 Machines with none of these get a block of ordinary RAM instead, so programs still run.
 
 The solution has five library projects (`FarMemC64` and so on), all built from the same `src/`
-and `include/`, and seven test programs that reference them: `FarTestC64REU`, `FarTestSuperCPU`,
-`FarTestC128`, `FarTestC128REU`, `FarTestPlus4`, `FarTestCBM510` and `FarTestCBM610`. Each test
-program's [Extra VICE arguments](#emulator) give VICE the hardware it needs (an REU, SuperCPU RAM,
-64K), so **Ctrl+F5** runs it on the right machine. It lists 17 checks with ok, FAIL or skip.
+and `include/`, and ten test programs that reference them: `FarTestC64REU`, `FarTestSuperCPU`,
+`FarTestC128`, `FarTestC128REU`, `FarTestPlus4`, `FarTestPlus4Csory`, `FarTestPlus4Hannes`,
+`FarTestPlus4Hannes1M`, `FarTestCBM510` and `FarTestCBM610`. Each test program's
+[Extra VICE arguments](#emulator) give VICE the hardware it needs (an REU, SuperCPU RAM, 64K, a
+Plus/4 RAM expansion), so **Ctrl+F5** runs it on the right machine. It lists 17 checks with ok, FAIL or skip.
 
-`Test-FarMem.ps1`, beside the solution, runs all seven in VICE after a **Build Solution** and
+`Test-FarMem.ps1`, beside the solution, runs all ten in VICE after a **Build Solution** and
 reports which passed. `-Repeat 10` runs each one ten times: VICE starts programs after a random
 delay, so timing-dependent bugs only show some of the time.
 

@@ -1,7 +1,8 @@
 ;
-; farhw.s - the hardware end of farmem: REU DMA (C64, C128), SuperCPU block moves (C64) and
-; 6509 indirect-bank copies (CBM 510, CBM 610). farmem.c fills in the variables below, then calls
-; one of these routines; each moves at most one 64K bank's worth in one go.
+; farhw.s - the hardware end of farmem: REU DMA (C64, C128), SuperCPU block moves (C64), 6509
+; indirect-bank copies (CBM 510, CBM 610) and Plus/4 RAM expansion bank switching (Hannes and
+; Csory boards). farmem.c fills in the variables below, then calls one of these routines; each
+; moves at most one 64K bank's worth in one go.
 ;
 
         .export         _far_hw_near, _far_hw_src, _far_hw_dst, _far_hw_len, _far_hw_ctrl
@@ -242,5 +243,163 @@ setup:  pla
 
         .bss
 ret:    .res    2
+
+.endif
+
+; ------------------------------------------------------------------------
+; Plus/4 and C16 RAM expansions: the Hannes board (256K or 1MB, register $FD16) and the Csory
+; board (256K, register $FD15). Both remap part of the CPU's own address space to a bank of
+; expansion RAM, from $4000 up, so this code, its buffer and its bank table live in LOWCODE,
+; which cc65 places straight after the startup code near $1000. Interrupts are off while a bank
+; is switched in, since the handler and the rest of the program may be in the remapped part.
+;
+; farmem.c sets, before calling either routine:
+;   far_hw_dst   the board's register
+;   far_hw_ctrl  the register value that puts the machine's own RAM back
+;   tedx_select  the register value that selects each expansion bank
+
+.if .defined(__C16__) .or .defined(__PLUS4__)
+
+        .export         _tedx_copy, _tedx_count, _tedx_select, _far_low_buf
+        .importzp       ptr2
+
+TED_STATUS = $FF13                      ; bit 0 is 1 while the ROMs are mapped in
+ROM_ON  = $FF3E                         ; a write maps the ROMs in...
+RAM_ON  = $FF3F                         ; ...or out
+PROBE   = $4000                         ; the first byte every bank switches
+
+        .segment "LOWCODE"
+
+_far_low_buf:   .res    256             ; the near side of every copy
+_tedx_select:   .res    16
+; Copies of far_hw_ctrl and far_hw_len, taken before a bank goes in: the far_hw_ variables are in
+; the BSS, which may well be above $4000 and switched out with everything else.
+restore:        .res    1
+length:         .res    1
+rom:            .res    1
+saved:          .res    1
+count:          .res    1
+limit:          .res    1
+
+; void __fastcall__ tedx_copy (unsigned char stash)
+; Copies far_hw_len bytes (1-256, with 0 meaning 256) between far_low_buf and an expansion bank:
+; to the bank if stash is non-zero, else from it. far_hw_src holds the address in the CPU's window
+; in its low two bytes, and the register value that selects the bank in its third. The ROMs are
+; switched out for the copy, since the Hannes window reaches past $8000.
+
+_tedx_copy:
+        tax
+        jsr     setreg
+        lda     _far_hw_src
+        sta     ptr2
+        lda     _far_hw_src+1
+        sta     ptr2+1
+        lda     _far_hw_len
+        sta     length
+        php
+        sei
+        lda     TED_STATUS
+        sta     rom
+        sta     RAM_ON
+        ldy     #0
+        lda     _far_hw_src+2
+        sta     (ptr1),y                ; the bank in
+        txa
+        bne     stash
+fetch:  lda     (ptr2),y
+        sta     _far_low_buf,y
+        iny
+        cpy     length
+        bne     fetch
+        beq     done
+stash:  lda     _far_low_buf,y
+        sta     (ptr2),y
+        iny
+        cpy     length
+        bne     stash
+done:   ldy     #0
+        lda     restore
+        sta     (ptr1),y                ; the machine's own RAM back
+        lda     rom
+        lsr     a
+        bcc     :+
+        sta     ROM_ON
+:       plp
+        rts
+
+; unsigned char __fastcall__ tedx_count (unsigned char banks)
+; How many of the first banks in tedx_select really exist and are separate: writes a different
+; marker to PROBE in each, and checks after each one that every bank so far still holds its own
+; and the machine's own RAM still holds what it did. With no board, the first marker lands in the
+; machine's own RAM, which that check catches; with a smaller board than the table allows for,
+; a bank past its end repeats an earlier one, which the first check catches. The machine's own
+; byte at PROBE is put back either way.
+
+_tedx_count:
+        sta     limit
+        jsr     setreg
+        php
+        sei
+        lda     PROBE
+        sta     saved
+        lda     #0
+        sta     count
+        ldy     #0
+
+next:   lda     count
+        cmp     limit
+        beq     counted
+        tax
+        lda     _tedx_select,x
+        sta     (ptr1),y
+        txa
+        jsr     marker
+        sta     PROBE
+
+        ldx     #0                      ; every bank so far, this one included
+check:  lda     _tedx_select,x
+        sta     (ptr1),y
+        txa
+        jsr     marker
+        cmp     PROBE
+        bne     counted
+        inx
+        cpx     count
+        beq     check
+        bcc     check
+
+        lda     restore                 ; and the machine's own RAM
+        sta     (ptr1),y
+        lda     PROBE
+        cmp     saved
+        bne     counted
+        inc     count
+        jmp     next
+
+counted:
+        lda     restore
+        sta     (ptr1),y
+        lda     saved
+        sta     PROBE
+        plp
+        lda     count
+        ldx     #0
+        rts
+
+; The marker for bank A: never the saved byte, and different for every bank.
+marker: clc
+        adc     #$5A
+        eor     saved
+        rts
+
+; Points ptr1 at the board's register and takes a copy of the value that restores it, while the
+; BSS they come from is still the machine's own.
+setreg: lda     _far_hw_dst
+        sta     ptr1
+        lda     _far_hw_dst+1
+        sta     ptr1+1
+        lda     _far_hw_ctrl
+        sta     restore
+        rts
 
 .endif
