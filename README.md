@@ -137,6 +137,7 @@ Open any of these with **File > Open Project...**:
 | `inflate` | C64 | One file: a character-fill sprite that grows and shrinks, drawn from an off-screen buffer. |
 | `CBMInfo` | Eight Commodore targets | A system information screen built from five modules (see below). |
 | `FarMem` | C64, C128, C16/Plus/4, CBM 510/610 | A solution of twelve projects: one library for five targets, and a test program for each machine setup (see below). |
+| `WorldMap` | C64 | A scrolling 512x256 world map - 128K, twice the C64's memory - kept in far memory with `FarMem` (see below). |
 
 ### CBMInfo
 
@@ -189,6 +190,23 @@ program's [Extra VICE arguments](#emulator) give VICE the hardware it needs (an 
 `Test-FarMem.ps1`, beside the solution, runs all seven in VICE after a **Build Solution** and
 reports which passed. `-Repeat 10` runs each one ten times: VICE starts programs after a random
 delay, so timing-dependent bugs only show some of the time.
+
+### WorldMap
+
+A world map bigger than the machine it runs on, to show FarMem at work. With a 512K REU it's
+512x256 cells, one byte each: 128K, twice the C64's whole address space. With less far memory
+the map shrinks to fit, down to 64x32 in ordinary RAM.
+
+- **Generating** a new world draws an overview of it as it goes, row by row. The full-size map
+  takes about 15 seconds on a real C64; VICE's warp mode (Alt+W) does it in a moment. The two
+  loops that run for every row are in assembly (`terrain.s`); the rest is C.
+- **Scrolling** reads each of the 23 visible rows with one `far_read`. Use the joystick in port 2
+  or the cursor keys; hold fire, or use W/A/S/D, to move faster.
+- **Editing**: T, F and G turn the cell under the cursor into a town, forest or grass, with
+  `far_poke`. M shows the whole world with your position marked, N makes a new one, Q quits.
+
+`WorldMap.tsln` includes `FarMem/FarMemC64` beside the program, which references it, and the
+project's Extra VICE arguments give VICE a 512K REU.
 
 ## Projects and solutions
 

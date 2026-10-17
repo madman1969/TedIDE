@@ -6,7 +6,8 @@ and Plus/4 ROMs, or the CBM-II's RAM banks. Your program allocates blocks of it,
 out, and can map small pieces into ordinary memory to work on with normal C pointers.
 
 The whole API is in [include/farmem.h](include/farmem.h). [test/fartest.c](test/fartest.c) is a
-complete working program that uses every function.
+complete working program that uses every function, and [../WorldMap](../WorldMap) uses FarMem to
+hold a scrolling 128K world map.
 
 - [Far pointers](#far-pointers)
 - [Adding FarMem to a project](#adding-farmem-to-a-project)

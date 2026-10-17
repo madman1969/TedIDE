@@ -1,0 +1,37 @@
+{
+  "Name": "WorldMap",
+  "Target": "C64",
+  "OutputType": "Application",
+  "ProjectReferences": [
+    "..\\FarMem\\FarMemC64\\FarMemC64.tproj"
+  ],
+  "OptimizationLevel": "Maximum",
+  "GenerateAssemblyListing": true,
+  "AddSourceAsComment": true,
+  "GenerateLinkerMap": true,
+  "GenerateDebugInfo": true,
+  "ExportLabels": true,
+  "EnableSuperCpu": false,
+  "ViceArguments": [
+    "-reu",
+    "-reusize",
+    "512"
+  ],
+  "UseOpt6502": true,
+  "Opt6502Mode": "Speed",
+  "SourceFiles": [
+    "src/main.c",
+    "src/world.c",
+    "src/view.c",
+    "src/terrain.s"
+  ],
+  "OutputFile": "bin/WorldMap.prg",
+  "LinkerConfigPath": null,
+  "IncludePaths": [
+    "include"
+  ],
+  "PreprocessorDefines": [],
+  "ExtraArguments": [],
+  "PreBuildCommands": [],
+  "PostBuildCommands": []
+}

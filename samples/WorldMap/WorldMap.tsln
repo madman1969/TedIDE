@@ -1,0 +1,8 @@
+{
+  "Name": "WorldMap",
+  "ProjectPaths": [
+    "WorldMap.tproj",
+    "../FarMem/FarMemC64/FarMemC64.tproj"
+  ],
+  "StartupProject": "WorldMap.tproj"
+}
