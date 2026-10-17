@@ -4,16 +4,26 @@
 /* The world map: one byte per cell, holding a TILE_ value, kept in far memory (see farmem.h) -
  * a 512x256 map is 128K, twice the C64's whole address space. */
 
-#define TILE_DEEP      0
-#define TILE_SEA       1
-#define TILE_BEACH     2
-#define TILE_GRASS     3
-#define TILE_FOREST    4
-#define TILE_HILLS     5
-#define TILE_MOUNTAIN  6
-#define TILE_SNOW      7
-#define TILE_TOWN      8
-#define TILE_COUNT     9
+/* The tiles, from the deepest sea to the highest snow, then towns. Each kind of land and sea
+ * comes in shades of height, so a map can be shaded like a relief map; a machine with fewer
+ * colours just gives some shades the same one. */
+#define TILE_DEEPEST        0
+#define TILE_DEEPER         1
+#define TILE_DEEP           2
+#define TILE_SEA            3
+#define TILE_SHALLOWS       4
+#define TILE_BEACH          5
+#define TILE_GRASS          6
+#define TILE_UPLAND         7
+#define TILE_FOREST         8
+#define TILE_HIGH_FOREST    9
+#define TILE_HILLS          10
+#define TILE_HIGH_HILLS     11
+#define TILE_MOUNTAIN       12
+#define TILE_HIGH_MOUNTAIN  13
+#define TILE_SNOW           14
+#define TILE_TOWN           15
+#define TILE_COUNT          16
 
 /* Allocates the biggest map far memory has room for, from 512x256 down to 64x32.
  * Returns 0 if not even the smallest fits. Call far_init() first. */

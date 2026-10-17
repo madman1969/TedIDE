@@ -1,3 +1,4 @@
+#include <string.h>
 #include <conio.h>
 #include <ctype.h>
 #include "farmem.h"
@@ -5,26 +6,26 @@
 #include "world.h"
 #include "view.h"
 
-/* The screen and its colours, wherever this machine has them (screen.h). */
+/* The text screen and its colours, which conio and the overviews use (screen.h). The map is
+ * drawn through screen_draw_chars/colours instead, as on the Plus/4 that's a hidden screen. */
 #define SCREEN       ((unsigned char*)SCREEN_CHARS)
 #define COLOURS      ((unsigned char*)SCREEN_COLOURS)
 
 #define OVERVIEW_TOP   3
 #define OVERVIEW_ROWS  16
 
-/* The character for each tile, drawn by screen_c64.c or screen_plus4.c. Not static: blit.s
- * reads it, and the tiles' colours (view_tile_colour, also in those files), too. */
-const unsigned char view_tile_char[TILE_COUNT] = {
-    SCREEN_FIRST_TILE + TILE_DEEP, SCREEN_FIRST_TILE + TILE_SEA, SCREEN_FIRST_TILE + TILE_BEACH,
-    SCREEN_FIRST_TILE + TILE_GRASS, SCREEN_FIRST_TILE + TILE_FOREST, SCREEN_FIRST_TILE + TILE_HILLS,
-    SCREEN_FIRST_TILE + TILE_MOUNTAIN, SCREEN_FIRST_TILE + TILE_SNOW, SCREEN_FIRST_TILE + TILE_TOWN,
-};
-static const char* const tile_name[TILE_COUNT] = {
+/* The character for each tile: its picture's, drawn by screen_c64.c or screen_plus4.c. Filled
+ * in by view_init. Not static: blit.s reads it, and the tiles' colours (view_tile_colour, in
+ * those files) too. */
+unsigned char view_tile_char[TILE_COUNT];
+
+/* The status bar's name for each picture - every shade of a kind has the same one. */
+static const char* const glyph_name[GLYPH_TOWN + 1] = {
     "deep sea", "sea", "beach", "grass", "forest", "hills", "mountain", "snow", "town",
 };
 
-#define CURSOR_CHAR    SCREEN_CURSOR
-#define CURSOR_OFFSET  (CURSOR_Y * SCREEN_COLS + CURSOR_X)
+#define CURSOR_CHAR    (SCREEN_FIRST_GLYPH + GLYPH_CURSOR)
+#define CURSOR_OFFSET  ((SCREEN_MAP_TOP + CURSOR_Y) * SCREEN_COLS + CURSOR_X)
 
 /* Where each view row's 40 tiles are, split into low and high bytes for blit.s, which draws
  * them (see there). */
@@ -33,7 +34,7 @@ unsigned char view_row_hi[VIEW_HEIGHT];
 void view_blit(void);
 
 /* The tile cache: VIEW_HEIGHT map rows, cache_w columns wide starting at column cache_left.
- * Map row y lives in cache[y % VIEW_HEIGHT], so the 23 rows on view always fill the 23 slots;
+ * Map row y lives in cache[y % VIEW_HEIGHT], so the rows on view always fill the slots;
  * scrolling up or down a row reads just the row that comes into view, over the one that
  * left. Scrolling sideways reads nothing until the view nears the cache's edge - then the
  * cache is re-centred on the view and refilled. */
@@ -44,15 +45,22 @@ static unsigned cache_left;
 static unsigned cache_top;
 static unsigned char cache_valid;
 
-/* Whether the status bar's fixed text needs drawing again. */
+/* Whether the status bar needs setting up again, after the screen was cleared. */
 static unsigned char status_dirty;
+
+/* The top-left cell of the frame drawn last, to tell a move within it from one out of it, and
+ * the cell its cursor is over. */
+static unsigned drawn_left;
+static unsigned drawn_top;
+static unsigned cursor_x;
+static unsigned cursor_y;
 
 static char backend_name[13];
 
 /* The map column each overview column samples. */
 static unsigned overview_x[SCREEN_COLS];
 
-/* Puts one tile's character and colour at a screen position. */
+/* Puts one tile's character and colour on the text screen. */
 static void put_tile(unsigned char x, unsigned char y, unsigned char tile)
 {
     unsigned offset = y * SCREEN_COLS + x;
@@ -70,8 +78,11 @@ void view_init(void)
     cursor(0);
     screen_init();      /* also clears the screen */
 
-    /* In the C64's uppercase character set, a capital letter in a C string shows as a
-     * graphics character, so the backend name ("REU") is shown in lowercase. */
+    for (i = 0; i < TILE_COUNT; ++i)
+        view_tile_char[i] = SCREEN_FIRST_GLYPH + tile_glyph[i];
+
+    /* In the C64's and Plus/4's uppercase character set, a capital letter in a C string shows
+     * as a graphics character, so the backend name ("REU") is shown in lowercase. */
     for (i = 0; i < sizeof(backend_name) - 1 && name[i]; ++i)
         backend_name[i] = tolower(name[i]);
     backend_name[i] = 0;
@@ -99,6 +110,7 @@ void view_invalidate(void)
 /* Reads map row y's cached columns from far memory into its cache slot. */
 static void load_row(unsigned y)
 {
+    screen_before_far_read();
     world_read(cache_left, y, cache[y % VIEW_HEIGHT], cache_w);
 }
 
@@ -134,18 +146,77 @@ static void update_cache(unsigned left, unsigned top)
     cache_valid = 1;
 }
 
-unsigned char view_draw(unsigned left, unsigned top)
+/* Writes text straight into the screen being drawn, padded with spaces to len characters.
+ * Letters in a C string are PETSCII, which the screen shows 64 codes lower. */
+static void put_text(unsigned offset, const char* text, unsigned char len)
 {
-    unsigned char row, slot;
+    unsigned char i, c;
+    for (i = 0; i < len; ++i)
+    {
+        c = *text ? *text++ : ' ';
+        screen_draw_chars[offset + i] = (c >= 0x40 && c < 0x60) ? c - 0x40 : c;
+    }
+}
+
+/* Writes n (0-999) straight into the screen being drawn, right-aligned in three characters. */
+static void put_number(unsigned offset, unsigned n)
+{
+    screen_draw_chars[offset] = n >= 100 ? '0' + n / 100 : ' ';
+    screen_draw_chars[offset + 1] = n >= 10 ? '0' + n / 10 % 10 : ' ';
+    screen_draw_chars[offset + 2] = '0' + n % 10;
+}
+
+/* The status bar's top line - "reu          x123 y 45 grass     m:map" - and its keys below. */
+#define STATUS_LINE  (SCREEN_STATUS_ROW * SCREEN_COLS)
+
+/* Writes the status bar, for the cell (x, y) under the cursor and its tile, into the screen
+ * being drawn. All of it each time: on the Plus/4 it goes to each of two screens in turn. */
+static void draw_status(unsigned x, unsigned y, unsigned char tile)
+{
+    put_text(STATUS_LINE, backend_name, 13);
+    put_text(STATUS_LINE + 13, "x", 1);
+    put_number(STATUS_LINE + 14, x);
+    put_text(STATUS_LINE + 17, " y", 2);
+    put_number(STATUS_LINE + 19, y);
+    put_text(STATUS_LINE + 22, " ", 1);
+    put_text(STATUS_LINE + 23, glyph_name[tile_glyph[tile]], 8);
+    put_text(STATUS_LINE + 31, "  m:map", 9);
+    put_text(STATUS_LINE + SCREEN_COLS, "t:town f:forest g:grass n:new q:quit", SCREEN_COLS);
+}
+
+void view_draw(unsigned left, unsigned top)
+{
+    unsigned char row, slot, tile;
+    unsigned char fine_x = left & ((1 << VIEW_FINE_BITS) - 1);
+    unsigned char fine_y = top & ((1 << VIEW_FINE_BITS) - 1);
+    unsigned cell_left = VIEW_CELL(left);
+    /* The map row drawn at the top of the screen - see SCREEN_ROW_SHIFT. */
+    unsigned cell_top = VIEW_CELL(top) + SCREEN_ROW_SHIFT(fine_y);
     const unsigned char* tiles;
 
-    update_cache(left, top);
+    /* Still the same top-left cell: on the Plus/4, scroll the frame on show and that's all. */
+    if (cache_valid && !status_dirty && cell_left == drawn_left && cell_top == drawn_top)
+    {
+        screen_scroll(fine_x, fine_y);
+        return;
+    }
+
+    if (status_dirty)
+    {
+        /* Back from an overview or a cleared screen: the map screen, with the status bar's
+         * colours set. */
+        screen_map();
+        memset(screen_draw_colours + STATUS_LINE, COLOR_GRAY3, 2 * SCREEN_COLS);
+        status_dirty = 0;
+    }
+
+    update_cache(cell_left, cell_top);
 
     /* Point blit.s at each view row's tiles in the cache. */
-    slot = top % VIEW_HEIGHT;
+    slot = cell_top % VIEW_HEIGHT;
     for (row = 0; row < VIEW_HEIGHT; ++row)
     {
-        tiles = cache[slot] + (left - cache_left);
+        tiles = cache[slot] + (cell_left - cache_left);
         view_row_lo[row] = (unsigned char)tiles;
         view_row_hi[row] = (unsigned char)((unsigned)tiles >> 8);
         if (++slot == VIEW_HEIGHT)
@@ -153,60 +224,34 @@ unsigned char view_draw(unsigned left, unsigned top)
     }
     view_blit();
 
-    SCREEN[CURSOR_OFFSET] = CURSOR_CHAR;
-    COLOURS[CURSOR_OFFSET] = COLOR_WHITE;
+    screen_draw_chars[CURSOR_OFFSET] = CURSOR_CHAR;
+    screen_draw_colours[CURSOR_OFFSET] = screen_cursor_colour;
 
-    return cache[(top + CURSOR_Y) % VIEW_HEIGHT][left + CURSOR_X - cache_left];
+    cursor_x = cell_left + CURSOR_X;
+    cursor_y = cell_top + CURSOR_Y;
+    tile = cache[cursor_y % VIEW_HEIGHT][cursor_x - cache_left];
+    draw_status(cursor_x, cursor_y, tile);
+
+    screen_present(fine_x, fine_y);
+    drawn_left = cell_left;
+    drawn_top = cell_top;
 }
 
-/* Writes text straight into screen memory, padded with spaces to len characters. Letters in a
- * C string are PETSCII, which the screen shows 64 codes lower. */
-static void put_text(unsigned offset, const char* text, unsigned char len)
+unsigned view_cursor_x(void)
 {
-    unsigned char i, c;
-    for (i = 0; i < len; ++i)
-    {
-        c = *text ? *text++ : ' ';
-        SCREEN[offset + i] = (c >= 0x40 && c < 0x60) ? c - 0x40 : c;
-    }
+    return cursor_x;
 }
 
-/* Writes n (0-999) straight into screen memory, right-aligned in three characters. */
-static void put_number(unsigned offset, unsigned n)
+unsigned view_cursor_y(void)
 {
-    SCREEN[offset] = n >= 100 ? '0' + n / 100 : ' ';
-    SCREEN[offset + 1] = n >= 10 ? '0' + n / 10 % 10 : ' ';
-    SCREEN[offset + 2] = '0' + n % 10;
-}
-
-/* The status bar's top line, and where its changing parts are in it. */
-#define STATUS_LINE     (VIEW_HEIGHT * SCREEN_COLS)
-#define STATUS_X        (STATUS_LINE + 14)
-#define STATUS_Y        (STATUS_LINE + 19)
-#define STATUS_TILE     (STATUS_LINE + 23)
-
-void view_status(unsigned x, unsigned y, unsigned char tile)
-{
-    if (status_dirty)
-    {
-        /* The fixed text, once; cprintf is far too slow to redo on every step. Both lines stop
-         * short of the last column: printing in the bottom-right corner scrolls the screen. */
-        textcolor(COLOR_GRAY3);
-        gotoxy(0, VIEW_HEIGHT);
-        cprintf("%-12s x    y             m:map", backend_name);
-        gotoxy(0, VIEW_HEIGHT + 1);
-        cprintf("t:town f:forest g:grass n:new q:quit");
-        status_dirty = 0;
-    }
-    put_number(STATUS_X, x);
-    put_number(STATUS_Y, y);
-    put_text(STATUS_TILE, tile_name[tile], 8);
+    return cursor_y;
 }
 
 void view_overview_begin(const char* title)
 {
     unsigned char x;
 
+    screen_text();
     clrscr();
     textcolor(COLOR_GRAY3);
     cputsxy(0, 0, title);
@@ -239,7 +284,7 @@ void view_overview_mark(unsigned x, unsigned y)
     unsigned offset = (OVERVIEW_TOP + y / view_overview_step()) * SCREEN_COLS
         + (unsigned)((unsigned long)x * SCREEN_COLS / world_width());
     SCREEN[offset] = CURSOR_CHAR;
-    COLOURS[offset] = COLOR_WHITE;
+    COLOURS[offset] = screen_cursor_colour;
 }
 
 void view_progress(unsigned char percent)

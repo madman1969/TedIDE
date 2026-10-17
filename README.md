@@ -208,10 +208,14 @@ shrinks to fit, down to 64x32 in ordinary RAM.
   video chip's raster beam (`blit.s`), so it never tears. Use the joystick in port 2 or the cursor
   keys; hold fire, or use W/A/S/D, to move faster.
 - **Tiles** are hand-drawn characters - waves, sand, grass, trees, hills, peaks and houses
-  (`tiles.c`). On the C64 the screen and character set move into the RAM under the KERNAL ROM,
-  the only free space the video chip can read them from with this program loaded
-  (`screen_c64.c`). The Plus/4's TED reads characters from any RAM, so only the character set
-  moves there, and the tiles get colours from its 121 (`screen_plus4.c`).
+  (`tiles.c`), shaded by height: deeper sea is darker, higher land lighter or greyer. On the C64
+  the screen and character set move into the RAM under the KERNAL ROM, the only free space the
+  video chip can read them from with this program loaded (`screen_c64.c`).
+- **The Plus/4 version** uses what the TED adds (`screen_plus4.c`, `blit.s`): shades from its
+  121 colours, multicolour tiles (four colours a cell, such as snow-capped peaks), towns and the
+  cursor flashed by the hardware, a second screen to draw into while the first is on show, and
+  pixel-smooth scrolling. The scrolling needs the status bar held still, so an interrupt changes
+  the TED's scroll registers just below it every frame; the status bar is at the top there.
 - **Editing**: T, F and G turn the cell under the cursor into a town, forest or grass, with
   `far_poke`. M shows the whole world with your position marked, N makes a new one, Q quits.
 

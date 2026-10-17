@@ -9,10 +9,23 @@
  * screen and character set move to bank 3, into the RAM under the KERNAL ROM: the CPU writes
  * there straight through the ROM, cc65 never uses it, and the video chip always sees RAM. */
 
+/* The C64 has few shades of each colour, so most shades of a kind share one. */
 const unsigned char view_tile_colour[TILE_COUNT] = {
-    COLOR_BLUE, COLOR_LIGHTBLUE, COLOR_YELLOW, COLOR_GREEN, COLOR_GREEN,
-    COLOR_BROWN, COLOR_GRAY2, COLOR_WHITE, COLOR_LIGHTRED,
+    COLOR_BLUE, COLOR_BLUE, COLOR_BLUE,         /* deepest, deeper, deep */
+    COLOR_LIGHTBLUE, COLOR_CYAN,                /* sea, shallows */
+    COLOR_YELLOW,                               /* beach */
+    COLOR_LIGHTGREEN, COLOR_GREEN,              /* grass, upland */
+    COLOR_GREEN, COLOR_GREEN,                   /* forest, high forest */
+    COLOR_BROWN, COLOR_BROWN,                   /* hills, high hills */
+    COLOR_GRAY1, COLOR_GRAY2,                   /* mountain, high mountain */
+    COLOR_WHITE,                                /* snow */
+    COLOR_LIGHTRED,                             /* town */
 };
+const unsigned char screen_cursor_colour = COLOR_WHITE;
+
+/* The C64 draws each frame straight onto the screen, racing the raster beam (blit.s). */
+unsigned char* screen_draw_chars = (unsigned char*)SCREEN_CHARS;
+unsigned char* screen_draw_colours = (unsigned char*)SCREEN_COLOURS;
 
 #define CHARSET      0xE800
 #define CHARS        ((unsigned char*)CHARSET)
@@ -53,7 +66,7 @@ void screen_init(void)
     CPU_PORT = port;
     __asm__("cli");
 
-    memcpy(CHARS + SCREEN_FIRST_TILE * 8, tile_glyphs, sizeof(tile_glyphs));
+    memcpy(CHARS + SCREEN_FIRST_GLYPH * 8, tile_glyphs, sizeof(tile_glyphs));
 
     /* Clear the new screen before the video chip shows it: it's whatever was in that RAM. The
      * KERNAL - and so conio - finds the screen through HIBASE. */
@@ -72,4 +85,30 @@ void screen_done(void)
     VIC.addr = saved_vic_addr;
     HIBASE = 0x04;
     CASE_LOCK = 0;
+}
+
+/* The C64 has one screen and no fine scrolling, so the text and map screens are the same and a
+ * drawn frame is already on show. */
+void screen_text(void)
+{
+}
+
+void screen_map(void)
+{
+}
+
+void screen_present(unsigned char fine_x, unsigned char fine_y)
+{
+    (void)fine_x;
+    (void)fine_y;
+}
+
+void screen_scroll(unsigned char fine_x, unsigned char fine_y)
+{
+    (void)fine_x;
+    (void)fine_y;
+}
+
+void screen_before_far_read(void)
+{
 }

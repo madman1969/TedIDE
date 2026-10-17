@@ -24,9 +24,18 @@ static const unsigned sizes[][2] = {
 };
 #define SIZE_COUNT (sizeof(sizes) / sizeof(sizes[0]))
 
-/* Upper height limits for deep sea, sea, beach, grass, forest, hills and mountain; anything
- * higher is snow. Tuned so roughly half the map is sea. */
-static const unsigned char thresholds[] = { 70, 82, 87, 108, 122, 133, 144 };
+/* Upper height limits for each tile from TILE_DEEPEST to TILE_HIGH_MOUNTAIN; anything
+ * higher is snow. Tuned so roughly half the map is sea; each kind of land and sea is split into
+ * its shades by height within its band. */
+static const unsigned char thresholds[] = {
+    46, 58, 70,         /* deepest, deeper, deep */
+    77, 82,             /* sea, shallows */
+    87,                 /* beach */
+    98, 108,            /* grass, upland */
+    115, 122,           /* forest, high forest */
+    128, 133,           /* hills, high hills */
+    139, 144,           /* mountain, high mountain */
+};
 
 /* How many random cells per row may become a town, if they're grassland. */
 #define TOWN_TRIES_PER_ROW  2
@@ -89,11 +98,11 @@ unsigned char world_create(void)
 
     /* A lookup table from height to tile, so each cell is one table read. Heights of 240 and
      * up only happen when the roughness pushes a height below 0 and it wraps round, so
-     * they're deep sea too. */
+     * they're the deepest sea too. */
     for (h = 0; h < 256; ++h)
     {
         if (h >= 240)
-            t = TILE_DEEP;
+            t = TILE_DEEPEST;
         else
             for (t = 0; t < sizeof(thresholds) && h >= thresholds[t]; ++t)
                 ;
@@ -161,7 +170,7 @@ static void place_towns(void)
     for (i = 0; i < TOWN_TRIES_PER_ROW; ++i)
     {
         x = rand() & (width - 1);
-        if (terrain_row_buf[x] == TILE_GRASS)
+        if (terrain_row_buf[x] == TILE_GRASS || terrain_row_buf[x] == TILE_UPLAND)
             terrain_row_buf[x] = TILE_TOWN;
     }
 }

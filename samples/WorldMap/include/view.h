@@ -1,16 +1,25 @@
 #ifndef VIEW_H
 #define VIEW_H
 
-/* What's on screen: the map view (the top 23 rows, with a cursor in the middle) and its
- * two-line status bar, or an overview of the whole world shrunk to 40x16 characters - drawn
- * row by row while the world is generated, and on request with M. */
+/* What's on screen: the map view (with a cursor in the middle) and its two-line status bar, or
+ * an overview of the whole world shrunk to 40x16 characters - drawn row by row while the world
+ * is generated, and on request with M. Where each goes on the screen is up to the machine - see
+ * screen.h. */
+
+#include "screen.h"
 
 #define VIEW_WIDTH   40
-#define VIEW_HEIGHT  23
+#define VIEW_HEIGHT  SCREEN_MAP_HEIGHT
 #define CURSOR_X     (VIEW_WIDTH / 2)
 #define CURSOR_Y     (VIEW_HEIGHT / 2)
 
-/* Black screen, no cursor, and the map tiles' own character set (see charset.h). Call after
+/* View positions count fractions of a cell - eighths on the Plus/4, which scrolls a pixel at a
+ * time, and whole cells on the C64. These convert. */
+#define VIEW_FINE_BITS     SCREEN_FINE_BITS
+#define VIEW_CELL(pos)     ((pos) >> VIEW_FINE_BITS)
+#define VIEW_POS(cell)     ((unsigned)(cell) << VIEW_FINE_BITS)
+
+/* Black screen, no cursor, and the map tiles' own character set (see screen.h). Call after
  * world_create(). */
 void view_init(void);
 
@@ -21,13 +30,15 @@ void view_done(void);
  * has been cleared, so the next view_draw() reads and draws everything again. */
 void view_invalidate(void);
 
-/* Draws the part of the map whose top-left cell is (left, top), with the cursor over the
- * middle cell, and returns the tile under the cursor. Tiles come from a cache of the map
- * around the view, which reads from far memory only the rows and columns that scroll into it. */
-unsigned char view_draw(unsigned left, unsigned top);
+/* Shows the map with its top-left corner at (left, top), a view position, with the cursor over
+ * the middle cell and the status bar naming the cell and its tile. Tiles come from a cache of
+ * the map around the view, which reads from far memory only the rows and columns that scroll
+ * into it, and a move within the same cell only scrolls the screen. */
+void view_draw(unsigned left, unsigned top);
 
-/* Shows the far memory backend, the cursor position, the tile under it, and the keys. */
-void view_status(unsigned x, unsigned y, unsigned char tile);
+/* The map cell under the cursor, as last drawn. */
+unsigned view_cursor_x(void);
+unsigned view_cursor_y(void);
 
 /* Clears the screen for an overview, with a title and a line about the map and far memory. */
 void view_overview_begin(const char* title);

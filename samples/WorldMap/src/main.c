@@ -25,9 +25,10 @@
 #include "world.h"
 #include "view.h"
 
-#define FAST_STEP  8
+#define FAST_CELLS  8     /* how far W/A/S/D move the view */
 
-/* The view's top-left cell. */
+/* The view's top-left corner, as a view position: in cells on the C64, in pixels (eighths of a
+ * cell) on the Plus/4, which scrolls smoothly - see view.h. */
 static unsigned left;
 static unsigned top;
 
@@ -57,8 +58,8 @@ static void new_world(void)
 {
     view_overview_begin("generating a new world...");
     world_generate(row_generated);
-    left = (world_width() - VIEW_WIDTH) / 2;
-    top = (world_height() - VIEW_HEIGHT) / 2;
+    left = VIEW_POS((world_width() - VIEW_WIDTH) / 2);
+    top = VIEW_POS((world_height() - VIEW_HEIGHT) / 2);
     clrscr();
     view_invalidate();
 }
@@ -75,7 +76,7 @@ static void show_overview(void)
         world_read(0, y, map_row, world_width());
         view_overview_row(y, map_row);
     }
-    view_overview_mark(left + CURSOR_X, top + CURSOR_Y);
+    view_overview_mark(view_cursor_x(), view_cursor_y());
     cgetc();
     clrscr();
     view_invalidate();
@@ -85,15 +86,10 @@ static void show_overview(void)
  * cache; the view's own cache of the map then has to be refilled. */
 static void set_cursor_tile(unsigned char tile)
 {
-    world_set(left + CURSOR_X, top + CURSOR_Y, tile);
+    world_set(view_cursor_x(), view_cursor_y(), tile);
     view_invalidate();
 }
 
-/* Redraws the map and the status bar for the cell under the cursor. */
-static void redraw(void)
-{
-    view_status(left + CURSOR_X, top + CURSOR_Y, view_draw(left, top));
-}
 
 int main(void)
 {
@@ -111,16 +107,17 @@ int main(void)
 
     _randomize();   /* seed rand() from the clock, for a different world each run */
     new_world();
-    redraw();
+    view_draw(left, top);
 
     while (!quit)
     {
         dx = dy = 0;
         changed = 0;
 
-        /* Joystick: one cell per frame, or four with fire held. */
+        /* Joystick: SCREEN_STEP each frame - a cell on the C64, two pixels on the Plus/4 - or
+         * four times that with fire held. */
         joy = joy_read(JOY_2);
-        step = JOY_BTN_1(joy) ? 4 : 1;
+        step = JOY_BTN_1(joy) ? 4 * SCREEN_STEP : SCREEN_STEP;
         if (JOY_UP(joy))    dy = -step;
         if (JOY_DOWN(joy))  dy = step;
         if (JOY_LEFT(joy))  dx = -step;
@@ -131,14 +128,15 @@ int main(void)
             key = cgetc();
             switch (key)
             {
-            case CH_CURS_UP:    dy = -1; break;
-            case CH_CURS_DOWN:  dy = 1; break;
-            case CH_CURS_LEFT:  dx = -1; break;
-            case CH_CURS_RIGHT: dx = 1; break;
-            case 'w': dy = -FAST_STEP; break;
-            case 's': dy = FAST_STEP; break;
-            case 'a': dx = -FAST_STEP; break;
-            case 'd': dx = FAST_STEP; break;
+            /* The cursor keys move a cell, W/A/S/D eight. */
+            case CH_CURS_UP:    dy = -(int)VIEW_POS(1); break;
+            case CH_CURS_DOWN:  dy = VIEW_POS(1); break;
+            case CH_CURS_LEFT:  dx = -(int)VIEW_POS(1); break;
+            case CH_CURS_RIGHT: dx = VIEW_POS(1); break;
+            case 'w': dy = -(int)VIEW_POS(FAST_CELLS); break;
+            case 's': dy = VIEW_POS(FAST_CELLS); break;
+            case 'a': dx = -(int)VIEW_POS(FAST_CELLS); break;
+            case 'd': dx = VIEW_POS(FAST_CELLS); break;
             case 't': set_cursor_tile(TILE_TOWN); changed = 1; break;
             case 'f': set_cursor_tile(TILE_FOREST); changed = 1; break;
             case 'g': set_cursor_tile(TILE_GRASS); changed = 1; break;
@@ -150,14 +148,16 @@ int main(void)
 
         if (dx != 0 || dy != 0)
         {
-            left = move(left, dx, world_width() - VIEW_WIDTH);
-            top = move(top, dy, world_height() - VIEW_HEIGHT);
+            left = move(left, dx, VIEW_POS(world_width() - VIEW_WIDTH));
+            top = move(top, dy, VIEW_POS(world_height() - VIEW_HEIGHT));
             changed = 1;
         }
+        /* view_draw waits for the frame it shows, which paces the scrolling; with nothing to
+         * do, poll again next frame. */
         if (changed)
-            redraw();
+            view_draw(left, top);
         else
-            waitvsync();    /* nothing to do: poll again next frame */
+            waitvsync();
     }
 
     joy_uninstall();

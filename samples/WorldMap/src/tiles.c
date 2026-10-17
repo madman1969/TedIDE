@@ -1,9 +1,21 @@
 #include "screen.h"
 
-/* The tiles, 8x8 pixels each, one byte per row with bit 7 the leftmost pixel. A 1 shows in
- * the tile's colour (view_tile_colour), a 0 in the black background. In TILE_ order, then the
- * cursor. */
-const unsigned char tile_glyphs[TILE_COUNT + 1][8] = {
+/* Each tile's picture: the shades of each kind of land and sea share one. */
+const unsigned char tile_glyph[TILE_COUNT] = {
+    GLYPH_DEEP, GLYPH_DEEP, GLYPH_DEEP,         /* deepest, deeper, deep */
+    GLYPH_SEA, GLYPH_SEA,                       /* sea, shallows */
+    GLYPH_BEACH,
+    GLYPH_GRASS, GLYPH_GRASS,                   /* grass, upland */
+    GLYPH_FOREST, GLYPH_FOREST,
+    GLYPH_HILLS, GLYPH_HILLS,
+    GLYPH_MOUNTAIN, GLYPH_MOUNTAIN,
+    GLYPH_SNOW,
+    GLYPH_TOWN,
+};
+
+/* The pictures, 8x8 pixels each, one byte per row with bit 7 the leftmost pixel. A 1 shows in
+ * the tile's colour (view_tile_colour), a 0 in the black background. In GLYPH_ order. */
+const unsigned char tile_glyphs[GLYPH_COUNT][8] = {
     { 0xFF, 0xF3, 0xCC, 0xFF, 0xFF, 0x3F, 0xCF, 0xFF },   /* deep sea: waves */
     { 0xFF, 0xCF, 0x30, 0xFF, 0xFF, 0xFC, 0x03, 0xFF },   /* sea: lighter waves */
     { 0xFF, 0xDF, 0xFF, 0xFB, 0xFF, 0xBF, 0xFF, 0xF7 },   /* beach: sand */
