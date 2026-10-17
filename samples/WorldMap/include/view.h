@@ -10,8 +10,12 @@
 #define CURSOR_X     (VIEW_WIDTH / 2)
 #define CURSOR_Y     (VIEW_HEIGHT / 2)
 
-/* Black screen, no cursor. Call after world_create(). */
+/* Black screen, no cursor, and the map tiles' own character set (see charset.h). Call after
+ * world_create(). */
 void view_init(void);
+
+/* Puts the screen back as BASIC had it, on the way out. */
+void view_done(void);
 
 /* Forgets the cached map tiles and the status bar, after the map has changed or the screen
  * has been cleared, so the next view_draw() reads and draws everything again. */

@@ -13,7 +13,7 @@
         .import         _view_row_lo, _view_row_hi, _view_tile_char, _view_tile_colour
         .importzp       ptr1
 
-SCREEN  = $0400
+SCREEN  = $E000                         ; CHARSET_SCREEN in charset.h
 COLOUR  = $D800
 ROWS    = 23
 COLS    = 40

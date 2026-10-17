@@ -24,7 +24,8 @@
     "src/world.c",
     "src/view.c",
     "src/terrain.s",
-    "src/blit.s"
+    "src/blit.s",
+    "src/charset.c"
   ],
   "OutputFile": "bin/WorldMap.prg",
   "LinkerConfigPath": null,

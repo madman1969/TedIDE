@@ -204,6 +204,9 @@ the map shrinks to fit, down to 64x32 in ordinary RAM.
   `far_read` only for the rows and columns that scroll into it. The view is drawn just behind the
   video chip's raster beam (`blit.s`), so it never tears. Use the joystick in port 2 or the cursor
   keys; hold fire, or use W/A/S/D, to move faster.
+- **Tiles** are hand-drawn characters - waves, sand, grass, trees, hills, peaks and houses
+  (`charset.c`). The screen and character set move into the RAM under the KERNAL ROM, the only
+  free space the video chip can read them from with this program loaded.
 - **Editing**: T, F and G turn the cell under the cursor into a town, forest or grass, with
   `far_poke`. M shows the whole world with your position marked, N makes a new one, Q quits.
 

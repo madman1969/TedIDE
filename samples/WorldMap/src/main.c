@@ -12,6 +12,7 @@
  *   terrain.s/.h   - the generator's two per-row loops, in assembly for speed
  *   view.c/.h      - draws the map, the status bar and the overview
  *   blit.s         - draws the map view onto the screen without tearing, in assembly
+ *   charset.c/.h   - the hand-drawn tile characters, and moving the screen to show them
  */
 #include <stdlib.h>
 #include <conio.h>
@@ -158,10 +159,6 @@ int main(void)
 
     joy_uninstall();
     far_done();
-    textcolor(COLOR_LIGHTBLUE);
-    bordercolor(COLOR_LIGHTBLUE);
-    bgcolor(COLOR_BLUE);
-    clrscr();
-    cursor(1);
+    view_done();
     return 0;
 }

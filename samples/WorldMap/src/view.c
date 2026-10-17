@@ -2,20 +2,22 @@
 #include <ctype.h>
 #include <c64.h>
 #include "farmem.h"
+#include "charset.h"
 #include "world.h"
 #include "view.h"
 
-#define SCREEN       ((unsigned char*)0x0400)
+#define SCREEN       ((unsigned char*)CHARSET_SCREEN)
 #define SCREEN_COLS  40
 
 #define OVERVIEW_TOP   3
 #define OVERVIEW_ROWS  16
 
-/* Screen codes (uppercase/graphics character set) and colours for each tile. 0xA0 is a solid
- * block, 0x66 a checkerboard, 0x58 a club (a tree) and 0x51 a filled circle. Not static:
- * blit.s reads them too. */
+/* The character (drawn in charset.c) and colour for each tile. Not static: blit.s reads them
+ * too. */
 const unsigned char view_tile_char[TILE_COUNT] = {
-    0xA0, 0x66, 0xA0, 0xA0, 0x58, 0x66, 0xA0, 0xA0, 0x51,
+    CHARSET_FIRST_TILE + TILE_DEEP, CHARSET_FIRST_TILE + TILE_SEA, CHARSET_FIRST_TILE + TILE_BEACH,
+    CHARSET_FIRST_TILE + TILE_GRASS, CHARSET_FIRST_TILE + TILE_FOREST, CHARSET_FIRST_TILE + TILE_HILLS,
+    CHARSET_FIRST_TILE + TILE_MOUNTAIN, CHARSET_FIRST_TILE + TILE_SNOW, CHARSET_FIRST_TILE + TILE_TOWN,
 };
 const unsigned char view_tile_colour[TILE_COUNT] = {
     COLOR_BLUE, COLOR_LIGHTBLUE, COLOR_YELLOW, COLOR_GREEN, COLOR_GREEN,
@@ -25,7 +27,7 @@ static const char* const tile_name[TILE_COUNT] = {
     "deep sea", "sea", "beach", "grass", "forest", "hills", "mountain", "snow", "town",
 };
 
-#define CURSOR_CHAR    0x56   /* a diagonal cross */
+#define CURSOR_CHAR    CHARSET_CURSOR
 #define CURSOR_OFFSET  (CURSOR_Y * SCREEN_COLS + CURSOR_X)
 
 /* Where each view row's 40 tiles are, split into low and high bytes for blit.s, which draws
@@ -70,7 +72,7 @@ void view_init(void)
     bordercolor(COLOR_BLACK);
     bgcolor(COLOR_BLACK);
     cursor(0);
-    clrscr();
+    charset_init();     /* also clears the screen */
 
     /* In the C64's uppercase character set, a capital letter in a C string shows as a
      * graphics character, so the backend name ("REU") is shown in lowercase. */
@@ -80,6 +82,16 @@ void view_init(void)
 
     cache_w = world_width() < CACHE_MAX_W ? world_width() : CACHE_MAX_W;
     view_invalidate();
+}
+
+void view_done(void)
+{
+    charset_done();
+    textcolor(COLOR_LIGHTBLUE);
+    bordercolor(COLOR_LIGHTBLUE);
+    bgcolor(COLOR_BLUE);
+    clrscr();
+    cursor(1);
 }
 
 void view_invalidate(void)
