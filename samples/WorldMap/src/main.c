@@ -11,6 +11,7 @@
  *   world.c/.h     - generates the map and reads and writes its cells in far memory
  *   terrain.s/.h   - the generator's two per-row loops, in assembly for speed
  *   view.c/.h      - draws the map, the status bar and the overview
+ *   blit.s         - draws the map view onto the screen without tearing, in assembly
  */
 #include <stdlib.h>
 #include <conio.h>
@@ -55,6 +56,7 @@ static void new_world(void)
     left = (world_width() - VIEW_WIDTH) / 2;
     top = (world_height() - VIEW_HEIGHT) / 2;
     clrscr();
+    view_invalidate();
 }
 
 /* Shows the whole world, read back from far memory a row at a time, with the cursor's place
@@ -72,17 +74,21 @@ static void show_overview(void)
     view_overview_mark(left + CURSOR_X, top + CURSOR_Y);
     cgetc();
     clrscr();
+    view_invalidate();
+}
+
+/* Changes the cell under the cursor. Editing the map is a far_poke through FarMem's window
+ * cache; the view's own cache of the map then has to be refilled. */
+static void set_cursor_tile(unsigned char tile)
+{
+    world_set(left + CURSOR_X, top + CURSOR_Y, tile);
+    view_invalidate();
 }
 
 /* Redraws the map and the status bar for the cell under the cursor. */
 static void redraw(void)
 {
-    unsigned x = left + CURSOR_X;
-    unsigned y = top + CURSOR_Y;
-
-    waitvsync();    /* start drawing in the border, to reduce tearing */
-    view_draw(left, top);
-    view_status(x, y, world_get(x, y));
+    view_status(left + CURSOR_X, top + CURSOR_Y, view_draw(left, top));
 }
 
 int main(void)
@@ -129,10 +135,9 @@ int main(void)
             case 's': dy = FAST_STEP; break;
             case 'a': dx = -FAST_STEP; break;
             case 'd': dx = FAST_STEP; break;
-            /* Editing the map is a far_poke through FarMem's window cache. */
-            case 't': world_set(left + CURSOR_X, top + CURSOR_Y, TILE_TOWN); changed = 1; break;
-            case 'f': world_set(left + CURSOR_X, top + CURSOR_Y, TILE_FOREST); changed = 1; break;
-            case 'g': world_set(left + CURSOR_X, top + CURSOR_Y, TILE_GRASS); changed = 1; break;
+            case 't': set_cursor_tile(TILE_TOWN); changed = 1; break;
+            case 'f': set_cursor_tile(TILE_FOREST); changed = 1; break;
+            case 'g': set_cursor_tile(TILE_GRASS); changed = 1; break;
             case 'm': show_overview(); changed = 1; break;
             case 'n': new_world(); changed = 1; break;
             case 'q': quit = 1; break;

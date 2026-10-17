@@ -200,8 +200,10 @@ the map shrinks to fit, down to 64x32 in ordinary RAM.
 - **Generating** a new world draws an overview of it as it goes, row by row. The full-size map
   takes about 15 seconds on a real C64; VICE's warp mode (Alt+W) does it in a moment. The two
   loops that run for every row are in assembly (`terrain.s`); the rest is C.
-- **Scrolling** reads each of the 23 visible rows with one `far_read`. Use the joystick in port 2
-  or the cursor keys; hold fire, or use W/A/S/D, to move faster.
+- **Scrolling** keeps a 128-column cache of the rows on view in ordinary memory, and uses
+  `far_read` only for the rows and columns that scroll into it. The view is drawn just behind the
+  video chip's raster beam (`blit.s`), so it never tears. Use the joystick in port 2 or the cursor
+  keys; hold fire, or use W/A/S/D, to move faster.
 - **Editing**: T, F and G turn the cell under the cursor into a town, forest or grass, with
   `far_poke`. M shows the whole world with your position marked, N makes a new one, Q quits.
 

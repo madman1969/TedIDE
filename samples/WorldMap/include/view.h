@@ -10,12 +10,17 @@
 #define CURSOR_X     (VIEW_WIDTH / 2)
 #define CURSOR_Y     (VIEW_HEIGHT / 2)
 
-/* Black screen, no cursor. */
+/* Black screen, no cursor. Call after world_create(). */
 void view_init(void);
 
-/* Draws the part of the map whose top-left cell is (left, top), straight into screen and
- * colour RAM, with the cursor over the middle cell. */
-void view_draw(unsigned left, unsigned top);
+/* Forgets the cached map tiles and the status bar, after the map has changed or the screen
+ * has been cleared, so the next view_draw() reads and draws everything again. */
+void view_invalidate(void);
+
+/* Draws the part of the map whose top-left cell is (left, top), with the cursor over the
+ * middle cell, and returns the tile under the cursor. Tiles come from a cache of the map
+ * around the view, which reads from far memory only the rows and columns that scroll into it. */
+unsigned char view_draw(unsigned left, unsigned top);
 
 /* Shows the far memory backend, the cursor position, the tile under it, and the keys. */
 void view_status(unsigned x, unsigned y, unsigned char tile);
