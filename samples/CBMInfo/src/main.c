@@ -18,7 +18,7 @@ void detect_system(SystemInfo *info)
     info->fast_mode_supported   = cpu_supports_fast_mode();
     info->fast_mode_description = cpu_fast_mode_description();
     info->supercpu_enabled      = cpu_supports_supercpu();
-    info->cpu_khz       = cpu_speed_khz();
+    info->cpu_khz       		= cpu_speed_khz();
 
     info->ram_installed_bytes = memory_installed_bytes();
     info->ram_heap_free_bytes = memory_heap_free_bytes();
@@ -30,7 +30,7 @@ void detect_system(SystemInfo *info)
     info->colours        = video_colour_count();
 
     info->sound_chip     = sound_chip_name();
-    info->sound_voices   = sound_voice_count();
+    info->sound_voices   = sound_voice_count();    
 }
 
 int main(void)
