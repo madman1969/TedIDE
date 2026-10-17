@@ -167,7 +167,8 @@ module's header comment says which of its values are detected and which are fixe
 A flat "far memory" library in the spirit of DOS/4GW: one 24-bit address space over whatever extra
 memory the machine has, with an allocator, block reads, writes, copies and fills, single bytes and
 words, and windows mapped into ordinary memory to work on with normal C pointers. cc65's pointers
-are 16 bits, so far memory is reached through these functions - `include/farmem.h` lists them.
+are 16 bits, so far memory is reached through these functions - `include/farmem.h` lists them, and
+[samples/FarMem/README.md](samples/FarMem/README.md) is a guide to using them, with examples.
 
 | Machine | Far memory | How |
 | --- | --- | --- |
