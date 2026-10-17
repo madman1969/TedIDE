@@ -213,7 +213,12 @@ void screen_map(void)
         memset(screens[s] + (SCREEN_STATUS_ROW + 2) * SCREEN_COLS, COLOR_BLACK, SCREEN_COLS);
         memset(screens[s] + 0x400 + (SCREEN_STATUS_ROW + 2) * SCREEN_COLS, ' ', SCREEN_COLS);
     }
-    TED.irr = TED_TIMER2;       /* forget any old timer 2 interrupt */
+    /* Timer 2 runs on from wherever it got to before: give it its longest count, so that it
+     * doesn't fire until the next frame's bottom has started it properly, and forget any
+     * interrupt it already raised. */
+    TED.t2_lo = 0xFF;
+    TED.t2_hi = 0xFF;
+    TED.irr = TED_TIMER2;
     TED.imr |= TED_TIMER2;
     ted_split = 1;
 }
@@ -241,10 +246,13 @@ void screen_present(unsigned char fine_x, unsigned char fine_y)
 }
 
 /* The raster lines a far memory read may start on: after the split at line 22, and long enough
- * before the next one - a row of the view cache is a copy of up to 256 bytes, which takes well
- * under 40 lines - for it to finish with interrupts back on in time. */
-#define FAR_READ_FIRST_LINE  30
-#define FAR_READ_LAST_LINE   265
+ * before the next one for it to finish with interrupts back on in time. A row of the view cache
+ * is FarMem's own work - checking its window cache, working out the bank - and then the copy with
+ * interrupts off, about 70 lines in all; a window of 30-265 still let late ones through, about
+ * one frame in thirty while scrolling (measured in VICE with a Hannes board). Reads late in the
+ * frame only hold up the interrupt at line 204, which copes. */
+#define FAR_READ_FIRST_LINE  40
+#define FAR_READ_LAST_LINE   180
 
 /* The raster line the beam is on, 0-311. */
 static unsigned raster_line(void)
