@@ -35,7 +35,9 @@ Startup.InitTerminal();
 try
 {
     Startup.ApplyTheme();
-    var shell = Startup.CreateShell(database);
+    var topic = TopicArgument(args);
+    // With nothing to look up, the Contents tree starts fully collapsed.
+    var shell = Startup.CreateShell(database, collapseContents: topic is null);
     shell.DrawComplete += FirstDraw;
     void FirstDraw(object? sender, Terminal.Gui.ViewBase.DrawEventArgs e)
     {
@@ -44,7 +46,7 @@ try
     }
     // "--topic word": Tedide's F1 (see Tedide.Core's ContextHelp). Shown once the window is up -
     // the search dialog it may open is modal, and a heading can only be scrolled to once laid out.
-    if (TopicArgument(args) is { } topic)
+    if (topic is not null)
         Application.AddTimeout(TimeSpan.Zero, () =>
         {
             shell.ShowTopic(topic);

@@ -37,5 +37,5 @@ internal static class Startup
     }
 
     [Log]
-    public static DocViewerShell CreateShell(DocDatabase database) => new(database);
+    public static DocViewerShell CreateShell(DocDatabase database, bool collapseContents) => new(database, collapseContents);
 }

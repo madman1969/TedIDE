@@ -873,7 +873,9 @@ dotnet run --project src/Tedide.DocViewer
 ```
 
 A contents tree on the left and the selected page on the right. Drag the divider to resize them;
-its position, and which books are collapsed, are remembered. Five books are included:
+its position is remembered. The tree starts fully collapsed, except when Tedide's F1 opens the
+viewer at a topic: then the books are expanded, apart from any you collapsed last time. Five books
+are included:
 
 | Book | Contents | Licence |
 | --- | --- | --- |

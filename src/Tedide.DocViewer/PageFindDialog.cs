@@ -100,7 +100,7 @@ public sealed class PageFindDialog : Dialog
         }
         else
         {
-            ScrollToApproximateMatch(text, index);
+            ScrollToApproximateMatch(_contentView, text, index);
             _statusLabel.Text = "Match found.";
             _statusLabel.SchemeName = "Accent";
             _searchFromIndex = index + term.Length;
@@ -115,26 +115,36 @@ public sealed class PageFindDialog : Dialog
     /// short distance from that heading is estimated, from source lines. Word-wrapping only ever
     /// adds rendered lines, so that estimate lands at or just above the match; a small margin
     /// keeps it clear of the top edge. Before, the whole page's position was estimated from the
-    /// match's character offset, which on a long manual could land screens away.
+    /// match's character offset, which on a long manual could land screens away. Also used by the
+    /// shell to scroll an opened search result to its match.
     /// </summary>
-    private void ScrollToApproximateMatch(string text, int matchIndex)
+    internal static void ScrollToApproximateMatch(Markdown view, string text, int matchIndex)
     {
-        if (FindHeadingAbove(text, matchIndex) is { } heading && TryScrollToHeading(heading.Slug))
+        if (FindHeadingAbove(text, matchIndex) is { } heading && view.ScrollToAnchor(heading.Slug))
         {
             var sourceLinesBelow = CountNewlines(text, heading.EndIndex, matchIndex);
-            var y = Math.Clamp(_contentView.Viewport.Y + Math.Max(0, sourceLinesBelow - 2), 0, Math.Max(0, _contentView.LineCount - 1));
-            _contentView.Viewport = _contentView.Viewport with { Y = y };
+            var y = Math.Clamp(view.Viewport.Y + Math.Max(0, sourceLinesBelow - 2), 0, Math.Max(0, view.LineCount - 1));
+            view.Viewport = view.Viewport with { Y = y };
             return;
         }
 
         // No usable heading (or the anchor didn't match): estimate from the character offset.
         var fraction = text.Length == 0 ? 0.0 : (double)matchIndex / text.Length;
-        var targetY = (int)(fraction * _contentView.LineCount);
-        targetY = Math.Clamp(targetY, 0, Math.Max(0, _contentView.LineCount - 1));
-        _contentView.Viewport = _contentView.Viewport with { Y = targetY };
+        var targetY = (int)(fraction * view.LineCount);
+        targetY = Math.Clamp(targetY, 0, Math.Max(0, view.LineCount - 1));
+        view.Viewport = view.Viewport with { Y = targetY };
     }
 
-    private bool TryScrollToHeading(string slug) => _contentView.ScrollToAnchor(slug);
+    /// <summary>Where a search result's matched text first appears in a page's Markdown, ignoring
+    /// case: its first appearance as a whole word, as the search index matched it, or failing that
+    /// its first appearance inside a longer word. -1 if it isn't there at all.</summary>
+    internal static int FindMatchedText(string text, string matchedText)
+    {
+        var wholeWord = System.Text.RegularExpressions.Regex.Match(text,
+            $@"(?<![\w]){System.Text.RegularExpressions.Regex.Escape(matchedText)}(?![\w])",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+        return wholeWord.Success ? wholeWord.Index : text.IndexOf(matchedText, StringComparison.OrdinalIgnoreCase);
+    }
 
     /// <summary>The last ATX heading ("## Title") that starts before <paramref name="index"/>, skipping
     /// fenced code blocks (a C "# comment" or "#define" there is not a heading), with the anchor

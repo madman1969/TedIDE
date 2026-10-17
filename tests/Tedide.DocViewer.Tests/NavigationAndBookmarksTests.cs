@@ -57,6 +57,47 @@ public class NavigationHistoryTests
 
         Assert.False(history.CanGoBack);
     }
+
+    [Fact]
+    public void EachVisit_RemembersItsOwnScrollOffset_ThroughBackAndForward()
+    {
+        var history = new NavigationHistory();
+        history.Push(Intro);
+        history.RememberScrollOffset(40);
+        history.Push(Coding);
+        history.RememberScrollOffset(7);
+
+        history.GoBack();
+        Assert.Equal(Intro, history.Current);
+        Assert.Equal(40, history.CurrentScrollOffset);
+
+        history.GoForward();
+        Assert.Equal(7, history.CurrentScrollOffset);
+    }
+
+    [Fact]
+    public void AVisitNotYetLeft_HasNoScrollOffset()
+    {
+        var history = new NavigationHistory();
+        Assert.Null(history.CurrentScrollOffset);
+
+        history.Push(Intro);
+        Assert.Null(history.CurrentScrollOffset);
+    }
+
+    [Fact]
+    public void ANewVisit_StartsWithoutTheDroppedForwardVisitsOffset()
+    {
+        var history = new NavigationHistory();
+        history.Push(Intro);
+        history.Push(Coding);
+        history.RememberScrollOffset(25);
+        history.GoBack();
+
+        history.Push(Coding);
+
+        Assert.Null(history.CurrentScrollOffset);
+    }
 }
 
 public class DocBookmarksTests : IDisposable

@@ -42,6 +42,9 @@ public sealed class DocViewerShell : Window
 
     private readonly Dictionary<string, PageEntry> _entriesByFileName = [];
     private readonly Dictionary<string, TreeNode> _nodesByFileName = [];
+    // Each page node's category and book, outermost first, so a page inside a collapsed book can be
+    // revealed - the tree's own GetParent only knows about nodes already on show.
+    private readonly Dictionary<TreeNode, TreeNode[]> _ancestorsByNode = [];
 
     private readonly TreeView _tree = new();
     private readonly List<BookNode> _bookNodes = [];
@@ -51,8 +54,14 @@ public sealed class DocViewerShell : Window
 
     private MenuItem _bookmarksListItem = null!;
     private PageEntry? _currentEntry;
+    // Set while Back/Forward show a page - see ShowDoc.
+    private bool _movingThroughHistory;
 
-    public DocViewerShell(DocDatabase database)
+    /// <param name="database">The documentation to show.</param>
+    /// <param name="collapseContents">Start with every Contents node collapsed - a plain launch
+    /// with no <c>--topic</c> to show. Otherwise the books start expanded, so the topic's page can
+    /// be seen in the tree.</param>
+    public DocViewerShell(DocDatabase database, bool collapseContents)
     {
         _database = database;
 
@@ -107,6 +116,7 @@ public sealed class DocViewerShell : Window
                     var entryNode = new TreeNode { Text = entry.FileName, Tag = entry };
                     categoryNode.Children.Add(entryNode);
                     _nodesByFileName[entry.FileName] = entryNode;
+                    _ancestorsByNode[entryNode] = [bookNode, categoryNode];
                     _entriesByFileName[entry.FileName] = entry;
                 }
                 bookNode.Children.Add(categoryNode);
@@ -114,11 +124,15 @@ public sealed class DocViewerShell : Window
             _tree.AddObject(bookNode);
             _bookNodes.Add(bookNode);
         }
-        _tree.ExpandAll();
-        // Books start expanded unless the user collapsed them last time - recording the collapsed
-        // ones (not the expanded ones) means a book added to Docs.db later still shows up open.
-        foreach (var bookNode in _bookNodes.Where(b => _layoutSettings.CollapsedBooks.Contains(b.Text)))
-            _tree.Collapse(bookNode);
+        // Nodes start collapsed, which is how a plain launch shows them.
+        if (!collapseContents)
+        {
+            _tree.ExpandAll();
+            // Books start expanded unless the user collapsed them last time - recording the collapsed
+            // ones (not the expanded ones) means a book added to Docs.db later still shows up open.
+            foreach (var bookNode in _bookNodes.Where(b => _layoutSettings.CollapsedBooks.Contains(b.Text)))
+                _tree.Collapse(bookNode);
+        }
         _tree.SelectionChanged += (_, _) =>
         {
             if (_tree.SelectedObject is TreeNode { Tag: PageEntry entry })
@@ -248,6 +262,9 @@ public sealed class DocViewerShell : Window
     [Log]
     private void ShowDoc(PageEntry entry, string? anchor = null)
     {
+        // Back/Forward have already moved the history on, and saved the page being left themselves.
+        if (!_movingThroughHistory)
+            RememberScrollOffset();
         _currentEntry = entry;
         _contentFrame.Title = $"{entry.FileName} - {entry.Description}";
         _contentView.Text = _database.GetMarkdown(entry.FileName);
@@ -274,23 +291,67 @@ public sealed class DocViewerShell : Window
             return;
 
         if (_nodesByFileName.TryGetValue(fileName, out var node))
-            _tree.SelectedObject = node; // may also call ShowDoc via SelectionChanged - harmless, superseded below.
+            RevealInTree(node);
 
         ShowDoc(entry, anchor);
         if (pushHistory)
             _history.Push(new NavigationEntry(fileName, anchor));
     }
 
+    /// <summary>Selects a page's node in the Contents tree, expanding its book and category first if
+    /// they're collapsed, and scrolls the tree to it. Selecting it may also call ShowDoc via
+    /// SelectionChanged - harmless, as NavigateTo shows the page again straight after.</summary>
+    private void RevealInTree(TreeNode node)
+    {
+        if (_ancestorsByNode.TryGetValue(node, out var ancestors))
+            foreach (var ancestor in ancestors)
+                _tree.Expand(ancestor);
+        _tree.GoTo(node);
+    }
+
     private void GoBack()
     {
+        RememberScrollOffset();
         if (_history.GoBack() is { } entry)
-            NavigateTo(entry.FileName, entry.Anchor, pushHistory: false);
+            ReturnTo(entry);
     }
 
     private void GoForward()
     {
+        RememberScrollOffset();
         if (_history.GoForward() is { } entry)
+            ReturnTo(entry);
+    }
+
+    /// <summary>Shows the visit Back/Forward just moved to, scrolled to where it was when it was left
+    /// - or, if it never was, to its heading or the top, as when it was first opened.</summary>
+    private void ReturnTo(NavigationEntry entry)
+    {
+        _movingThroughHistory = true;
+        try
+        {
             NavigateTo(entry.FileName, entry.Anchor, pushHistory: false);
+        }
+        finally
+        {
+            _movingThroughHistory = false;
+        }
+
+        if (_history.CurrentScrollOffset is { } offset)
+        {
+            // The new page's lines only exist after a layout pass (see ShowDoc).
+            _contentView.Layout();
+            var y = Math.Clamp(offset, 0, Math.Max(0, _contentView.LineCount - 1));
+            _contentView.Viewport = _contentView.Viewport with { X = 0, Y = y };
+        }
+    }
+
+    /// <summary>Records how far down the shown page is scrolled in its history visit, if it's the
+    /// one history is on - browsing the tree with the arrow keys shows pages without visiting them.</summary>
+    private void RememberScrollOffset()
+    {
+        if (_currentEntry is not null && _history.Current?.FileName == _currentEntry.FileName)
+            _history.RememberScrollOffset(_contentView.Viewport.Y);
     }
 
     /// <summary>
@@ -316,7 +377,25 @@ public sealed class DocViewerShell : Window
         var dialog = new SearchDialog(_database, initialQuery);
         Application.Run(dialog);
         if (dialog.SelectedResult is { } result)
+        {
             NavigateTo(result.FileName, null, pushHistory: true);
+            if (result.MatchedText is { } matchedText)
+                ScrollToText(matchedText);
+        }
+    }
+
+    /// <summary>Scrolls the page just shown to where <paramref name="matchedText"/> first appears, the
+    /// same way Find on Page does (see <see cref="PageFindDialog.ScrollToApproximateMatch"/>).</summary>
+    private void ScrollToText(string matchedText)
+    {
+        var text = _contentView.Text;
+        var index = PageFindDialog.FindMatchedText(text, matchedText);
+        if (index < 0)
+            return;
+        // Setting Text threw the old rendered lines and heading anchors away; they're only rebuilt in
+        // a layout pass (see ShowDoc).
+        _contentView.Layout();
+        PageFindDialog.ScrollToApproximateMatch(_contentView, text, index);
     }
 
     /// <summary>Opens the in-page Find dialog (see <see cref="PageFindDialog"/>), from the content

@@ -14,8 +14,10 @@ public sealed record PageCategory(string Name, IReadOnlyList<PageEntry> Entries)
 public sealed record BookNode(string Name, IReadOnlyList<PageCategory> Categories);
 
 /// <summary>One full-text search hit - <see cref="Snippet"/> is a short excerpt with the matched
-/// term(s) bracketed (see <see cref="DocDatabase.Search"/>).</summary>
-public sealed record SearchResult(string FileName, string Book, string Description, string Snippet);
+/// term(s) bracketed (see <see cref="DocDatabase.Search"/>), and <see cref="MatchedText"/> the first
+/// of them as it appears in the page (the index matches stems and prefixes, so it can differ from
+/// what was typed), for scrolling the page to it.</summary>
+public sealed record SearchResult(string FileName, string Book, string Description, string Snippet, string? MatchedText = null);
 
 /// <summary>
 /// Read-only access to Docs.db (built by tools/Cc65DocsDbBuilder - see that project for how the
@@ -109,7 +111,7 @@ public sealed class DocDatabase : IDisposable
         using var command = _connection.CreateCommand();
         command.CommandText =
             """
-            SELECT p.FileName, p.Book, p.Description, snippet(PagesFts, 2, '[', ']', ' ... ', 12)
+            SELECT p.FileName, p.Book, p.Description, snippet(PagesFts, 2, char(2), char(3), ' ... ', 12)
             FROM PagesFts
             JOIN Pages p ON p.FileName = PagesFts.FileName
             WHERE PagesFts MATCH $query
@@ -122,8 +124,24 @@ public sealed class DocDatabase : IDisposable
         var results = new List<SearchResult>();
         using var reader = command.ExecuteReader();
         while (reader.Read())
-            results.Add(new SearchResult(reader.GetString(0), reader.GetString(1), reader.GetString(2), reader.GetString(3)));
+            results.Add(ToSearchResult(reader.GetString(0), reader.GetString(1), reader.GetString(2), reader.GetString(3)));
         return results;
+    }
+
+    // FTS5 marks each match in the snippet with these, rather than the brackets shown to the user:
+    // a page's own Markdown is full of brackets (links), so the first "[" wouldn't reliably be a match.
+    private const char MatchStart = '\u0002';
+    private const char MatchEnd = '\u0003';
+
+    /// <summary>A search hit from FTS5's marked snippet: the markers become brackets for display, and
+    /// the first marked text becomes <see cref="SearchResult.MatchedText"/>.</summary>
+    internal static SearchResult ToSearchResult(string fileName, string book, string description, string markedSnippet)
+    {
+        var start = markedSnippet.IndexOf(MatchStart);
+        var end = start < 0 ? -1 : markedSnippet.IndexOf(MatchEnd, start + 1);
+        var matchedText = end > start + 1 ? markedSnippet[(start + 1)..end] : null;
+        var snippet = markedSnippet.Replace(MatchStart, '[').Replace(MatchEnd, ']');
+        return new SearchResult(fileName, book, description, snippet, matchedText);
     }
 
     /// <summary>Every page's Markdown, in catalog order (books, categories, pages) - for
