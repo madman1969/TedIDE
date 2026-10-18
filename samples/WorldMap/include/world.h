@@ -35,11 +35,16 @@ unsigned world_width(void);
 unsigned world_height(void);
 
 /* Fills the map with new random terrain, with rivers running from the mountains to the sea and
- * towns scattered over the grassland, calling
+ * towns scattered over the grassland, using scratch_size bytes at scratch as working memory for
+ * the rivers (WORLD_SCRATCH_SIZE; with less, there are none), calling
  * row_done() with each row's tiles as it's finished - the biggest map takes several seconds.
  * Seed the random number generator (srand or _randomize) first for a different world each
  * time. */
-void world_generate(void (*row_done)(unsigned y, const unsigned char* tiles));
+void world_generate(void (*row_done)(unsigned y, const unsigned char* tiles),
+                    unsigned char* scratch, unsigned scratch_size);
+
+/* The working memory world_generate needs for rivers. */
+#define WORLD_SCRATCH_SIZE  8500u
 
 /* Copies len cells of row y, starting at column x, into dst - one far_read. */
 void world_read(unsigned x, unsigned y, unsigned char* dst, unsigned len);

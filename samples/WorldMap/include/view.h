@@ -40,6 +40,10 @@ void view_draw(unsigned left, unsigned top);
 unsigned view_cursor_x(void);
 unsigned view_cursor_y(void);
 
+/* The tile cache's memory, for other work while no map is on show - generating a world: it's
+ * emptied now, and filled again as the map is drawn. Sets *size to its size. */
+unsigned char* view_scratch(unsigned* size);
+
 /* Clears the screen for an overview, with a title and a line about the map and far memory. */
 void view_overview_begin(const char* title);
 

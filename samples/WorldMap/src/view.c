@@ -232,6 +232,13 @@ void view_done(void)
     cursor(1);
 }
 
+unsigned char* view_scratch(unsigned* size)
+{
+    view_invalidate();
+    *size = sizeof(cache);
+    return cache[0];
+}
+
 void view_invalidate(void)
 {
     unsigned char i;

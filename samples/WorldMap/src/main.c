@@ -57,10 +57,13 @@ static void row_generated(unsigned y, const unsigned char* tiles)
 static void new_world(void)
 {
     unsigned char frames;
+    unsigned char* scratch;
+    unsigned scratch_size;
 
     view_overview_begin("generating a new world...");
+    scratch = view_scratch(&scratch_size);  /* the view's cache, free until the map is drawn */
     view_generating(1);
-    world_generate(row_generated);
+    world_generate(row_generated, scratch, scratch_size);
     view_generating(0);
     for (frames = 0; frames < 50; ++frames)     /* the finished overview, for a second */
         waitvsync();

@@ -6,5 +6,5 @@
     "../FarMem/FarMemC64/FarMemC64.tproj",
     "../FarMem/FarMemPlus4/FarMemPlus4.tproj"
   ],
-  "StartupProject": "WorldMapPlus4\\WorldMapPlus4.tproj"
+  "StartupProject": "WorldMapC64\\WorldMapC64.tproj"
 }

@@ -195,7 +195,8 @@ static void start_band_b(unsigned char cy)
 #define POINT_BYTES      ((POINTS + 7) / 8)  /* a bit for each point */
 #define MAX_RIVER_CELLS  2000               /* all the rivers' cells together */
 
-/* The rivers' working memory, allocated for world_generate and freed after: */
+/* The rivers' working memory, in world_generate's scratch memory - the heap is far too small on
+ * the C64 (about 3.5K, between the BSS and the stack) and only just big enough on the Plus/4: */
 static unsigned char* river_px;             /* each point's grid column... */
 static unsigned char* river_py;             /* ...and row, river after river */
 static unsigned* river_start;               /* where each river's points start, then the end */
@@ -562,7 +563,13 @@ static void place_towns(void)
     }
 }
 
-void world_generate(void (*row_done)(unsigned y, const unsigned char* tiles))
+/* The scratch memory the rivers need, laid out below - WORLD_SCRATCH_SIZE (world.h) has to be at
+ * least this. */
+#define RIVER_SCRATCH  (2 * MAX_RIVER_POINTS + (2 * MAX_RIVERS + 1) * sizeof(unsigned) \
+                        + 2 * POINT_BYTES + POINTS + (MAX_HEIGHT + 1 + MAX_RIVER_CELLS) * sizeof(unsigned))
+
+void world_generate(void (*row_done)(unsigned y, const unsigned char* tiles),
+                    unsigned char* scratch, unsigned scratch_size)
 {
     unsigned char grid_a_h = height / TERRAIN_SPAN_A + 1;
     unsigned char grid_b_h = height / TERRAIN_SPAN_B + 1;
@@ -588,37 +595,23 @@ void world_generate(void (*row_done)(unsigned y, const unsigned char* tiles))
 
     /* The rivers, in memory that's only needed until the map is built - with none if there's
      * no room for it: traced, then their cells listed by row, then the tracing's memory freed. */
-    /* The heap is small on the Plus/4 (under 9K, between the BSS and the stack), so the
-     * tracing's bit maps and heights are allocated last and freed before the cell lists, which
-     * then take their place. */
+    /* The rivers: traced, then their cells listed by row, all in the scratch memory. */
     river_count = 0;
-    row_end = 0;
-    river_px = malloc(2 * MAX_RIVER_POINTS + (2 * MAX_RIVERS + 1) * sizeof(unsigned));
-    on_river = malloc(2 * POINT_BYTES + POINTS);
-    if (river_px && on_river)
+    if (scratch_size >= RIVER_SCRATCH)
     {
+        river_px = scratch;
         river_py = river_px + MAX_RIVER_POINTS;
         river_start = (unsigned*)(river_py + MAX_RIVER_POINTS);
         river_seed = river_start + MAX_RIVERS + 1;
+        on_river = (unsigned char*)(river_seed + MAX_RIVERS);
         visited = on_river + POINT_BYTES;
         heights = visited + POINT_BYTES;
+        row_end = (unsigned*)(heights + POINTS);
+        cell_x = row_end + MAX_HEIGHT + 1;
         plan_rivers();
-    }
-    free(on_river);                         /* free(0) does nothing */
-    on_river = 0;
-    if (river_count)
-    {
-        row_end = malloc((height + 1 + MAX_RIVER_CELLS) * sizeof(unsigned));
-        if (row_end)
-        {
-            cell_x = row_end + height + 1;
+        if (river_count)
             list_river_cells();
-        }
-        else
-            river_count = 0;
     }
-    free(river_px);
-    river_px = 0;
 
     /* One row at a time: built in terrain_row_buf, then written to far memory in one go. */
     for (y = 0; y < height; ++y)
@@ -640,8 +633,6 @@ void world_generate(void (*row_done)(unsigned y, const unsigned char* tiles))
 
         row_done(y, terrain_row_buf);
     }
-    free(row_end);                          /* free(0) does nothing */
-    row_end = 0;
 }
 
 void world_read(unsigned x, unsigned y, unsigned char* dst, unsigned len)
