@@ -18,7 +18,7 @@
     "512"
   ],
   "UseOpt6502": true,
-  "Opt6502Mode": "Speed",
+  "Opt6502Mode": "Size",
   "SourceFiles": [
     "../src/main.c",
     "../src/world.c",
@@ -29,7 +29,7 @@
     "../src/blit.s"
   ],
   "OutputFile": "bin/WorldMapC64.prg",
-  "LinkerConfigPath": null,
+  "LinkerConfigPath": "c64-worldmap.cfg",
   "IncludePaths": [
     "../include"
   ],
