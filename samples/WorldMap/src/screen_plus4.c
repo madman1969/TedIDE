@@ -48,6 +48,7 @@ const unsigned char view_tile_colour[TILE_COUNT] = {
     MC | BCOLOR_CYAN | CATTR_LUMA5,     /* river: brighter than the shallows it runs into */
 };
 const unsigned char screen_cursor_colour = FLASH | BCOLOR_WHITE | CATTR_LUMA7;
+const unsigned char screen_progress_colour = BCOLOR_BLUE | CATTR_LUMA2;  /* cc65's COLOR_BLUE is nearly white */
 
 /* The colours every multicolour cell shares: its pixels are 00 the background, 01 the first,
  * 10 the second and 11 the cell's own colour. */
@@ -200,6 +201,17 @@ void screen_text(void)
     }
     TED.imr &= ~TED_TIMER2;
     draw_to_hidden();
+}
+
+void screen_blank(unsigned char blank)
+{
+    /* The interrupt handler sets $FF06 from ted_top06 at the bottom of every frame, so the
+     * display enable bit goes there - and into $FF06 now, rather than wait for it. */
+    if (blank)
+        ted_top06 &= ~TED_DEN;
+    else
+        ted_top06 |= TED_DEN;
+    TED.vscroll = ted_top06;
 }
 
 void screen_map(void)

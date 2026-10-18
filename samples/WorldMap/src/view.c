@@ -837,7 +837,19 @@ void view_overview_mark(unsigned x, unsigned y)
 
 void view_progress(unsigned char percent)
 {
+    static unsigned char flash;
+
     textcolor(COLOR_GRAY3);
     gotoxy(0, OVERVIEW_TOP + OVERVIEW_ROWS + 1);
     cprintf("%3u%%", percent);
+    /* With the display off the border is the whole screen, so a gentle pulse. */
+    flash ^= 1;
+    bordercolor(flash ? screen_progress_colour : COLOR_BLACK);
+}
+
+void view_generating(unsigned char on)
+{
+    screen_blank(on);
+    if (!on)
+        bordercolor(COLOR_BLACK);
 }

@@ -53,7 +53,12 @@ void view_overview_mark(unsigned x, unsigned y);
 /* The number of map rows between two overview rows. */
 unsigned view_overview_step(void);
 
-/* Prints a percentage under the overview, while it's being generated. */
+/* Prints a percentage under the overview, while it's being generated, and flashes the border -
+ * all that shows while view_generating has the display off. */
 void view_progress(unsigned char percent);
+
+/* Turns the display off while a world is generated, which makes it about twice as fast on the
+ * Plus/4, or back on, with the border black again, showing the finished overview. */
+void view_generating(unsigned char on);
 
 #endif

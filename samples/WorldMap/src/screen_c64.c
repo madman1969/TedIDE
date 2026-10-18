@@ -23,6 +23,7 @@ const unsigned char view_tile_colour[TILE_COUNT] = {
     COLOR_LIGHTBLUE,                            /* river */
 };
 const unsigned char screen_cursor_colour = COLOR_WHITE;
+const unsigned char screen_progress_colour = COLOR_BLUE;
 
 /* The C64 draws each frame straight onto the screen, racing the raster beam (blit.s). */
 unsigned char* screen_draw_chars = (unsigned char*)SCREEN_CHARS;
@@ -108,6 +109,14 @@ void screen_scroll(unsigned char fine_x, unsigned char fine_y)
 {
     (void)fine_x;
     (void)fine_y;
+}
+
+void screen_blank(unsigned char blank)
+{
+    if (blank)
+        VIC.ctrl1 &= ~0x10;                     /* $D011 bit 4: display enable */
+    else
+        VIC.ctrl1 |= 0x10;
 }
 
 unsigned char screen_far_read_lines(void)

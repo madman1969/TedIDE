@@ -179,11 +179,11 @@ static void start_band_b(unsigned char cy)
  * from a random point high enough for mountains, always to the lowest neighbouring point it
  * hasn't been to yet - even if that's higher, to get out of a hollow - until it reaches the sea or
  * joins an earlier river. A river that gets lost on the way is dropped, so every river reaches
- * the sea. Then, as the rows are built, each band of TERRAIN_SPAN_B rows gets the river cells it
- * holds marked in a bit mask (river_band), and they're put over the land in each row
- * (add_rivers): between two points a river wanders, through a midpoint pushed a little to one
- * side, a cell at a time - its own small random number generator, seeded the same for each
- * segment every time, makes a segment that crosses two bands come out the same in both.
+ * the sea. Between two points a river wanders, through a midpoint pushed a little to one side, a
+ * cell at a time, with its own small random number generator, seeded the same for a segment each
+ * time. Its cells are then listed by row (list_river_cells: walked once to count each row's, once
+ * to fill them in), so that as each row is built, its river cells are just looked up and put over
+ * the land (add_rivers).
  */
 
 #define SEA_LEVEL        (thresholds[TILE_SHALLOWS])   /* heights below this are sea */
@@ -191,9 +191,9 @@ static void start_band_b(unsigned char cy)
 #define MAX_RIVERS       24
 #define MAX_RIVER_POINTS 600                /* all the rivers' points together */
 #define MAX_RIVER_LEN    80                 /* points in one river */
-#define POINT_BYTES      ((TERRAIN_GRID_B_W * GRID_B_H + 7) / 8)  /* a bit for each point */
-#define MASK_STRIDE      (TERRAIN_MAX_WIDTH / 8)
-#define BAND_MASK_BYTES  (TERRAIN_SPAN_B * MASK_STRIDE)
+#define POINTS           (TERRAIN_GRID_B_W * GRID_B_H)
+#define POINT_BYTES      ((POINTS + 7) / 8)  /* a bit for each point */
+#define MAX_RIVER_CELLS  2000               /* all the rivers' cells together */
 
 /* The rivers' working memory, allocated for world_generate and freed after: */
 static unsigned char* river_px;             /* each point's grid column... */
@@ -202,7 +202,8 @@ static unsigned* river_start;               /* where each river's points start, 
 static unsigned* river_seed;                /* each river's seed for its wandering */
 static unsigned char* on_river;             /* a bit for each grid point on a river */
 static unsigned char* visited;              /* ...and each point the river being traced has been to */
-static unsigned char* band_mask;            /* a bit for each river cell in the band being built */
+static unsigned* row_end;                   /* each map row's river cells in cell_x: see */
+static unsigned* cell_x;                    /* list_river_cells */
 static unsigned char river_count;
 static unsigned river_points;
 
@@ -212,7 +213,6 @@ static unsigned point_row[GRID_B_H];
 
 /* A bit within a byte, as cc65 shifts by a variable count a bit at a time. */
 static const unsigned char bit_of[8] = { 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80 };
-static const unsigned char cell_bit[8] = { 0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01 };
 
 /* The eight neighbouring points. */
 static const signed char next_x[8] = { -1, 0, 1, -1, 1, -1, 0, 1 };
@@ -221,18 +221,57 @@ static const signed char next_y[8] = { -1, -1, -1, 0, 0, 1, 1, 1 };
 /* How far a segment's midpoint is pushed to one side, in cells, picked by 3 random bits. */
 static const signed char wander[8] = { -2, -1, -1, 0, 0, 1, 1, 2 };
 
-/* The terrain's height at fine grid point (cx, cy) - cell (cx * 8, cy * 8) - without the per-cell
- * roughness: the coarse grid's height there, interpolated across and down as terrain_row and
- * terrain_next_row do, plus the fine grid point's own. Never at the map's edge points, so the
- * coarse grid point to the right and below always exist. */
-static unsigned char point_height(unsigned char cx, unsigned char cy)
+/* The terrain's height at each fine grid point (cx, cy) - cell (cx * 8, cy * 8) - without the
+ * per-cell roughness, worked out once by point_heights: tracing the rivers looks it up thousands
+ * of times. */
+static unsigned char* heights;
+#define point_height(cx, cy)  heights[point_row[cy] + (cx)]
+
+/* Fills in heights: the coarse grid's height at each point, interpolated across and down as
+ * terrain_row and terrain_next_row do - 4 fine points to a coarse span each way - plus the fine
+ * grid point's own. The interpolation is stepped along by adding, in sixteenths. */
+static unsigned col_a[TERRAIN_GRID_A_W];    /* the coarse columns' heights at a point row, x 4 */
+
+static void point_heights(void)
 {
-    unsigned char ax = cx >> 2, fx = cx & 3, fy = cy & 3;
-    const unsigned char* r0 = grid_a[cy >> 2];
-    const unsigned char* r1 = r0 + TERRAIN_GRID_A_W;
-    unsigned top = r0[ax] * (4 - fx) + r0[ax + 1] * fx;
-    unsigned bottom = r1[ax] * (4 - fx) + r1[ax + 1] * fx;
-    return (unsigned char)((top * (4 - fy) + bottom * fy) >> 4) + grid_b[cy][cx];
+    unsigned char cy, cx, ax, fy, last_ax = terrain_columns_a - 1;
+    const unsigned char* r0;
+    const unsigned char* r1;
+    const unsigned char* fine;
+    unsigned char* out;
+    unsigned h;
+    int step;
+
+    for (cy = 0; cy < points_h; ++cy)
+    {
+        /* Each coarse column's height down at this row: 4 point rows to a coarse row. */
+        r0 = grid_a[cy >> 2];
+        fy = cy & 3;
+        r1 = fy ? r0 + TERRAIN_GRID_A_W : r0;
+        for (ax = 0; ax <= last_ax; ++ax)
+        {
+            h = r0[ax] << 2;
+            step = (int)r1[ax] - r0[ax];
+            for (cx = 0; cx < fy; ++cx)
+                h += step;
+            col_a[ax] = h;
+        }
+
+        /* Then across, and the fine grid's own height on top. */
+        fine = grid_b[cy];
+        out = heights + point_row[cy];
+        for (ax = 0; ax < last_ax; ++ax)
+        {
+            h = col_a[ax] << 2;
+            step = (int)col_a[ax + 1] - (int)col_a[ax];
+            for (cx = 0; cx < 4; ++cx)
+            {
+                *out++ = (unsigned char)(h >> 4) + *fine++;
+                h += step;
+            }
+        }
+        *out = (unsigned char)(col_a[last_ax] >> 2) + *fine;
+    }
 }
 
 /* A grid point's place in the bit maps: its byte, and its bit there. */
@@ -354,6 +393,7 @@ static void plan_rivers(void)
     points_h = (unsigned char)(height / TERRAIN_SPAN_B + 1);
     for (y = 0; y < points_h; ++y)
         point_row[y] = (unsigned)y * points_w;
+    point_heights();
     memset(on_river, 0, POINT_BYTES);
 
     for (tries = (unsigned)points_w * points_h / 48; tries && river_count < MAX_RIVERS; --tries)
@@ -390,16 +430,18 @@ static unsigned char next_wander(void)
     return (unsigned char)wander_state;
 }
 
-/* The band river_band is marking: its first row. */
-static int band_top;
+/* Whether walk_rivers is filling in cell_x (list_river_cells), rather than counting. */
+static unsigned char listing;
 
-/* Marks cell (x, y) in band_mask, if it's in the band and on the map. */
+/* Counts cell (x, y) in its row, or lists it, if it's on the map. */
 static void mark_cell(int x, int y)
 {
-    y -= band_top;
-    if (y < 0 || y >= TERRAIN_SPAN_B || x < 0 || x >= (int)width)
+    if (y < 0 || y >= (int)height || x < 0 || x >= (int)width)
         return;
-    band_mask[((unsigned char)y << 6) + ((unsigned)x >> 3)] |= cell_bit[x & 7];
+    if (listing)
+        cell_x[--row_end[y]] = (unsigned)x;
+    else
+        ++row_end[y];
 }
 
 /* Marks the cells from (x, y) up to, but not including, (to_x, to_y), a step at a time across or
@@ -430,16 +472,15 @@ static void walk(int x, int y, int to_x, int to_y)
     }
 }
 
-/* Marks the river cells in rows y to y + TERRAIN_SPAN_B - 1 in band_mask. */
-static void river_band(unsigned y)
+/* Marks every cell of the first river_count rivers: each segment from one point to the next,
+ * through its midpoint pushed to one side. */
+static void walk_rivers(void)
 {
     unsigned char r;
     unsigned i;
-    int x0, y0, x1, y1, mx, my, top, bottom;
+    int x0, y0, x1, y1, mx, my;
     signed char vx, vy, side;
 
-    memset(band_mask, 0, BAND_MASK_BYTES);
-    band_top = (int)y;
     for (r = 0; r < river_count; ++r)
     {
         for (i = river_start[r]; i + 1 < river_start[r + 1]; ++i)
@@ -448,11 +489,6 @@ static void river_band(unsigned y)
             y0 = river_py[i] * TERRAIN_SPAN_B;
             x1 = river_px[i + 1] * TERRAIN_SPAN_B;
             y1 = river_py[i + 1] * TERRAIN_SPAN_B;
-            /* Only segments that can reach the band, with the midpoint's push. */
-            top = (y0 < y1 ? y0 : y1) - 2;
-            bottom = (y0 < y1 ? y1 : y0) + 2;
-            if (bottom < band_top || top >= band_top + TERRAIN_SPAN_B)
-                continue;
             wander_state = river_seed[r] + i * 0x9E5u;
             if (!wander_state)
                 wander_state = 1;
@@ -468,22 +504,46 @@ static void river_band(unsigned y)
     }
 }
 
-/* Puts the river cells marked for row r of the band over the land in the row just built. */
-static void add_rivers(unsigned char r)
+/* Lists the rivers' cells by row: row y's columns are cell_x[row_end[y]] up to
+ * cell_x[row_end[y + 1] - 1]. A first walk counts each row's cells, and turns the counts into
+ * where each row's list ends; a second fills the lists in from their ends, leaving row_end[y] at
+ * the start of row y's. If there are more cells than MAX_RIVER_CELLS, the latest rivers are
+ * dropped whole - rivers only ever join earlier ones, so every river left still reaches the sea. */
+static void list_river_cells(void)
 {
-    const unsigned char* mask = band_mask + ((unsigned)r << 6);
-    unsigned char i, b, bits;
-    unsigned x;
+    unsigned y, total;
 
-    for (i = 0; i < (unsigned char)(width >> 3); ++i)
+    for (;;)
     {
-        bits = mask[i];
-        if (!bits)
-            continue;
-        x = (unsigned)i << 3;
-        for (b = 0; b < 8; ++b, ++x)
-            if ((bits & cell_bit[b]) && terrain_row_buf[x] > TILE_SHALLOWS)
-                terrain_row_buf[x] = TILE_RIVER;
+        memset(row_end, 0, (height + 1) * sizeof(unsigned));
+        listing = 0;
+        walk_rivers();
+        total = 0;
+        for (y = 0; y < height; ++y)
+        {
+            total += row_end[y];
+            row_end[y] = total;
+        }
+        if (total <= MAX_RIVER_CELLS)
+            break;
+        --river_count;
+    }
+    row_end[height] = total;
+    listing = 1;
+    walk_rivers();
+}
+
+/* Puts row y's river cells over the land in the row just built. */
+static void add_rivers(unsigned y)
+{
+    unsigned i, end = row_end[y + 1];
+    unsigned char* tile;
+
+    for (i = row_end[y]; i < end; ++i)
+    {
+        tile = terrain_row_buf + cell_x[i];
+        if (*tile > TILE_SHALLOWS)
+            *tile = TILE_RIVER;
     }
 }
 
@@ -527,20 +587,38 @@ void world_generate(void (*row_done)(unsigned y, const unsigned char* tiles))
     }
 
     /* The rivers, in memory that's only needed until the map is built - with none if there's
-     * no room for it. */
+     * no room for it: traced, then their cells listed by row, then the tracing's memory freed. */
+    /* The heap is small on the Plus/4 (under 9K, between the BSS and the stack), so the
+     * tracing's bit maps and heights are allocated last and freed before the cell lists, which
+     * then take their place. */
     river_count = 0;
-    river_px = malloc(2 * MAX_RIVER_POINTS + (2 * MAX_RIVERS + 1) * sizeof(unsigned)
-                      + 2 * POINT_BYTES + BAND_MASK_BYTES);
-    if (river_px)
+    row_end = 0;
+    river_px = malloc(2 * MAX_RIVER_POINTS + (2 * MAX_RIVERS + 1) * sizeof(unsigned));
+    on_river = malloc(2 * POINT_BYTES + POINTS);
+    if (river_px && on_river)
     {
         river_py = river_px + MAX_RIVER_POINTS;
         river_start = (unsigned*)(river_py + MAX_RIVER_POINTS);
         river_seed = river_start + MAX_RIVERS + 1;
-        on_river = (unsigned char*)(river_seed + MAX_RIVERS);
         visited = on_river + POINT_BYTES;
-        band_mask = visited + POINT_BYTES;
+        heights = visited + POINT_BYTES;
         plan_rivers();
     }
+    free(on_river);                         /* free(0) does nothing */
+    on_river = 0;
+    if (river_count)
+    {
+        row_end = malloc((height + 1 + MAX_RIVER_CELLS) * sizeof(unsigned));
+        if (row_end)
+        {
+            cell_x = row_end + height + 1;
+            list_river_cells();
+        }
+        else
+            river_count = 0;
+    }
+    free(river_px);
+    river_px = 0;
 
     /* One row at a time: built in terrain_row_buf, then written to far memory in one go. */
     for (y = 0; y < height; ++y)
@@ -552,11 +630,9 @@ void world_generate(void (*row_done)(unsigned y, const unsigned char* tiles))
 
         /* Each row starts at a different place in the roughness table, so rows don't repeat it. */
         terrain_roughness_start = (unsigned char)rand();
-        if (river_count && (y & (TERRAIN_SPAN_B - 1)) == 0)
-            river_band(y);
         terrain_row();
         if (river_count)
-            add_rivers((unsigned char)(y & (TERRAIN_SPAN_B - 1)));
+            add_rivers(y);
         place_towns();
         far_write(row, terrain_row_buf, width);
         row += width;
@@ -564,8 +640,8 @@ void world_generate(void (*row_done)(unsigned y, const unsigned char* tiles))
 
         row_done(y, terrain_row_buf);
     }
-    free(river_px);                         /* free(0) does nothing */
-    river_px = 0;
+    free(row_end);                          /* free(0) does nothing */
+    row_end = 0;
 }
 
 void world_read(unsigned x, unsigned y, unsigned char* dst, unsigned len)

@@ -56,8 +56,14 @@ static void row_generated(unsigned y, const unsigned char* tiles)
 /* Generates a new world, showing it take shape, and centres the view on it. */
 static void new_world(void)
 {
+    unsigned char frames;
+
     view_overview_begin("generating a new world...");
+    view_generating(1);
     world_generate(row_generated);
+    view_generating(0);
+    for (frames = 0; frames < 50; ++frames)     /* the finished overview, for a second */
+        waitvsync();
     left = VIEW_POS((world_width() - VIEW_WIDTH) / 2);
     top = VIEW_POS((world_height() - VIEW_HEIGHT) / 2);
     clrscr();
