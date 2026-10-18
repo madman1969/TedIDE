@@ -40,8 +40,9 @@ static const unsigned char thresholds[] = {
     134, 140,           /* mountain, high mountain */
 };
 
-/* How many random cells per row may become a town, if they're grassland... */
-#define TOWN_TRIES_PER_ROW  1
+/* The chance, out of 256, of a try in each row at a random cell, which becomes a town if it's
+ * grassland - few of them, as most towns are by rivers... */
+#define TOWN_RANDOM_CHANCE  64
 /* ...and the chance, out of 256, of a try beside each river cell: towns grow up by rivers. */
 #define TOWN_RIVER_CHANCE   160
 
@@ -589,11 +590,11 @@ static void try_town(unsigned x, unsigned char y)
 }
 
 /* Turns cells of row y, just built, into towns, if they're grassland and far enough from other
- * towns: a random one or so, and now and then one beside a river cell, so that towns are far
- * likelier by rivers than anywhere else. */
+ * towns: now and then one beside a river cell, and in about one row in four a random one - so
+ * most towns, about 60% on the biggest map, are by rivers. */
 static void place_towns(unsigned y)
 {
-    unsigned char i, r;
+    unsigned char r;
     unsigned k, end;
 
     /* Beside the rivers first, so they get the first claim to the space towns need. */
@@ -607,7 +608,7 @@ static void place_towns(unsigned y)
                 try_town(cell_x[k] + town_side[r & 3], (unsigned char)y);
         }
     }
-    for (i = 0; i < TOWN_TRIES_PER_ROW; ++i)
+    if ((unsigned char)rand() < TOWN_RANDOM_CHANCE)
         try_town(rand() & (width - 1), (unsigned char)y);
 }
 
