@@ -25,16 +25,18 @@ static const unsigned sizes[][2] = {
 #define SIZE_COUNT (sizeof(sizes) / sizeof(sizes[0]))
 
 /* Upper height limits for each tile from TILE_DEEPEST to TILE_HIGH_MOUNTAIN; anything
- * higher is snow. Tuned so roughly half the map is sea; each kind of land and sea is split into
- * its shades by height within its band. */
+ * higher is snow. Tuned from the heights of generated worlds (half of them are below 81, a tenth
+ * below 40, a tenth above 124) so that about 30% of the map is sea, with each kind of land and
+ * sea taking the same share of the land or the sea as when half the map was sea; each is split
+ * into its shades by height within its band. */
 static const unsigned char thresholds[] = {
-    46, 58, 70,         /* deepest, deeper, deep */
-    77, 82,             /* sea, shallows */
-    87,                 /* beach */
-    98, 108,            /* grass, upland */
-    115, 122,           /* forest, high forest */
-    128, 133,           /* hills, high hills */
-    139, 144,           /* mountain, high mountain */
+    38, 46, 54,         /* deepest, deeper, deep */
+    59, 62,             /* sea, shallows */
+    69,                 /* beach */
+    85, 98,             /* grass, upland */
+    106, 115,           /* forest, high forest */
+    121, 127,           /* hills, high hills */
+    134, 140,           /* mountain, high mountain */
 };
 
 /* How many random cells per row may become a town, if they're grassland. */
