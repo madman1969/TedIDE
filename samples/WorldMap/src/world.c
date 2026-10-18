@@ -64,6 +64,11 @@ unsigned char* terrain_row_out;
 unsigned char* terrain_marsh_row;
 unsigned char* terrain_marsh_above;
 unsigned char* terrain_marsh_below;
+unsigned char* terrain_road_lo;
+unsigned char* terrain_road_hi;
+unsigned terrain_road_from, terrain_road_to;
+unsigned char* terrain_road_tiles;
+unsigned char* terrain_road_above;
 
 /* The row being finished (finish_row), which add_rivers, add_towns and add_roads put things in. */
 static unsigned char* tiles;
@@ -893,19 +898,40 @@ static void plan_roads(void)
     road_start[road_count] = river_points;
 }
 
+/* Marks the cells of a road from (ax, ay) to (bx, by), both ends included, wandering a little a
+ * cell at a time. Always walked the same way - from the end higher up the map, or further left -
+ * and with the wandering seeded from its two ends, so that where roads share a stretch between the
+ * same two points they take the same cells, rather than two staircases side by side making a road
+ * two cells wide. */
+static void walk_segment(unsigned ax, unsigned ay, unsigned bx, unsigned by)
+{
+    unsigned t;
+
+    if (ay > by || (ay == by && ax > bx))
+    {
+        t = ax;
+        ax = bx;
+        bx = t;
+        t = ay;
+        ay = by;
+        by = t;
+    }
+    terrain_wander = (ax ^ (ay << 7)) ^ ((bx << 3) ^ (by << 10)) ^ 0x3C5Au;
+    if (!terrain_wander)
+        terrain_wander = 1;
+    walk((int)ax, (int)ay, (int)bx, (int)by);
+    mark_cell((int)bx, (int)by);
+}
+
 /* Marks every cell of the first road_count roads: from one town, through its points, to the
- * other, wandering a little a cell at a time. */
+ * other. */
 static void walk_roads(void)
 {
     unsigned char r;
-    unsigned i, end;
-    int x, y, nx, ny;
+    unsigned i, end, x, y, nx, ny;
 
     for (r = 0; r < road_count; ++r)
     {
-        terrain_wander = 0x3C5Au + r * 0x9E5u;
-        if (!terrain_wander)
-            terrain_wander = 1;
         x = town_x[road_from[r]];
         y = town_y[road_from[r]];
         end = road_start[r + 1];
@@ -913,30 +939,43 @@ static void walk_roads(void)
         {
             nx = river_px[i] * TERRAIN_SPAN_B;
             ny = river_py[i] * TERRAIN_SPAN_B;
-            walk(x, y, nx, ny);
+            walk_segment(x, y, nx, ny);
             x = nx;
             y = ny;
         }
-        walk(x, y, town_x[road_to[r]], town_y[road_to[r]]);
-        mark_cell(town_x[road_to[r]], town_y[road_to[r]]);
+        walk_segment(x, y, town_x[road_to[r]], town_y[road_to[r]]);
     }
 }
 
-/* Puts row y's road cells in the row being finished: road, or bridge over a river or the sea.
- * Towns stay towns, bridges bridges. */
+/* Puts row y's road cells in the row being finished (terrain_add_roads, terrain.s): road, or
+ * bridge over a river or the sea, leaving out any that would only make a road two cells wide.
+ * Towns stay towns. Where roads meet or part at an angle they can run side by side for a few
+ * cells; a cell that would complete a 2x2 square of road with the finished row above is left out
+ * if nothing else joins it - the other three cells of the square still join everything it did.
+ * What's below it, roads and towns, is mapped first. */
 static void add_roads(unsigned y)
 {
-    unsigned end = road_row_end[y + 1];
-    unsigned i;
-    unsigned char* tile;
+    unsigned char i;
+    unsigned x;
 
-    for (i = road_row_end[y]; i < end; ++i)
+    if (y + 1 < height)
     {
-        tile = tiles + list_x(road_cell_lo, road_cell_hi, i);
-        if (*tile == TILE_TOWN || *tile == TILE_BRIDGE)
-            continue;
-        *tile = (*tile == TILE_RIVER || *tile <= TILE_SHALLOWS) ? TILE_BRIDGE : TILE_ROAD;
+        terrain_road_from = road_row_end[y + 1];
+        terrain_road_to = road_row_end[y + 2];
     }
+    else
+        terrain_road_from = terrain_road_to = 0;
+    terrain_road_bits(1);
+    for (i = town_first; i < town_count && town_y[i] == y + 1; ++i)
+    {
+        x = town_x[i];
+        terrain_road_below[x >> 3] |= bit_of[x & 7];
+    }
+    terrain_road_from = road_row_end[y];
+    terrain_road_to = road_row_end[y + 1];
+    terrain_road_bits(0);
+    terrain_road_tiles = tiles;
+    terrain_add_roads();
 }
 
 /* The scratch memory world_generate's rivers, towns and roads need, laid out as world_generate
@@ -969,6 +1008,7 @@ static void finish_row(unsigned y, unsigned char* row, unsigned char* above, uns
         terrain_marsh();
     }
     tiles = row;
+    terrain_road_above = above;
     if (river_count)
         add_rivers(y);
     if (town_count)
@@ -1045,8 +1085,8 @@ void world_generate(void (*row_done)(unsigned y, const unsigned char* tiles),
         {
             plan_roads();
             terrain_list_end = road_row_end;
-            terrain_list_lo = road_cell_lo;
-            terrain_list_hi = road_cell_hi;
+            terrain_list_lo = terrain_road_lo = road_cell_lo;
+            terrain_list_hi = terrain_road_hi = road_cell_hi;
             while (!list_cells(walk_roads, MAX_ROAD_CELLS))
                 --road_count;
         }

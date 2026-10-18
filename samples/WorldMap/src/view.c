@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <string.h>
 #include <conio.h>
 #include <ctype.h>
@@ -810,6 +811,32 @@ unsigned view_cursor_y(void)
     return cursor_y;
 }
 
+/* Text for cput_number. */
+static char number_text[11];
+
+/* Prints n at the cursor, right-aligned in width characters (or as it is, for 0). cprintf would
+ * do, but its formatter is the biggest thing in cc65's library, and the C64 has no room for it. */
+static void cput_number(unsigned long n, unsigned char width)
+{
+    unsigned char len;
+
+    ultoa(n, number_text, 10);
+    len = (unsigned char)strlen(number_text);
+    for (; len < width; ++len)
+        cputc(' ');
+    cputs(number_text);
+}
+
+/* Prints "<width>x<height> cells in <backend>" at the cursor. */
+static void cput_map_size(void)
+{
+    cput_number(world_width(), 0);
+    cputc('x');
+    cput_number(world_height(), 0);
+    cputs(" cells in ");
+    cputs(backend_name);
+}
+
 void view_overview_begin(const char* title)
 {
     unsigned char x;
@@ -819,7 +846,10 @@ void view_overview_begin(const char* title)
     textcolor(COLOR_GRAY3);
     cputsxy(0, 0, title);
     gotoxy(0, 1);
-    cprintf("%ux%u cells in %s, %lu bytes", world_width(), world_height(), backend_name, far_size());
+    cput_map_size();
+    cputs(", ");
+    cput_number(far_size(), 0);
+    cputs(" bytes");
 
     for (x = 0; x < SCREEN_COLS; ++x)
         overview_x[x] = (unsigned)((unsigned long)x * world_width() / SCREEN_COLS);
@@ -858,7 +888,8 @@ void view_progress(unsigned char percent)
 {
     textcolor(COLOR_WHITE);
     gotoxy(PROGRESS_X, 0);
-    cprintf("%3u%%", percent);
+    cput_number(percent, 3);
+    cputc('%');
 }
 
 void view_generating(unsigned char on)
@@ -871,7 +902,7 @@ void view_generating(unsigned char on)
         cputsxy(0, 0, generating_text);
         textcolor(COLOR_GRAY3);
         gotoxy(0, 1);
-        cprintf("%ux%u cells in %s", world_width(), world_height(), backend_name);
+        cput_map_size();
         view_progress(0);
     }
 }

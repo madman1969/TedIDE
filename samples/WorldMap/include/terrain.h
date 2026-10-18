@@ -75,4 +75,21 @@ extern unsigned char* terrain_marsh_below;
 
 void terrain_marsh(void);
 
+/* Putting a row's road cells in (world.c's add_roads). terrain_road_bits(0) maps the listed road
+ * cells terrain_road_from to terrain_road_to - 1 (in terrain_road_lo and _hi, as the other cell
+ * lists) for the row being finished; terrain_road_bits(1) maps the row below's into
+ * terrain_road_below, where world.c adds that row's towns. terrain_add_roads() then puts them in
+ * the row at terrain_road_tiles - road, or bridge over a river or the sea - leaving out any that
+ * would only make a road two cells wide with the finished row above (terrain_road_above, 0 for
+ * none): one that would complete a 2x2 square of road, with nothing else joining it. */
+extern unsigned char* terrain_road_lo;
+extern unsigned char* terrain_road_hi;
+extern unsigned terrain_road_from, terrain_road_to;
+extern unsigned char* terrain_road_tiles;
+extern unsigned char* terrain_road_above;
+extern unsigned char terrain_road_below[TERRAIN_MAX_WIDTH / 8];
+
+void __fastcall__ terrain_road_bits(unsigned char below);
+void terrain_add_roads(void);
+
 #endif

@@ -562,3 +562,373 @@ near_sea:
         rts
 @sea:   sec
         rts
+
+; ------------------------------------------------------------------------
+; Putting a row's road cells in - see world.c's add_roads and terrain.h. In C this took over 1K
+; of code; here it's a few hundred bytes, and quicker.
+;
+; void __fastcall__ terrain_road_bits (unsigned char below)
+; Sets terrain_road_below (if below) or the row's own map to a bit for each listed road cell from
+; terrain_road_from to terrain_road_to - 1 (in terrain_road_lo and _hi, as terrain_list_lo/_hi).
+;
+; void terrain_add_roads (void)
+; Puts the listed road cells, terrain_road_from to terrain_road_to - 1, in the row at
+; terrain_road_tiles: road, or bridge over a river or the sea; towns, and cells already road or
+; bridge, stay. With a finished row above (terrain_road_above, 0 for none), a cell that would make
+; a 2x2 square of road with a road cell n beside it and the two above them is left out if nothing
+; else joins it: no road or town on its other side, and nothing below it (terrain_road_below:
+; roads and towns) unless n has something below it too. The row's own map, filled by
+; terrain_road_bits(0), keeps up with what's left out.
+
+        .export         _terrain_road_bits, _terrain_add_roads, _terrain_road_below
+        .import         _terrain_road_lo, _terrain_road_hi, _terrain_road_from, _terrain_road_to
+        .import         _terrain_road_tiles, _terrain_road_above
+        .importzp       ptr3, ptr4
+
+TILE_TOWN       = 15                    ; world.h's tiles (TILE_SHALLOWS, _BRIDGE: above)
+TILE_RIVER      = 16
+TILE_ROAD       = 17
+
+        .bss
+road_here:      .res    64              ; a bit for each road cell in the row being finished...
+_terrain_road_below:
+                .res    64              ; ...and in the row below it, with its towns
+road_i:         .res    2               ; the list index
+road_x:         .res    2               ; its cell's column
+road_n:         .res    2               ; a column beside it
+road_o:         .res    2               ; ...and the one on the other side
+road_side:      .res    1
+
+        .code
+
+; The column of list entry road_i, into road_x.
+list_column:
+        clc
+        lda     _terrain_road_lo
+        adc     road_i
+        sta     ptr2
+        lda     _terrain_road_lo+1
+        adc     road_i+1
+        sta     ptr2+1
+        ldy     #0
+        lda     (ptr2),y
+        sta     road_x
+        lda     road_i                  ; the 9th bit: bit (i & 7) of terrain_road_hi[i >> 3]
+        and     #7
+        tax
+        lda     road_i+1
+        sta     tmp2
+        lda     road_i
+        lsr     tmp2
+        ror     a
+        lsr     tmp2
+        ror     a
+        lsr     tmp2
+        ror     a
+        clc
+        adc     _terrain_road_hi
+        sta     ptr2
+        lda     tmp2
+        adc     _terrain_road_hi+1
+        sta     ptr2+1
+        lda     (ptr2),y
+        and     cell_bit,x
+        beq     :+
+        lda     #1
+:       sta     road_x+1
+        rts
+
+; Bit X (of the column in A:tmp1 - low byte in tmp1, high in A) of a map: points ptr2 at the map's
+; byte (map in ptr3) and leaves the bit's mask in A.
+map_byte:
+        lsr     a                       ; byte = column >> 3 (columns are under 512)
+        lda     tmp1
+        ror     a
+        lsr     a
+        lsr     a
+        clc
+        adc     ptr3
+        sta     ptr2
+        lda     ptr3+1
+        adc     #0
+        sta     ptr2+1
+        lda     tmp1
+        and     #7
+        tax
+        lda     cell_bit,x
+        rts
+
+; Whether column road_n (Z clear if so) has its bit in the map at ptr3.
+bit_n:  lda     road_n
+        sta     tmp1
+        lda     road_n+1
+        jmp     bit_test
+bit_o:  lda     road_o
+        sta     tmp1
+        lda     road_o+1
+        jmp     bit_test
+bit_x:  lda     road_x
+        sta     tmp1
+        lda     road_x+1
+bit_test:
+        jsr     map_byte
+        ldy     #0
+        and     (ptr2),y
+        rts
+
+; Sets (A = 1) or clears (A = 0) road_x's bit in road_here.
+set_here:
+        pha
+        lda     #<road_here
+        sta     ptr3
+        lda     #>road_here
+        sta     ptr3+1
+        lda     road_x
+        sta     tmp1
+        lda     road_x+1
+        jsr     map_byte
+        ldy     #0
+        sta     tmp3
+        pla
+        beq     @clear
+        lda     tmp3
+        ora     (ptr2),y
+        sta     (ptr2),y
+        rts
+@clear: lda     tmp3
+        eor     #$FF
+        and     (ptr2),y
+        sta     (ptr2),y
+        rts
+
+; Points ptr3 at road_here or terrain_road_below.
+use_here:
+        lda     #<road_here
+        sta     ptr3
+        lda     #>road_here
+        sta     ptr3+1
+        rts
+use_below:
+        lda     #<_terrain_road_below
+        sta     ptr3
+        lda     #>_terrain_road_below
+        sta     ptr3+1
+        rts
+
+; Loads tile road_n / road_o / road_x of a row: the row in ptr4, the tile in A.
+tile_of:
+        clc
+        adc     ptr4
+        sta     ptr2
+        txa
+        adc     ptr4+1
+        sta     ptr2+1
+        ldy     #0
+        lda     (ptr2),y
+        rts
+
+; Carry set if A is road or bridge (TILE_ROAD and TILE_BRIDGE are next to each other).
+is_road:
+        cmp     #TILE_ROAD
+        bcc     @no
+        cmp     #TILE_BRIDGE + 1
+        bcs     @no
+        sec
+        rts
+@no:    clc
+        rts
+
+_terrain_road_bits:
+        tax
+        beq     :+
+        jsr     use_below
+        jmp     @clear
+:       jsr     use_here
+@clear: lda     #0
+        ldy     #63
+:       sta     (ptr3),y
+        dey
+        bpl     :-
+        lda     _terrain_road_from
+        sta     road_i
+        lda     _terrain_road_from+1
+        sta     road_i+1
+@next:  lda     road_i
+        cmp     _terrain_road_to
+        lda     road_i+1
+        sbc     _terrain_road_to+1
+        bcs     @done
+        jsr     list_column
+        lda     road_x                  ; set road_x's bit
+        sta     tmp1
+        lda     road_x+1
+        jsr     map_byte
+        ldy     #0
+        ora     (ptr2),y
+        sta     (ptr2),y
+        inc     road_i
+        bne     @next
+        inc     road_i+1
+        jmp     @next
+@done:  rts
+
+_terrain_add_roads:
+        lda     _terrain_road_from
+        sta     road_i
+        lda     _terrain_road_from+1
+        sta     road_i+1
+@next:  lda     road_i
+        cmp     _terrain_road_to
+        lda     road_i+1
+        sbc     _terrain_road_to+1
+        bcc     :+
+        rts
+:       jsr     list_column
+        lda     _terrain_road_tiles     ; the cell's tile
+        sta     ptr4
+        lda     _terrain_road_tiles+1
+        sta     ptr4+1
+        lda     road_x
+        ldx     road_x+1
+        jsr     tile_of
+        cmp     #TILE_TOWN              ; towns, and cells already in, stay
+        beq     @skip
+        jsr     is_road
+        bcs     @skip
+        lda     _terrain_road_above
+        ora     _terrain_road_above+1
+        beq     @put
+        jsr     spare
+        bcc     @put
+        lda     #0                      ; left out
+        jsr     set_here
+        jmp     @skip
+@put:   lda     #1
+        jsr     set_here
+        lda     _terrain_road_tiles
+        sta     ptr4
+        lda     _terrain_road_tiles+1
+        sta     ptr4+1
+        lda     road_x
+        ldx     road_x+1
+        jsr     tile_of                 ; ptr2: the cell
+        cmp     #TILE_RIVER             ; bridge over a river or the sea, else road
+        beq     @bridge
+        cmp     #TILE_SHALLOWS + 1
+        bcc     @bridge
+        lda     #TILE_ROAD
+        bne     @store
+@bridge:
+        lda     #TILE_BRIDGE
+@store: sta     (ptr2),y
+@skip:  inc     road_i
+        bne     @next
+        inc     road_i+1
+        jmp     @next
+
+; Whether cell road_x can be left out: carry set if so.
+spare:
+        lda     _terrain_road_above     ; the cell above must be road
+        sta     ptr4
+        lda     _terrain_road_above+1
+        sta     ptr4+1
+        lda     road_x
+        ldx     road_x+1
+        jsr     tile_of
+        jsr     is_road
+        bcs     :+
+        rts                             ; carry clear: not spare
+:       lda     #0
+        sta     road_side
+@side:  ; n = x - 1 (side 0) or x + 1 (side 1); o the other way.
+        lda     road_side
+        bne     @right
+        lda     road_x                  ; x == 0: no cell to the left
+        ora     road_x+1
+        bne     :+
+        jmp     @next_side
+:
+        sec
+        lda     road_x
+        sbc     #1
+        sta     road_n
+        lda     road_x+1
+        sbc     #0
+        sta     road_n+1
+        clc
+        lda     road_x
+        adc     #1
+        sta     road_o
+        lda     road_x+1
+        adc     #0
+        sta     road_o+1
+        jmp     @check
+@right: clc
+        lda     road_x
+        adc     #1
+        sta     road_n
+        lda     road_x+1
+        adc     #0
+        sta     road_n+1
+        lda     road_n                  ; n == width: no cell to the right
+        cmp     _terrain_width
+        lda     road_n+1
+        sbc     _terrain_width+1
+        bcc     :+
+        jmp     @next_side
+:
+        sec
+        lda     road_x
+        sbc     #1
+        sta     road_o
+        lda     road_x+1
+        sbc     #0
+        sta     road_o+1                ; $FFFF when x == 0: past the edge
+@check: jsr     use_here                ; n road in this row...
+        jsr     bit_n
+        bne     :+
+        jmp     @next_side
+:
+        lda     _terrain_road_above     ; ...and above it
+        sta     ptr4
+        lda     _terrain_road_above+1
+        sta     ptr4+1
+        lda     road_n
+        ldx     road_n+1
+        jsr     tile_of
+        jsr     is_road
+        bcs     :+
+        jmp     @next_side
+:
+        ; A square with n. Not spare if the other side has road or a town.
+        lda     road_o
+        cmp     _terrain_width
+        lda     road_o+1
+        sbc     _terrain_width+1
+        bcs     @below                  ; past the edge
+        jsr     bit_o
+        bne     @not
+        lda     _terrain_road_tiles
+        sta     ptr4
+        lda     _terrain_road_tiles+1
+        sta     ptr4+1
+        lda     road_o
+        ldx     road_o+1
+        jsr     tile_of
+        cmp     #TILE_TOWN
+        beq     @not
+@below: jsr     use_below               ; nothing below x, or something below n too
+        jsr     bit_x
+        beq     @yes
+        jsr     bit_n
+        bne     @yes
+@not:   clc
+        rts
+@yes:   sec
+        rts
+@next_side:
+        inc     road_side
+        lda     road_side
+        cmp     #2
+        beq     @not
+        jmp     @side
