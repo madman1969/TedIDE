@@ -21,7 +21,7 @@ unsigned char view_tile_char[TILE_COUNT];
 
 /* The status bar's name for each picture - every shade of a kind has the same one. */
 static const char* const glyph_name[GLYPH_TOWN + 1] = {
-    "deep sea", "sea", "beach", "grass", "forest", "hills", "mountain", "snow", "town",
+    "deep sea", "sea", "beach", "grass", "forest", "hills", "mountain", "snow", "river", "town",
 };
 
 #define CURSOR_CHAR    (SCREEN_FIRST_GLYPH + GLYPH_CURSOR)

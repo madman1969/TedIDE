@@ -20,6 +20,7 @@ const unsigned char view_tile_colour[TILE_COUNT] = {
     COLOR_GRAY1, COLOR_GRAY2,                   /* mountain, high mountain */
     COLOR_WHITE,                                /* snow */
     COLOR_LIGHTRED,                             /* town */
+    COLOR_LIGHTBLUE,                            /* river */
 };
 const unsigned char screen_cursor_colour = COLOR_WHITE;
 

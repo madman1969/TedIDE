@@ -4,9 +4,9 @@
 /* The world map: one byte per cell, holding a TILE_ value, kept in far memory (see farmem.h) -
  * a 512x256 map is 128K, twice the C64's whole address space. */
 
-/* The tiles, from the deepest sea to the highest snow, then towns. Each kind of land and sea
- * comes in shades of height, so a map can be shaded like a relief map; a machine with fewer
- * colours just gives some shades the same one. */
+/* The tiles, from the deepest sea to the highest snow, then towns and rivers. Each kind of land
+ * and sea comes in shades of height, so a map can be shaded like a relief map; a machine with
+ * fewer colours just gives some shades the same one. */
 #define TILE_DEEPEST        0
 #define TILE_DEEPER         1
 #define TILE_DEEP           2
@@ -23,7 +23,8 @@
 #define TILE_HIGH_MOUNTAIN  13
 #define TILE_SNOW           14
 #define TILE_TOWN           15
-#define TILE_COUNT          16
+#define TILE_RIVER          16
+#define TILE_COUNT          17
 
 /* Allocates the biggest map far memory has room for, from 512x256 down to 64x32.
  * Returns 0 if not even the smallest fits. Call far_init() first. */
@@ -33,7 +34,8 @@ unsigned char world_create(void);
 unsigned world_width(void);
 unsigned world_height(void);
 
-/* Fills the map with new random terrain, with towns scattered over the grassland, calling
+/* Fills the map with new random terrain, with rivers running from the mountains to the sea and
+ * towns scattered over the grassland, calling
  * row_done() with each row's tiles as it's finished - the biggest map takes several seconds.
  * Seed the random number generator (srand or _randomize) first for a different world each
  * time. */
