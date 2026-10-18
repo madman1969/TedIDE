@@ -46,6 +46,8 @@ const unsigned char view_tile_colour[TILE_COUNT] = {
     MC | BCOLOR_WHITE | CATTR_LUMA7,    /* snow */
     FLASH | BCOLOR_RED | CATTR_LUMA5,   /* town: hi-res, flashing */
     MC | BCOLOR_CYAN | CATTR_LUMA5,     /* river: brighter than the shallows it runs into */
+    BCOLOR_ORANGE | CATTR_LUMA6,        /* road: hi-res, as orange isn't a multicolour hue */
+    BCOLOR_BROWN | CATTR_LUMA5,         /* bridge: hi-res too */
 };
 const unsigned char screen_cursor_colour = FLASH | BCOLOR_WHITE | CATTR_LUMA7;
 
@@ -56,8 +58,8 @@ const unsigned char screen_cursor_colour = FLASH | BCOLOR_WHITE | CATTR_LUMA7;
 
 /* The multicolour pictures, in GLYPH_ order up to GLYPH_RIVER: 4 double-width pixels a row, two
  * bits each, bits 7-6 the leftmost. Drawn as text, with '.' black, 'd' dark green, 'w' light
- * grey and '#' the cell's colour - each picture's rows are given beside it. Towns and the
- * cursor stay hi-res, from tile_glyphs. */
+ * grey and '#' the cell's colour - each picture's rows are given beside it. Towns, roads,
+ * bridges and the cursor stay hi-res, from tile_glyphs. */
 static const unsigned char mc_glyphs[GLYPH_TOWN][8] = {
     { 0xFF, 0xEF, 0xFF, 0xFF, 0xFE, 0xFF, 0xFF, 0xFF },   /* deep sea:  #### #w## #### #### ###w #### #### #### */
     { 0xFF, 0xAF, 0xFF, 0xFF, 0xFA, 0xFF, 0xFF, 0xFF },   /* sea:       #### ww## #### #### ##ww #### #### #### */
@@ -145,7 +147,7 @@ void screen_init(void)
     screens[1] = video_space;
 
     /* The ROM's font with the pictures drawn over some of its graphics characters: multicolour
-     * ones for the land and sea, hi-res ones for towns and the cursor. */
+     * ones for the land and sea, hi-res ones for towns, roads, bridges and the cursor. */
     far_set_copy_hook(wait_for_safe_copy);
     screen_copy_font(chars);
     memcpy(chars + SCREEN_FIRST_GLYPH * 8, mc_glyphs, sizeof(mc_glyphs));

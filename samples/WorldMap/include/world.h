@@ -4,7 +4,7 @@
 /* The world map: one byte per cell, holding a TILE_ value, kept in far memory (see farmem.h) -
  * a 512x256 map is 128K, twice the C64's whole address space. */
 
-/* The tiles, from the deepest sea to the highest snow, then towns and rivers. Each kind of land
+/* The tiles, from the deepest sea to the highest snow, then towns, rivers, roads and bridges. Each kind of land
  * and sea comes in shades of height, so a map can be shaded like a relief map; a machine with
  * fewer colours just gives some shades the same one. */
 #define TILE_DEEPEST        0
@@ -24,7 +24,9 @@
 #define TILE_SNOW           14
 #define TILE_TOWN           15
 #define TILE_RIVER          16
-#define TILE_COUNT          17
+#define TILE_ROAD           17
+#define TILE_BRIDGE         18              /* a road over water */
+#define TILE_COUNT          19
 
 /* Allocates the biggest map far memory has room for, from 512x256 down to 64x32.
  * Returns 0 if not even the smallest fits. Call far_init() first. */
@@ -34,18 +36,19 @@ unsigned char world_create(void);
 unsigned world_width(void);
 unsigned world_height(void);
 
-/* Fills the map with new random terrain, with rivers running from the mountains to the sea and
- * towns scattered over the grassland, mostly by rivers and never within 10 cells of each other,
- * using scratch_size bytes at scratch as working memory for the rivers and towns
- * (WORLD_SCRATCH_SIZE; with less, there are neither), calling
- * row_done() with each row's tiles as it's finished - the biggest map takes several seconds.
+/* Fills the map with new random terrain, with rivers running from the mountains to the sea,
+ * towns on the grassland - mostly by rivers, never within 10 cells of each other - and roads
+ * joining every town to every other, with bridges over rivers and the sea. scratch_size bytes at
+ * scratch are working memory for the rivers, towns and roads (WORLD_SCRATCH_SIZE; with less,
+ * there are none). Calls row_done() with each row's tiles as it's finished - the biggest map
+ * takes half a minute or so.
  * Seed the random number generator (srand or _randomize) first for a different world each
  * time. */
 void world_generate(void (*row_done)(unsigned y, const unsigned char* tiles),
                     unsigned char* scratch, unsigned scratch_size);
 
-/* The working memory world_generate needs for rivers and towns. */
-#define WORLD_SCRATCH_SIZE  9100u
+/* The working memory world_generate needs for rivers, towns and roads. */
+#define WORLD_SCRATCH_SIZE  11380u
 
 /* Copies len cells of row y, starting at column x, into dst - one far_read. */
 void world_read(unsigned x, unsigned y, unsigned char* dst, unsigned len);

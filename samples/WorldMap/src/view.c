@@ -20,8 +20,9 @@
 unsigned char view_tile_char[TILE_COUNT];
 
 /* The status bar's name for each picture - every shade of a kind has the same one. */
-static const char* const glyph_name[GLYPH_TOWN + 1] = {
+static const char* const glyph_name[GLYPH_CURSOR] = {
     "deep sea", "sea", "beach", "grass", "forest", "hills", "mountain", "snow", "river", "town",
+    "road", "bridge",
 };
 
 #define CURSOR_CHAR    (SCREEN_FIRST_GLYPH + GLYPH_CURSOR)
@@ -47,15 +48,21 @@ unsigned char __fastcall__ view_blit_rows(unsigned char first);
 #endif
 
 /* The tile cache: map rows, each in a slot with room for every column. Map row y lives in slot
- * y % CACHE_ROWS, and there are two more slots than the view has rows, so the row just above and
- * the row just below the view can be read ahead of time without overwriting one on show.
+ * y % CACHE_ROWS. On the Plus/4 there are two more slots than the view has rows, so the row just
+ * above and the row just below the view can be read ahead of time without overwriting one on
+ * show; the C64, which draws each frame when it's needed, does without them - it's short of
+ * memory.
  * cache_row says which map row each slot holds, and cache_lo and cache_hi which of its columns:
  * CHUNKs lo to hi - 1, none if hi is 0. All three are bytes - maps are at most 256 rows high and
  * 512 columns wide, 16 CHUNKs (world.c) - as cc65 is far quicker with bytes than with ints. The
  * C64, whose REU copies a row in no time, reads every column. On the Plus/4 a whole row takes
  * about a frame to read from a RAM expansion, so it reads the view's columns first, then more on
  * either side when there's time to spare, so that scrolling sideways finds them there. */
+#if VIEW_FINE_BITS
 #define CACHE_ROWS   (VIEW_HEIGHT + 2)
+#else
+#define CACHE_ROWS   VIEW_HEIGHT
+#endif
 #define CACHE_W      512                /* the widest map, world.c */
 #define NO_ROW       0xFFFF
 #define CHUNK        32                 /* columns are read in multiples of this... */

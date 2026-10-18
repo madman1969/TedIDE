@@ -21,6 +21,8 @@ const unsigned char view_tile_colour[TILE_COUNT] = {
     COLOR_WHITE,                                /* snow */
     COLOR_LIGHTRED,                             /* town */
     COLOR_LIGHTBLUE,                            /* river */
+    COLOR_ORANGE,                               /* road */
+    COLOR_BROWN,                                /* bridge */
 };
 const unsigned char screen_cursor_colour = COLOR_WHITE;
 

@@ -60,8 +60,10 @@
 #define GLYPH_SNOW      7
 #define GLYPH_RIVER     8
 #define GLYPH_TOWN      9
-#define GLYPH_CURSOR    10
-#define GLYPH_COUNT     11
+#define GLYPH_ROAD      10
+#define GLYPH_BRIDGE    11
+#define GLYPH_CURSOR    12
+#define GLYPH_COUNT     13
 
 /* Each tile's picture (tiles.c). */
 extern const unsigned char tile_glyph[TILE_COUNT];

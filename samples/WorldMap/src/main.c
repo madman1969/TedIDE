@@ -32,8 +32,6 @@
 static unsigned left;
 static unsigned top;
 
-/* One whole map row, for the overview. */
-static unsigned char map_row[512];
 
 /* Moves pos by delta, keeping it between 0 and max. */
 static unsigned move(unsigned pos, int delta, unsigned max)
@@ -72,7 +70,8 @@ static void new_world(void)
  * marked, until a key is pressed. */
 static void show_overview(void)
 {
-    unsigned y;
+    unsigned y, size;
+    unsigned char* map_row = view_scratch(&size);   /* one whole map row, in the view's cache */
 
     view_overview_begin("the whole world - press a key");
     for (y = 0; y < world_height(); y += view_overview_step())

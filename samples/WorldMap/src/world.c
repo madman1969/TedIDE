@@ -61,12 +61,21 @@ unsigned char terrain_roughness[256];
 unsigned char terrain_roughness_start;
 unsigned char terrain_tile_for_height[256];
 unsigned char terrain_row_buf[TERRAIN_MAX_WIDTH];
+int terrain_walk_x, terrain_walk_y, terrain_walk_to_x, terrain_walk_to_y;
+unsigned* terrain_list_end;
+unsigned char* terrain_list_lo;
+unsigned char* terrain_list_hi;
+unsigned char terrain_listing;
+unsigned terrain_wander;
+unsigned terrain_width, terrain_height;
 
 static farptr cells;
 static unsigned width;
 static unsigned height;
-/* Each row's address in far memory, for cell(): maps are at most 256 rows high. */
-static farptr row_address[256];
+/* Each row's place in the map, for cell(): its offset from the first cell, in 64-cell units - as
+ * maps are a multiple of 64 cells wide - which fits in 2 bytes where an address takes 4, and
+ * the C64 is short of memory. Maps are at most 256 rows high. */
+static unsigned row_offset[256];
 
 /* Grid heights: 0-127 for the coarse layer and 0-63 for the fine one, so that in 8.8 fixed
  * point every difference between two of them fits in a 16-bit int. */
@@ -77,7 +86,7 @@ static unsigned char grid_b[GRID_B_H][TERRAIN_GRID_B_W];
  * on the Plus/4 took the time of 40-odd raster lines - for every piece of a row the view reads. */
 static farptr cell(unsigned x, unsigned y)
 {
-    return row_address[(unsigned char)y] + x;
+    return cells + ((unsigned long)row_offset[(unsigned char)y] << 6) + x;
 }
 
 unsigned char world_create(void)
@@ -85,7 +94,7 @@ unsigned char world_create(void)
     unsigned char i;
     unsigned h;
     unsigned char t;
-    farptr row;
+    unsigned offset;
 
     for (i = 0; i < SIZE_COUNT; ++i)
     {
@@ -94,20 +103,16 @@ unsigned char world_create(void)
             cells = far_alloc((unsigned long)sizes[i][0] * sizes[i][1]);
             if (cells != FAR_NULL)
             {
-                width = sizes[i][0];
-                height = sizes[i][1];
+                width = terrain_width = sizes[i][0];
+                height = terrain_height = sizes[i][1];
                 break;
             }
         }
     }
     if (cells == FAR_NULL)
         return 0;
-    row = cells;
-    for (h = 0; h < height; ++h)
-    {
-        row_address[h] = row;
-        row += width;
-    }
+    for (h = 0, offset = 0; h < height; ++h, offset += width >> 6)
+        row_offset[h] = offset;
 
     terrain_columns_a = width / TERRAIN_SPAN_A + 1;
     terrain_columns_b = width / TERRAIN_SPAN_B + 1;
@@ -196,7 +201,7 @@ static void start_band_b(unsigned char cy)
 #define MAX_RIVER_LEN    80                 /* points in one river */
 #define POINTS           (TERRAIN_GRID_B_W * GRID_B_H)
 #define POINT_BYTES      ((POINTS + 7) / 8)  /* a bit for each point */
-#define MAX_RIVER_CELLS  2000               /* all the rivers' cells together */
+#define MAX_RIVER_CELLS  1200               /* all the rivers' cells together */
 
 /* The rivers' working memory, in world_generate's scratch memory - the heap is far too small on
  * the C64 (about 3.5K, between the BSS and the stack) and only just big enough on the Plus/4: */
@@ -206,8 +211,13 @@ static unsigned* river_start;               /* where each river's points start, 
 static unsigned* river_seed;                /* each river's seed for its wandering */
 static unsigned char* on_river;             /* a bit for each grid point on a river */
 static unsigned char* visited;              /* ...and each point the river being traced has been to */
-static unsigned* row_end;                   /* each map row's river cells in cell_x: see */
-static unsigned* cell_x;                    /* list_river_cells */
+/* Cell lists (list_cells): where each map row's cells end, and each cell's column - its low 8
+ * bits in a byte, and its 9th in a bit map - which takes 1.125 bytes a cell where an int takes 2.
+ * terrain_list_end, _lo and _hi (terrain.h) are the list being filled, the rivers' or the
+ * roads'. */
+static unsigned* river_row_end;
+static unsigned char* river_cell_lo;
+static unsigned char* river_cell_hi;
 static unsigned char river_count;
 static unsigned river_points;
 
@@ -424,56 +434,36 @@ static void plan_rivers(void)
 }
 
 /* The wandering's random numbers: a 16-bit xorshift, so a segment can be replayed exactly. */
-static unsigned wander_state;
-
 static unsigned char next_wander(void)
 {
-    wander_state ^= wander_state << 7;
-    wander_state ^= wander_state >> 9;
-    wander_state ^= wander_state << 8;
-    return (unsigned char)wander_state;
+    terrain_wander ^= terrain_wander << 7;
+    terrain_wander ^= terrain_wander >> 9;
+    terrain_wander ^= terrain_wander << 8;
+    return (unsigned char)terrain_wander;
 }
 
-/* Whether walk_rivers is filling in cell_x (list_river_cells), rather than counting. */
-static unsigned char listing;
-
-/* Counts cell (x, y) in its row, or lists it, if it's on the map. */
+/* Counts cell (x, y) in its row, or lists it, if it's on the map (terrain_mark, terrain.s). */
 static void mark_cell(int x, int y)
 {
-    if (y < 0 || y >= (int)height || x < 0 || x >= (int)width)
-        return;
-    if (listing)
-        cell_x[--row_end[y]] = (unsigned)x;
-    else
-        ++row_end[y];
+    terrain_walk_x = x;
+    terrain_walk_y = y;
+    terrain_mark();
 }
 
+/* Cell i's column in a list - a macro, as it's wanted for every river and road cell as the rows
+ * are built: i is evaluated more than once. */
+#define list_x(lo, hi, i)  (((hi)[(i) >> 3] & bit_of[(i) & 7]) ? 0x100 | (lo)[i] : (lo)[i])
+
 /* Marks the cells from (x, y) up to, but not including, (to_x, to_y), a step at a time across or
- * down - mostly along the longer way, now and then the shorter - so the river stays joined up. */
+ * down - mostly along the longer way, now and then the shorter - so the river or road stays joined
+ * up (terrain_walk, terrain.s). */
 static void walk(int x, int y, int to_x, int to_y)
 {
-    int dx, dy;
-    unsigned adx, ady;
-    unsigned char across;
-
-    while (x != to_x || y != to_y)
-    {
-        mark_cell(x, y);
-        dx = to_x - x;
-        dy = to_y - y;
-        adx = dx < 0 ? -dx : dx;
-        ady = dy < 0 ? -dy : dy;
-        if (ady == 0)
-            across = 1;
-        else if (adx == 0)
-            across = 0;
-        else
-            across = (adx >= ady) ^ ((next_wander() & 3) == 0);
-        if (across)
-            x += dx < 0 ? -1 : 1;
-        else
-            y += dy < 0 ? -1 : 1;
-    }
+    terrain_walk_x = x;
+    terrain_walk_y = y;
+    terrain_walk_to_x = to_x;
+    terrain_walk_to_y = to_y;
+    terrain_walk();
 }
 
 /* Marks every cell of the first river_count rivers: each segment from one point to the next,
@@ -493,9 +483,9 @@ static void walk_rivers(void)
             y0 = river_py[i] * TERRAIN_SPAN_B;
             x1 = river_px[i + 1] * TERRAIN_SPAN_B;
             y1 = river_py[i + 1] * TERRAIN_SPAN_B;
-            wander_state = river_seed[r] + i * 0x9E5u;
-            if (!wander_state)
-                wander_state = 1;
+            terrain_wander = river_seed[r] + i * 0x9E5u;
+            if (!terrain_wander)
+                terrain_wander = 1;
             vx = river_px[i + 1] - river_px[i];
             vy = river_py[i + 1] - river_py[i];
             side = wander[next_wander() & 7];
@@ -508,55 +498,126 @@ static void walk_rivers(void)
     }
 }
 
-/* Lists the rivers' cells by row: row y's columns are cell_x[row_end[y]] up to
- * cell_x[row_end[y + 1] - 1]. A first walk counts each row's cells, and turns the counts into
- * where each row's list ends; a second fills the lists in from their ends, leaving row_end[y] at
- * the start of row y's. If there are more cells than MAX_RIVER_CELLS, the latest rivers are
- * dropped whole - rivers only ever join earlier ones, so every river left still reaches the sea. */
-static void list_river_cells(void)
+/* Lists the cells walk_all marks by row: row y's are cells terrain_list_end[y] up to
+ * terrain_list_end[y + 1] - 1. A first walk counts each row's cells, and turns the counts into
+ * where each row's list ends; a second fills the lists in from their ends, leaving
+ * terrain_list_end[y] at the start of row y's. Returns 0, without the second walk, if there are
+ * more than max. */
+static unsigned char list_cells(void (*walk_all)(void), unsigned max)
 {
     unsigned y, total;
 
-    for (;;)
+    memset(terrain_list_end, 0, (height + 1) * sizeof(unsigned));
+    terrain_listing = 0;
+    walk_all();
+    total = 0;
+    for (y = 0; y < height; ++y)
     {
-        memset(row_end, 0, (height + 1) * sizeof(unsigned));
-        listing = 0;
-        walk_rivers();
-        total = 0;
-        for (y = 0; y < height; ++y)
-        {
-            total += row_end[y];
-            row_end[y] = total;
-        }
-        if (total <= MAX_RIVER_CELLS)
-            break;
-        --river_count;
+        total += terrain_list_end[y];
+        terrain_list_end[y] = total;
     }
-    row_end[height] = total;
-    listing = 1;
-    walk_rivers();
+    if (total > max)
+        return 0;
+    terrain_list_end[height] = total;
+    terrain_listing = 1;
+    walk_all();
+    return 1;
+}
+
+/* Lists the rivers' cells by row (list_cells). If there are more than MAX_RIVER_CELLS, the latest
+ * rivers are dropped whole - rivers only ever join earlier ones, so every river left still reaches
+ * the sea. */
+static void list_river_cells(void)
+{
+    terrain_list_end = river_row_end;
+    terrain_list_lo = river_cell_lo;
+    terrain_list_hi = river_cell_hi;
+    while (!list_cells(walk_rivers, MAX_RIVER_CELLS))
+        --river_count;
 }
 
 /* Puts row y's river cells over the land in the row just built. */
 static void add_rivers(unsigned y)
 {
-    unsigned i, end = row_end[y + 1];
+    unsigned i, end = river_row_end[y + 1];
     unsigned char* tile;
 
-    for (i = row_end[y]; i < end; ++i)
+    for (i = river_row_end[y]; i < end; ++i)
     {
-        tile = terrain_row_buf + cell_x[i];
+        tile = terrain_row_buf + list_x(river_cell_lo, river_cell_hi, i);
         if (*tile > TILE_SHALLOWS)
             *tile = TILE_RIVER;
     }
 }
 
+/* Whether map row y has a river cell at column x. */
+static unsigned char river_at(unsigned x, unsigned y)
+{
+    unsigned i, end = river_row_end[y + 1];
+
+    for (i = river_row_end[y]; i < end; ++i)
+        if (list_x(river_cell_lo, river_cell_hi, i) == x)
+            return 1;
+    return 0;
+}
+
+/* ------------------------------------------------------------------------
+ * The terrain at one cell, worked out just as terrain_row and terrain_next_row do for whole rows
+ * (terrain.s) - every step of their 16-bit sums, shifts and wrapping round - so that towns can be
+ * placed, and roads planned between them, before the rows are built.
+ */
+
+/* Each map row's place in the roughness table (scratch memory), drawn before the rows are built. */
+static unsigned char* row_rough;
+
+/* A 16-bit value shifted right n places, keeping its sign, as terrain.s does. */
+static unsigned asr16(unsigned v, unsigned char n)
+{
+    while (n--)
+        v = (v >> 1) | (v & 0x8000);
+    return v;
+}
+
+/* A grid column's height at map row y, in 8.8 fixed point: the grid row above's, plus a step per
+ * row towards the one below (start_band_a/b, terrain_next_row). */
+static unsigned column_a(unsigned char col, unsigned char y)
+{
+    const unsigned char* g = grid_a[y / TERRAIN_SPAN_A];
+    unsigned step = (unsigned)((int)g[TERRAIN_GRID_A_W + col] - g[col]) << 3;
+
+    return ((unsigned)g[col] << 8) + (y & (TERRAIN_SPAN_A - 1)) * step;
+}
+
+static unsigned column_b(unsigned char col, unsigned char y)
+{
+    const unsigned char* g = grid_b[y / TERRAIN_SPAN_B];
+    unsigned step = (unsigned)((int)g[TERRAIN_GRID_B_W + col] - g[col]) << 5;
+
+    return ((unsigned)g[col] << 8) + (y & (TERRAIN_SPAN_B - 1)) * step;
+}
+
+/* The tile terrain_row puts at column x of map row y. */
+static unsigned char terrain_tile_at(unsigned x, unsigned char y)
+{
+    unsigned char span = (unsigned char)(x / TERRAIN_SPAN_B), k = x & (TERRAIN_SPAN_B - 1);
+    unsigned char coarse = span >> 2;
+    unsigned a0 = column_a(coarse, y);
+    unsigned sa = asr16(column_a(coarse + 1, y) - a0, 5);
+    unsigned b0 = column_b(span, y);
+    unsigned step = asr16(column_b(span + 1, y) - b0, 3) + sa;
+    unsigned h = a0 + (span & 3) * (sa << 3) + b0 + k * step;
+
+    return terrain_tile_for_height[(unsigned char)((h >> 8)
+                                                   + terrain_roughness[(unsigned char)(row_rough[y] + x)])];
+}
+
 /* No town is within this many cells of another, across or down. */
 #define TOWN_SPACING  10
-#define MAX_TOWNS     200
+#define MAX_TOWNS     100               /* about 50 on the biggest map */
 
-/* The towns placed so far, in the order of their rows (world_generate's scratch memory), and the
- * first that could still be within TOWN_SPACING rows of the row being built. */
+/* The towns, in the order of their rows (world_generate's scratch memory); while they're planned,
+ * the first that could still be within TOWN_SPACING rows of the row being planned, and while the
+ * rows are built, the next to put in. */
 static unsigned* town_x;
 static unsigned char* town_y;
 static unsigned char town_count;
@@ -565,15 +626,15 @@ static unsigned char town_first;
 /* Where a town by a river may go: 1 or 2 cells to either side of a river cell. */
 static const signed char town_side[4] = { -2, -1, 1, 2 };
 
-/* Puts a town at column x of row y, just built, if it's grassland and no other town is within
- * TOWN_SPACING cells. Only the towns of the last TOWN_SPACING rows need checking. */
+/* Plans a town at column x of row y if it'll be grassland - not under a river - and no other town
+ * is within TOWN_SPACING cells. Only the towns of the last TOWN_SPACING rows need checking. The
+ * cheap checks go first: working out the terrain takes the longest. */
 static void try_town(unsigned x, unsigned char y)
 {
-    unsigned char i;
+    unsigned char i, tile;
     unsigned dx;
 
-    if (x >= width || town_count == MAX_TOWNS
-        || (terrain_row_buf[x] != TILE_GRASS && terrain_row_buf[x] != TILE_UPLAND))
+    if (x >= width || town_count == MAX_TOWNS)
         return;
     while (town_first < town_count && (unsigned char)(y - town_y[town_first]) > TOWN_SPACING)
         ++town_first;
@@ -583,47 +644,299 @@ static void try_town(unsigned x, unsigned char y)
         if (dx <= TOWN_SPACING)
             return;
     }
+    if (river_count && river_at(x, y))
+        return;
+    tile = terrain_tile_at(x, y);
+    if (tile != TILE_GRASS && tile != TILE_UPLAND)
+        return;
     town_x[town_count] = x;
     town_y[town_count] = y;
     ++town_count;
-    terrain_row_buf[x] = TILE_TOWN;
 }
 
-/* Turns cells of row y, just built, into towns, if they're grassland and far enough from other
- * towns: now and then one beside a river cell, and in about one row in four a random one - so
- * most towns, about 60% on the biggest map, are by rivers. */
-static void place_towns(unsigned y)
+/* Plans the towns, a row at a time: now and then one beside a river cell, and in about one row in
+ * four a random one - so most towns, about 60% on the biggest map, are by rivers. Beside the
+ * rivers first, so they get the first claim to the space towns need. */
+static void plan_towns(void)
 {
+    unsigned y, k, end;
     unsigned char r;
-    unsigned k, end;
 
-    /* Beside the rivers first, so they get the first claim to the space towns need. */
-    if (river_count)
+    town_count = town_first = 0;
+    for (y = 0; y < height; ++y)
     {
-        end = row_end[y + 1];
-        for (k = row_end[y]; k < end; ++k)
+        if (river_count)
         {
-            r = (unsigned char)rand();
-            if (r < TOWN_RIVER_CHANCE)
-                try_town(cell_x[k] + town_side[r & 3], (unsigned char)y);
+            end = river_row_end[y + 1];
+            for (k = river_row_end[y]; k < end; ++k)
+            {
+                r = (unsigned char)rand();
+                if (r < TOWN_RIVER_CHANCE)
+                    try_town(list_x(river_cell_lo, river_cell_hi, k) + town_side[r & 3],
+                             (unsigned char)y);
+            }
+        }
+        if ((unsigned char)rand() < TOWN_RANDOM_CHANCE)
+            try_town(rand() & (width - 1), (unsigned char)y);
+    }
+    town_first = 0;
+}
+
+/* Puts row y's towns in the row just built. */
+static void add_towns(unsigned y)
+{
+    while (town_first < town_count && town_y[town_first] == y)
+    {
+        terrain_row_buf[town_x[town_first]] = TILE_TOWN;
+        ++town_first;
+    }
+}
+
+/* ------------------------------------------------------------------------
+ * Roads, planned once the towns are, before the rows are built. They join the towns: the shortest
+ * set of them that joins every town to every other (a minimum spanning tree, found by Prim's
+ * method), which always has the road from each town to its nearest. Distances count the sea on
+ * the way as SEA_DISTANCE cells for each grid point, so the roads keep to the land, crossing the
+ * sea only to reach towns they can't reach otherwise. Each road is planned over the fine grid's
+ * points, as the rivers are: from the point by one town, a step at a time to whichever
+ * neighbouring point nearer the other town is lowest - so it keeps to the valleys - and onto the
+ * sea only when every such step is. Its cells, a cell at a time between the points, are listed by
+ * row as the rivers' are, and put into each row as it's built: road, or bridge over a river or
+ * the sea.
+ */
+
+#define MAX_ROADS        (MAX_TOWNS - 1)
+#define MAX_ROAD_CELLS   6000               /* all the roads' cells together, counting overlaps */
+#define SEA_DISTANCE     64                 /* what a grid point of sea adds to a distance */
+
+static unsigned char road_count;
+static unsigned* road_start;                /* each road's points in river_px/py, then the end */
+static unsigned char* road_from;            /* the towns each road joins */
+static unsigned char* road_to;
+static unsigned* town_best;                 /* Prim's method: each town's distance to the tree... */
+static unsigned char* town_link;            /* ...and the town in it that's nearest; 255 once in */
+static unsigned* road_row_end;              /* the roads' cell list */
+static unsigned char* road_cell_lo;
+static unsigned char* road_cell_hi;
+
+/* How many grid steps apart two points are, diagonals counting as one. */
+static unsigned char steps_apart(unsigned char ax, unsigned char ay,
+                                 unsigned char bx, unsigned char by)
+{
+    unsigned char dx = ax > bx ? ax - bx : bx - ax;
+    unsigned char dy = ay > by ? ay - by : by - ay;
+    return dx > dy ? dx : dy;
+}
+
+/* The fine grid point nearest cell c, across or down. */
+#define POINT_OF(c)  ((unsigned char)(((c) + TERRAIN_SPAN_B / 2) / TERRAIN_SPAN_B))
+
+/* The distance between towns i and j: across plus down, and SEA_DISTANCE for each grid point of
+ * sea on the way from one to the other (a step at a time across, down or diagonally) - or, as soon
+ * as it's sure to be at least limit, just something at least that: the sea only adds, so most
+ * pairs Prim's method looks at are ruled out without counting it. */
+static unsigned town_distance(unsigned char i, unsigned char j, unsigned limit)
+{
+    unsigned dx = town_x[i] > town_x[j] ? town_x[i] - town_x[j] : town_x[j] - town_x[i];
+    unsigned char dy = town_y[i] > town_y[j] ? town_y[i] - town_y[j] : town_y[j] - town_y[i];
+    unsigned distance = dx + dy;
+    unsigned char x, y, tx, ty;
+
+    if (distance >= limit)
+        return distance;
+    x = POINT_OF(town_x[i]);
+    y = POINT_OF(town_y[i]);
+    tx = POINT_OF(town_x[j]);
+    ty = POINT_OF(town_y[j]);
+    while (x != tx || y != ty)
+    {
+        if (x < tx)
+            ++x;
+        else if (x > tx)
+            --x;
+        if (y < ty)
+            ++y;
+        else if (y > ty)
+            --y;
+        if (distance >= limit)
+            break;
+        if (point_height(x, y) < SEA_LEVEL)
+            distance += SEA_DISTANCE;
+    }
+    return distance;
+}
+
+/* Plans the road from town a to town b, adding its points to river_px/py. Every step takes it
+ * nearer, so it always arrives. Returns 0 if there's no more room for points. */
+static unsigned char plan_road(unsigned char a, unsigned char b)
+{
+    unsigned char x = POINT_OF(town_x[a]), y = POINT_OF(town_y[a]);
+    unsigned char tx = POINT_OF(town_x[b]), ty = POINT_OF(town_y[b]);
+    unsigned char d, nx, ny, h, apart, best_land, best_sea, land_x, land_y, sea_x, sea_y;
+
+    for (;;)
+    {
+        if (river_points == MAX_RIVER_POINTS)
+            return 0;
+        river_px[river_points] = x;
+        river_py[river_points] = y;
+        ++river_points;
+        if (x == tx && y == ty)
+            return 1;
+
+        /* Of the neighbours nearer the other town: the lowest on land, else the shallowest sea. */
+        apart = steps_apart(x, y, tx, ty);
+        best_land = 255;
+        best_sea = 0;
+        sea_x = 255;
+        for (d = 0; d < 8; ++d)
+        {
+            nx = x + next_x[d];
+            ny = y + next_y[d];
+            if (nx >= points_w || ny >= points_h || steps_apart(nx, ny, tx, ty) >= apart)
+                continue;
+            h = point_height(nx, ny);
+            if (h >= SEA_LEVEL)
+            {
+                if (h < best_land)
+                {
+                    best_land = h;
+                    land_x = nx;
+                    land_y = ny;
+                }
+            }
+            else if (sea_x == 255 || h > best_sea)
+            {
+                best_sea = h;
+                sea_x = nx;
+                sea_y = ny;
+            }
+        }
+        if (best_land != 255)
+        {
+            x = land_x;
+            y = land_y;
+        }
+        else
+        {
+            x = sea_x;
+            y = sea_y;
         }
     }
-    if ((unsigned char)rand() < TOWN_RANDOM_CHANCE)
-        try_town(rand() & (width - 1), (unsigned char)y);
 }
 
-/* The scratch memory the rivers and towns need, laid out below - WORLD_SCRATCH_SIZE (world.h) has
- * to be at least this. */
-#define RIVER_SCRATCH  (2 * MAX_RIVER_POINTS + (2 * MAX_RIVERS + 1) * sizeof(unsigned) \
-                        + 2 * POINT_BYTES + POINTS + (MAX_HEIGHT + 1 + MAX_RIVER_CELLS) * sizeof(unsigned) \
-                        + MAX_TOWNS * (sizeof(unsigned) + 1))
+/* Plans the roads: Prim's method, from town 0, adding each time the town nearest to the towns
+ * joined so far, with the road from the one it's nearest. */
+static void plan_roads(void)
+{
+    unsigned char i, next;
+    unsigned d, best;
+
+    road_count = 0;
+    river_points = 0;                       /* the rivers' points are done with */
+    town_link[0] = 255;
+    for (i = 1; i < town_count; ++i)
+    {
+        town_best[i] = town_distance(0, i, 0xFFFF);
+        town_link[i] = 0;
+    }
+    for (;;)
+    {
+        best = 0xFFFF;
+        next = 255;
+        for (i = 1; i < town_count; ++i)
+            if (town_link[i] != 255 && town_best[i] < best)
+            {
+                best = town_best[i];
+                next = i;
+            }
+        if (next == 255)
+            break;
+        road_start[road_count] = river_points;
+        road_from[road_count] = town_link[next];
+        road_to[road_count] = next;
+        if (!plan_road(town_link[next], next))
+        {
+            river_points = road_start[road_count];
+            break;
+        }
+        ++road_count;
+        town_link[next] = 255;
+        for (i = 1; i < town_count; ++i)
+            if (town_link[i] != 255)
+            {
+                d = town_distance(next, i, town_best[i]);
+                if (d < town_best[i])
+                {
+                    town_best[i] = d;
+                    town_link[i] = next;
+                }
+            }
+    }
+    road_start[road_count] = river_points;
+}
+
+/* Marks every cell of the first road_count roads: from one town, through its points, to the
+ * other, wandering a little a cell at a time. */
+static void walk_roads(void)
+{
+    unsigned char r;
+    unsigned i, end;
+    int x, y, nx, ny;
+
+    for (r = 0; r < road_count; ++r)
+    {
+        terrain_wander = 0x3C5Au + r * 0x9E5u;
+        if (!terrain_wander)
+            terrain_wander = 1;
+        x = town_x[road_from[r]];
+        y = town_y[road_from[r]];
+        end = road_start[r + 1];
+        for (i = road_start[r]; i < end; ++i)
+        {
+            nx = river_px[i] * TERRAIN_SPAN_B;
+            ny = river_py[i] * TERRAIN_SPAN_B;
+            walk(x, y, nx, ny);
+            x = nx;
+            y = ny;
+        }
+        walk(x, y, town_x[road_to[r]], town_y[road_to[r]]);
+        mark_cell(town_x[road_to[r]], town_y[road_to[r]]);
+    }
+}
+
+/* Puts row y's road cells in the row just built: road, or bridge over a river or the sea. Towns
+ * stay towns, bridges bridges. */
+static void add_roads(unsigned y)
+{
+    unsigned i, end = road_row_end[y + 1];
+    unsigned char* tile;
+
+    for (i = road_row_end[y]; i < end; ++i)
+    {
+        tile = terrain_row_buf + list_x(road_cell_lo, road_cell_hi, i);
+        if (*tile == TILE_TOWN || *tile == TILE_BRIDGE)
+            continue;
+        *tile = (*tile == TILE_RIVER || *tile <= TILE_SHALLOWS) ? TILE_BRIDGE : TILE_ROAD;
+    }
+}
+
+/* The scratch memory world_generate's rivers, towns and roads need, laid out as world_generate
+ * does - WORLD_SCRATCH_SIZE (world.h) has to be at least this. The tracing's bit maps and heights,
+ * and Prim's method's lists, share the space the road cells' list takes later. */
+#define LIST_BYTES(cells)  ((MAX_HEIGHT + 1) * sizeof(unsigned) + (cells) + ((cells) + 7) / 8)
+#define GEN_SCRATCH  (LIST_BYTES(MAX_RIVER_CELLS) + MAX_TOWNS * (sizeof(unsigned) + 1) \
+                      + MAX_HEIGHT \
+                      + LIST_BYTES(MAX_ROAD_CELLS) + 2 * MAX_RIVER_POINTS \
+                      + (2 * MAX_RIVERS + 1) * sizeof(unsigned) \
+                      + (MAX_ROADS + 1) * sizeof(unsigned) + 2 * MAX_ROADS)
 
 void world_generate(void (*row_done)(unsigned y, const unsigned char* tiles),
                     unsigned char* scratch, unsigned scratch_size)
 {
     unsigned char grid_a_h = height / TERRAIN_SPAN_A + 1;
     unsigned char grid_b_h = height / TERRAIN_SPAN_B + 1;
-    unsigned char cx, cy;
+    unsigned char cx, cy, planned;
     unsigned y;
     farptr row = cells;
 
@@ -643,28 +956,51 @@ void world_generate(void (*row_done)(unsigned y, const unsigned char* tiles),
             break;
     }
 
-    /* The rivers, in memory that's only needed until the map is built - with none if there's
-     * no room for it: traced, then their cells listed by row, then the tracing's memory freed. */
-    /* The rivers: traced, then their cells listed by row, all in the scratch memory, with the
-     * towns' list. Without enough of it, there are neither. */
-    town_count = town_first = 0;
-    river_count = 0;
-    if (scratch_size >= RIVER_SCRATCH)
+    /* Everything but the terrain is planned first, in the scratch memory - without enough of it,
+     * there are no rivers, towns or roads: the rivers traced and their cells listed by row; the
+     * towns, where the terrain will be grassland; the roads between them, and their cells. */
+    river_count = town_count = road_count = 0;
+    planned = scratch_size >= GEN_SCRATCH;
+    if (planned)
     {
-        river_px = scratch;
+        river_row_end = (unsigned*)scratch;
+        river_cell_lo = (unsigned char*)(river_row_end + MAX_HEIGHT + 1);
+        river_cell_hi = river_cell_lo + MAX_RIVER_CELLS;
+        town_x = (unsigned*)(river_cell_hi + (MAX_RIVER_CELLS + 7) / 8);
+        town_y = (unsigned char*)(town_x + MAX_TOWNS);
+        row_rough = town_y + MAX_TOWNS;
+        road_row_end = (unsigned*)(row_rough + MAX_HEIGHT);
+        road_cell_lo = (unsigned char*)(road_row_end + MAX_HEIGHT + 1);
+        road_cell_hi = road_cell_lo + MAX_ROAD_CELLS;
+        river_px = road_cell_hi + (MAX_ROAD_CELLS + 7) / 8;
         river_py = river_px + MAX_RIVER_POINTS;
         river_start = (unsigned*)(river_py + MAX_RIVER_POINTS);
         river_seed = river_start + MAX_RIVERS + 1;
-        on_river = (unsigned char*)(river_seed + MAX_RIVERS);
+        road_start = river_seed + MAX_RIVERS;
+        road_from = (unsigned char*)(road_start + MAX_ROADS + 1);
+        road_to = road_from + MAX_ROADS;
+        /* In the road cells' list's space until it's filled: */
+        on_river = (unsigned char*)road_row_end;
         visited = on_river + POINT_BYTES;
         heights = visited + POINT_BYTES;
-        row_end = (unsigned*)(heights + POINTS);
-        cell_x = row_end + MAX_HEIGHT + 1;
-        town_x = cell_x + MAX_RIVER_CELLS;
-        town_y = (unsigned char*)(town_x + MAX_TOWNS);
+        town_best = (unsigned*)(heights + POINTS);
+        town_link = (unsigned char*)(town_best + MAX_TOWNS);
+
+        for (y = 0; y < height; ++y)
+            row_rough[y] = (unsigned char)rand();
         plan_rivers();
         if (river_count)
             list_river_cells();
+        plan_towns();
+        if (town_count > 1)
+        {
+            plan_roads();
+            terrain_list_end = road_row_end;
+            terrain_list_lo = road_cell_lo;
+            terrain_list_hi = road_cell_hi;
+            while (!list_cells(walk_roads, MAX_ROAD_CELLS))
+                --road_count;
+        }
     }
 
     /* One row at a time: built in terrain_row_buf, then written to far memory in one go. */
@@ -676,12 +1012,14 @@ void world_generate(void (*row_done)(unsigned y, const unsigned char* tiles),
             start_band_b(y / TERRAIN_SPAN_B);
 
         /* Each row starts at a different place in the roughness table, so rows don't repeat it. */
-        terrain_roughness_start = (unsigned char)rand();
+        terrain_roughness_start = planned ? row_rough[y] : (unsigned char)rand();
         terrain_row();
         if (river_count)
             add_rivers(y);
-        if (scratch_size >= RIVER_SCRATCH)
-            place_towns(y);
+        if (town_count)
+            add_towns(y);
+        if (road_count)
+            add_roads(y);
         far_write(row, terrain_row_buf, width);
         row += width;
         terrain_next_row();

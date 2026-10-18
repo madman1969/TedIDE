@@ -44,4 +44,26 @@ void terrain_row(void);
 /* Moves every grid column's height one row further down. */
 void terrain_next_row(void);
 
+/* Rivers and roads are drawn by walking a cell at a time, and their cells listed by row (world.c's
+ * list_cells), which for the longest roads is thousands of cells, twice over: in assembly too.
+ *
+ * terrain_walk() marks the cells from (terrain_walk_x, terrain_walk_y) up to, but not including,
+ * (terrain_walk_to_x, terrain_walk_to_y), a step at a time across or down - mostly along the longer
+ * way, now and then the shorter, as terrain_wander's random numbers say - leaving terrain_walk_x
+ * and _y at the end. terrain_mark() marks just (terrain_walk_x, terrain_walk_y).
+ *
+ * Marking a cell on the map (terrain_width by terrain_height) either counts it in its row -
+ * ++terrain_list_end[y] - or, if terrain_listing, lists it: i = --terrain_list_end[y], with the
+ * column's low 8 bits in terrain_list_lo[i] and its 9th in bit i of terrain_list_hi. */
+extern int terrain_walk_x, terrain_walk_y, terrain_walk_to_x, terrain_walk_to_y;
+extern unsigned* terrain_list_end;
+extern unsigned char* terrain_list_lo;
+extern unsigned char* terrain_list_hi;
+extern unsigned char terrain_listing;
+extern unsigned terrain_wander;             /* a 16-bit xorshift's state: never 0 */
+extern unsigned terrain_width, terrain_height;
+
+void terrain_walk(void);
+void terrain_mark(void);
+
 #endif
