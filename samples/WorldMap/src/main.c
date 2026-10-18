@@ -44,11 +44,10 @@ static unsigned move(unsigned pos, int delta, unsigned max)
     return pos > max ? max : pos;
 }
 
-/* Called by world_generate as each row is finished: adds it to the overview, and updates the
- * percentage now and then. */
+/* Called by world_generate as each row is finished: updates the percentage now and then. */
 static void row_generated(unsigned y, const unsigned char* tiles)
 {
-    view_overview_row(y, tiles);
+    (void)tiles;
     if ((y & 7) == 0)
         view_progress((unsigned char)((unsigned long)y * 100 / world_height()));
 }
@@ -56,17 +55,13 @@ static void row_generated(unsigned y, const unsigned char* tiles)
 /* Generates a new world, showing it take shape, and centres the view on it. */
 static void new_world(void)
 {
-    unsigned char frames;
     unsigned char* scratch;
     unsigned scratch_size;
 
-    view_overview_begin("generating a new world...");
     scratch = view_scratch(&scratch_size);  /* the view's cache, free until the map is drawn */
     view_generating(1);
     world_generate(row_generated, scratch, scratch_size);
     view_generating(0);
-    for (frames = 0; frames < 50; ++frames)     /* the finished overview, for a second */
-        waitvsync();
     left = VIEW_POS((world_width() - VIEW_WIDTH) / 2);
     top = VIEW_POS((world_height() - VIEW_HEIGHT) / 2);
     clrscr();

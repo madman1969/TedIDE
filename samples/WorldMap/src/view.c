@@ -842,21 +842,28 @@ void view_overview_mark(unsigned x, unsigned y)
     COLOURS[offset] = screen_cursor_colour;
 }
 
+/* The "generating world map" message, and where its percentage goes after it. */
+static const char generating_text[] = "generating world map...";
+#define PROGRESS_X  (sizeof(generating_text))
+
 void view_progress(unsigned char percent)
 {
-    static unsigned char flash;
-
-    textcolor(COLOR_GRAY3);
-    gotoxy(0, OVERVIEW_TOP + OVERVIEW_ROWS + 1);
+    textcolor(COLOR_WHITE);
+    gotoxy(PROGRESS_X, 0);
     cprintf("%3u%%", percent);
-    /* With the display off the border is the whole screen, so a gentle pulse. */
-    flash ^= 1;
-    bordercolor(flash ? screen_progress_colour : COLOR_BLACK);
 }
 
 void view_generating(unsigned char on)
 {
-    screen_blank(on);
-    if (!on)
-        bordercolor(COLOR_BLACK);
+    if (on)
+    {
+        screen_text();
+        clrscr();
+        textcolor(COLOR_WHITE);
+        cputsxy(0, 0, generating_text);
+        textcolor(COLOR_GRAY3);
+        gotoxy(0, 1);
+        cprintf("%ux%u cells in %s", world_width(), world_height(), backend_name);
+        view_progress(0);
+    }
 }

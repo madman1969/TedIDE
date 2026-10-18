@@ -76,10 +76,6 @@ extern const unsigned char tile_glyphs[GLYPH_COUNT][8];
 extern const unsigned char view_tile_colour[TILE_COUNT];
 extern const unsigned char screen_cursor_colour;
 
-/* The border's colour, pulsing with black, while a world is generated with the display off - a
- * dark one, as the border is then the whole screen. */
-extern const unsigned char screen_progress_colour;
-
 /* Where the next map frame is drawn: the screen itself on the C64, and on the Plus/4 whichever
  * of its two screens isn't showing. */
 extern unsigned char* screen_draw_chars;
@@ -112,11 +108,6 @@ void screen_present(unsigned char fine_x, unsigned char fine_y);
  * that work to be done by the time the copy can start. 255 (no limit) on the C64, or with no
  * split on show. */
 unsigned char screen_far_read_lines(void);
-
-/* Turns the display off - just the border shows - or back on. With it off the Plus/4's CPU runs
- * at twice the speed, as the TED no longer slows it down to fetch the screen; the C64's gains a
- * little, from the VIC-II no longer stealing cycles on character rows. */
-void screen_blank(unsigned char blank);
 
 /* Something for FarMem's copy hook to do on the Plus/4 when a copy has to wait for the split
  * under the status bar to pass - which can be most of the lower border, where the CPU runs at

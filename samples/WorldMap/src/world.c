@@ -40,8 +40,10 @@ static const unsigned char thresholds[] = {
     134, 140,           /* mountain, high mountain */
 };
 
-/* How many random cells per row may become a town, if they're grassland. */
-#define TOWN_TRIES_PER_ROW  2
+/* How many random cells per row may become a town, if they're grassland... */
+#define TOWN_TRIES_PER_ROW  1
+/* ...and the chance, out of 256, of a try beside each river cell: towns grow up by rivers. */
+#define TOWN_RIVER_CHANCE   160
 
 /* The tables shared with terrain.s - see terrain.h. */
 unsigned char terrain_col_a_lo[TERRAIN_GRID_A_W];
@@ -548,25 +550,72 @@ static void add_rivers(unsigned y)
     }
 }
 
-/* Turns a couple of random cells in the row just built into towns, if they're grassland -
- * about a hundred towns on the biggest map. */
-static void place_towns(void)
+/* No town is within this many cells of another, across or down. */
+#define TOWN_SPACING  10
+#define MAX_TOWNS     200
+
+/* The towns placed so far, in the order of their rows (world_generate's scratch memory), and the
+ * first that could still be within TOWN_SPACING rows of the row being built. */
+static unsigned* town_x;
+static unsigned char* town_y;
+static unsigned char town_count;
+static unsigned char town_first;
+
+/* Where a town by a river may go: 1 or 2 cells to either side of a river cell. */
+static const signed char town_side[4] = { -2, -1, 1, 2 };
+
+/* Puts a town at column x of row y, just built, if it's grassland and no other town is within
+ * TOWN_SPACING cells. Only the towns of the last TOWN_SPACING rows need checking. */
+static void try_town(unsigned x, unsigned char y)
 {
     unsigned char i;
-    unsigned x;
+    unsigned dx;
 
-    for (i = 0; i < TOWN_TRIES_PER_ROW; ++i)
+    if (x >= width || town_count == MAX_TOWNS
+        || (terrain_row_buf[x] != TILE_GRASS && terrain_row_buf[x] != TILE_UPLAND))
+        return;
+    while (town_first < town_count && (unsigned char)(y - town_y[town_first]) > TOWN_SPACING)
+        ++town_first;
+    for (i = town_first; i < town_count; ++i)
     {
-        x = rand() & (width - 1);
-        if (terrain_row_buf[x] == TILE_GRASS || terrain_row_buf[x] == TILE_UPLAND)
-            terrain_row_buf[x] = TILE_TOWN;
+        dx = town_x[i] > x ? town_x[i] - x : x - town_x[i];
+        if (dx <= TOWN_SPACING)
+            return;
     }
+    town_x[town_count] = x;
+    town_y[town_count] = y;
+    ++town_count;
+    terrain_row_buf[x] = TILE_TOWN;
 }
 
-/* The scratch memory the rivers need, laid out below - WORLD_SCRATCH_SIZE (world.h) has to be at
- * least this. */
+/* Turns cells of row y, just built, into towns, if they're grassland and far enough from other
+ * towns: a random one or so, and now and then one beside a river cell, so that towns are far
+ * likelier by rivers than anywhere else. */
+static void place_towns(unsigned y)
+{
+    unsigned char i, r;
+    unsigned k, end;
+
+    /* Beside the rivers first, so they get the first claim to the space towns need. */
+    if (river_count)
+    {
+        end = row_end[y + 1];
+        for (k = row_end[y]; k < end; ++k)
+        {
+            r = (unsigned char)rand();
+            if (r < TOWN_RIVER_CHANCE)
+                try_town(cell_x[k] + town_side[r & 3], (unsigned char)y);
+        }
+    }
+    for (i = 0; i < TOWN_TRIES_PER_ROW; ++i)
+        try_town(rand() & (width - 1), (unsigned char)y);
+}
+
+/* The scratch memory the rivers and towns need, laid out below - WORLD_SCRATCH_SIZE (world.h) has
+ * to be at least this. */
 #define RIVER_SCRATCH  (2 * MAX_RIVER_POINTS + (2 * MAX_RIVERS + 1) * sizeof(unsigned) \
-                        + 2 * POINT_BYTES + POINTS + (MAX_HEIGHT + 1 + MAX_RIVER_CELLS) * sizeof(unsigned))
+                        + 2 * POINT_BYTES + POINTS + (MAX_HEIGHT + 1 + MAX_RIVER_CELLS) * sizeof(unsigned) \
+                        + MAX_TOWNS * (sizeof(unsigned) + 1))
 
 void world_generate(void (*row_done)(unsigned y, const unsigned char* tiles),
                     unsigned char* scratch, unsigned scratch_size)
@@ -595,7 +644,9 @@ void world_generate(void (*row_done)(unsigned y, const unsigned char* tiles),
 
     /* The rivers, in memory that's only needed until the map is built - with none if there's
      * no room for it: traced, then their cells listed by row, then the tracing's memory freed. */
-    /* The rivers: traced, then their cells listed by row, all in the scratch memory. */
+    /* The rivers: traced, then their cells listed by row, all in the scratch memory, with the
+     * towns' list. Without enough of it, there are neither. */
+    town_count = town_first = 0;
     river_count = 0;
     if (scratch_size >= RIVER_SCRATCH)
     {
@@ -608,6 +659,8 @@ void world_generate(void (*row_done)(unsigned y, const unsigned char* tiles),
         heights = visited + POINT_BYTES;
         row_end = (unsigned*)(heights + POINTS);
         cell_x = row_end + MAX_HEIGHT + 1;
+        town_x = cell_x + MAX_RIVER_CELLS;
+        town_y = (unsigned char*)(town_x + MAX_TOWNS);
         plan_rivers();
         if (river_count)
             list_river_cells();
@@ -626,7 +679,8 @@ void world_generate(void (*row_done)(unsigned y, const unsigned char* tiles),
         terrain_row();
         if (river_count)
             add_rivers(y);
-        place_towns();
+        if (scratch_size >= RIVER_SCRATCH)
+            place_towns(y);
         far_write(row, terrain_row_buf, width);
         row += width;
         terrain_next_row();
