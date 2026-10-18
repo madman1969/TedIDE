@@ -85,8 +85,8 @@ static void show_overview(void)
     view_invalidate();
 }
 
-/* Changes the cell under the cursor. Editing the map is a far_poke through FarMem's window
- * cache; the view's own cache of the map then has to be refilled. */
+/* Changes the cell under the cursor in far memory; the view's own cache of the map then has to
+ * be refilled. */
 static void set_cursor_tile(unsigned char tile)
 {
     world_set(view_cursor_x(), view_cursor_y(), tile);

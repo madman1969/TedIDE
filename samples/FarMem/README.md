@@ -59,8 +59,18 @@ To use one from your own program in Tedide:
 The library then builds before your program, its `include/` folder is added to your include
 paths, and its `.lib` is linked in. You don't need to add anything else.
 
-Outside Tedide, add `src/farmem.c` and `src/farhw.s` to your `cl65` command line with
-`-I include`.
+The library is split into modules, and the linker takes only those your program calls, so the
+parts you don't use cost no memory:
+
+| Module | Functions |
+| --- | --- |
+| `farmem.c`, `farhw.s` | `far_init`, `far_done`, `far_read`, `far_write` and the rest of the core: always linked |
+| `faralloc.c` | `far_alloc`, `far_free`, `far_maxavail` |
+| `farwin.c` | `far_map`, `far_commit`, `far_peek`, `far_poke`, `far_peekw`, `far_pokew` (the window cache, about 2.7K with its buffers) |
+| `farcopy.c` | `far_copy`, `far_fill` |
+
+Outside Tedide, add `src/farmem.c`, `src/faralloc.c`, `src/farwin.c`, `src/farcopy.c` and
+`src/farhw.s` to your `cl65` command line with `-I include`.
 
 **C16 and Plus/4:** FarMem looks for a RAM expansion board first:
 

@@ -1200,12 +1200,17 @@ void world_read(unsigned x, unsigned y, unsigned char* dst, unsigned len)
     far_read(dst, cell(x, y), len);
 }
 
+/* Single cells through far_read and far_write rather than far_peek and far_poke, so FarMem's
+ * window cache, which WorldMap has no other use for, isn't linked. */
 unsigned char world_get(unsigned x, unsigned y)
 {
-    return far_peek(cell(x, y));
+    unsigned char tile;
+
+    far_read(&tile, cell(x, y), 1);
+    return tile;
 }
 
 void world_set(unsigned x, unsigned y, unsigned char tile)
 {
-    far_poke(cell(x, y), tile);
+    far_write(cell(x, y), &tile, 1);
 }
