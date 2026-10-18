@@ -932,3 +932,275 @@ spare:
         cmp     #2
         beq     @not
         jmp     @side
+
+; ------------------------------------------------------------------------
+; void terrain_route (void)
+;
+; The cheapest way from one point of a window of grid points to every other (world.c's
+; plan_road): a shortest-path search, queue-based - a point is queued again whenever a cheaper
+; way to it is found, until none is. The window is terrain_route_w points across (at most 126),
+; numbered across then down, terrain_route_points of them; stepping onto a point, in any of the 8
+; directions, costs its terrain_route_cost, and points costing $FF are walls, never stepped onto.
+; The window's edge points must all be walls: then a point's neighbours are always in the window,
+; at fixed offsets, and need no checking.
+;
+; The search starts from point terrain_route_start. world.c sets every point's
+; terrain_route_dist_hi to $FF - no cost adds up to that - and its terrain_route_parent to 0
+; first; terrain_route_queue has 2 bytes an entry, room for points + 1. Afterwards each point's
+; terrain_route_dist is the cheapest way there, and the low 3 bits of its terrain_route_parent the
+; direction of the last step of it (world.c's next_x/next_y order); bit 7 is set while it's
+; queued. terrain_route_off then holds each direction's neighbour's offset from w + 1 points
+; before a point.
+;
+; Zero page while it runs: ptr1, ptr2, ptr3 and ptr4 point into the costs, parents and costs so
+; far (low bytes, high bytes) at base, w + 1 points before the point taken from the queue, so
+; that its 8 neighbours are at fixed offsets from them (route_off); sreg is the queue entry being
+; read or written; tmp1/tmp2 a cost through the point taken.
+
+        .export         _terrain_route, _terrain_route_off
+        .import         _terrain_route_w, _terrain_route_points, _terrain_route_start
+        .import         _terrain_route_cost, _terrain_route_parent
+        .import         _terrain_route_dist_lo, _terrain_route_dist_hi, _terrain_route_queue
+
+        .bss
+_terrain_route_off:                     ; each direction's neighbour's offset from base
+route_off:      .res    8
+route_w1:       .res    1               ; w + 1: the point taken's offset from base
+route_base:     .res    2               ; the point taken's number - (w + 1)
+route_head:     .res    2               ; the next queue entry to take...
+route_tail:     .res    2               ; ...and to fill
+route_end:      .res    2               ; the end of the queue, where it goes back round
+route_lo:       .res    1               ; the cost of getting to the point taken
+route_hi:       .res    1
+
+        .code
+
+_terrain_route:
+        ; The neighbours' offsets, in next_x/next_y's order: up-left, up, up-right, left, right,
+        ; down-left, down, down-right - 0, 1, 2, w, w + 2, 2w, 2w + 1, 2w + 2.
+        ldx     #0
+        stx     route_off
+        inx
+        stx     route_off+1
+        inx
+        stx     route_off+2
+        lda     _terrain_route_w
+        sta     route_off+3
+        tax
+        inx
+        stx     route_w1
+        inx
+        stx     route_off+4
+        asl     a                       ; w < 128: no carry
+        sta     route_off+5
+        adc     #1
+        sta     route_off+6
+        adc     #1
+        sta     route_off+7
+
+        ; The start: nothing to get there, and queued - the queue's first entry.
+        clc
+        lda     _terrain_route_dist_lo
+        adc     _terrain_route_start
+        sta     ptr1
+        lda     _terrain_route_dist_lo+1
+        adc     _terrain_route_start+1
+        sta     ptr1+1
+        clc
+        lda     _terrain_route_dist_hi
+        adc     _terrain_route_start
+        sta     ptr2
+        lda     _terrain_route_dist_hi+1
+        adc     _terrain_route_start+1
+        sta     ptr2+1
+        clc
+        lda     _terrain_route_parent
+        adc     _terrain_route_start
+        sta     ptr3
+        lda     _terrain_route_parent+1
+        adc     _terrain_route_start+1
+        sta     ptr3+1
+        ldy     #0
+        tya
+        sta     (ptr1),y
+        sta     (ptr2),y
+        lda     #$80
+        sta     (ptr3),y
+        lda     _terrain_route_queue
+        sta     ptr1
+        lda     _terrain_route_queue+1
+        sta     ptr1+1
+        lda     _terrain_route_start
+        sta     (ptr1),y
+        iny
+        lda     _terrain_route_start+1
+        sta     (ptr1),y
+
+        ; The queue's end, (points + 1) * 2 bytes on; the start's entry is in, so the next to
+        ; take is the first, and the next to fill the second.
+        lda     _terrain_route_points
+        clc
+        adc     #1
+        sta     tmp1
+        lda     _terrain_route_points+1
+        adc     #0
+        asl     tmp1
+        rol     a
+        sta     tmp2
+        clc
+        lda     _terrain_route_queue
+        sta     route_head
+        adc     tmp1
+        sta     route_end
+        lda     _terrain_route_queue+1
+        sta     route_head+1
+        adc     tmp2
+        sta     route_end+1
+        clc
+        lda     route_head
+        adc     #2
+        sta     route_tail
+        lda     route_head+1
+        adc     #0
+        sta     route_tail+1
+
+@take:  lda     route_head              ; nothing queued: done
+        cmp     route_tail
+        bne     @pop
+        lda     route_head+1
+        cmp     route_tail+1
+        bne     @pop
+        rts
+
+@pop:   lda     route_head              ; take a point: base = its number - (w + 1)
+        sta     sreg
+        lda     route_head+1
+        sta     sreg+1
+        ldy     #0
+        lda     (sreg),y
+        sec
+        sbc     route_w1
+        sta     route_base
+        iny
+        lda     (sreg),y
+        sbc     #0
+        sta     route_base+1
+        clc                             ; on to the next entry, back to the first after the last
+        lda     route_head
+        adc     #2
+        sta     route_head
+        bcc     :+
+        inc     route_head+1
+:       cmp     route_end
+        bne     :+
+        lda     route_head+1
+        cmp     route_end+1
+        bne     :+
+        lda     _terrain_route_queue
+        sta     route_head
+        lda     _terrain_route_queue+1
+        sta     route_head+1
+
+:       clc                             ; the four pointers at base
+        lda     _terrain_route_cost
+        adc     route_base
+        sta     ptr1
+        lda     _terrain_route_cost+1
+        adc     route_base+1
+        sta     ptr1+1
+        clc
+        lda     _terrain_route_parent
+        adc     route_base
+        sta     ptr2
+        lda     _terrain_route_parent+1
+        adc     route_base+1
+        sta     ptr2+1
+        clc
+        lda     _terrain_route_dist_lo
+        adc     route_base
+        sta     ptr3
+        lda     _terrain_route_dist_lo+1
+        adc     route_base+1
+        sta     ptr3+1
+        clc
+        lda     _terrain_route_dist_hi
+        adc     route_base
+        sta     ptr4
+        lda     _terrain_route_dist_hi+1
+        adc     route_base+1
+        sta     ptr4+1
+
+        ldy     route_w1                ; the point taken: no longer queued; its cost so far
+        lda     (ptr2),y
+        and     #$7F
+        sta     (ptr2),y
+        lda     (ptr3),y
+        sta     route_lo
+        lda     (ptr4),y
+        sta     route_hi
+
+        ldx     #7                      ; each neighbour, direction x
+@neighbour:
+        ldy     route_off,x
+        lda     (ptr1),y                ; a wall: never stepped onto
+        cmp     #$FF
+        beq     @next
+        clc                             ; the cost of getting there through the point taken
+        adc     route_lo
+        sta     tmp1
+        lda     route_hi
+        adc     #0
+        sta     tmp2
+        cmp     (ptr4),y                ; cheaper than the cheapest so far?
+        bcc     @cheaper
+        bne     @next
+        lda     tmp1
+        cmp     (ptr3),y
+        bcs     @next
+@cheaper:
+        lda     tmp1                    ; yes: the new cheapest, and its last step's direction
+        sta     (ptr3),y
+        lda     tmp2
+        sta     (ptr4),y
+        lda     (ptr2),y                ; already queued: just the new direction
+        bmi     @queued
+        txa
+        ora     #$80
+        sta     (ptr2),y
+        lda     route_tail              ; else queued too: its number, base + y, at the tail
+        sta     sreg
+        lda     route_tail+1
+        sta     sreg+1
+        tya
+        clc
+        adc     route_base
+        ldy     #0
+        sta     (sreg),y
+        lda     route_base+1
+        adc     #0
+        iny
+        sta     (sreg),y
+        clc                             ; on to the next entry, back to the first after the last
+        lda     route_tail
+        adc     #2
+        sta     route_tail
+        bcc     :+
+        inc     route_tail+1
+:       cmp     route_end
+        bne     @next
+        lda     route_tail+1
+        cmp     route_end+1
+        bne     @next
+        lda     _terrain_route_queue
+        sta     route_tail
+        lda     _terrain_route_queue+1
+        sta     route_tail+1
+        jmp     @next
+@queued:
+        txa
+        ora     #$80
+        sta     (ptr2),y
+@next:  dex
+        bmi     :+
+        jmp     @neighbour
+:       jmp     @take

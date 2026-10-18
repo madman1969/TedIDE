@@ -92,4 +92,23 @@ extern unsigned char terrain_road_below[TERRAIN_MAX_WIDTH / 8];
 void __fastcall__ terrain_road_bits(unsigned char below);
 void terrain_add_roads(void);
 
+/* The cheapest way from point terrain_route_start of a window of grid points to every other
+ * (world.c's plan_road; terrain.s explains what to set up first): terrain_route_w points across
+ * (at most 126), terrain_route_points in all, numbered across then down; a step onto a point
+ * costs its terrain_route_cost, $FF for a wall, and every edge point must be one. Leaves each
+ * point's cheapest cost in terrain_route_dist_lo/_hi, and the direction of the step that got
+ * there in the low 3 bits of its terrain_route_parent; that step's offset from w + 1 points
+ * before the point is in terrain_route_off. */
+extern unsigned char terrain_route_w;
+extern unsigned terrain_route_points;
+extern unsigned terrain_route_start;
+extern unsigned char terrain_route_off[8];
+extern unsigned char* terrain_route_cost;
+extern unsigned char* terrain_route_parent;
+extern unsigned char* terrain_route_dist_lo;
+extern unsigned char* terrain_route_dist_hi;
+extern unsigned char* terrain_route_queue;
+
+void terrain_route(void);
+
 #endif

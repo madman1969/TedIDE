@@ -69,6 +69,14 @@ unsigned char* terrain_road_hi;
 unsigned terrain_road_from, terrain_road_to;
 unsigned char* terrain_road_tiles;
 unsigned char* terrain_road_above;
+unsigned char terrain_route_w;
+unsigned terrain_route_points;
+unsigned terrain_route_start;
+unsigned char* terrain_route_cost;
+unsigned char* terrain_route_parent;
+unsigned char* terrain_route_dist_lo;
+unsigned char* terrain_route_dist_hi;
+unsigned char* terrain_route_queue;
 
 /* The row being finished (finish_row), which add_rivers, add_towns and add_roads put things in. */
 static unsigned char* tiles;
@@ -712,20 +720,27 @@ static void add_towns(unsigned y)
  * method), which always has the road from each town to its nearest. Distances count the sea on
  * the way as SEA_DISTANCE cells for each grid point, so the roads keep to the land, crossing the
  * sea only to reach towns they can't reach otherwise. Each road is planned over the fine grid's
- * points, as the rivers are: from the point by one town, a step at a time to whichever
- * neighbouring point nearer the other town is lowest - so it keeps to the valleys - and onto the
- * sea only when every such step is. Its cells, a cell at a time between the points, are listed by
- * row as the rivers' are, and put into each row as it's built: road, or bridge over a river or
- * the sea.
+ * points, as the rivers are: the cheapest way from the point by one town to the point by the
+ * other, within a window of points around them both (terrain_route, terrain.s), where each step
+ * costs more the higher the point it's onto - so roads keep to the valleys - more again onto a
+ * river, and far more onto the sea - so they go round water when they can, and bridge it only
+ * where that's much shorter. Its cells, a cell at a time between the points, are listed by row as
+ * the rivers' are, and put into each row as it's built: road, or bridge over a river or the sea.
  */
 
 #define MAX_ROADS        (MAX_TOWNS - 1)
 #define MAX_ROAD_CELLS   4900               /* all the roads' cells together, counting overlaps:
                                              * the most seen in a world is about 4,000 */
 #define SEA_DISTANCE     64                 /* what a grid point of sea adds to a distance */
-#define RIVER_COST       24                 /* what stepping onto a river's grid point counts
-                                             * as, in height: roads following a valley would
-                                             * otherwise weave back and forth across its river */
+/* What a step onto a grid point costs a road: LAND_STEP, plus an eighth of its height above the
+ * sea; RIVER_STEP more onto a river, as roads following a valley would otherwise weave back and
+ * forth across its river; SEA_STEP, plus an eighth of the depth, onto the sea. None is over 84,
+ * so the most a route over MAX_ROUTE_POINTS can cost fits in 16 bits, below $FF00. */
+#define LAND_STEP        8
+#define RIVER_STEP       24
+#define SEA_STEP         72
+#define ROUTE_MARGIN     3                  /* points around the two towns' in a road's window */
+#define MAX_ROUTE_POINTS 750                /* points in a window; a wider one has less margin */
 
 static unsigned char road_count;
 static unsigned* road_start;                /* each road's points in river_px/py, then the end */
@@ -737,17 +752,43 @@ static unsigned* road_row_end;              /* the roads' cell list */
 static unsigned char* road_cell_lo;
 static unsigned char* road_cell_hi;
 
-/* How many grid steps apart two points are, diagonals counting as one. */
-static unsigned char steps_apart(unsigned char ax, unsigned char ay,
-                                 unsigned char bx, unsigned char by)
+/* What a step onto each grid point costs a road, in place of its height in heights - done with
+ * once the towns are planned. */
+#define point_cost(cx, cy)  heights[point_row[cy] + (cx)]
+
+static void point_costs(void)
 {
-    unsigned char dx = ax > bx ? ax - bx : bx - ax;
-    unsigned char dy = ay > by ? ay - by : by - ay;
-    return dx > dy ? dx : dy;
+    unsigned char sea = SEA_LEVEL;
+    unsigned char h, c, bit = 0x01;
+    unsigned char* p = heights;
+    unsigned char* river = on_river;
+    unsigned n = (unsigned)points_w * points_h;
+
+    /* A point at a time, with its bit in on_river alongside. */
+    for (; n; --n)
+    {
+        h = *p;
+        if (h >= sea)
+        {
+            c = LAND_STEP + ((unsigned char)(h - sea) >> 3);
+            if (*river & bit)
+                c += RIVER_STEP;
+        }
+        else
+            c = SEA_STEP + ((unsigned char)(sea - 1 - h) >> 3);
+        *p = c;
+        ++p;
+        bit <<= 1;
+        if (!bit)
+        {
+            bit = 0x01;
+            ++river;
+        }
+    }
 }
 
 /* The fine grid point nearest cell c, across or down. */
-#define POINT_OF(c)  ((unsigned char)(((c) + TERRAIN_SPAN_B / 2) / TERRAIN_SPAN_B))
+#define POINT_OF(c)  ((unsigned char)(((unsigned)(c) + TERRAIN_SPAN_B / 2) / TERRAIN_SPAN_B))
 
 /* The distance between towns i and j: across plus down, and SEA_DISTANCE for each grid point of
  * sea on the way from one to the other (a step at a time across, down or diagonally) - or, as soon
@@ -778,72 +819,82 @@ static unsigned town_distance(unsigned char i, unsigned char j, unsigned limit)
             --y;
         if (distance >= limit)
             break;
-        if (point_height(x, y) < SEA_LEVEL)
+        if (point_cost(x, y) >= SEA_STEP)
             distance += SEA_DISTANCE;
     }
     return distance;
 }
 
-/* Plans the road from town a to town b, adding its points to river_px/py. Every step takes it
- * nearer, so it always arrives. Returns 0 if there's no more room for points. */
+/* Plans the road from town a to town b, adding its points to river_px/py: the cheapest way
+ * between the grid points by them (terrain_route), within a window of points around them both,
+ * ROUTE_MARGIN wide - less if that's over MAX_ROUTE_POINTS points; if even none is, the road has
+ * no points, and goes straight from one town to the other. The window is a ring of walls round
+ * the grid's points (x0, y0) to (x1, y1). The search starts from town b, so that the way back
+ * from town a's point, a step at a time against each point's direction, gives the points in
+ * order. Returns 0 if there's no more room for points. */
 static unsigned char plan_road(unsigned char a, unsigned char b)
 {
-    unsigned char x = POINT_OF(town_x[a]), y = POINT_OF(town_y[a]);
-    unsigned char tx = POINT_OF(town_x[b]), ty = POINT_OF(town_y[b]);
-    unsigned char d, nx, ny, h, apart, best_land, best_sea, land_x, land_y, sea_x, sea_y;
+    unsigned char ax = POINT_OF(town_x[a]), ay = POINT_OF(town_y[a]);
+    unsigned char bx = POINT_OF(town_x[b]), by = POINT_OF(town_y[b]);
+    unsigned char lo_x = ax < bx ? ax : bx, lo_y = ay < by ? ay : by;
+    unsigned char hi_x = ax < bx ? bx : ax, hi_y = ay < by ? by : ay;
+    unsigned char margin = ROUTE_MARGIN + 1;
+    unsigned char x0, y0, x1, y1, w, y, d;
+    unsigned n, i;
+    unsigned char* out;
 
+    do
+    {
+        if (!margin)
+            return 1;
+        --margin;
+        x0 = lo_x > margin ? lo_x - margin : 0;
+        y0 = lo_y > margin ? lo_y - margin : 0;
+        x1 = hi_x + margin;
+        y1 = hi_y + margin;
+        if (x1 >= points_w)
+            x1 = points_w - 1;
+        if (y1 >= points_h)
+            y1 = points_h - 1;
+        w = x1 - x0 + 3;
+        n = (unsigned)w * (unsigned char)(y1 - y0 + 3);
+    }
+    while (n > MAX_ROUTE_POINTS);
+
+    /* Each point's cost: all walls, then the grid's costs inside. */
+    out = terrain_route_cost;
+    memset(out, 255, n);
+    for (y = y0; y <= y1; ++y)
+    {
+        out += w;
+        memcpy(out + 1, heights + point_row[y] + x0, w - 2);
+    }
+
+    /* From town b's point, nothing else reached yet. */
+    memset(terrain_route_parent, 0, n);
+    memset(terrain_route_dist_hi, 255, n);
+    terrain_route_w = w;
+    terrain_route_points = n;
+    terrain_route_start = (unsigned)(unsigned char)(by - y0 + 1) * w + (unsigned char)(bx - x0 + 1);
+    terrain_route();
+
+    /* Back from town a's point: each step's direction, and its offset (terrain_route_off) from
+     * w + 1 before the point. */
+    i = (unsigned)(unsigned char)(ay - y0 + 1) * w + (unsigned char)(ax - x0 + 1);
+    ++w;
     for (;;)
     {
         if (river_points == MAX_RIVER_POINTS)
             return 0;
-        river_px[river_points] = x;
-        river_py[river_points] = y;
+        river_px[river_points] = ax;
+        river_py[river_points] = ay;
         ++river_points;
-        if (x == tx && y == ty)
+        if (ax == bx && ay == by)
             return 1;
-
-        /* Of the neighbours nearer the other town: the lowest on land - a river counting as
-         * RIVER_COST higher - else the shallowest sea. */
-        apart = steps_apart(x, y, tx, ty);
-        best_land = 255;
-        best_sea = 0;
-        sea_x = 255;
-        for (d = 0; d < 8; ++d)
-        {
-            nx = x + next_x[d];
-            ny = y + next_y[d];
-            if (nx >= points_w || ny >= points_h || steps_apart(nx, ny, tx, ty) >= apart)
-                continue;
-            h = point_height(nx, ny);
-            if (h >= SEA_LEVEL)
-            {
-                locate_point(nx, ny);
-                if (on_river[point_byte] & point_bit)
-                    h += RIVER_COST;
-                if (h < best_land)
-                {
-                    best_land = h;
-                    land_x = nx;
-                    land_y = ny;
-                }
-            }
-            else if (sea_x == 255 || h > best_sea)
-            {
-                best_sea = h;
-                sea_x = nx;
-                sea_y = ny;
-            }
-        }
-        if (best_land != 255)
-        {
-            x = land_x;
-            y = land_y;
-        }
-        else
-        {
-            x = sea_x;
-            y = sea_y;
-        }
+        d = terrain_route_parent[i] & 7;
+        i = i + w - terrain_route_off[d];
+        ax -= next_x[d];
+        ay -= next_y[d];
     }
 }
 
@@ -856,6 +907,7 @@ static void plan_roads(void)
 
     road_count = 0;
     river_points = 0;                       /* the rivers' points are done with */
+    point_costs();
     town_link[0] = 255;
     for (i = 1; i < town_count; ++i)
     {
@@ -989,6 +1041,14 @@ static void add_roads(unsigned y)
                       + (MAX_ROADS + 1) * sizeof(unsigned) + 2 * MAX_ROADS \
                       + 3 * TERRAIN_MAX_WIDTH)
 
+/* The working memory planning puts in the road cells' list's space (world_generate) has to fit
+ * there, and the roads' windows' costs and parents in the row buffers' - a negative array size
+ * stops the build if not. */
+typedef char plan_fits[(2 * POINT_BYTES + POINTS + MAX_TOWNS * (sizeof(unsigned) + 1)
+                        + 2 * MAX_ROUTE_POINTS + 2 * (MAX_ROUTE_POINTS + 1)
+                        <= LIST_BYTES(MAX_ROAD_CELLS)) ? 1 : -1];
+typedef char route_fits[(2 * MAX_ROUTE_POINTS <= 3 * TERRAIN_MAX_WIDTH) ? 1 : -1];
+
 /* Whether world_generate has all the scratch memory it wants (and so rivers, towns, roads and
  * marsh), its row_done callback, and the three row buffers in the scratch memory: rows are built
  * in turn into each, so a row can be finished once the row below it is built (finish_row). */
@@ -1074,6 +1134,12 @@ void world_generate(void (*row_done)(unsigned y, const unsigned char* tiles),
         heights = visited + POINT_BYTES;
         town_best = (unsigned*)(heights + POINTS);
         town_link = (unsigned char*)(town_best + MAX_TOWNS);
+        terrain_route_dist_lo = town_link + MAX_TOWNS;
+        terrain_route_dist_hi = terrain_route_dist_lo + MAX_ROUTE_POINTS;
+        terrain_route_queue = terrain_route_dist_hi + MAX_ROUTE_POINTS;
+        /* ...and in the row buffers' until the rows are built: */
+        terrain_route_cost = row_bufs;
+        terrain_route_parent = row_bufs + MAX_ROUTE_POINTS;
 
         for (y = 0; y < height; ++y)
             row_rough[y] = (unsigned char)rand();

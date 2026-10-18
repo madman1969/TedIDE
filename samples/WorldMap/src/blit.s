@@ -339,9 +339,11 @@ done:   clc
 ; void __fastcall__ screen_copy_font (unsigned char* dst)
 ; Copies the ROM's 1K uppercase font, at $D000, to dst. cc65's Plus/4 programs run with the ROMs
 ; paged out, and the C runtime's stack is in the RAM under them, so C code can't run while
-; they're paged in to read it.
+; they're paged in to read it. Nor can this, if it's in the RAM under them too - from $8000 up,
+; where the program's code reaches - so it's in LOWCODE, which the linker config puts low.
 
         .export         _screen_copy_font
+        .segment        "LOWCODE"
 
 TED_STATUS = $FF13                      ; bit 0 is 1 while the ROMs are paged in
 ROM_ON  = $FF3E
