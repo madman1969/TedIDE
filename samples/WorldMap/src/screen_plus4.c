@@ -99,16 +99,16 @@ extern volatile unsigned char ted_frames;   /* counted up at the bottom of each 
  * and the C runtime's stack is under them at $FCFF, so it's done in assembly. */
 void __fastcall__ screen_copy_font(unsigned char* dst);
 
-/* Room for the second screen and the character set: the screen needs 2K on a 2K boundary, the
- * characters 1K on a 1K boundary, so this has room for both wherever it starts. The TED reads
- * the screen from ROM instead of RAM above $8000 while the ROMs are paged in, as they are in
- * every interrupt, so the screen must end below $8000 - the static array, in the BSS below the
- * heap, normally does; screen_init checks. */
-static unsigned char video_space[SCREEN_SIZE * 2 + FONT_SIZE - 1];
+/* The second screen and the character set, in the VIDEO segment, which the project's linker
+ * configuration (WorldMapPlus4/plus4-worldmap.cfg) puts at $1800: the screen needs 2K on a 2K
+ * boundary and the characters 1K on a 1K boundary, and both must be below $8000, where the TED
+ * reads ROM instead of RAM while the ROMs are paged in, as they are in every interrupt. */
+#pragma bss-name (push, "VIDEO")
+static unsigned char video_space[SCREEN_SIZE + FONT_SIZE];  /* the screen, then the characters */
+#pragma bss-name (pop)
 
 static unsigned char* screens[2];       /* each screen's colours, then its characters */
 static unsigned char showing;           /* which screen the TED is showing */
-static unsigned char double_buffered;
 
 unsigned char* screen_draw_chars;
 unsigned char* screen_draw_colours;
@@ -121,11 +121,10 @@ static unsigned char video_reg(const unsigned char* screen)
     return (unsigned char)((unsigned)screen >> 8) & 0xF8;
 }
 
-/* Points screen_draw_chars/colours at the screen that isn't showing - or, without a second
- * screen, the one that is. */
+/* Points screen_draw_chars/colours at the screen that isn't showing. */
 static void draw_to_hidden(void)
 {
-    unsigned char* hidden = screens[double_buffered ? showing ^ 1 : 0];
+    unsigned char* hidden = screens[showing ^ 1];
     screen_draw_colours = hidden;
     screen_draw_chars = hidden + 0x400;
 }
@@ -139,16 +138,11 @@ static void wait_for_flip(void)
 
 void screen_init(void)
 {
-    unsigned char* chars;
-    unsigned char* second;
+    unsigned char* chars = video_space + SCREEN_SIZE;
     unsigned char i;
 
-    /* The second screen on the first 2K boundary in video_space, the characters after it. */
-    second = (unsigned char*)(((unsigned)video_space + SCREEN_SIZE - 1) & ~(SCREEN_SIZE - 1));
-    chars = second + SCREEN_SIZE;
     screens[0] = (unsigned char*)SCREEN_COLOURS;
-    screens[1] = second;
-    double_buffered = (unsigned)second + SCREEN_SIZE <= 0x8000;
+    screens[1] = video_space;
 
     /* The ROM's font with the pictures drawn over some of its graphics characters: multicolour
      * ones for the land and sea, hi-res ones for towns and the cursor. */
@@ -242,8 +236,6 @@ static void set_scroll(unsigned char fine_x, unsigned char fine_y)
 void screen_present(unsigned char fine_x, unsigned char fine_y)
 {
     set_scroll(fine_x, fine_y);
-    if (!double_buffered)
-        return;
     /* Switch screens at the bottom of the next frame - with the new scroll - then draw into the
      * other one. Waiting for the switch also paces the scrolling to the frame rate. */
     showing ^= 1;

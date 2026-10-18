@@ -30,7 +30,7 @@
     "../src/blit.s"
   ],
   "OutputFile": "bin/WorldMapPlus4.prg",
-  "LinkerConfigPath": null,
+  "LinkerConfigPath": "plus4-worldmap.cfg",
   "IncludePaths": [
     "../include"
   ],
