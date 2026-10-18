@@ -48,6 +48,7 @@ const unsigned char view_tile_colour[TILE_COUNT] = {
     MC | BCOLOR_CYAN | CATTR_LUMA5,     /* river: brighter than the shallows it runs into */
     BCOLOR_ORANGE | CATTR_LUMA6,        /* road: hi-res, as orange isn't a multicolour hue */
     BCOLOR_BROWN | CATTR_LUMA5,         /* bridge: hi-res too */
+    MC | BCOLOR_CYAN | CATTR_LUMA3,     /* marsh: a dark teal */
 };
 const unsigned char screen_cursor_colour = FLASH | BCOLOR_WHITE | CATTR_LUMA7;
 
@@ -56,7 +57,7 @@ const unsigned char screen_cursor_colour = FLASH | BCOLOR_WHITE | CATTR_LUMA7;
 #define SHARED_DARK     (BCOLOR_GREEN | CATTR_LUMA1)
 #define SHARED_LIGHT    (BCOLOR_WHITE | CATTR_LUMA6)
 
-/* The multicolour pictures, in GLYPH_ order up to GLYPH_RIVER: 4 double-width pixels a row, two
+/* The multicolour pictures, in GLYPH_ order up to GLYPH_RIVER (marsh included): 4 double-width pixels a row, two
  * bits each, bits 7-6 the leftmost. Drawn as text, with '.' black, 'd' dark green, 'w' light
  * grey and '#' the cell's colour - each picture's rows are given beside it. Towns, roads,
  * bridges and the cursor stay hi-res, from tile_glyphs. */
@@ -69,6 +70,7 @@ static const unsigned char mc_glyphs[GLYPH_TOWN][8] = {
     { 0x00, 0x30, 0xF4, 0xFF, 0xFF, 0xDF, 0xFF, 0xF7 },   /* hills:     .... .#.. ##d. #### #### #d## #### ##d# */
     { 0x20, 0x38, 0xFB, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF },   /* mountain:  .w.. .#w. ##w# #### #### #### #### #### */
     { 0xFF, 0xEF, 0xFF, 0xFB, 0xFF, 0xBF, 0xFF, 0xFE },   /* snow:      #### #w## #### ##w# #### w### #### ###w */
+    { 0xFF, 0xD7, 0xBE, 0xFF, 0xF5, 0xEB, 0xFF, 0x7D },   /* marsh:     #### #dd# w##w #### ##dd #ww# #### d##d */
     { 0xFF, 0xEB, 0xFF, 0xBE, 0xFF, 0xEB, 0xFF, 0xBE },   /* river:     #### #ww# #### w##w #### #ww# #### w##w */
 };
 

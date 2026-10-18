@@ -23,6 +23,7 @@ const unsigned char view_tile_colour[TILE_COUNT] = {
     COLOR_LIGHTBLUE,                            /* river */
     COLOR_ORANGE,                               /* road */
     COLOR_BROWN,                                /* bridge */
+    COLOR_CYAN,                                 /* marsh */
 };
 const unsigned char screen_cursor_colour = COLOR_WHITE;
 

@@ -21,8 +21,8 @@ unsigned char view_tile_char[TILE_COUNT];
 
 /* The status bar's name for each picture - every shade of a kind has the same one. */
 static const char* const glyph_name[GLYPH_CURSOR] = {
-    "deep sea", "sea", "beach", "grass", "forest", "hills", "mountain", "snow", "river", "town",
-    "road", "bridge",
+    "deep sea", "sea", "beach", "grass", "forest", "hills", "mountain", "snow", "marsh", "river",
+    "town", "road", "bridge",
 };
 
 #define CURSOR_CHAR    (SCREEN_FIRST_GLYPH + GLYPH_CURSOR)
@@ -160,7 +160,8 @@ static unsigned char to_screen(unsigned char c)
  * digit (or a space, with no hundreds - number_tens_lead) and the ones digit. Screen codes for
  * digits and spaces are the same as their PETSCII. */
 static unsigned char number_hundreds[128];
-static unsigned number_hundreds_value[128];    /* ...and what the hundreds come to */
+/* What the hundreds come to, for a number's hundreds digit (0-5). */
+static const unsigned hundreds_value[6] = { 0, 100, 200, 300, 400, 500 };
 static unsigned char number_tens[100];
 static unsigned char number_tens_lead[100];
 static unsigned char number_ones[100];
@@ -204,7 +205,6 @@ void view_init(void)
     for (i = 0; i < 128; ++i)
     {
         number_hundreds[i] = i < 25 ? ' ' : '0' + i / 25;
-        number_hundreds_value[i] = i / 25 * 100;
     }
     for (i = 0; i < 100; ++i)
     {
@@ -289,7 +289,7 @@ static unsigned char first_chunk(unsigned left)
 
 static unsigned char end_chunk(unsigned left)
 {
-    return (unsigned char)((left + VIEW_WIDTH + CHUNK - 1) >> CHUNK_SHIFT);
+    return (unsigned char)((left + (VIEW_WIDTH + CHUNK - 1)) >> CHUNK_SHIFT);
 }
 
 /* The CHUNKs there's time to read from far memory now without making the next step late (see
@@ -391,7 +391,8 @@ static void set_row_pointers(unsigned left, unsigned top)
     blit_tiles = cache[0] + left;
     blit_slot = slot_of(top);
 #else
-    unsigned char row, slot = slot_of(top);
+    unsigned char slot = slot_of(top);
+    unsigned char row;
     const unsigned char* tiles;
 
     for (row = 0; row < VIEW_HEIGHT; ++row)
@@ -417,7 +418,7 @@ static void put_number(unsigned offset, unsigned n)
 {
     unsigned char* out = screen_draw_chars + offset;
     unsigned char hundreds = number_hundreds[(unsigned char)(n >> 2)];
-    unsigned char rest = (unsigned char)(n - number_hundreds_value[(unsigned char)(n >> 2)]);
+    unsigned char rest = (unsigned char)(n - hundreds_value[hundreds == ' ' ? 0 : hundreds - '0']);
 
     out[0] = hundreds;
     out[1] = hundreds == ' ' ? number_tens_lead[rest] : number_tens[rest];

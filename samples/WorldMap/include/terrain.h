@@ -34,10 +34,10 @@ extern unsigned char terrain_roughness_start;
 /* The tile for each total height. */
 extern unsigned char terrain_tile_for_height[256];
 
-/* Where terrain_row() puts the row it builds. */
-extern unsigned char terrain_row_buf[TERRAIN_MAX_WIDTH];
+/* Where terrain_row() puts the row it builds: world.c builds rows into three buffers in turn. */
+extern unsigned char* terrain_row_out;
 
-/* Fills terrain_row_buf with the current row's tiles: terrain_columns_b - 1 spans of
+/* Fills terrain_row_out with the current row's tiles: terrain_columns_b - 1 spans of
  * TERRAIN_SPAN_B cells each. */
 void terrain_row(void);
 
@@ -65,5 +65,14 @@ extern unsigned terrain_width, terrain_height;
 
 void terrain_walk(void);
 void terrain_mark(void);
+
+/* Turns the beach cells of the row at terrain_marsh_row with no sea in the 8 cells around them -
+ * sea, shallows or a bridge, in that row or the rows at terrain_marsh_above and _below (0 for none)
+ * - into marsh. */
+extern unsigned char* terrain_marsh_row;
+extern unsigned char* terrain_marsh_above;
+extern unsigned char* terrain_marsh_below;
+
+void terrain_marsh(void);
 
 #endif

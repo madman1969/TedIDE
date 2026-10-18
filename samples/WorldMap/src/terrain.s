@@ -9,7 +9,7 @@
         .import         _terrain_col_b_lo, _terrain_col_b_hi, _terrain_step_b_lo, _terrain_step_b_hi
         .import         _terrain_columns_a, _terrain_columns_b
         .import         _terrain_roughness, _terrain_roughness_start
-        .import         _terrain_tile_for_height, _terrain_row_buf
+        .import         _terrain_tile_for_height, _terrain_row_out
         .importzp       ptr1, ptr2, sreg, tmp1, tmp2, tmp3
 
 SPAN_B  = 8                             ; cells per fine span; a coarse span is 4 of them
@@ -35,9 +35,9 @@ _terrain_row:
         ldx     _terrain_columns_b
         dex
         stx     spans
-        lda     #<_terrain_row_buf
+        lda     _terrain_row_out
         sta     ptr1
-        lda     #>_terrain_row_buf
+        lda     _terrain_row_out+1
         sta     ptr1+1
         lda     _terrain_roughness_start
         sta     tmp2
@@ -426,4 +426,139 @@ _terrain_mark:
         eor     #$FF
         and     (ptr2),y
         sta     (ptr2),y
+        rts
+
+; ------------------------------------------------------------------------
+; void terrain_marsh (void)
+; Turns the beach cells of the row at terrain_marsh_row with no sea in the 8 cells around them
+; into marsh. Sea is a tile up to TILE_SHALLOWS, or a bridge: the row above has its roads in by
+; then, and a bridge may stand on sea. terrain_marsh_above and _below are the rows above and below
+; (0 for none, at the map's top and bottom). The cells in the first and last column stay beach.
+; It looks at every cell of every row, so it's in assembly; only beaches take long.
+
+        .export         _terrain_marsh
+        .import         _terrain_marsh_row, _terrain_marsh_above, _terrain_marsh_below
+
+TILE_SHALLOWS   = 4                     ; world.h's tiles
+TILE_BEACH      = 5
+TILE_BRIDGE     = 18
+TILE_MARSH      = 19
+
+        .bss
+remain:         .res    2               ; cells of the row still to look at
+limit:          .res    1               ; where this page's look stops (0: all 256)
+page_x:         .res    2               ; the column of this page's first cell (a multiple of 256)
+cell_y:         .res    1               ; the beach's place in the page
+near_base:      .res    2               ; the row near_sea looks at
+
+        .code
+
+_terrain_marsh:
+        lda     _terrain_marsh_row
+        sta     ptr1
+        lda     _terrain_marsh_row+1
+        sta     ptr1+1
+        lda     _terrain_width
+        sta     remain
+        lda     _terrain_width+1
+        sta     remain+1
+        lda     #0
+        sta     page_x
+        sta     page_x+1
+
+@page:  lda     remain                  ; a page of up to 256 cells at a time
+        ora     remain+1
+        beq     @done
+        lda     remain+1
+        beq     @part
+        lda     #0                      ; a whole page
+        sta     limit
+        dec     remain+1
+        jmp     @scan_start
+@part:  lda     remain                  ; the rest
+        sta     limit
+        lda     #0
+        sta     remain
+@scan_start:
+        ldy     #0
+@scan:  lda     (ptr1),y
+        cmp     #TILE_BEACH
+        beq     @beach
+@next:  iny
+        cpy     limit
+        bne     @scan
+        inc     ptr1+1
+        inc     page_x+1
+        jmp     @page
+@done:  rts
+
+@beach: sty     cell_y
+        tya                             ; not in the first column...
+        ora     page_x+1
+        beq     @keep
+        tya                             ; ...nor the last: x + 1 == width
+        clc
+        adc     #1
+        tax
+        lda     page_x+1
+        adc     #0
+        cmp     _terrain_width+1
+        bne     @inner
+        cpx     _terrain_width
+        beq     @keep
+@inner: lda     _terrain_marsh_above    ; the row above, if any
+        ora     _terrain_marsh_above+1
+        beq     @no_above
+        lda     _terrain_marsh_above
+        sta     near_base
+        lda     _terrain_marsh_above+1
+        sta     near_base+1
+        jsr     near_sea
+        bcs     @keep
+@no_above:
+        lda     _terrain_marsh_row      ; this row
+        sta     near_base
+        lda     _terrain_marsh_row+1
+        sta     near_base+1
+        jsr     near_sea
+        bcs     @keep
+        lda     _terrain_marsh_below    ; the row below, if any
+        ora     _terrain_marsh_below+1
+        beq     @marsh
+        lda     _terrain_marsh_below
+        sta     near_base
+        lda     _terrain_marsh_below+1
+        sta     near_base+1
+        jsr     near_sea
+        bcs     @keep
+@marsh: ldy     cell_y
+        lda     #TILE_MARSH
+        sta     (ptr1),y
+@keep:  ldy     cell_y
+        jmp     @next
+
+; Whether the row at near_base has sea in the beach's column or either side: carry set if so.
+near_sea:
+        clc                             ; ptr2 = near_base + x - 1
+        lda     near_base
+        adc     cell_y
+        sta     ptr2
+        lda     near_base+1
+        adc     page_x+1
+        sta     ptr2+1
+        lda     ptr2
+        bne     :+
+        dec     ptr2+1
+:       dec     ptr2
+        ldy     #2
+@cell:  lda     (ptr2),y
+        cmp     #TILE_SHALLOWS + 1
+        bcc     @sea
+        cmp     #TILE_BRIDGE
+        beq     @sea
+        dey
+        bpl     @cell
+        clc
+        rts
+@sea:   sec
         rts
