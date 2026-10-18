@@ -59,16 +59,19 @@ unsigned char terrain_row_buf[TERRAIN_MAX_WIDTH];
 static farptr cells;
 static unsigned width;
 static unsigned height;
+/* Each row's address in far memory, for cell(): maps are at most 256 rows high. */
+static farptr row_address[256];
 
 /* Grid heights: 0-127 for the coarse layer and 0-63 for the fine one, so that in 8.8 fixed
  * point every difference between two of them fits in a 16-bit int. */
 static unsigned char grid_a[GRID_A_H][TERRAIN_GRID_A_W];
 static unsigned char grid_b[GRID_B_H][TERRAIN_GRID_B_W];
 
-/* The address of cell (x, y) in far memory. */
+/* The address of cell (x, y) in far memory. From a table rather than a multiply of longs, which
+ * on the Plus/4 took the time of 40-odd raster lines - for every piece of a row the view reads. */
 static farptr cell(unsigned x, unsigned y)
 {
-    return cells + (unsigned long)y * width + x;
+    return row_address[(unsigned char)y] + x;
 }
 
 unsigned char world_create(void)
@@ -76,6 +79,7 @@ unsigned char world_create(void)
     unsigned char i;
     unsigned h;
     unsigned char t;
+    farptr row;
 
     for (i = 0; i < SIZE_COUNT; ++i)
     {
@@ -92,6 +96,12 @@ unsigned char world_create(void)
     }
     if (cells == FAR_NULL)
         return 0;
+    row = cells;
+    for (h = 0; h < height; ++h)
+    {
+        row_address[h] = row;
+        row += width;
+    }
 
     terrain_columns_a = width / TERRAIN_SPAN_A + 1;
     terrain_columns_b = width / TERRAIN_SPAN_B + 1;

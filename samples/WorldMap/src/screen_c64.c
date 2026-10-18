@@ -109,6 +109,18 @@ void screen_scroll(unsigned char fine_x, unsigned char fine_y)
     (void)fine_y;
 }
 
-void screen_before_far_read(void)
+unsigned char screen_far_read_lines(void)
 {
+    return 255;
+}
+
+void screen_set_copy_wait_work(void (*work)(void))
+{
+    (void)work;
+}
+
+unsigned char screen_time_for(unsigned char lines)
+{
+    (void)lines;
+    return 0;
 }

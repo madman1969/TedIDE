@@ -1,7 +1,10 @@
 #include <string.h>
 #include <conio.h>
 #include <plus4.h>
+#include "farmem.h"
 #include "screen.h"
+
+static void wait_for_safe_copy(void);
 
 /* The Plus/4's screen, making use of what its TED video chip has over the C64's VIC-II:
  *
@@ -147,6 +150,7 @@ void screen_init(void)
 
     /* The ROM's font with the pictures drawn over some of its graphics characters: multicolour
      * ones for the land and sea, hi-res ones for towns and the cursor. */
+    far_set_copy_hook(wait_for_safe_copy);
     screen_copy_font(chars);
     memcpy(chars + SCREEN_FIRST_GLYPH * 8, mc_glyphs, sizeof(mc_glyphs));
     for (i = GLYPH_TOWN; i < GLYPH_COUNT; ++i)
@@ -178,6 +182,7 @@ void screen_init(void)
 
 void screen_done(void)
 {
+    far_set_copy_hook(0);
     screen_text();
     TED.imr &= ~TED_TIMER2;
     TED.vscroll = saved_06;
@@ -245,14 +250,14 @@ void screen_present(unsigned char fine_x, unsigned char fine_y)
     draw_to_hidden();
 }
 
-/* The raster lines a far memory read may start on: after the split at line 22, and long enough
- * before the next one for it to finish with interrupts back on in time. A row of the view cache
- * is FarMem's own work - checking its window cache, working out the bank - and then the copy with
- * interrupts off, about 70 lines in all; a window of 30-265 still let late ones through, about
- * one frame in thirty while scrolling (measured in VICE with a Hannes board). Reads late in the
- * frame only hold up the interrupt at line 204, which copes. */
-#define FAR_READ_FIRST_LINE  40
-#define FAR_READ_LAST_LINE   180
+/* The raster lines on which a copy from a RAM expansion may not start, because it runs with
+ * interrupts off and would still be running when the split at line 22 is due, making it late
+ * (see blit.s): a copy of up to 256 bytes takes up to about 65 lines, and the split itself is done
+ * by about line 26. Only the copy matters: FarMem's own work around it - checking its window cache,
+ * working out the bank - leaves interrupts on, so FarMem calls wait_for_safe_copy (its copy hook)
+ * just before each copy, not before each read. */
+#define COPY_UNSAFE_FROM  250
+#define COPY_UNSAFE_TO    30
 
 /* The raster line the beam is on, 0-311. */
 static unsigned raster_line(void)
@@ -269,15 +274,64 @@ static unsigned raster_line(void)
     return ((unsigned)hi << 8) | lo;
 }
 
-void screen_before_far_read(void)
+/* What to do while a copy waits for the split (screen_set_copy_wait_work), or 0. */
+static void (*copy_wait_work)(void);
+
+void screen_set_copy_wait_work(void (*work)(void))
+{
+    copy_wait_work = work;
+}
+
+/* FarMem's copy hook: waits while a copy started now could delay the split - doing the program's
+ * copy_wait_work first, if there's one, when that's in the lower border, before the frame's top. */
+static void wait_for_safe_copy(void)
 {
     unsigned line;
 
     if (!ted_split)
         return;
+    if (copy_wait_work && raster_line() >= COPY_UNSAFE_FROM)
+        copy_wait_work();
     do
         line = raster_line();
-    while (line < FAR_READ_FIRST_LINE || line > FAR_READ_LAST_LINE);
+    while (line >= COPY_UNSAFE_FROM || line <= COPY_UNSAFE_TO);
+}
+
+/* A frame ends, as far as the program is concerned, at the interrupt at line 204: that's when
+ * the next step's wait (screen_scroll) is over. */
+#define FRAME_END_LINE  204
+
+/* The raster lines left before the frame ends. */
+static unsigned lines_left(void)
+{
+    unsigned line = raster_line();
+    return line < FRAME_END_LINE ? FRAME_END_LINE - line : FRAME_END_LINE + 312 - line;
+}
+
+/* The last line a read can start on and have FarMem's work before the copy done by the time the
+ * copy can start, after the split: measured at up to about 60 lines here, in the border, where the
+ * CPU runs at twice the speed it has while the TED is fetching the screen. */
+#define READ_START_BY  250
+
+unsigned char screen_far_read_lines(void)
+{
+    unsigned line;
+
+    if (!ted_split)
+        return 255;
+    /* From the frame's end until READ_START_BY: the copy hook (wait_for_safe_copy) holds the copy
+     * until the split is past, and it then has until the frame's end, which comes well before a
+     * copy would have to wait again (COPY_UNSAFE_FROM). Any later and FarMem's work would still be
+     * going on then, eating into that time; earlier, in the frame, and it would all be. */
+    line = raster_line();
+    if (line < FRAME_END_LINE || line > READ_START_BY)
+        return 0;
+    return FRAME_END_LINE - COPY_UNSAFE_TO - 1;
+}
+
+unsigned char screen_time_for(unsigned char lines)
+{
+    return lines_left() > lines;
 }
 
 void screen_scroll(unsigned char fine_x, unsigned char fine_y)

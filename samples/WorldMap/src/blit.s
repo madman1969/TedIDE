@@ -9,17 +9,20 @@
 ; takes to draw one, so the beam stays ahead: every row on screen is either all old or all new,
 ; and the next frame shows the whole new view.
 ;
-; Plus/4: the view is drawn into whichever of two screens the TED isn't showing (screen_plus4.c),
-; at any speed, and an interrupt handler here switches the TED to it between frames. The same
-; handler scrolls the map smoothly, changing the TED's scroll registers partway down every frame.
+; Plus/4: the view is drawn, a row at a time, into whichever of two screens the TED isn't showing
+; (screen_plus4.c) - often ahead of time, in the spare time between steps - and an interrupt
+; handler here switches the TED to it between frames. The same handler scrolls the map smoothly,
+; changing the TED's scroll registers partway down every frame.
 
-        .export         _view_blit
-        .import         _view_row_lo, _view_row_hi, _view_tile_char, _view_tile_colour
+        .import         _view_tile_char, _view_tile_colour
         .importzp       ptr1
 
 COLS    = 40
 
 .if .defined(__C64__)
+
+        .export         _view_blit
+        .import         _view_row_lo, _view_row_hi
 
 ROWS    = 23                            ; SCREEN_MAP_HEIGHT in screen.h
 SCREEN  = $E000                         ; SCREEN_CHARS
@@ -66,40 +69,92 @@ _view_blit:
 
 ROWS    = 22                            ; SCREEN_MAP_HEIGHT in screen.h
 MAP_TOP = 3                             ; SCREEN_MAP_TOP
+TED_LINE_HI = $FF1C                     ; bit 0: bit 8 of the raster line the beam is on
+TED_LINE_LO = $FF1D                     ; its low 8 bits
 
-        .import         _screen_draw_chars, _screen_draw_colours
-        .importzp       ptr2, ptr3, tmp1
+CACHE_ROWS = ROWS + 2                   ; view.c's tile cache: rows of 512 tiles, one per slot
+
+        .export         _view_blit_rows, _blit_chars, _blit_colours, _blit_end, _blit_stop_line
+        .export         _blit_tiles, _blit_slot
+        .importzp       ptr2, ptr3, tmp1, tmp2
+
+        .bss
+
+_blit_chars:    .res    2               ; the screen to draw into: its characters...
+_blit_colours:  .res    2               ; ...and its colours
+_blit_end:      .res    1               ; the row to stop before
+_blit_stop_line: .res   1               ; stop rather than start a row on this line or later (up to 204)
+_blit_tiles:    .res    2               ; the first view row's tiles in cache slot 0
+_blit_slot:     .res    1               ; the cache slot of the first view row
+
+        .rodata
+
+; Each map row's offset into the screen.
+row_offset_lo:
+        .repeat ROWS, row
+        .byte   <((MAP_TOP+row)*COLS)
+        .endrepeat
+row_offset_hi:
+        .repeat ROWS, row
+        .byte   >((MAP_TOP+row)*COLS)
+        .endrepeat
 
         .code
 
-; void view_blit (void)
-; As on the C64, but into the hidden screen at screen_draw_chars/colours, from its map rows on,
-; with ptr2 and ptr3 walking down its characters and colours a row at a time. There's no beam to
-; race, so interrupts stay on.
+; unsigned char __fastcall__ view_blit_rows (unsigned char first)
+; As on the C64, but into the screen at blit_chars/blit_colours - the Plus/4's hidden one - and only
+; rows first to blit_end - 1. Before each row it checks the raster line, and stops if the frame is
+; nearly over (blit_stop_line up to line 204), so that view.c can draw ahead in the time left over
+; from a frame without making the next step late: a check here takes a few instructions, where in C
+; it took as long as the row. Returns the row it got to. There's no beam to race, so interrupts
+; stay on.
+; Each row's tiles are found here too, as working out 22 pointers in C took over a third of a
+; frame: view row r is in cache slot blit_slot + r (wrapping round), and the slots are 512 bytes
+; apart, so its tiles are at blit_tiles + slot * 512 - the same low byte, and the high byte
+; plus slot * 2.
 
-_view_blit:
+_view_blit_rows:
+        sta     tmp1                    ; the row
+        clc                             ; its cache slot
+        adc     _blit_slot
+        cmp     #CACHE_ROWS
+        bcc     :+
+        sbc     #CACHE_ROWS
+:       sta     tmp2
+@row:   lda     tmp1
+        cmp     _blit_end
+        bcs     @done
+        lda     TED_LINE_HI             ; lines 256-311: the frame has only just started
+        lsr     a
+        bcs     @go
+        lda     TED_LINE_LO
+        cmp     #205                    ; so have lines 205-255
+        bcs     @go
+        cmp     _blit_stop_line
+        bcs     @done                   ; too near the frame's end for another row
+
+@go:    lda     _blit_tiles             ; the row's tiles
+        sta     ptr1
+        lda     tmp2
+        asl     a
         clc
-        lda     _screen_draw_chars
-        adc     #<(MAP_TOP*COLS)
+        adc     _blit_tiles+1
+        sta     ptr1+1
+        ldx     tmp1                    ; where they go
+        clc
+        lda     _blit_chars
+        adc     row_offset_lo,x
         sta     ptr2
-        lda     _screen_draw_chars+1
-        adc     #>(MAP_TOP*COLS)
+        lda     _blit_chars+1
+        adc     row_offset_hi,x
         sta     ptr2+1
         clc
-        lda     _screen_draw_colours
-        adc     #<(MAP_TOP*COLS)
+        lda     _blit_colours
+        adc     row_offset_lo,x
         sta     ptr3
-        lda     _screen_draw_colours+1
-        adc     #>(MAP_TOP*COLS)
+        lda     _blit_colours+1
+        adc     row_offset_hi,x
         sta     ptr3+1
-
-        lda     #0
-        sta     tmp1                    ; the row
-@row:   ldx     tmp1
-        lda     _view_row_lo,x
-        sta     ptr1
-        lda     _view_row_hi,x
-        sta     ptr1+1
         ldy     #COLS-1
 @cell:  lda     (ptr1),y                ; the tile
         tax
@@ -109,23 +164,17 @@ _view_blit:
         sta     (ptr3),y
         dey
         bpl     @cell
+        inc     tmp1                    ; the next row, and its slot
+        inc     tmp2
+        lda     tmp2
+        cmp     #CACHE_ROWS
+        bcc     :+
+        lda     #0
+        sta     tmp2
+:       jmp     @row
 
-        clc                             ; the next row down
-        lda     ptr2
-        adc     #COLS
-        sta     ptr2
-        bcc     :+
-        inc     ptr2+1
-:       clc
-        lda     ptr3
-        adc     #COLS
-        sta     ptr3
-        bcc     :+
-        inc     ptr3+1
-:       inc     tmp1
-        lda     tmp1
-        cmp     #ROWS
-        bne     @row
+@done:  lda     tmp1
+        ldx     #0
         rts
 
 ; ------------------------------------------------------------------------

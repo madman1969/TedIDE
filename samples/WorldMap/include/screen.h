@@ -98,10 +98,26 @@ void screen_map(void);
  * draws straight onto the screen, there's nothing to do. */
 void screen_present(unsigned char fine_x, unsigned char fine_y);
 
-/* Waits, if need be, until it's safe to read far memory without spoiling the frame on show.
- * On the Plus/4, a copy from a RAM expansion runs with interrupts off, and one that overlapped
- * the split under the status bar would make it late; the C64 has nothing to wait for. */
-void screen_before_far_read(void);
+/* For reading ahead in the spare time between steps without making the next step late: if a far
+ * memory read started now, the raster lines its copy would have before this frame ends - or 0 if
+ * now isn't the moment to start one. On the Plus/4 a copy from a RAM expansion runs with
+ * interrupts off, and screen_plus4.c gives FarMem a copy hook that holds it until the split under
+ * the status bar is past, rather than let it delay the split. FarMem's own work before the copy
+ * takes much of a frame on the Plus/4, so a read has to start early, in the lower border, for
+ * that work to be done by the time the copy can start. 255 (no limit) on the C64, or with no
+ * split on show. */
+unsigned char screen_far_read_lines(void);
+
+/* Something for FarMem's copy hook to do on the Plus/4 when a copy has to wait for the split
+ * under the status bar to pass - which can be most of the lower border, where the CPU runs at
+ * twice the speed it has during the screen - or 0 for nothing. It mustn't use far memory, and
+ * should be done by about line 20. Not used on the C64. */
+void screen_set_copy_wait_work(void (*work)(void));
+
+/* Whether at least `lines` raster lines are left before this frame ends - for drawing ahead in
+ * the spare time between steps without making the next step late. Always false on the C64, which
+ * doesn't draw ahead. */
+unsigned char screen_time_for(unsigned char lines);
 
 /* Scrolls the frame on show to fine_x and fine_y without drawing a new one - for moves that
  * stay within the same cell - and waits for the next frame, so a move a frame keeps pace with
