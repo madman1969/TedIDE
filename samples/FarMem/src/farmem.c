@@ -57,10 +57,24 @@ void cbm_stash (void);
 void __fastcall__ tedx_copy (unsigned char stash);
 unsigned char __fastcall__ tedx_count (unsigned char banks);
 extern unsigned char tedx_select[16];       /* the register value for each bank */
-extern unsigned char far_low_buf[256];      /* below $4000, where the boards never remap */
 #endif
 
 #define BOUNCE_SIZE 256
+
+/* The program's copy hook (far_set_copy_hook), called before each copy with interrupts off. */
+static void (*copy_hook) (void);
+
+static void run_copy_hook (void)
+{
+    if (copy_hook) {
+        copy_hook ();
+    }
+}
+
+void far_set_copy_hook (void (*hook) (void))
+{
+    copy_hook = hook;
+}
 
 static unsigned char backend;               /* a FAR_ value, chosen by far_init */
 static unsigned long size;                  /* bytes of far memory */
@@ -115,15 +129,31 @@ static unsigned cbm_locate (unsigned long a)
 #if HAS_TEDX
 /* Points far_hw_src at far address a - tedx_pages pages per bank, from $4000 in the CPU's window,
 ** with the bank's register value in the third byte - and returns how many bytes are left in that
-** bank, at most the 256 far_low_buf holds. */
+** bank, at most the 256 far_low_buf holds.
+** Dividing by tedx_pages (189 on a Hannes board) and building a long in C take a good part of a
+** frame on a Plus/4, so the bank last located is kept - the next copy is nearly always in the
+** same one - and far_hw_src is put together a byte at a time. */
+static unsigned tedx_first;                 /* the far pages of the bank last located... */
+static unsigned tedx_end;                   /* ...up to here (0 to 0 until the first) */
+static unsigned char tedx_bank;             /* ...and its number */
+
 static unsigned tedx_locate (unsigned long a)
 {
-    unsigned page = (unsigned) (a >> 8);
-    unsigned char bank = page / tedx_pages;
-    unsigned char inbank = page % tedx_pages;
-    unsigned left = ((unsigned) (tedx_pages - inbank) << 8) - (unsigned char) a;
-    far_hw_src = ((unsigned long) tedx_select[bank] << 16)
-        | ((unsigned) (0x40 + inbank) << 8) | (unsigned char) a;
+    unsigned page = *(unsigned*) ((unsigned char*) &a + 1);    /* a >> 8, without a long shift */
+    unsigned char inbank;
+    unsigned left;
+
+    if (page < tedx_first || page >= tedx_end) {
+        tedx_bank = page / tedx_pages;
+        tedx_first = tedx_bank * tedx_pages;
+        tedx_end = tedx_first + tedx_pages;
+    }
+    inbank = (unsigned char) (page - tedx_first);
+    left = ((unsigned) (tedx_pages - inbank) << 8) - (unsigned char) a;
+    ((unsigned char*) &far_hw_src)[0] = (unsigned char) a;
+    ((unsigned char*) &far_hw_src)[1] = 0x40 + inbank;
+    ((unsigned char*) &far_hw_src)[2] = tedx_select[tedx_bank];
+    ((unsigned char*) &far_hw_src)[3] = 0;
     return left < 256 ? left : 256;
 }
 #endif
@@ -158,6 +188,7 @@ static void hw_read (void* dst, farptr src, unsigned len)
             far_hw_near = d;
             far_hw_src = src;
             far_hw_len = n;
+            run_copy_hook ();
             reu_go (REU_FETCH);
             d += n;
             src += n;
@@ -190,6 +221,7 @@ static void hw_read (void* dst, farptr src, unsigned len)
             }
             far_hw_near = d;
             far_hw_len = n;
+            run_copy_hook ();
             cbm_fetch ();
             d += n;
             src += n;
@@ -199,15 +231,17 @@ static void hw_read (void* dst, farptr src, unsigned len)
 #endif
 #if HAS_TEDX
     case FAR_RAMEXP:
-        /* Through far_low_buf, as wherever d is may be remapped while the bank is in. */
+        /* tedx_copy goes through far_low_buf, as wherever d is may be remapped while the bank
+        ** is in. */
         while (len) {
             n = tedx_locate (src);
             if (n > len) {
                 n = len;
             }
+            far_hw_near = d;
             far_hw_len = n;
+            run_copy_hook ();
             tedx_copy (0);
-            memcpy (d, far_low_buf, n);
             d += n;
             src += n;
             len -= n;
@@ -245,6 +279,7 @@ static void hw_write (farptr dst, const void* src, unsigned len)
             far_hw_near = (void*) s;
             far_hw_src = dst;
             far_hw_len = n;
+            run_copy_hook ();
             reu_go (REU_STASH);
             s += n;
             dst += n;
@@ -276,6 +311,7 @@ static void hw_write (farptr dst, const void* src, unsigned len)
             }
             far_hw_near = (void*) s;
             far_hw_len = n;
+            run_copy_hook ();
             cbm_stash ();
             s += n;
             dst += n;
@@ -290,8 +326,9 @@ static void hw_write (farptr dst, const void* src, unsigned len)
             if (n > len) {
                 n = len;
             }
-            memcpy (far_low_buf, s, n);
+            far_hw_near = (void*) s;
             far_hw_len = n;
+            run_copy_hook ();
             tedx_copy (1);
             s += n;
             dst += n;
@@ -403,6 +440,7 @@ static void hw_fill (farptr dst, unsigned char value, unsigned long len)
             far_hw_src = dst;
             far_hw_len = n;
             far_hw_ctrl = 0x80;     /* address control: hold the C64 address still */
+            run_copy_hook ();
             reu_go (REU_STASH);
             far_hw_ctrl = 0;
             dst += n;
@@ -458,12 +496,17 @@ static void write_back (unsigned char i)
     }
 }
 
-/* Writes back any changed window overlapping [a, a + len), and drops them too if drop is set. */
+/* Writes back any changed window overlapping [a, a + len), and drops them too if drop is set.
+** Without drop, an unchanged window needs nothing, so it's passed over before the comparisons of
+** longs, which are slow on a 6502. */
 static void sync_range (farptr a, unsigned long len, unsigned char drop)
 {
     unsigned char i;
     for (i = 0; i < FAR_WINDOWS; ++i) {
-        if (windows[i].len && a < windows[i].base + windows[i].len && windows[i].base < a + len) {
+        if (windows[i].len == 0 || (!drop && !windows[i].dirty)) {
+            continue;
+        }
+        if (a < windows[i].base + windows[i].len && windows[i].base < a + len) {
             write_back (i);
             if (drop) {
                 windows[i].len = 0;

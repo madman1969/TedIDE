@@ -261,7 +261,7 @@ ret:    .res    2
 .if .defined(__C16__) .or .defined(__PLUS4__)
 
         .export         _tedx_copy, _tedx_count, _tedx_select, _far_low_buf
-        .importzp       ptr2
+        .importzp       ptr2, ptr3
 
 TED_STATUS = $FF13                      ; bit 0 is 1 while the ROMs are mapped in
 ROM_ON  = $FF3E                         ; a write maps the ROMs in...
@@ -276,26 +276,69 @@ _tedx_select:   .res    16
 ; the BSS, which may well be above $4000 and switched out with everything else.
 restore:        .res    1
 length:         .res    1
+odd:            .res    1               ; length & 7: the bytes copied before the blocks of 8
+stashing:       .res    1               ; tedx_copy's argument
 rom:            .res    1
 saved:          .res    1
 count:          .res    1
 limit:          .res    1
 
+; Copies length bytes (0 meaning 256) from load's operand to store's, both indexed by Y, e.g.
+; copy_bytes {lda (ptr2),y}, {sta _far_low_buf,y}. The length & 7 odd bytes go first, then
+; blocks of 8 unrolled - about 13 cycles a byte rather than 19 for a plain loop, which matters on
+; a Plus/4, where a read of a few hundred bytes takes much of a frame. It never touches a byte
+; past the end: just past the end of a bank's window are the Plus/4's I/O registers.
+.macro  copy_bytes load, store
+        .local  odd_loop, block, done
+        ldy     #0
+        ldx     odd
+        beq     block
+odd_loop:
+        load
+        store
+        iny
+        dex
+        bne     odd_loop
+        cpy     length
+        beq     done
+block:
+        .repeat 8
+        load
+        store
+        iny
+        .endrepeat
+        cpy     length                  ; with 256 bytes (length 0), Y comes round to 0
+        bne     block
+done:
+.endmacro
+
 ; void __fastcall__ tedx_copy (unsigned char stash)
-; Copies far_hw_len bytes (1-256, with 0 meaning 256) between far_low_buf and an expansion bank:
-; to the bank if stash is non-zero, else from it. far_hw_src holds the address in the CPU's window
-; in its low two bytes, and the register value that selects the bank in its third. The ROMs are
-; switched out for the copy, since the Hannes window reaches past $8000.
+; Copies far_hw_len bytes (1-256, with 0 meaning 256) between ordinary memory at far_hw_near and
+; an expansion bank: to the bank if stash is non-zero, else from it. far_hw_src holds the address
+; in the CPU's window in its low two bytes, and the register value that selects the bank in its
+; third. The ROMs are switched out for the copy, since the Hannes window reaches past $8000.
+; far_hw_near may be inside the window, so the bytes go through far_low_buf, below it - copied
+; there or back with interrupts still on, so they're off only for the copy to or from the bank.
 
 _tedx_copy:
-        tax
+        sta     stashing
         jsr     setreg
         lda     _far_hw_src
         sta     ptr2
         lda     _far_hw_src+1
         sta     ptr2+1
+        lda     _far_hw_near
+        sta     ptr3
+        lda     _far_hw_near+1
+        sta     ptr3+1
         lda     _far_hw_len
         sta     length
+        and     #7
+        sta     odd
+        lda     stashing
+        beq     bank_in
+        copy_bytes {lda (ptr3),y}, {sta _far_low_buf,y}     ; stash: into far_low_buf first
+bank_in:
         php
         sei
         lda     TED_STATUS
@@ -304,19 +347,11 @@ _tedx_copy:
         ldy     #0
         lda     _far_hw_src+2
         sta     (ptr1),y                ; the bank in
-        txa
+        lda     stashing
         bne     stash
-fetch:  lda     (ptr2),y
-        sta     _far_low_buf,y
-        iny
-        cpy     length
-        bne     fetch
-        beq     done
-stash:  lda     _far_low_buf,y
-        sta     (ptr2),y
-        iny
-        cpy     length
-        bne     stash
+        copy_bytes {lda (ptr2),y}, {sta _far_low_buf,y}
+        jmp     done
+stash:  copy_bytes {lda _far_low_buf,y}, {sta (ptr2),y}
 done:   ldy     #0
         lda     restore
         sta     (ptr1),y                ; the machine's own RAM back
@@ -325,7 +360,10 @@ done:   ldy     #0
         bcc     :+
         sta     ROM_ON
 :       plp
-        rts
+        lda     stashing
+        bne     :+
+        copy_bytes {lda _far_low_buf,y}, {sta (ptr3),y}     ; fetch: out of far_low_buf last
+:       rts
 
 ; unsigned char __fastcall__ tedx_count (unsigned char banks)
 ; How many of the first banks in tedx_select really exist and are separate: writes a different

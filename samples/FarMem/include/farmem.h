@@ -55,6 +55,12 @@ unsigned char far_init (void);
 /* Writes back any changed windows and releases the driver. */
 void far_done (void);
 
+/* Sets a function FarMem calls just before each copy it makes with interrupts off - REU and
+** Plus/4 RAM expansion copies, CBM-II bank copies - or 0 for none. A program whose own
+** interrupts must run on time, such as a raster split, can wait in it until a copy is safe,
+** leaving the rest of FarMem's work free to run at any time. */
+void far_set_copy_hook (void (*hook) (void));
+
 /* The backend far_init chose (a FAR_ value), and a short name for it to show the user. */
 unsigned char far_backend (void);
 const char* far_backend_name (void);

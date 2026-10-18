@@ -330,7 +330,13 @@ A plain C128 or CBM 510 needs nothing extra.
   `far_init` before your own large `malloc`s if you want it to have the room, or after them if
   your own allocations matter more.
 - **Interrupts:** REU transfers run with interrupts disabled for their duration, as cc65's own
-  REU drivers do.
+  REU drivers do, and so do copies to and from a Plus/4 RAM expansion bank and CBM-II bank
+  copies (each at most 256 bytes on a Plus/4).
+- **Keeping interrupts on time:** if your program has interrupts that must not be delayed, such as
+  a raster split, call `far_set_copy_hook (fn)`. FarMem calls `fn` just before each copy it makes
+  with interrupts off, so `fn` can wait until a copy can't get in the way. The rest of FarMem's
+  work leaves interrupts on, so it can happen at any time. `far_set_copy_hook (0)` removes it.
+  The WorldMap sample's `screen_plus4.c` shows one in use.
 
 To test FarMem on every machine, build the solution and run `Test-FarMem.ps1` beside it. It runs
 all seven test programs in VICE and reports which passed.
