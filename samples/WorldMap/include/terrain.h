@@ -61,6 +61,12 @@ extern unsigned char* terrain_list_lo;
 extern unsigned char* terrain_list_hi;
 extern unsigned char terrain_listing;
 extern unsigned terrain_wander;             /* a 16-bit xorshift's state: never 0 */
+/* While listing, each cell marked also gets terrain_wide's bit 0 in the bit map at
+ * terrain_list_wide1 and its bit 1 in terrain_list_wide2 (a bit a cell, as terrain_list_hi): how a
+ * river widens there (world.c). With terrain_wide 0, as for roads, neither is touched. */
+extern unsigned char terrain_wide;
+extern unsigned char* terrain_list_wide1;
+extern unsigned char* terrain_list_wide2;
 extern unsigned terrain_width, terrain_height;
 
 void terrain_walk(void);
@@ -110,5 +116,31 @@ extern unsigned char* terrain_route_dist_hi;
 extern unsigned char* terrain_route_queue;
 
 void terrain_route(void);
+
+/* The runs of water (tiles up to TILE_SHALLOWS) in the row at terrain_runs_row, terrain_width
+ * cells long, for finding lakes (world.c): each run's first and last column, in order across,
+ * terrain_run_count of them - at most 40 (world.c's LAKE_RUNS), the last stretched to the row's
+ * last water if there are more. terrain_lake_mark() then makes lake the water of those marked in
+ * terrain_run_mark, in the same row: each tile up to TILE_SHALLOWS, TILE_LAKE more. */
+extern unsigned char* terrain_runs_row;
+extern unsigned char terrain_run_count;
+extern unsigned terrain_run_a[], terrain_run_b[];
+extern unsigned char terrain_run_mark[];
+
+void terrain_water_runs(void);
+void terrain_lake_mark(void);
+
+/* Labels the runs terrain_water_runs listed, for finding lakes (world.c's lake_row): leaves each
+ * run's label in terrain_run_l, marks in terrain_run_mark those not joined to the ocean (label 0)
+ * - the edge of the map, so every run in a row where terrain_lake_edge is set - and keeps them as
+ * the row above for the next row (terrain_lake_prev_n of them; 0 to start). Labels are parents'
+ * indexes in the 512 words at terrain_lake_parent, the first terrain_lake_labels given out. */
+extern unsigned* terrain_lake_parent;
+extern unsigned terrain_lake_labels;
+extern unsigned char terrain_lake_edge;
+extern unsigned char terrain_lake_prev_n;
+extern unsigned terrain_run_l[];
+
+void terrain_lake_label(void);
 
 #endif

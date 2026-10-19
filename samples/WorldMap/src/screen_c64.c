@@ -24,6 +24,8 @@ const unsigned char view_tile_colour[TILE_COUNT] = {
     COLOR_ORANGE,                               /* road */
     COLOR_BROWN,                                /* bridge */
     COLOR_CYAN,                                 /* marsh */
+    COLOR_BLUE, COLOR_BLUE, COLOR_BLUE,         /* lakes, as the sea, in a still picture: */
+    COLOR_LIGHTBLUE, COLOR_CYAN,                /* deepest, deeper, deep, sea, shallows */
 };
 const unsigned char screen_cursor_colour = COLOR_WHITE;
 

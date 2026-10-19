@@ -28,7 +28,10 @@
 #define TILE_ROAD           17
 #define TILE_BRIDGE         18              /* a road over water */
 #define TILE_MARSH          19
-#define TILE_COUNT          20
+/* Sea with land all round it: each shade of sea's tile plus TILE_LAKE, so TILE_LAKE + TILE_SEA
+ * is a lake's sea, for instance. Always the last tiles. */
+#define TILE_LAKE           20
+#define TILE_COUNT          25
 
 /* Allocates the biggest map far memory has room for, from 512x256 down to 64x32.
  * Returns 0 if not even the smallest fits. Call far_init() first. */
@@ -51,7 +54,7 @@ void world_generate(void (*row_done)(unsigned y, const unsigned char* tiles),
                     unsigned char* scratch, unsigned scratch_size);
 
 /* The working memory world_generate needs for rivers, towns, roads and marsh. */
-#define WORLD_SCRATCH_SIZE  11679u
+#define WORLD_SCRATCH_SIZE  12235u
 
 /* Copies len cells of row y, starting at column x, into dst - one far_read. */
 void world_read(unsigned x, unsigned y, unsigned char* dst, unsigned len);

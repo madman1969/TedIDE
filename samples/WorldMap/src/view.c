@@ -23,7 +23,7 @@ unsigned char view_tile_char[TILE_COUNT];
 /* The status bar's name for each picture - every shade of a kind has the same one. */
 static const char* const glyph_name[GLYPH_CURSOR] = {
     "deep sea", "sea", "beach", "grass", "forest", "hills", "mountain", "snow", "marsh", "river",
-    "town", "road", "bridge",
+    "lake", "town", "road", "bridge",
 };
 
 #define CURSOR_CHAR    (SCREEN_FIRST_GLYPH + GLYPH_CURSOR)
@@ -51,8 +51,9 @@ unsigned char __fastcall__ view_blit_rows(unsigned char first);
 /* The tile cache: map rows, each in a slot with room for every column. Map row y lives in slot
  * y % CACHE_ROWS. On the Plus/4 there are two more slots than the view has rows, so the row just
  * above and the row just below the view can be read ahead of time without overwriting one on
- * show; the C64, which draws each frame when it's needed, does without them - it's short of
- * memory.
+ * show. The C64, which draws each frame when it's needed, has just one more: no use to the view,
+ * but world_generate borrows the cache as its working memory (view_scratch), and needs that
+ * much (WORLD_SCRATCH_SIZE).
  * cache_row says which map row each slot holds, and cache_lo and cache_hi which of its columns:
  * CHUNKs lo to hi - 1, none if hi is 0. All three are bytes - maps are at most 256 rows high and
  * 512 columns wide, 16 CHUNKs (world.c) - as cc65 is far quicker with bytes than with ints. The
@@ -62,13 +63,15 @@ unsigned char __fastcall__ view_blit_rows(unsigned char first);
 #if VIEW_FINE_BITS
 #define CACHE_ROWS   (VIEW_HEIGHT + 2)
 #else
-#define CACHE_ROWS   VIEW_HEIGHT
+#define CACHE_ROWS   (VIEW_HEIGHT + 1)
 #endif
 #define CACHE_W      512                /* the widest map, world.c */
 #define NO_ROW       0xFFFF
 #define CHUNK        32                 /* columns are read in multiples of this... */
 #define CHUNK_SHIFT  5                  /* ...which is 1 << CHUNK_SHIFT */
 static unsigned char cache[CACHE_ROWS][CACHE_W];
+/* world_generate's working memory: a negative array size stops the build if it's too small. */
+typedef char cache_fits_scratch[(CACHE_ROWS * CACHE_W >= WORLD_SCRATCH_SIZE) ? 1 : -1];
 static unsigned char cache_row[CACHE_ROWS];
 static unsigned char cache_lo[CACHE_ROWS];
 static unsigned char cache_hi[CACHE_ROWS];

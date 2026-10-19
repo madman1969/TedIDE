@@ -185,6 +185,7 @@ _terrain_next_row:
         .import         _terrain_walk_x, _terrain_walk_y, _terrain_walk_to_x, _terrain_walk_to_y
         .import         _terrain_list_end, _terrain_list_lo, _terrain_list_hi, _terrain_listing
         .import         _terrain_wander, _terrain_width, _terrain_height
+        .import         _terrain_wide, _terrain_list_wide1, _terrain_list_wide2
 
         .bss
 adx:    .res    2                       ; the steps still to take across...
@@ -421,18 +422,47 @@ _terrain_mark:
         lda     (ptr2),y
         ora     cell_bit,x
         sta     (ptr2),y
-        rts
+        jmp     @wide
 @clear: lda     cell_bit,x
         eor     #$FF
         and     (ptr2),y
         sta     (ptr2),y
-        rts
+
+        ; terrain_wide's bits 0 and 1 set the cell's bits in terrain_list_wide1 and _wide2 (the
+        ; byte tmp2:tmp1 and bit x again); with neither, they're left alone (roads have none).
+@wide:  lda     _terrain_wide
+        lsr     a
+        bcc     @wide2
+        clc
+        lda     _terrain_list_wide1
+        adc     tmp1
+        sta     ptr2
+        lda     _terrain_list_wide1+1
+        adc     tmp2
+        sta     ptr2+1
+        lda     (ptr2),y
+        ora     cell_bit,x
+        sta     (ptr2),y
+@wide2: lda     _terrain_wide
+        and     #2
+        beq     @done
+        clc
+        lda     _terrain_list_wide2
+        adc     tmp1
+        sta     ptr2
+        lda     _terrain_list_wide2+1
+        adc     tmp2
+        sta     ptr2+1
+        lda     (ptr2),y
+        ora     cell_bit,x
+        sta     (ptr2),y
+@done:  rts
 
 ; ------------------------------------------------------------------------
 ; void terrain_marsh (void)
 ; Turns the beach cells of the row at terrain_marsh_row with no sea in the 8 cells around them
-; into marsh. Sea is a tile up to TILE_SHALLOWS, or a bridge: the row above has its roads in by
-; then, and a bridge may stand on sea. terrain_marsh_above and _below are the rows above and below
+; into marsh. Sea is a tile up to TILE_SHALLOWS, a lake tile, or a bridge: the row above has its
+; roads and lakes in by then, and a bridge may stand on sea. terrain_marsh_above and _below are the rows above and below
 ; (0 for none, at the map's top and bottom). The cells in the first and last column stay beach.
 ; It looks at every cell of every row, so it's in assembly; only beaches take long.
 
@@ -443,6 +473,7 @@ TILE_SHALLOWS   = 4                     ; world.h's tiles
 TILE_BEACH      = 5
 TILE_BRIDGE     = 18
 TILE_MARSH      = 19
+TILE_LAKE       = 20                    ; ...to 24, the lake tiles, the last of all
 
         .bss
 remain:         .res    2               ; cells of the row still to look at
@@ -556,6 +587,8 @@ near_sea:
         bcc     @sea
         cmp     #TILE_BRIDGE
         beq     @sea
+        cmp     #TILE_LAKE              ; lake: the row above has its lakes marked by then
+        bcs     @sea
         dey
         bpl     @cell
         clc
@@ -1204,3 +1237,528 @@ _terrain_route:
         bmi     :+
         jmp     @neighbour
 :       jmp     @take
+
+; ------------------------------------------------------------------------
+; void terrain_water_runs (void)
+;
+; Lists the runs of water - tiles up to TILE_SHALLOWS - in the row at terrain_runs_row,
+; terrain_width cells long, for finding lakes (world.c's lake_row): each run's first and last
+; column, in the 16-bit words of terrain_run_a and terrain_run_b, terrain_run_count of them, in
+; order across. There's room for RUNS_MAX (world.c's LAKE_RUNS); past that, the last run is stretched
+; to take in the rest of the row's water - and the land between, which only ever makes world.c
+; join bodies of water, never split them. It looks at every cell of every row, so it's in
+; assembly: a tight loop over land, another over water.
+;
+; Zero page while it runs: ptr1 = the row's current page, tmp1 = where the cells end in it
+; (0 for all 256).
+
+        .export         _terrain_water_runs, _terrain_run_count
+        .export         _terrain_run_a, _terrain_run_b, _terrain_run_mark, _terrain_lake_mark
+        .import         _terrain_runs_row
+
+RUNS_MAX        = 40
+
+        .bss
+_terrain_run_a:         .res    2 * RUNS_MAX
+_terrain_run_b:         .res    2 * RUNS_MAX
+_terrain_run_mark:      .res    RUNS_MAX        ; world.c: which runs terrain_lake_mark makes lake
+_terrain_run_count:     .res    1
+run_page:       .res    1               ; the current column's high byte
+run_pages:      .res    1               ; whole pages of cells still to come after this one
+in_water:       .res    1               ; non-zero while in a run
+
+        .code
+
+_terrain_water_runs:
+        lda     _terrain_runs_row
+        sta     ptr1
+        lda     _terrain_runs_row+1
+        sta     ptr1+1
+        lda     #0
+        sta     _terrain_run_count
+        sta     run_page
+        sta     in_water
+        lda     _terrain_width+1
+        sta     run_pages
+
+        ; Each page of the row: a whole one while there are more, then what's left of the last.
+        ; A whole page's loops just stop where y comes back round to 0; a part page's compare y
+        ; with where it ends, tmp1.
+@page:  ldy     #0
+        lda     run_pages
+        beq     @last
+        lda     in_water
+        bne     @w_water
+
+@w_land:
+        lda     (ptr1),y                ; over land, until water starts a run
+        cmp     #TILE_SHALLOWS + 1
+        bcc     @w_start
+@w_land_next:
+        iny
+        bne     @w_land
+        beq     @next_page
+@w_start:
+        jsr     start_run
+@w_water:
+        lda     (ptr1),y                ; over water, until land ends the run
+        cmp     #TILE_SHALLOWS + 1
+        bcs     @w_stop
+        iny
+        bne     @w_water
+        beq     @next_page
+@w_stop:
+        jsr     end_run
+        jmp     @w_land_next
+
+@last:  lda     _terrain_width
+        beq     @end                    ; no part page: done
+        sta     tmp1
+        lda     in_water
+        bne     @water
+@land:  lda     (ptr1),y
+        cmp     #TILE_SHALLOWS + 1
+        bcc     @start
+@land_next:
+        iny
+        cpy     tmp1
+        bne     @land
+        beq     @end
+@start: jsr     start_run
+@water: lda     (ptr1),y
+        cmp     #TILE_SHALLOWS + 1
+        bcs     @stop
+        iny
+        cpy     tmp1
+        bne     @water
+        beq     @end
+@stop:  jsr     end_run
+        jmp     @land_next
+
+@next_page:
+        dec     run_pages
+        inc     ptr1+1
+        inc     run_page
+        jmp     @page
+
+@end:   lda     in_water                ; a run going on to the row's end ends with it
+        beq     :+
+        jsr     end_run
+:       rts
+
+; Starts a run at run_page:y - or, with no room for another, has the last one go on instead.
+start_run:
+        ldx     _terrain_run_count
+        cpx     #RUNS_MAX
+        bcc     :+
+        dex
+        stx     _terrain_run_count
+        bcs     @in                     ; (the carry is still set)
+:       txa                             ; its word
+        asl     a
+        tax
+        tya
+        sta     _terrain_run_a,x
+        lda     run_page
+        sta     _terrain_run_a+1,x
+@in:    lda     #1
+        sta     in_water
+        rts
+
+; Ends the current run: its last column is the one before run_page:y.
+end_run:
+        lda     _terrain_run_count      ; its word
+        asl     a
+        tax
+        tya
+        sec
+        sbc     #1
+        sta     _terrain_run_b,x
+        lda     run_page
+        sbc     #0
+        sta     _terrain_run_b+1,x
+        inc     _terrain_run_count
+        lda     #0
+        sta     in_water
+        rts
+
+; ------------------------------------------------------------------------
+; void terrain_lake_mark (void)
+;
+; Makes lake the water of each run terrain_water_runs listed in the row at terrain_runs_row that
+; world.c has marked in terrain_run_mark: tiles up to TILE_SHALLOWS become TILE_LAKE more, keeping
+; their shade; anything else (a bridge) stays.
+;
+; Zero page while it runs: ptr1 = the run's first cell, then each page of it; tmp1:tmp2 = its
+; cells, less those done.
+
+_terrain_lake_mark:
+        ldx     #0
+@run:   cpx     _terrain_run_count
+        bne     :+
+        rts
+:       lda     _terrain_run_mark,x
+        beq     @next
+        stx     tmp3
+        txa                             ; the run's words
+        asl     a
+        tax
+        clc                             ; ptr1 = the row + its first column
+        lda     _terrain_runs_row
+        adc     _terrain_run_a,x
+        sta     ptr1
+        lda     _terrain_runs_row+1
+        adc     _terrain_run_a+1,x
+        sta     ptr1+1
+        sec                             ; cells: last - first + 1
+        lda     _terrain_run_b,x
+        sbc     _terrain_run_a,x
+        sta     tmp1
+        lda     _terrain_run_b+1,x
+        sbc     _terrain_run_a+1,x
+        sta     tmp2
+        inc     tmp1
+        bne     :+
+        inc     tmp2
+:       ldy     #0
+@cell:  lda     (ptr1),y
+        cmp     #TILE_SHALLOWS + 1
+        bcs     :+
+        adc     #TILE_LAKE              ; (the carry is clear)
+        sta     (ptr1),y
+:       iny
+        bne     :+
+        inc     ptr1+1                  ; on to the next page
+:       lda     tmp1                    ; one fewer to do
+        bne     :+
+        dec     tmp2
+:       dec     tmp1
+        bne     @cell
+        lda     tmp2
+        bne     @cell
+        ldx     tmp3
+@next:  inx
+        bne     @run                    ; (always: at most RUNS_MAX)
+
+; ------------------------------------------------------------------------
+; void terrain_lake_label (void)
+;
+; Labels the runs terrain_water_runs just listed (world.c's lake_row explains the method): each
+; run gets the label of a run it touches in the row above - across, or diagonally, so the runs
+; above from a cell before it to a cell after it - or a new one, and where it touches more than
+; one, their bodies are joined. Labels are 16-bit, up to LAKE_LABELS (world.c), parents in the
+; words at terrain_lake_parent; terrain_lake_labels counts those given out, and once there are
+; LAKE_LABELS a new run is counted as ocean, label 0, which never makes a lake by mistake.
+; terrain_lake_edge non-zero (the map's first or last row), or a run at either end of the row,
+; joins the ocean. Leaves each run's label in terrain_run_l, sets terrain_run_mark for those not
+; joined to the ocean, and keeps the runs as the row above for the next row.
+;
+; Zero page while it runs: ptr1 (find's parent pointers), tmp1-tmp3 (work).
+
+        .export         _terrain_lake_label, _terrain_run_l, _terrain_lake_prev_n
+        .import         _terrain_lake_parent, _terrain_lake_labels, _terrain_lake_edge
+
+LAKE_LABELS     = 512
+
+        .bss
+_terrain_run_l:         .res    2 * RUNS_MAX    ; this row's labels
+prev_a:         .res    2 * RUNS_MAX            ; the row above's runs: first column...
+prev_b:         .res    2 * RUNS_MAX            ; ...last column...
+prev_l:         .res    2 * RUNS_MAX            ; ...and label
+_terrain_lake_prev_n:   .res    1               ; how many (world.c sets 0 to start)
+lab_i:          .res    1                       ; the run being labelled, x 2
+lab_j:          .res    1                       ; the first run above not yet passed, x 2
+lab_k:          .res    1
+lab_n2:         .res    1                       ; runs x 2...
+lab_p2:         .res    1                       ; ...and runs above x 2
+lab_l:          .res    2                       ; the label so far ($FFFF: none)
+lab_x:          .res    2                       ; find and join's labels
+lab_y:          .res    2
+lab_end:        .res    2                       ; the row's last column
+lab_a1:         .res    2                       ; the run's first column - 1...
+lab_b1:         .res    2                       ; ...and last + 1
+
+        .code
+
+; ptr1 = &terrain_lake_parent[A/X] (low, high).
+parent_of:
+        stx     tmp1
+        asl     a
+        rol     tmp1
+        clc
+        adc     _terrain_lake_parent
+        sta     ptr1
+        lda     tmp1
+        adc     _terrain_lake_parent+1
+        sta     ptr1+1
+        rts
+
+; A/X = the root of label A/X, halving the path on the way: each label passed gets its
+; grandparent as its parent.
+find:   sta     lab_x
+        stx     lab_x+1
+@up:    lda     lab_x
+        ldx     lab_x+1
+        jsr     parent_of               ; ptr1 = &parent[l]
+        ldy     #0
+        lda     (ptr1),y                ; parent[l] == l: the root
+        cmp     lab_x
+        bne     @move
+        iny
+        lda     (ptr1),y
+        cmp     lab_x+1
+        bne     @move
+        lda     lab_x
+        ldx     lab_x+1
+        rts
+@move:  lda     ptr1                    ; keep &parent[l]
+        sta     tmp2
+        lda     ptr1+1
+        sta     tmp3
+        ldy     #0                      ; the grandparent: parent[parent[l]]
+        lda     (ptr1),y
+        pha
+        iny
+        lda     (ptr1),y
+        tax
+        pla
+        jsr     parent_of
+        ldy     #0
+        lda     (ptr1),y
+        sta     lab_x                   ; l = it...
+        iny
+        lda     (ptr1),y
+        sta     lab_x+1
+        lda     tmp2                    ; ...and parent[l] = it too
+        sta     ptr1
+        lda     tmp3
+        sta     ptr1+1
+        lda     lab_x+1
+        sta     (ptr1),y
+        dey
+        lda     lab_x
+        sta     (ptr1),y
+        jmp     @up
+
+; A/X = lab_l joined with label A/X: their roots, the larger made a child of the smaller (so the
+; ocean stays 0), which is returned - and left in lab_l.
+join:   jsr     find
+        sta     lab_y                   ; the other's root
+        stx     lab_y+1
+        lda     lab_l
+        ldx     lab_l+1
+        jsr     find                    ; lab_l's root, in A/X (and lab_x)
+        cpx     lab_y+1                 ; which is smaller?
+        bcc     @x_lower
+        bne     @y_lower
+        cmp     lab_y
+        bcc     @x_lower
+        beq     @same
+@y_lower:
+        jsr     parent_of               ; parent[x root] = y root
+        ldy     #0
+        lda     lab_y
+        sta     (ptr1),y
+        iny
+        lda     lab_y+1
+        sta     (ptr1),y
+        lda     lab_y
+        ldx     lab_y+1
+        jmp     @done
+@x_lower:
+        lda     lab_y                   ; parent[y root] = x root
+        ldx     lab_y+1
+        jsr     parent_of
+        ldy     #0
+        lda     lab_x
+        sta     (ptr1),y
+        iny
+        lda     lab_x+1
+        sta     (ptr1),y
+@same:  lda     lab_x
+        ldx     lab_x+1
+@done:  sta     lab_l
+        stx     lab_l+1
+        rts
+
+_terrain_lake_label:
+        lda     _terrain_width          ; the last column
+        sec
+        sbc     #1
+        sta     lab_end
+        lda     _terrain_width+1
+        sbc     #0
+        sta     lab_end+1
+        lda     _terrain_run_count
+        asl     a
+        sta     lab_n2
+        lda     _terrain_lake_prev_n
+        asl     a
+        sta     lab_p2
+        lda     #0
+        sta     lab_i
+        sta     lab_j
+
+@run:   ldx     lab_i
+        cpx     lab_n2
+        bne     :+
+        jmp     @keep
+:       sec                             ; its first column - 1 and last + 1 (wrapping to $FFFF
+        lda     _terrain_run_a,x        ; for a run from column 0 is harmless: nothing ends
+        sbc     #1                      ; before it then)
+        sta     lab_a1
+        lda     _terrain_run_a+1,x
+        sbc     #0
+        sta     lab_a1+1
+        clc
+        lda     _terrain_run_b,x
+        adc     #1
+        sta     lab_b1
+        lda     _terrain_run_b+1,x
+        adc     #0
+        sta     lab_b1+1
+
+        ; The runs above ending before its first column - 1 are past for good: both rows' runs are
+        ; in order. (A run from column 0 has nothing before it.)
+        lda     _terrain_run_a,x
+        ora     _terrain_run_a+1,x
+        beq     @touch
+@pass:  ldy     lab_j
+        cpy     lab_p2
+        beq     @touch
+        lda     prev_b,y                ; prev_b < a - 1?
+        cmp     lab_a1
+        lda     prev_b+1,y
+        sbc     lab_a1+1
+        bcs     @touch
+        iny
+        iny
+        sty     lab_j
+        bne     @pass                   ; (always)
+
+        ; Those it touches: starting up to its last column + 1.
+@touch: lda     #$FF                    ; no label yet
+        sta     lab_l
+        sta     lab_l+1
+        lda     lab_j
+        sta     lab_k
+@above: ldy     lab_k
+        cpy     lab_p2
+        beq     @labelled
+        lda     lab_b1                  ; prev_a <= b + 1?
+        cmp     prev_a,y
+        lda     lab_b1+1
+        sbc     prev_a+1,y
+        bcc     @labelled
+        lda     lab_l+1                 ; the first: its label
+        and     lab_l
+        cmp     #$FF
+        bne     @join
+        lda     prev_l,y
+        sta     lab_l
+        lda     prev_l+1,y
+        sta     lab_l+1
+        jmp     @next_above
+@join:  lda     prev_l,y                ; more: joined
+        ldx     prev_l+1,y
+        jsr     join
+@next_above:
+        inc     lab_k
+        inc     lab_k
+        bne     @above                  ; (always)
+
+@labelled:
+        lda     lab_l+1                 ; none above: a new label, if there's one left
+        and     lab_l
+        cmp     #$FF
+        bne     @edge
+        lda     _terrain_lake_labels+1
+        cmp     #>LAKE_LABELS
+        bcc     @new
+        lda     #0                      ; none left: the ocean
+        sta     lab_l
+        sta     lab_l+1
+        beq     @edge
+@new:   lda     _terrain_lake_labels    ; the next, its own parent
+        sta     lab_l
+        ldx     _terrain_lake_labels+1
+        stx     lab_l+1
+        jsr     parent_of
+        ldy     #0
+        lda     lab_l
+        sta     (ptr1),y
+        iny
+        lda     lab_l+1
+        sta     (ptr1),y
+        inc     _terrain_lake_labels
+        bne     @edge
+        inc     _terrain_lake_labels+1
+
+        ; At the map's edge: the ocean.
+@edge:  ldx     lab_i
+        lda     _terrain_lake_edge
+        bne     @ocean
+        lda     _terrain_run_a,x
+        ora     _terrain_run_a+1,x
+        beq     @ocean
+        lda     _terrain_run_b,x
+        cmp     lab_end
+        bne     @store
+        lda     _terrain_run_b+1,x
+        cmp     lab_end+1
+        bne     @store
+@ocean: lda     #0
+        tax
+        jsr     join
+@store: ldx     lab_i
+        lda     lab_l
+        sta     _terrain_run_l,x
+        lda     lab_l+1
+        sta     _terrain_run_l+1,x
+        inx
+        inx
+        stx     lab_i
+        jmp     @run
+
+        ; Each run marked if its body isn't the ocean (after all of them, as a later run can join
+        ; an earlier one to it), and kept as the row above.
+@keep:  lda     #0
+        sta     lab_i
+@mark:  ldx     lab_i
+        cpx     lab_n2
+        beq     @kept
+        lda     _terrain_run_a,x
+        sta     prev_a,x
+        lda     _terrain_run_a+1,x
+        sta     prev_a+1,x
+        lda     _terrain_run_b,x
+        sta     prev_b,x
+        lda     _terrain_run_b+1,x
+        sta     prev_b+1,x
+        lda     _terrain_run_l+1,x
+        sta     prev_l+1,x
+        tay
+        lda     _terrain_run_l,x
+        sta     prev_l,x
+        tax
+        tya
+        stx     tmp1                    ; find(label): A/X = low, high
+        tax
+        lda     tmp1
+        jsr     find
+        stx     tmp1
+        ora     tmp1                    ; root 0: the ocean
+        beq     :+
+        lda     #1
+:       pha
+        lda     lab_i
+        lsr     a
+        tax
+        pla
+        sta     _terrain_run_mark,x
+        inc     lab_i
+        inc     lab_i
+        bne     @mark                   ; (always)
+@kept:  lda     _terrain_run_count
+        sta     _terrain_lake_prev_n
+        rts

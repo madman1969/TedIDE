@@ -86,6 +86,13 @@ unsigned char* terrain_list_lo;
 unsigned char* terrain_list_hi;
 unsigned char terrain_listing;
 unsigned terrain_wander;
+unsigned char terrain_wide;
+unsigned char* terrain_runs_row;
+unsigned* terrain_lake_parent;
+unsigned terrain_lake_labels;
+unsigned char terrain_lake_edge;
+unsigned char* terrain_list_wide1;
+unsigned char* terrain_list_wide2;
 unsigned terrain_width, terrain_height;
 
 static farptr cells;
@@ -237,6 +244,9 @@ static unsigned char* visited;              /* ...and each point the river being
 static unsigned* river_row_end;
 static unsigned char* river_cell_lo;
 static unsigned char* river_cell_hi;
+static unsigned char* river_wide1;          /* how each river cell widens (walk_rivers) */
+static unsigned char* river_wide2;
+#define CELL_BITS(cells)  (((cells) + 7) / 8)  /* a bit map with a bit a cell */
 static unsigned char river_count;
 static unsigned river_points;
 
@@ -486,18 +496,33 @@ static void walk(int x, int y, int to_x, int to_y)
     terrain_walk();
 }
 
+/* Rivers widen as they reach the sea: how each of a river's last segments widens, from the one
+ * into the sea back - rivers that end by joining another don't. Rather than listing more cells,
+ * each cell of such a segment is listed with the bits of a WIDE_ value (terrain_wide), and
+ * add_rivers puts river in the cells beside it too: across for a segment running up and down or
+ * diagonally (beside a diagonal, its copy across joins it in a solid staircase), and in the row
+ * below for one running across. */
+#define WIDE_RIGHT   1                      /* and the cell to the right */
+#define WIDE_DOWN    2                      /* and the cell below */
+#define WIDE_BOTH    3                      /* and the cells to the left and right */
+#define WIDE_SEGMENTS 3
+static const unsigned char mouth_width[WIDE_SEGMENTS] = { 3, 3, 2 };
+
 /* Marks every cell of the first river_count rivers: each segment from one point to the next,
- * through its midpoint pushed to one side. */
+ * through its midpoint pushed to one side, near the sea with how it widens. */
 static void walk_rivers(void)
 {
-    unsigned char r;
-    unsigned i;
+    unsigned char r, from_end, sea;
+    unsigned i, last;
     int x0, y0, x1, y1, mx, my;
     signed char vx, vy, side;
 
     for (r = 0; r < river_count; ++r)
     {
-        for (i = river_start[r]; i + 1 < river_start[r + 1]; ++i)
+        /* Its last point: in the sea, or on the river it joins. */
+        last = river_start[r + 1] - 1;
+        sea = point_height(river_px[last], river_py[last]) < SEA_LEVEL;
+        for (i = river_start[r]; i < last; ++i)
         {
             x0 = river_px[i] * TERRAIN_SPAN_B;
             y0 = river_py[i] * TERRAIN_SPAN_B;
@@ -511,11 +536,22 @@ static void walk_rivers(void)
             side = wander[next_wander() & 7];
             mx = x0 + vx * (TERRAIN_SPAN_B / 2) - vy * side;
             my = y0 + vy * (TERRAIN_SPAN_B / 2) + vx * side;
+
+            from_end = (unsigned char)(last - 1 - i);
+            terrain_wide = 0;
+            if (sea && from_end < WIDE_SEGMENTS)
+            {
+                if (vx && !vy)
+                    terrain_wide = WIDE_DOWN;
+                else
+                    terrain_wide = mouth_width[from_end] > 2 ? WIDE_BOTH : WIDE_RIGHT;
+            }
             walk(x0, y0, mx, my);
             walk(mx, my, x1, y1);
             mark_cell(x1, y1);
         }
     }
+    terrain_wide = 0;
 }
 
 /* Lists the cells walk_all marks by row: row y's are cells terrain_list_end[y] up to
@@ -552,22 +588,42 @@ static void list_river_cells(void)
     terrain_list_end = river_row_end;
     terrain_list_lo = river_cell_lo;
     terrain_list_hi = river_cell_hi;
+    terrain_list_wide1 = river_wide1;
+    terrain_list_wide2 = river_wide2;
+    memset(river_wide1, 0, 2 * CELL_BITS(MAX_RIVER_CELLS));
     while (!list_cells(walk_rivers, MAX_RIVER_CELLS))
         --river_count;
 }
 
-/* Puts row y's river cells over the land in the row being finished. */
+/* Puts row y's river cells over the land in the row being finished, widened near the sea as
+ * listed (walk_rivers): into the cells beside them, or the row below (river_below, 0 for none). */
+static unsigned char* river_below;
+
 static void add_rivers(unsigned y)
 {
     unsigned end = river_row_end[y + 1];
-    unsigned i;
+    unsigned i, x;
+    unsigned char byte, bit;
     unsigned char* tile;
 
     for (i = river_row_end[y]; i < end; ++i)
     {
-        tile = tiles + list_x(river_cell_lo, river_cell_hi, i);
+        x = list_x(river_cell_lo, river_cell_hi, i);
+        tile = tiles + x;
         if (*tile > TILE_SHALLOWS)
             *tile = TILE_RIVER;
+        byte = i >> 3;
+        bit = bit_of[i & 7];
+        if (river_wide1[byte] & bit)
+        {
+            /* Right, and left too for WIDE_BOTH. */
+            if (x + 1 < width && tile[1] > TILE_SHALLOWS)
+                tile[1] = TILE_RIVER;
+            if ((river_wide2[byte] & bit) && x && tile[-1] > TILE_SHALLOWS)
+                tile[-1] = TILE_RIVER;
+        }
+        else if ((river_wide2[byte] & bit) && river_below && river_below[x] > TILE_SHALLOWS)
+            river_below[x] = TILE_RIVER;
     }
 }
 
@@ -1030,16 +1086,162 @@ static void add_roads(unsigned y)
     terrain_add_roads();
 }
 
+/* ------------------------------------------------------------------------
+ * Lakes: sea with land all round it. The map's edge is all sea, so any water joined to it is the
+ * ocean; any that isn't is a lake. As each row is finished, before rivers and roads go in
+ * (lake_row), its runs of water (terrain_water_runs, terrain.s) are labelled (terrain_lake_label),
+ * each with the label of a run it touches in the row above - across, or diagonally - or a new
+ * one; where a run touches more than one, their labels are joined (union-find: each label's
+ * parent, down to the smallest, its root). Label 0 is the ocean, which every run at the map's edge
+ * joins.
+ * A run not joined to the ocean by the end of its row may be a lake. Most such are, so it's made
+ * one there and then, just before the row is written (terrain_lake_mark): its water's tiles become
+ * lake tiles, TILE_LAKE more, keeping their shade. It's recorded, in far memory, a batch at a time
+ * (worlds have a couple of thousand). Once every row is done, any recorded run that has been
+ * joined to the ocean since is changed back (unmark_lakes). Bridges stay bridges.
+ */
+
+#define LAKE_LABELS   512                   /* worlds take about 300; terrain.s's too */
+#define LAKE_RUNS     40                    /* in a row - as terrain.s's RUNS_MAX; worlds take 30 */
+#define LAKE_BATCH    58                    /* records kept before writing them to far memory */
+#define LAKE_RECORDS  3072                  /* at most, in far memory */
+#define LAKE_RECORD   6                     /* bytes a record: first column, last, label */
+#define NO_LABEL      0xFFFF
+
+/* The three row buffers the map is built in (world_generate). */
+static unsigned char* row_bufs;
+
+/* In the scratch memory the rivers' and roads' points take while they're planned - free once the
+ * rows are being built - but for the records' count per row (lake_row_count), after the rows. */
+static unsigned* lake_prev_a;               /* unmark_lakes' runs: first column... */
+static unsigned* lake_prev_b;               /* ...and last */
+static unsigned* lake_batch;                /* records waiting to be written: first, last, label */
+static unsigned char* lake_row_count;       /* each row's records */
+static unsigned char lake_batched;
+static farptr lake_far;                     /* the records in far memory; FAR_NULL: no lakes */
+static unsigned lake_records;               /* records written there... */
+static unsigned lake_room;                  /* ...and room for */
+
+/* A label's root (terrain_lake_label's union-find). */
+static unsigned lake_find(unsigned l)
+{
+    while (terrain_lake_parent[l] != l)
+        l = terrain_lake_parent[l];
+    return l;
+}
+
+/* Writes the batch of records to far memory. */
+static void lake_flush(void)
+{
+    if (lake_batched)
+    {
+        far_write(lake_far + (unsigned long)lake_records * LAKE_RECORD, lake_batch,
+                  lake_batched * LAKE_RECORD);
+        lake_records += lake_batched;
+        lake_batched = 0;
+    }
+}
+
+/* Labels row y's runs of water (terrain_water_runs, terrain_lake_label), which marks those not
+ * (yet) joined to the ocean to be made lakes (terrain_run_mark, for terrain_lake_mark); records
+ * them - and unmarks any there's no room to record. */
+static void lake_row(unsigned y, unsigned char* row)
+{
+    unsigned char n, i;
+    unsigned* rec;
+
+    terrain_runs_row = row;
+    terrain_lake_edge = y == 0 || y == height - 1;
+    terrain_water_runs();
+    terrain_lake_label();
+
+    /* The batch is written out first if this row's might not fit. */
+    if (lake_batched > LAKE_BATCH - LAKE_RUNS)
+        lake_flush();
+    rec = lake_batch + 3 * lake_batched;
+    n = terrain_run_count;
+    for (i = 0; i < n; ++i)
+    {
+        if (!terrain_run_mark[i])
+            continue;
+        if (lake_records + lake_batched >= lake_room)
+        {
+            terrain_run_mark[i] = 0;
+            continue;
+        }
+        rec[0] = terrain_run_a[i];
+        rec[1] = terrain_run_b[i];
+        rec[2] = terrain_run_l[i];
+        rec += 3;
+        ++lake_batched;
+        ++lake_row_count[y];
+    }
+}
+
+/* Once every row is done: changes back the recorded runs that have been joined to the ocean
+ * since. Each row's are read back (into lake_prev_a/b, free now), and the part of the row from
+ * the first to the last read, its lake tiles changed back to sea and written again. */
+static void unmark_lakes(void)
+{
+    unsigned char* buf = row_bufs;          /* free now the rows are done */
+    farptr next = lake_far;
+    unsigned char at = 0, got = 0;
+    unsigned y, b, lo, hi, x, left;
+    unsigned char n, i, seas;
+    unsigned* rec;
+
+    lake_flush();
+    left = lake_records;
+    for (y = 0; y < height; ++y)
+    {
+        n = lake_row_count[y];
+        seas = 0;
+        lo = 0xFFFF;
+        hi = 0;
+        for (i = 0; i < n; ++i)
+        {
+            if (at == got)
+            {
+                got = left < LAKE_BATCH ? (unsigned char)left : LAKE_BATCH;
+                far_read(lake_batch, next, got * LAKE_RECORD);
+                next += got * LAKE_RECORD;
+                left -= got;
+                at = 0;
+            }
+            rec = lake_batch + 3 * at;
+            ++at;
+            if (lake_find(rec[2]))
+                continue;                   /* still a lake */
+            lake_prev_a[seas] = rec[0];
+            lake_prev_b[seas] = rec[1];
+            ++seas;
+            if (rec[0] < lo)
+                lo = rec[0];
+            if (rec[1] > hi)
+                hi = rec[1];
+        }
+        if (!seas)
+            continue;
+        far_read(buf, cell(lo, y), hi - lo + 1);
+        for (i = 0; i < seas; ++i)
+            for (x = lake_prev_a[i] - lo, b = lake_prev_b[i] - lo; x <= b; ++x)
+                if (buf[x] >= TILE_LAKE)
+                    buf[x] -= TILE_LAKE;
+        far_write(cell(lo, y), buf, hi - lo + 1);
+    }
+}
+
 /* The scratch memory world_generate's rivers, towns and roads need, laid out as world_generate
  * does - WORLD_SCRATCH_SIZE (world.h) has to be at least this. The tracing's bit maps and heights,
  * and Prim's method's lists, share the space the road cells' list takes later. */
 #define LIST_BYTES(cells)  ((MAX_HEIGHT + 1) * sizeof(unsigned) + (cells) + ((cells) + 7) / 8)
-#define GEN_SCRATCH  (LIST_BYTES(MAX_RIVER_CELLS) + MAX_TOWNS * (sizeof(unsigned) + 1) \
+#define GEN_SCRATCH  (LIST_BYTES(MAX_RIVER_CELLS) + 2 * CELL_BITS(MAX_RIVER_CELLS) \
+                      + MAX_TOWNS * (sizeof(unsigned) + 1) \
                       + MAX_HEIGHT \
                       + LIST_BYTES(MAX_ROAD_CELLS) + 2 * MAX_RIVER_POINTS \
                       + (2 * MAX_RIVERS + 1) * sizeof(unsigned) \
                       + (MAX_ROADS + 1) * sizeof(unsigned) + 2 * MAX_ROADS \
-                      + 3 * TERRAIN_MAX_WIDTH)
+                      + 3 * TERRAIN_MAX_WIDTH + MAX_HEIGHT)
 
 /* The working memory planning puts in the road cells' list's space (world_generate) has to fit
  * there, and the roads' windows' costs and parents in the row buffers' - a negative array size
@@ -1047,6 +1249,12 @@ static void add_roads(unsigned y)
 typedef char plan_fits[(2 * POINT_BYTES + POINTS + MAX_TOWNS * (sizeof(unsigned) + 1)
                         + 2 * MAX_ROUTE_POINTS + 2 * (MAX_ROUTE_POINTS + 1)
                         <= LIST_BYTES(MAX_ROAD_CELLS)) ? 1 : -1];
+/* The lakes' working memory has to fit in the space the rivers' and roads' points take. */
+typedef char lakes_fit[(LAKE_LABELS * sizeof(unsigned) + 2 * LAKE_RUNS * sizeof(unsigned)
+                        + LAKE_BATCH * LAKE_RECORD
+                        <= 2 * MAX_RIVER_POINTS + (2 * MAX_RIVERS + 1) * sizeof(unsigned)
+                           + (MAX_ROADS + 1) * sizeof(unsigned) + 2 * MAX_ROADS) ? 1 : -1];
+typedef char scratch_size_right[(GEN_SCRATCH <= WORLD_SCRATCH_SIZE) ? 1 : -1];
 typedef char route_fits[(2 * MAX_ROUTE_POINTS <= 3 * TERRAIN_MAX_WIDTH) ? 1 : -1];
 
 /* Whether world_generate has all the scratch memory it wants (and so rivers, towns, roads and
@@ -1054,10 +1262,10 @@ typedef char route_fits[(2 * MAX_ROUTE_POINTS <= 3 * TERRAIN_MAX_WIDTH) ? 1 : -1
  * in turn into each, so a row can be finished once the row below it is built (finish_row). */
 static unsigned char planned;
 static void (*row_finished)(unsigned y, const unsigned char* tiles);
-static unsigned char* row_bufs;
 
-/* Finishes map row y, built in row, with the rows above and below it (0 for none): marsh, then
- * rivers, towns and roads; then writes it to far memory and passes it to row_done. */
+/* Finishes map row y, built in row, with the rows above and below it (0 for none): marsh and
+ * the lakes' labelling, then rivers, towns and roads, then lakes; then writes it to far memory
+ * and passes it to row_done. */
 static void finish_row(unsigned y, unsigned char* row, unsigned char* above, unsigned char* below)
 {
     if (planned)
@@ -1066,15 +1274,20 @@ static void finish_row(unsigned y, unsigned char* row, unsigned char* above, uns
         terrain_marsh_above = above;
         terrain_marsh_below = below;
         terrain_marsh();
+        if (lake_far != FAR_NULL)
+            lake_row(y, row);
     }
     tiles = row;
     terrain_road_above = above;
+    river_below = below;
     if (river_count)
         add_rivers(y);
     if (town_count)
         add_towns(y);
     if (road_count)
         add_roads(y);
+    if (lake_far != FAR_NULL)
+        terrain_lake_mark();                /* the runs lake_row marked in this row, now lakes */
     far_write(cell(0, y), row, width);
     row_finished(y, row);
 }
@@ -1114,7 +1327,9 @@ void world_generate(void (*row_done)(unsigned y, const unsigned char* tiles),
         river_row_end = (unsigned*)scratch;
         river_cell_lo = (unsigned char*)(river_row_end + MAX_HEIGHT + 1);
         river_cell_hi = river_cell_lo + MAX_RIVER_CELLS;
-        town_x = (unsigned*)(river_cell_hi + (MAX_RIVER_CELLS + 7) / 8);
+        river_wide1 = river_cell_hi + CELL_BITS(MAX_RIVER_CELLS);
+        river_wide2 = river_wide1 + CELL_BITS(MAX_RIVER_CELLS);
+        town_x = (unsigned*)(river_wide2 + CELL_BITS(MAX_RIVER_CELLS));
         town_y = (unsigned char*)(town_x + MAX_TOWNS);
         row_rough = town_y + MAX_TOWNS;
         road_row_end = (unsigned*)(row_rough + MAX_HEIGHT);
@@ -1164,6 +1379,27 @@ void world_generate(void (*row_done)(unsigned y, const unsigned char* tiles),
     row_finished = row_done;
     if (!planned)
         row_bufs = scratch;                 /* just the one, at the start of the scratch memory */
+
+    /* Lakes, with the scratch memory and some far memory for the records - none without. */
+    lake_far = FAR_NULL;
+    if (planned)
+    {
+        terrain_lake_parent = (unsigned*)river_px;  /* the points are done with now */
+        lake_prev_a = terrain_lake_parent + LAKE_LABELS;
+        lake_prev_b = lake_prev_a + LAKE_RUNS;
+        lake_batch = lake_prev_b + LAKE_RUNS;
+        lake_row_count = row_bufs + 3 * TERRAIN_MAX_WIDTH;
+        memset(lake_row_count, 0, height);
+        terrain_lake_parent[0] = 0;
+        terrain_lake_labels = 1;
+        terrain_lake_prev_n = 0;
+        lake_batched = 0;
+        lake_records = 0;
+        lake_room = far_maxavail() / LAKE_RECORD > LAKE_RECORDS
+            ? LAKE_RECORDS : (unsigned)(far_maxavail() / LAKE_RECORD);
+        if (lake_room >= LAKE_BATCH)
+            lake_far = far_alloc((unsigned long)lake_room * LAKE_RECORD);
+    }
     rows[0] = row_bufs;
     rows[1] = planned ? row_bufs + TERRAIN_MAX_WIDTH : row_bufs;
     rows[2] = planned ? row_bufs + 2 * TERRAIN_MAX_WIDTH : row_bufs;
@@ -1192,6 +1428,11 @@ void world_generate(void (*row_done)(unsigned y, const unsigned char* tiles),
     {
         k = k == 0 ? 2 : k - 1;                 /* the last row built */
         finish_row(height - 1, rows[k], height >= 2 ? rows[k == 0 ? 2 : k - 1] : 0, 0);
+    }
+    if (lake_far != FAR_NULL)
+    {
+        unmark_lakes();
+        far_free(lake_far);
     }
 }
 
