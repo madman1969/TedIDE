@@ -239,11 +239,19 @@ static void set_scroll(unsigned char fine_x, unsigned char fine_y)
 
 void screen_present(unsigned char fine_x, unsigned char fine_y)
 {
-    set_scroll(fine_x, fine_y);
+    unsigned char flip;
+
     /* Switch screens at the bottom of the next frame - with the new scroll - then draw into the
-     * other one. Waiting for the switch also paces the scrolling to the frame rate. */
+     * other one. Waiting for the switch also paces the scrolling to the frame rate. The scroll
+     * and the switch are set with interrupts off: if the frame's-end interrupt came between the
+     * two, it would show one without the other for a frame, the map a whole cell out. (Moving
+     * diagonally, this is often called just before that interrupt.) */
     showing ^= 1;
-    ted_flip = video_reg(screens[showing]);
+    flip = video_reg(screens[showing]);
+    __asm__("sei");
+    set_scroll(fine_x, fine_y);
+    ted_flip = flip;
+    __asm__("cli");
     wait_for_flip();
     draw_to_hidden();
 }
@@ -336,8 +344,11 @@ void screen_scroll(unsigned char fine_x, unsigned char fine_y)
 {
     unsigned char frame = ted_frames;
 
-    /* Then wait for the frame that applies it, to pace the scrolling. */
+    /* Then wait for the frame that applies it, to pace the scrolling. Both axes at once, with
+     * interrupts off, so a frame never gets one's new scroll with the other's old one. */
+    __asm__("sei");
     set_scroll(fine_x, fine_y);
+    __asm__("cli");
     while (ted_frames == frame)
         ;
 }
